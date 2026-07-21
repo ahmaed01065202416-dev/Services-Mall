@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /wallet
+Disallow: /orders
+Disallow: /workspace
+Disallow: /dashboard
+Disallow: /netlify/
+Disallow: /*.env
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Sitemaps
+Sitemap: https://services-mall2.netlify.app/sitemap.xml
+Sitemap: https://services-mall2.netlify.app/blog-sitemap.xml

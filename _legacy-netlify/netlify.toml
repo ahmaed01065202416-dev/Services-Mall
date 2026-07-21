@@ -1,0 +1,161 @@
+# ============================================================================
+# NETLIFY.TOML — Mall Services Platform
+# Production-ready configuration: Security · SEO · Performance · Firebase
+# ============================================================================
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+  command = "echo 'Static site — no build step'"
+
+[build.environment]
+  NODE_VERSION = "18"
+  SECRETS_SCAN_OMIT_KEYS = "PAYPAL_MODE,PAYMOB_IFRAME_ID,PAYMOB_INTEGRATION_ID"
+  SECRETS_SCAN_OMIT_PATHS = "SETUP.md,README.md,.env.example"
+
+# ============================================================================
+# GLOBAL HEADERS — Applied to all routes
+# ============================================================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+
+    # ── X-Frame-Options ──────────────────────────────────────────────────────
+    # SAMEORIGIN: prevents clickjacking while allowing same-origin iframes
+    X-Frame-Options = "SAMEORIGIN"
+
+    # ── X-Content-Type-Options ───────────────────────────────────────────────
+    X-Content-Type-Options = "nosniff"
+
+    # ── Referrer Policy ──────────────────────────────────────────────────────
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # ── Cross-Origin-Opener-Policy ───────────────────────────────────────────
+    # REQUIRED for Google Auth popup to close correctly.
+    # "same-origin" blocks window.closed — use "same-origin-allow-popups"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+
+    # ── Cross-Origin-Resource-Policy ─────────────────────────────────────────
+    Cross-Origin-Resource-Policy = "cross-origin"
+
+    # ── Permissions-Policy ───────────────────────────────────────────────────
+    # Fix Paymob accelerometer/gyroscope warnings:
+    #   - Allow accelerometer & gyroscope for payment anti-fraud (Paymob needs them)
+    #   - Restrict everything else that isn't needed
+    Permissions-Policy = "accelerometer=(self \"https://accept.paymob.com\"), gyroscope=(self \"https://accept.paymob.com\"), camera=(), microphone=(), geolocation=(), payment=(self \"https://accept.paymob.com\" \"https://js.stripe.com\")"
+
+    # ── Content-Security-Policy ──────────────────────────────────────────────
+    # Production-ready CSP:
+    #   - Allows Google Analytics (gtag.js via googletagmanager.com)
+    #   - Allows Firebase Auth + Firestore + Storage
+    #   - Allows Google Login popup
+    #   - Allows Paymob iframe
+    #   - Allows Stripe
+    #   - Allows Tailwind CDN + Font Awesome + Google Fonts
+    Content-Security-Policy = """default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://js.stripe.com https://*.firebaseio.com https://firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https://firebasestorage.googleapis.com; connect-src 'self' https://cdnjs.cloudflare.com https://services-mall2.netlify.app https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://apis.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.cloudfunctions.net wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://api.paymob.com https://accept.paymob.com https://api.paypal.com https://www.paypal.com https://api.stripe.com https://r.stripe.com; frame-src 'self' https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://accept.paymob.com https://js.stripe.com https://hooks.stripe.com https://iframe.paymob.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://accept.paymob.com"""
+
+# ── SPA / App index — no cache ────────────────────────────────────────────────
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+
+# ── JS files — no cache (dynamic app logic) ──────────────────────────────────
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# ── Static assets — long cache ────────────────────────────────────────────────
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/manifest+json"
+
+# ── Service Worker — never cache ─────────────────────────────────────────────
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# ── Netlify Functions ─────────────────────────────────────────────────────────
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store"
+    Access-Control-Allow-Origin = "https://services-mall2.netlify.app"
+    Access-Control-Allow-Methods = "POST, GET, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# ── Blog pages ───────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/blog/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+    X-Robots-Tag = "index, follow"
+
+# ── Static legal/info pages ──────────────────────────────────────────────────
+[[headers]]
+  for = "/about/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/contact/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/privacy/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/terms/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# ── SEO files ────────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/xml; charset=UTF-8"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "text/plain; charset=UTF-8"
+
+
+# ── Blog pages ────────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/blog/*"
+  [headers.values]
+    Cache-Control = "public, max-age=1800, stale-while-revalidate=86400"
+    X-Robots-Tag  = "index, follow"
+
+# ── Dynamic sitemap ───────────────────────────────────────────────────────────
+[[redirects]]
+  from   = "/sitemap-live.xml"
+  to     = "/.netlify/functions/sitemap-dynamic"
+  status = 200
+
+# ── Blog post slugs (SPA-style) ───────────────────────────────────────────────
+[[redirects]]
+  from   = "/blog/*"
+  to     = "/blog/index.html"
+  status = 200
+
+# ── Scheduled AI cron ─────────────────────────────────────────────────────────
+[functions."ai-daily-cron"]
+  schedule = "0 7 * * *"

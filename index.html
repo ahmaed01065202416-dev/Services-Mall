@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="مول الخدمات — منصتك الأولى للخدمات الرقمية الاحترافية في مصر. تصميم مواقع، برمجة، تسويق رقمي، كتابة محتوى وأكثر — مع ضمان استرداد كامل عبر نظام Escrow.">
+  <meta name="google-site-verification" content="z2bKviBbmgwGNYsqFn_DVgWrGsdtutjAVzT99_iqexk" />
+  <meta name="keywords" content="خدمات رقمية, فريلانسر مصر, تصميم مواقع, برمجة, تسويق رقمي, كتابة محتوى, SEO, مول الخدمات, mall services egypt, خدمات اون لاين">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="author" content="مول الخدمات">
+  <meta name="language" content="Arabic">
+  <meta name="geo.region" content="EG">
+  <meta name="geo.placename" content="Cairo, Egypt">
+  <link rel="canonical" href="https://services-mall2.netlify.app/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="مول الخدمات | منصة الخدمات الرقمية الأولى في مصر">
+  <meta property="og:description" content="اطلب أفضل الخدمات من محترفين معتمدين مع ضمان استرداد كامل. تصميم، برمجة، تسويق، كتابة محتوى وأكثر.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://services-mall2.netlify.app/">
+  <meta property="og:image" content="https://services-mall2.netlify.app/icons/icon-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:locale" content="ar_EG">
+  <meta property="og:site_name" content="مول الخدمات">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="مول الخدمات | منصة الخدمات الرقمية الأولى في مصر">
+  <meta name="twitter:description" content="اطلب أفضل الخدمات من محترفين معتمدين مع ضمان استرداد كامل.">
+  <meta name="twitter:image" content="https://services-mall2.netlify.app/icons/icon-512.png">
+
+  <title>مول الخدمات | منصة الخدمات الرقمية الاحترافية في مصر</title>
+
+  <!-- Structured Data: Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "مول الخدمات",
+    "alternateName": "Mall Services",
+    "url": "https://services-mall2.netlify.app",
+    "logo": "https://services-mall2.netlify.app/icons/icon-512.png",
+    "description": "منصة عربية للخدمات الرقمية تربط المحترفين بأصحاب الأعمال",
+    "foundingDate": "2023",
+    "foundingLocation": {"@type": "Place", "name": "Cairo, Egypt"},
+    "areaServed": {"@type": "Place", "name": "Arab World"},
+    "contactPoint": {"@type": "ContactPoint", "contactType": "customer service", "availableLanguage": ["Arabic", "English"]},
+    "sameAs": ["https://services-mall2.netlify.app"]
+  }
+  </script>
+  <!-- Structured Data: WebSite with SearchAction -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "مول الخدمات",
+    "url": "https://services-mall2.netlify.app",
+    "inLanguage": "ar",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://services-mall2.netlify.app/#services?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <!-- Google Analytics 4 placeholder — replace G-XXXXXXXXXX with your real ID -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX', { 'anonymize_ip': true });
+    // Custom event tracking helpers
+    window.trackEvent = function(action, category, label) {
+      gtag('event', action, { 'event_category': category, 'event_label': label });
+    };
+  </script>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="مول الخدمات">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Firebase SDK (compat - no CSP issues) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+
+  <!-- TailwindCSS — CDN with inline config (must define config BEFORE loading script) -->
+  <script>
+    // Define tailwind config BEFORE loading Tailwind script
+    window.tailwind = window.tailwind || {};
+    window.tailwindConfig = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Cairo','Inter','sans-serif'] },
+          colors: {
+            brand: {
+              50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',
+              400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',
+              800:'#075985',900:'#0c4a6e'
+            },
+            accent: {
+              50:'#fdf4ff',100:'#fae8ff',200:'#f5d0fe',300:'#f0abfc',
+              400:'#e879f9',500:'#d946ef',600:'#c026d3',700:'#a21caf'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script>
+    // Tailwind Play CDN — loads after config is ready
+    (function() {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.tailwindcss.com';
+      s.onload = function() {
+        if (typeof tailwind !== 'undefined' && tailwind.config) {
+          tailwind.config = window.tailwindConfig;
+        }
+      };
+      s.onerror = function() { console.warn('[Tailwind] CDN failed to load — styles may be missing'); };
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <style>
+    /* ── Reset & Base ────────────────────────────── */
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Cairo','Inter',sans-serif;
+      background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 50%,#f0f9ff 100%);
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ── Page System ──────────────────────────────── */
+    .page{display:none;opacity:0;transition:opacity .3s ease-in-out}
+    .page.active{display:block;opacity:1;animation:fadeIn .4s ease-out}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Typography ─────────────────────────────── */
+    [lang=en] body,[lang=en] .en-only{font-family:'Inter',sans-serif}
+    .gradient-text{
+      background:linear-gradient(135deg,#0284c7 0%,#d946ef 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+    }
+
+    /* ── Buttons ─────────────────────────────────── */
+    .btn-primary{
+      background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);
+      color:#fff;padding:14px 28px;border-radius:16px;font-weight:700;
+      transition:all .3s ease;box-shadow:0 4px 15px rgba(2,132,199,.3);
+      border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px
+    }
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(2,132,199,.4)}
+    .btn-primary:active{transform:translateY(0)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+    .btn-secondary{
+      background:#fff;color:#0284c7;padding:14px 28px;border-radius:16px;font-weight:700;
+      transition:all .3s ease;border:2px solid #0284c7;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;gap:8px
+    }
+    .btn-secondary:hover{background:#0284c7;color:#fff;transform:translateY(-2px)}
+
+    /* ── Forms ───────────────────────────────────── */
+    .form-input{
+      width:100%;padding:14px 18px;background:rgba(249,250,251,.8);
+      border:2px solid #e5e7eb;border-radius:14px;transition:all .3s ease;
+      font-family:'Cairo','Inter',sans-serif;font-size:15px;color:#111827
+    }
+    .form-input:focus{border-color:#0284c7;outline:none;box-shadow:0 0 0 4px rgba(2,132,199,.1);background:#fff}
+    .form-input::placeholder{color:#9ca3af}
+
+    /* ── Cards ───────────────────────────────────── */
+    .card{transition:all .4s cubic-bezier(.4,0,.2,1)}
+    .card:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 20px 40px -12px rgba(0,0,0,.12)}
+
+    /* ── Glass ───────────────────────────────────── */
+    .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.3)}
+
+    /* ── Modal ───────────────────────────────────── */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+      backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .3s ease}
+    .modal.active{display:flex;opacity:1}
+    .modal-content{background:#fff;border-radius:24px;max-width:600px;width:100%;max-height:90vh;
+      overflow-y:auto;transform:scale(.9) translateY(20px);transition:transform .3s ease}
+    .modal.active .modal-content{transform:scale(1) translateY(0)}
+
+    /* ── Toast ───────────────────────────────────── */
+    .toast{
+      position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
+      background:linear-gradient(135deg,#1f2937 0%,#111827 100%);color:#fff;
+      padding:16px 28px;border-radius:16px;z-index:100001;opacity:0;visibility:hidden;
+      transition:all .4s cubic-bezier(.4,0,.2,1);box-shadow:0 20px 40px rgba(0,0,0,.3);
+      display:flex;align-items:center;gap:12px;min-width:280px;max-width:90vw;font-weight:600
+    }
+    .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    .toast.success{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+    .toast.error{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
+    .toast.warning{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%)}
+
+    /* ── Status Badges ───────────────────────────── */
+    .status-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;white-space:nowrap}
+    .status-pending{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
+    .status-in-progress{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af}
+    .status-delivered{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46}
+    .status-completed{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+    .status-cancelled{background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b}
+    .status-review{background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#3730a3}
+
+    /* ── Chat Bubbles ────────────────────────────── */
+    .chat-bubble{max-width:75%;padding:12px 16px;border-radius:18px;position:relative;word-break:break-word;line-height:1.6}
+    .chat-bubble.sent{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
+    .chat-bubble.received{background:#f3f4f6;color:#1f2937;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+    /* ── Skeleton ────────────────────────────────── */
+    .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton-loading 1.5s infinite;border-radius:8px}
+    @keyframes skeleton-loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* ── Scrollbar ───────────────────────────────── */
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#0284c7,#0369a1);border-radius:10px}
+
+    /* ── Tab System ──────────────────────────────── */
+    .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
+    .tab-btn.active{color:#0284c7;border-bottom-color:#0284c7}
+
+    /* ── Dropdown ────────────────────────────────── */
+    .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
+    .dropdown.active{display:block;animation:fadeIn .2s ease-out}
+    .dropdown a,.dropdown button{display:block;width:100%;padding:12px 18px;text-align:right;color:#374151;text-decoration:none;transition:all .2s ease;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-size:14px}
+    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#0284c7}
+
+    /* ── LTR overrides (English mode) ───────────────*/
+    html[dir=ltr] .dropdown a,html[dir=ltr] .dropdown button{text-align:left}
+    html[dir=ltr] .chat-bubble.sent{border-bottom-right-radius:4px;border-bottom-left-radius:18px}
+    html[dir=ltr] .chat-bubble.received{border-bottom-left-radius:4px;border-bottom-right-radius:18px}
+
+    /* ── Chat Enhancements ─────────────────────────── */
+    .chat-messages-area{scroll-behavior:smooth}
+    .chat-messages-area::-webkit-scrollbar{width:4px}
+    .chat-messages-area::-webkit-scrollbar-track{background:transparent}
+    .chat-messages-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
+    .chat-text-input:focus{outline:none;border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
+    .chat-send-btn:active{transform:scale(.92)}
+    .chat-file-input{display:none !important}
+    .emoji-quick{transition:transform .15s}
+    .emoji-quick:hover{transform:scale(1.25)}
+
+    /* ── Star Rating ─────────────────────────────── */
+    .rating-stars{display:flex;gap:4px}
+    .rating-stars i{color:#fbbf24}
+    .rating-stars i.empty{color:#d1d5db}
+
+    /* ── Nav ─────────────────────────────────────── */
+    .nav-link{position:relative;transition:all .3s ease}
+    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#0284c7,#0369a1);border-radius:2px;transition:width .3s ease}
+    html[dir=ltr] .nav-link::after{right:auto;left:0}
+    .nav-link.active::after{width:100%}
+
+    /* ── Image preview ───────────────────────────── */
+    .image-upload-preview{width:100%;height:200px;object-fit:cover;border-radius:16px;margin-top:12px;display:none}
+    .image-upload-preview.show{display:block;animation:fadeIn .3s ease-out}
+
+    /* ── Payment Options ─────────────────────────── */
+    .payment-option{transition:all .25s ease}
+    .payment-option:hover{transform:translateX(-2px)}
+    html[dir=ltr] .payment-option:hover{transform:translateX(2px)}
+
+    /* ── Service Card ────────────────────────────── */
+    .service-card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid #e5e7eb;transition:all .3s ease}
+    .service-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(0,0,0,.1);border-color:#bae6fd}
+
+    /* ── Order Card ──────────────────────────────── */
+    .order-card{transition:all .3s ease}
+    .order-card:hover{border-color:#7dd3fc}
+
+    /* ── Notification badge ──────────────────────── */
+    [data-cart-count],[data-notif-count]{
+      background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;
+      font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+      position:absolute;top:-6px;right:-6px;animation:fadeIn .3s ease
+    }
+    html[dir=ltr] [data-cart-count],html[dir=ltr] [data-notif-count]{right:auto;left:-6px}
+
+    /* ── App Loading Screen ──────────────────────── */
+    #appLoadingScreen{
+      position:fixed;inset:0;z-index:99999;
+      background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+      transition:opacity .5s ease;
+    }
+    #appLoadingScreen.fade-out{opacity:0;pointer-events:none}
+    #appLoadingScreen .spinner{
+      width:56px;height:56px;border:4px solid rgba(255,255,255,.3);
+      border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Offline Banner ──────────────────────────── */
+    #offlineBanner{
+      position:fixed;bottom:0;left:0;right:0;z-index:9999;
+      background:#ef4444;color:#fff;text-align:center;
+      padding:12px;font-weight:700;font-size:14px;
+      transform:translateY(100%);transition:transform .3s ease;
+    }
+    #offlineBanner.show{transform:translateY(0)}
+
+    /* ── Skeleton ────────────────────────────────── */
+    .skeleton{
+      background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
+      background-size:200% 100%;animation:shimmer 1.5s infinite;
+      border-radius:8px;
+    }
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* ── Terms Modal ─────────────────────────────── */
+    #termsModal{
+      position:fixed;inset:0;z-index:99998;
+      background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+    #termsModal .terms-box{
+      background:#fff;border-radius:24px;max-width:600px;width:100%;
+      max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── App Loading Screen (shown until Firebase auth state resolves) ── -->
+<div id="appLoadingScreen">
+  <img src="/icons/logo.jpg" alt="Services Mall" style="width:110px;height:110px;border-radius:24px;object-fit:cover;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px">
+  <div class="spinner"></div>
+  <p style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
+  <p style="color:rgba(255,255,255,.7);font-size:13px;font-weight:600">خدماتك أونلاين</p>
+</div>
+
+<!-- ── Offline Banner ── -->
+<div id="offlineBanner">
+  <i class="fa-solid fa-wifi-slash me-2"></i>
+  لا يوجد اتصال بالإنترنت — بعض الميزات قد لا تعمل
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════════════════════ -->
+<nav class="glass sticky top-0 z-50 border-b border-white/40 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+
+    <!-- Logo -->
+    <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
+      <div class="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center shadow-sm">
+        <img src="/icons/logo.jpg" alt="Services Mall" style="width:32px;height:32px;border-radius:8px;object-fit:cover">
+      </div>
+      <span class="font-black text-gray-900 text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
+    </button>
+
+    <!-- Desktop Nav Links -->
+    <div class="hidden md:flex items-center gap-1">
+      <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.home">الرئيسية</button>
+      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.orders">طلباتي</button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+
+      <!-- Language Toggle -->
+      <button id="langToggle" onclick="toggleLanguage()"
+        class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+        🇬🇧 English
+      </button>
+
+      <!-- Currency -->
+      <div class="relative hidden sm:block">
+        <button id="currencyToggle" onclick="toggleCurrencyMenu()"
+          class="flex items-center gap-1 px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+          EGP ج.م
+        </button>
+        <div id="currencyMenu" class="dropdown absolute top-full mt-1 end-0" style="min-width:150px">
+          <button onclick="setCurrency('EGP');toggleCurrencyMenu()" class="text-start">🇪🇬 EGP — ج.م</button>
+          <button onclick="setCurrency('USD');toggleCurrencyMenu()" class="text-start">🇺🇸 USD — $</button>
+          <button onclick="setCurrency('EUR');toggleCurrencyMenu()" class="text-start">🇪🇺 EUR — €</button>
+          <button onclick="setCurrency('GBP');toggleCurrencyMenu()" class="text-start">🇬🇧 GBP — £</button>
+          <button onclick="setCurrency('SAR');toggleCurrencyMenu()" class="text-start">🇸🇦 SAR — ر.س</button>
+          <button onclick="setCurrency('AED');toggleCurrencyMenu()" class="text-start">🇦🇪 AED — د.إ</button>
+        </div>
+      </div>
+
+      <!-- Cart hidden -->
+
+      <!-- Notifications -->
+      <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-brand-100 text-gray-700 hover:text-brand-600 transition hidden">
+        <i class="fa-solid fa-bell"></i>
+        <span data-notif-count class="hidden">0</span>
+      </button>
+
+      <!-- User Menu -->
+      <div id="guestButtons" class="flex items-center gap-2">
+        <button onclick="navigateTo('login')"    class="btn-secondary text-sm px-4 py-2" data-i18n="nav.login">دخول</button>
+        <button onclick="navigateTo('register')" class="btn-primary  text-sm px-4 py-2 hidden sm:flex" data-i18n="nav.register">تسجيل</button>
+      </div>
+
+      <div id="userMenuWrap" class="relative hidden">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 hover:bg-brand-100 transition">
+          <img id="navAvatar" src="" class="w-7 h-7 rounded-full object-cover" alt="">
+          <span id="navName" class="text-sm font-bold text-gray-900 hidden sm:block max-w-24 truncate"></span>
+          <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+        </button>
+        <div id="userDropdown" class="dropdown absolute top-full mt-1 end-0 z-50" style="min-width:200px">
+          <button onclick="navigateTo('dashboard');toggleUserMenu()" data-i18n="nav.dashboard">لوحة التحكم</button>
+          <button onclick="navigateTo('profile');toggleUserMenu()"   data-i18n="nav.profile">الملف الشخصي</button>
+          <button onclick="navigateTo('wallet');toggleUserMenu()"    data-i18n="nav.wallet">المحفظة</button>
+          <button id="adminNavBtn" onclick="navigateTo('admin');toggleUserMenu()" class="hidden" data-i18n="nav.admin">الإدارة</button>
+          <hr class="my-1 border-gray-100">
+          <button onclick="AuthManager.logout();toggleUserMenu()" class="text-red-500 hover:bg-red-50" data-i18n="nav.logout">تسجيل الخروج</button>
+        </div>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 bg-gray-100 rounded-xl text-gray-700">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="hidden md:hidden border-t border-gray-100 px-4 pb-4 bg-white">
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <button onclick="navigateTo('home');toggleMobileMenu()"     class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-home text-brand-500"></i><span data-i18n="nav.home">الرئيسية</span></button>
+      <button onclick="navigateTo('services');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-grid-2 text-brand-500"></i><span data-i18n="nav.services">الخدمات</span></button>
+      <button onclick="navigateTo('orders');toggleMobileMenu()"   class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-bag-shopping text-brand-500"></i><span data-i18n="nav.orders">طلباتي</span></button>
+      <button onclick="toggleLanguage()"                           class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-globe text-brand-500"></i><span id="mobileLanguageBtn">English</span></button>
+    </div>
+  </div>
+</nav>
+
+<!-- Notification Dropdown -->
+<div id="notifDropdown" class="hidden fixed top-16 end-4 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+    <h3 class="font-black text-gray-900 text-sm" data-i18n="nav.notifications">الإشعارات</h3>
+    <button onclick="markAllNotifsRead()" class="text-xs text-brand-600 font-bold">مقروء الكل</button>
+  </div>
+  <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-gray-50">
+    <p class="text-center text-gray-400 text-sm py-8">لا توجد إشعارات</p>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGES CONTAINER
+══════════════════════════════════════════════════════════════ -->
+
+<!-- ─── HOME ──────────────────────────────────────────────── -->
+<div id="page-home" class="page">
+  <!-- Hero -->
+  <section class="relative overflow-hidden py-20 px-4">
+    <div class="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-700 to-accent-600 opacity-95"></div>
+    <div class="absolute inset-0" style="background:url('https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600') center/cover no-repeat;opacity:.08"></div>
+    <!-- Animated circles -->
+    <div class="absolute top-20 start-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse-slow"></div>
+    <div class="absolute bottom-10 end-20 w-48 h-48 bg-accent-400/10 rounded-full blur-2xl animate-pulse-slow" style="animation-delay:1s"></div>
+
+    <div class="relative max-w-5xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm font-bold mb-8 border border-white/20">
+        <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
+        <span>الأكثر ثقة في مصر والوطن العربي</span>
+      </div>
+      <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight" data-i18n="home.hero.title">
+        منصتك الأولى<br>للخدمات الرقمية الاحترافية
+      </h1>
+      <p class="text-xl text-brand-100 mb-10 max-w-2xl mx-auto leading-relaxed" data-i18n="home.hero.subtitle">
+        اطلب أفضل الخدمات من خبراء معتمدين بأمان تام وضمان استرداد كامل
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <button onclick="navigateTo('services')" class="bg-white text-brand-700 font-black px-8 py-4 rounded-2xl hover:bg-brand-50 transition shadow-lg flex items-center gap-3 text-lg">
+          <i class="fa-solid fa-grid-2"></i><span data-i18n="home.hero.cta">استعرض الخدمات</span>
+        </button>
+        <button onclick="navigateTo('register')" class="bg-white/15 backdrop-blur-sm text-white font-black px-8 py-4 rounded-2xl hover:bg-white/25 transition border-2 border-white/30 flex items-center gap-3 text-lg">
+          <i class="fa-solid fa-rocket"></i><span data-i18n="home.hero.sell">ابدأ البيع</span>
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16">
+        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
+          <p class="text-3xl font-black text-white">+5,200</p>
+          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
+          <p class="text-3xl font-black text-white">+1,800</p>
+          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.sellers">بائع محترف</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
+          <p class="text-3xl font-black text-white">+42,000</p>
+          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
+          <p class="text-3xl font-black text-white">4.9 ⭐</p>
+          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why us -->
+  <section class="py-16 px-4 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl font-black text-gray-900 text-center mb-12">لماذا مول الخدمات؟</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center p-6">
+          <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-shield-halved text-amber-600 text-2xl"></i>
+          </div>
+          <h3 class="font-black text-gray-900 text-lg mb-2">نظام الضمان Escrow</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">أموالك محمية حتى تستلم خدمتك كاملاً. لا نحول للبائع إلا بعد تأكيدك.</p>
+        </div>
+        <div class="text-center p-6">
+          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-credit-card text-green-600 text-2xl"></i>
+          </div>
+          <h3 class="font-black text-gray-900 text-lg mb-2">10+ وسيلة دفع</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">Paymob، فوري، محافظ إلكترونية، PayPal، Stripe، تحويل بنكي وأكثر.</p>
+        </div>
+        <div class="text-center p-6">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-rotate-left text-blue-600 text-2xl"></i>
+          </div>
+          <h3 class="font-black text-gray-900 text-lg mb-2">ضمان الاسترداد</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">إذا لم تكن راضياً، فريق الدعم يحل النزاع ويعيد أموالك كاملاً.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Services -->
+  <section class="py-16 px-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-black text-gray-900" data-i18n="home.featured">خدمات مميزة</h2>
+        <button onclick="navigateTo('services')" class="text-brand-600 font-bold flex items-center gap-2 hover:gap-3 transition-all">
+          <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
+        </button>
+      </div>
+      <div id="featuredServices" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Skeleton loading -->
+        ${Array(4).fill('<div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>').join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="py-16 px-4 bg-white">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="text-3xl font-black text-gray-900 text-center mb-10" data-i18n="home.categories">تصفح التصنيفات</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <button onclick="filterByCategory('design')"     class="flex flex-col items-center gap-3 p-5 bg-purple-50 rounded-2xl hover:bg-purple-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-purple-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-palette text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">تصميم</span>
+        </button>
+        <button onclick="filterByCategory('programming')" class="flex flex-col items-center gap-3 p-5 bg-blue-50 rounded-2xl hover:bg-blue-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-blue-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-code text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">برمجة</span>
+        </button>
+        <button onclick="filterByCategory('marketing')"  class="flex flex-col items-center gap-3 p-5 bg-green-50 rounded-2xl hover:bg-green-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-green-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-line text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">تسويق</span>
+        </button>
+        <button onclick="filterByCategory('writing')"    class="flex flex-col items-center gap-3 p-5 bg-yellow-50 rounded-2xl hover:bg-yellow-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-yellow-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen-fancy text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">كتابة</span>
+        </button>
+        <button onclick="filterByCategory('video')"      class="flex flex-col items-center gap-3 p-5 bg-red-50 rounded-2xl hover:bg-red-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-red-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-video text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">فيديو</span>
+        </button>
+        <button onclick="filterByCategory('seo')"        class="flex flex-col items-center gap-3 p-5 bg-brand-50 rounded-2xl hover:bg-brand-100 hover:-translate-y-1 transition-all group">
+          <div class="w-12 h-12 bg-brand-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-magnifying-glass-chart text-white"></i></div>
+          <span class="text-sm font-bold text-gray-700">SEO</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Blog Teaser Section (Dynamic from Firestore) ─────────────────────── -->
+  <section class="py-16 px-4 bg-gray-50">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold mb-2">
+            <i class="fa-solid fa-robot text-xs"></i> يُنشر تلقائياً بالذكاء الاصطناعي
+          </div>
+          <h2 class="text-3xl font-black text-gray-900">من مدونتنا</h2>
+          <p class="text-gray-500 mt-1 text-sm">مقالات SEO يومية — موضوعات الأعمال الرقمية في مصر</p>
+        </div>
+        <a href="/blog" class="text-brand-600 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm border border-brand-200 px-4 py-2 rounded-xl hover:bg-brand-50">
+          <span>عرض جميع المقالات</span><i class="fa-solid fa-arrow-left"></i>
+        </a>
+      </div>
+      <!-- Dynamic grid loaded by blog-engine -->
+      <div id="home-blog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px">
+        <!-- Skeleton placeholders -->
+        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px"></div>
+        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px;animation-delay:.15s"></div>
+        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px;animation-delay:.3s"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Newsletter Section ─────────────────────────────────────────────── -->
+  <section class="py-16 px-4" style="background:linear-gradient(135deg,#0369a1,#7c3aed)">
+    <div class="max-w-2xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 border border-white/20">
+        <i class="fa-solid fa-envelope-open-text text-yellow-300"></i>
+        النشرة البريدية
+      </div>
+      <h2 class="text-3xl font-black text-white mb-4">لا تفوّت أي جديد</h2>
+      <p class="text-blue-100 mb-8 text-base">اشترك ليصلك مقال SEO جديد كل يوم — مجاناً</p>
+      <div class="flex gap-3 max-w-md mx-auto flex-wrap justify-center">
+        <input type="email" id="homeNewsletterEmail" placeholder="بريدك الإلكتروني"
+          class="flex-1 min-w-0 px-5 py-3 rounded-xl text-gray-900 font-medium outline-none text-sm"
+          style="min-width:200px"
+          onkeypress="if(event.key==='Enter')homeSubscribe()">
+        <button onclick="homeSubscribe()"
+          class="bg-white text-brand-700 font-black px-6 py-3 rounded-xl hover:bg-blue-50 transition whitespace-nowrap text-sm flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> اشتراك مجاني
+        </button>
+      </div>
+      <p id="homeNewsletterMsg" class="text-sm mt-4 font-bold text-green-300" style="display:none"></p>
+      <p class="text-blue-200 text-xs mt-4">بلا رسائل مزعجة — يمكنك إلغاء الاشتراك في أي وقت</p>
+    </div>
+  </section>
+
+  <!-- ── Trust Badges ───────────────────────────────────────────────────── -->
+  <section class="py-10 px-4 bg-white border-t border-gray-100">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-shield-halved text-green-600 text-xl"></i></div>
+          <span class="text-sm font-bold text-gray-700">ضمان استرداد كامل</span>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-lock text-blue-600 text-xl"></i></div>
+          <span class="text-sm font-bold text-gray-700">دفع آمن 100%</span>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-headset text-purple-600 text-xl"></i></div>
+          <span class="text-sm font-bold text-gray-700">دعم 7/24</span>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-star text-amber-600 text-xl"></i></div>
+          <span class="text-sm font-bold text-gray-700">تقييم 4.9/5</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ─── SERVICES ───────────────────────────────────────────── -->
+<div id="page-services" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Header & Search -->
+    <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
+      <h1 class="text-3xl font-black text-gray-900" data-i18n="services.title">الخدمات</h1>
+      <div class="flex gap-3 flex-1 max-w-xl">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-search absolute top-1/2 -translate-y-1/2 start-4 text-gray-400"></i>
+          <input type="text" id="servicesSearch" class="form-input ps-11 pe-4"
+            placeholder="ابحث عن خدمة..." data-i18n="services.search"
+            oninput="ServicesManager.search(this.value)">
+        </div>
+        <select id="servicesSort" class="form-input w-auto min-w-36" onchange="ServicesManager.sort(this.value)">
+          <option value="newest">الأحدث</option>
+          <option value="price_asc">السعر: الأقل</option>
+          <option value="price_desc">السعر: الأعلى</option>
+          <option value="rating">التقييم</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Category Pills -->
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-6">
+      <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
+      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎨 تصميم</button>
+      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">💻 برمجة</button>
+      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">📈 تسويق</button>
+      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">✍️ كتابة</button>
+      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎬 فيديو</button>
+      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🔍 SEO</button>
+    </div>
+
+    <div id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    <div id="servicesEmpty" class="hidden text-center py-20">
+      <i class="fa-solid fa-search text-gray-300 text-5xl mb-4"></i>
+      <p class="text-gray-400 font-bold text-xl">لا توجد خدمات</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CART (hidden — payment disabled) ────────────────────── -->
+<div id="page-cart" class="page" style="display:none"></div>
+
+<!-- ─── PAYMENT (hidden — payment disabled) ─────────────────── -->
+<div id="page-payment" class="page" style="display:none"></div>
+
+<!-- ─── ORDERS ──────────────────────────────────────────────── -->
+<div id="page-orders" class="page">
+  <!-- Rendered dynamically by initOrdersPage() -->
+</div>
+
+<!-- ─── WORKSPACE ───────────────────────────────────────────── -->
+<div id="page-workspace" class="page">
+  <!-- Rendered dynamically by openWorkspace() -->
+</div>
+
+<!-- ─── DASHBOARD ───────────────────────────────────────────── -->
+<div id="page-dashboard" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div id="dashboardContent"></div>
+  </div>
+</div>
+
+<!-- ─── LOGIN ───────────────────────────────────────────────── -->
+<div id="page-login" class="page">
+  <div class="min-h-[85vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-user-circle text-brand-600 text-2xl"></i>
+          </div>
+          <h1 class="text-2xl font-black text-gray-900" data-i18n="auth.login">تسجيل الدخول</h1>
+        </div>
+        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-brand-400 hover:bg-brand-50 transition mb-6">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span data-i18n="auth.google">متابعة بـ Google</span>
+        </button>
+        <div class="relative mb-6"><hr class="border-gray-200"><span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-gray-400 text-sm">أو</span></div>
+        <div class="space-y-4">
+          <input type="email"    id="loginEmail"    class="form-input" placeholder="البريد الإلكتروني" data-i18n="auth.email">
+          <input type="password" id="loginPassword" class="form-input" placeholder="كلمة المرور" data-i18n="auth.password">
+          <button onclick="AuthManager.loginWithEmail()" class="btn-primary w-full py-4" data-i18n="auth.login">تسجيل الدخول</button>
+        </div>
+        <div class="flex items-center justify-between mt-4 text-sm">
+          <button onclick="AuthManager.forgotPassword()" class="text-brand-600 hover:underline" data-i18n="auth.forgot">نسيت كلمة المرور؟</button>
+          <button onclick="navigateTo('register')" class="text-gray-500">
+            <span data-i18n="auth.no_account">ليس لديك حساب؟</span> <span class="text-brand-600 font-bold" data-i18n="auth.register">سجّل</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── REGISTER ─────────────────────────────────────────────── -->
+<div id="page-register" class="page">
+  <div class="min-h-[85vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-user-plus text-green-600 text-2xl"></i>
+          </div>
+          <h1 class="text-2xl font-black text-gray-900" data-i18n="auth.register">إنشاء حساب</h1>
+        </div>
+        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-brand-400 hover:bg-brand-50 transition mb-6">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span data-i18n="auth.google">متابعة بـ Google</span>
+        </button>
+        <div class="relative mb-6"><hr class="border-gray-200"><span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-gray-400 text-sm">أو</span></div>
+        <div class="space-y-4">
+          <input type="text"     id="registerName"     class="form-input" placeholder="الاسم الكامل" data-i18n="auth.name">
+          <input type="email"    id="registerEmail"    class="form-input" placeholder="البريد الإلكتروني" data-i18n="auth.email">
+          <input type="tel"      id="registerPhone"    class="form-input" placeholder="رقم الهاتف (اختياري)" data-i18n="auth.phone" dir="ltr">
+          <input type="password" id="registerPassword" class="form-input" placeholder="كلمة المرور (8 أحرف+)" data-i18n="auth.password">
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-brand-400 transition" id="roleBuyerLabel">
+              <input type="radio" name="role" value="buyer" class="accent-brand-600" checked>
+              <span class="text-sm font-bold">مشتري</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-brand-400 transition" id="roleSellerLabel">
+              <input type="radio" name="role" value="seller" class="accent-brand-600">
+              <span class="text-sm font-bold">بائع</span>
+            </label>
+          </div>
+          <button onclick="AuthManager.register()" class="btn-primary w-full py-4" data-i18n="auth.register">إنشاء الحساب</button>
+        </div>
+        <p class="text-center mt-4 text-sm text-gray-500">
+          <span data-i18n="auth.have_account">لديك حساب؟</span>
+          <button onclick="navigateTo('login')" class="text-brand-600 font-bold ms-1" data-i18n="auth.login">تسجيل الدخول</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PROFILE ──────────────────────────────────────────────── -->
+<div id="page-profile" class="page">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div id="profileContent"></div>
+  </div>
+</div>
+
+<!-- ─── WALLET ───────────────────────────────────────────────── -->
+<div id="page-wallet" class="page">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <div id="walletContent"></div>
+  </div>
+</div>
+
+<!-- ─── ADMIN ────────────────────────────────────────────────── -->
+<div id="page-admin" class="page" data-requires-role="admin">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-black text-gray-900 flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-brand-600 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-gauge text-white text-sm"></i>
+          </div>
+          لوحة التحكم
+        </h1>
+        <p class="text-gray-500 text-sm mt-1">إدارة المحتوى والـ SEO والذكاء الاصطناعي</p>
+      </div>
+      <button onclick="AdminAI.generateOne()" id="admin-gen-btn"
+        class="btn-primary text-sm flex items-center gap-2 px-5 py-3">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        توليد مقال AI الآن
+      </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="admin-stats">
+      <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-card">
+        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-newspaper text-blue-600"></i></div>
+        <p class="text-2xl font-black text-gray-900" id="stat-posts">—</p>
+        <p class="text-xs text-gray-500 mt-0.5">إجمالي المقالات</p>
+      </div>
+      <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-card">
+        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-robot text-purple-600"></i></div>
+        <p class="text-2xl font-black text-gray-900" id="stat-ai">—</p>
+        <p class="text-xs text-gray-500 mt-0.5">مُنشأة بـ AI</p>
+      </div>
+      <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-card">
+        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-eye text-green-600"></i></div>
+        <p class="text-2xl font-black text-gray-900" id="stat-views">—</p>
+        <p class="text-xs text-gray-500 mt-0.5">إجمالي المشاهدات</p>
+      </div>
+      <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-card">
+        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-check-circle text-amber-600"></i></div>
+        <p class="text-2xl font-black text-gray-900" id="stat-pub">—</p>
+        <p class="text-xs text-gray-500 mt-0.5">منشورة</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-1">
+      <button onclick="AdminAI.tab('posts',this)"  id="tab-posts-btn"  class="admin-tab-btn active flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-brand-600 text-white shadow-glow">
+        <i class="fa-solid fa-newspaper"></i> المقالات
+      </button>
+      <button onclick="AdminAI.tab('ai',this)"     id="tab-ai-btn"     class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-brand-400 transition">
+        <i class="fa-solid fa-robot"></i> <span class="flex items-center gap-1.5">توليد AI <span class="bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded-full">Admin</span></span>
+      </button>
+      <button onclick="AdminAI.tab('seo',this)"    id="tab-seo-btn"    class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-brand-400 transition">
+        <i class="fa-solid fa-magnifying-glass"></i> SEO
+      </button>
+    </div>
+
+    <!-- Tab: Posts -->
+    <div id="admin-tab-posts">
+      <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-card">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-black text-gray-900">المقالات</h3>
+          <span class="text-xs text-gray-400" id="posts-count-label">تحميل...</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="admin-posts-table">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-right px-4 py-3 font-bold text-gray-600">العنوان</th>
+                <th class="text-right px-4 py-3 font-bold text-gray-600 hidden sm:table-cell">التصنيف</th>
+                <th class="text-right px-4 py-3 font-bold text-gray-600">الحالة</th>
+                <th class="text-right px-4 py-3 font-bold text-gray-600 hidden md:table-cell">مشاهدات</th>
+                <th class="text-right px-4 py-3 font-bold text-gray-600">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="admin-posts-tbody">
+              <tr><td colspan="5" class="text-center py-10 text-gray-400">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: AI Generator -->
+    <div id="admin-tab-ai" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
+          <h3 class="font-black text-lg text-gray-900 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-purple-600"></i>
+            توليد مقال بالذكاء الاصطناعي
+          </h3>
+          <p class="text-sm text-gray-500 mb-5">يستخدم Gemini 1.5 Flash أو GPT-4o-mini — مقال SEO كامل 1500-2000 كلمة</p>
+
+          <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-600 mb-1.5">موضوع مخصص (اختياري)</label>
+            <input type="text" id="ai-topic-input" placeholder="مثال: أفضل أدوات التسويق 2025"
+              class="form-input text-sm" />
+            <p class="text-xs text-gray-400 mt-1">اتركه فارغاً لاختيار موضوع تلقائي</p>
+          </div>
+
+          <div class="mb-5">
+            <label class="block text-xs font-bold text-gray-600 mb-1.5">عدد المقالات (للتوليد الجماعي)</label>
+            <select id="ai-count-select" class="form-input text-sm">
+              <option value="1">مقال واحد</option>
+              <option value="2">2 مقالات</option>
+              <option value="3">3 مقالات</option>
+              <option value="5">5 مقالات</option>
+            </select>
+          </div>
+
+          <button onclick="AdminAI.generate()" id="ai-gen-btn"
+            class="btn-primary w-full py-3.5 text-sm mb-3">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span id="ai-gen-btn-text">ابدأ التوليد</span>
+          </button>
+
+          <div id="ai-result" class="hidden rounded-xl p-4 text-sm font-medium"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
+          <h3 class="font-black text-lg text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-list text-brand-600"></i>
+            بنك المواضيع
+          </h3>
+          <p class="text-xs text-gray-500 mb-4">انقر على أي موضوع لاستخدامه:</p>
+          <div class="flex flex-wrap gap-2" id="topics-bank">
+            <div class="text-gray-400 text-sm">جاري التحميل...</div>
+          </div>
+
+          <div class="mt-5 p-4 bg-purple-50 border border-purple-100 rounded-xl">
+            <p class="text-sm font-bold text-purple-800 flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-clock"></i> نشر تلقائي يومي
+            </p>
+            <p class="text-xs text-purple-600">يتم توليد 2 مقالات تلقائياً كل يوم الساعة 9 صباحاً (القاهرة) ونشرها مباشرة.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: SEO -->
+    <div id="admin-tab-seo" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
+          <h3 class="font-black text-lg text-gray-900 mb-5 flex items-center gap-2">
+            <i class="fa-solid fa-sitemap text-brand-600"></i> أدوات SEO
+          </h3>
+          <div class="space-y-3">
+            <a href="/sitemap.xml" target="_blank"
+              class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
+              <i class="fa-solid fa-sitemap text-brand-500 w-5"></i>
+              <span class="text-sm font-medium flex-1">Sitemap XML ثابت</span>
+              <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
+            </a>
+            <a href="/.netlify/functions/sitemap-dynamic" target="_blank"
+              class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
+              <i class="fa-solid fa-bolt text-purple-500 w-5"></i>
+              <span class="text-sm font-medium flex-1">Sitemap ديناميكي (Firestore)</span>
+              <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
+            </a>
+            <a href="/robots.txt" target="_blank"
+              class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
+              <i class="fa-solid fa-robot text-gray-500 w-5"></i>
+              <span class="text-sm font-medium flex-1">robots.txt</span>
+              <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
+            </a>
+            <a href="https://search.google.com/search-console" target="_blank" rel="noopener"
+              class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
+              <i class="fa-brands fa-google text-red-500 w-5"></i>
+              <span class="text-sm font-medium flex-1">Google Search Console</span>
+              <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
+          <h3 class="font-black text-lg text-gray-900 mb-5 flex items-center gap-2">
+            <i class="fa-solid fa-check-circle text-green-500"></i> قائمة تدقيق SEO
+          </h3>
+          <div class="space-y-2" id="seo-checklist">
+            <div class="text-gray-400 text-sm">جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="adminContent"></div>
+  </div>
+</div>
+
+<!-- ─── SELLER PANEL ─────────────────────────────────────────── -->
+<div id="page-seller" class="page">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div id="sellerContent">
+      <!-- Same as seller dashboard -->
+    </div>
+  </div>
+</div>
+
+<!-- ─── ADD SERVICE ──────────────────────────────────────────── -->
+<div id="page-add-service" class="page">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div id="addServiceContent">
+      <div class="text-center py-12">
+        <div class="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <i class="fa-solid fa-layer-group text-brand-600 text-2xl"></i>
+        </div>
+        <p class="text-gray-400">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     GLOBAL UI COMPONENTS
+══════════════════════════════════════════════════════════════ -->
+
+<!-- Service Detail Modal -->
+<div id="serviceModal" class="modal" onclick="if(event.target===this)closeModal('serviceModal')">
+  <div class="modal-content max-w-3xl">
+    <div id="serviceModalContent"></div>
+  </div>
+</div>
+
+<!-- ─── REQUEST SERVICE MODAL ────────────────────────────────── -->
+<div id="requestServiceModal" class="modal" onclick="if(event.target===this)closeModal('requestServiceModal')">
+  <div class="modal-content max-w-lg">
+    <div class="p-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl font-black text-gray-900">طلب الخدمة</h2>
+          <p id="requestServiceName" class="text-sm text-brand-600 font-bold mt-0.5"></p>
+        </div>
+        <button onclick="closeModal('requestServiceModal')"
+          class="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-200 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Info box -->
+      <div class="bg-brand-50 border border-brand-200 rounded-2xl p-4 mb-5 flex gap-3">
+        <i class="fa-solid fa-circle-info text-brand-600 text-lg flex-shrink-0 mt-0.5"></i>
+        <p class="text-sm text-brand-800 leading-relaxed">
+          اكتب تفاصيل ما تحتاجه وسيصل طلبك مباشرةً لمقدم الخدمة، ثم تنطلق المحادثة بينكما فوراً.
+        </p>
+      </div>
+
+      <!-- Form -->
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-black text-gray-700 mb-2">تفاصيل الطلب <span class="text-red-500">*</span></label>
+          <textarea id="requestDetails" rows="4"
+            class="form-input w-full resize-none text-sm"
+            placeholder="صف ما تحتاجه بالتفصيل... (الهدف، المخرجات المطلوبة، أي ملاحظات مهمة)"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-black text-gray-700 mb-2">الميعاد المطلوب (اختياري)</label>
+          <input type="text" id="requestDeadline"
+            class="form-input w-full text-sm"
+            placeholder="مثال: خلال أسبوع، بحلول نهاية الشهر...">
+        </div>
+        <div>
+          <label class="block text-sm font-black text-gray-700 mb-2">ميزانيتك المتوقعة (اختياري)</label>
+          <input type="text" id="requestBudget"
+            class="form-input w-full text-sm"
+            placeholder="مثال: 500 جنيه، أو حسب الاتفاق">
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 mt-6">
+        <button onclick="closeModal('requestServiceModal')"
+          class="flex-1 btn-secondary py-3">إلغاء</button>
+        <button onclick="RequestSystem.submitRequest()"
+          id="submitRequestBtn"
+          class="flex-1 btn-primary py-3 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          إرسال الطلب وبدء المحادثة
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global Toast -->
+<div id="globalToast" class="toast"></div>
+
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-50 pb-safe">
+  <div class="flex items-center justify-around py-2">
+    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="home">
+      <i class="fa-solid fa-home text-lg"></i><span class="text-xs font-bold" data-i18n="nav.home">الرئيسية</span>
+    </button>
+    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="services">
+      <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-xs font-bold" data-i18n="nav.services">الخدمات</span>
+    </button>
+    <!-- Cart hidden -->
+    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="orders">
+      <i class="fa-solid fa-receipt text-lg"></i><span class="text-xs font-bold" data-i18n="nav.orders">طلباتي</span>
+    </button>
+    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition">
+      <i class="fa-solid fa-user text-lg"></i><span class="text-xs font-bold">حسابي</span>
+    </button>
+  </div>
+</nav>
+<div class="h-20 md:hidden"></div><!-- Spacer for bottom nav -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPTS — Load order matters!
+══════════════════════════════════════════════════════════════ -->
+
+<!-- 1. Firebase Config — Single source of truth, multi-domain support -->
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  FIREBASE INIT v4.0
+//  • authDomain = project's own .firebaseapp.com  (NEVER a netlify domain)
+//  • Authorized Domains in Firebase Console must include:
+//      mall-services2.netlify.app
+//      services-mall1.netlify.app
+//  • Google Cloud OAuth must include both domains in origins + redirect URIs:
+//      https://mall-services2.netlify.app/__/auth/handler
+//      https://services-mall1.netlify.app/__/auth/handler
+// ══════════════════════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyDfWKWN5CTlBA-krEMXsmYmaI8j7fyuw20",
+    authDomain:        "services-mall.firebaseapp.com",   // ← الصحيح دائماً
+    databaseURL:       "https://services-mall-default-rtdb.firebaseio.com",
+    projectId:         "services-mall",
+    storageBucket:     "services-mall.firebasestorage.app",
+    messagingSenderId: "20174208068",
+    appId:             "1:20174208068:web:382ece0ff09fa9be815011",
+    measurementId:     "G-20SMHQMQ1G",
+};
+
+// Guard: prevent duplicate init if script ever runs twice
+if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+} else {
+    console.warn('[Firebase] App already initialized — skipping duplicate init');
+}
+
+const auth    = firebase.auth();
+const db      = firebase.firestore();
+const storage = firebase.storage();
+
+// Google provider — no hardcoded domain, works on any authorized domain
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({
+    prompt: 'select_account',   // always show account picker
+    // NOTE: do NOT set client_id here — Firebase manages OAuth internally
+    // Setting it forces a specific OAuth client that may not have all domains authorized
+});
+
+window.auth           = auth;
+window.db             = db;
+window.storage        = storage;
+window.firebase       = firebase;
+window.googleProvider = googleProvider;
+
+// Enable offline persistence
+db.enablePersistence({ synchronizeTabs: true })
+  .catch(e => { if (!['failed-precondition','unimplemented'].includes(e.code)) console.warn('[Firebase]', e.code); });
+
+console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
+</script>
+
+<!-- 2. Constants & Utilities -->
+<script src="js/constants.js"></script>
+
+<script>
+// Load live platform settings BEFORE any page renders
+// PLATFORM object is defined in constants.js — this merges Firestore values into it
+(async () => { try { await loadPlatformSettings(); } catch(e) {} })();
+</script>
+
+<!-- 3. i18n -->
+<script src="js/i18n.js"></script>
+
+<!-- 4. Payment System -->
+<script src="js/request-system.js"></script>
+
+<!-- 5. Escrow -->
+<script src="js/escrow.js"></script>
+
+<!-- 6. Orders Manager -->
+<script src="js/orders.js"></script>
+
+<!-- 7. Order Workspace (chat + delivery) -->
+<script src="js/order-workspace.js"></script>
+
+<!-- 7b. Dedicated Chat Module -->
+<script src="js/chat.js"></script>
+
+<!-- 7c. Blog Engine (Firestore-powered blog) -->
+<script src="js/blog-engine.js"></script>
+
+<!-- 8. Auth -->
+<script src="js/auth.js"></script>
+
+<!-- 9. Services -->
+<script src="js/services.js"></script>
+
+<!-- 10. Notifications -->
+<script src="js/notifications.js"></script>
+
+<!-- 11. Dashboard -->
+<script src="js/dashboard.js"></script>
+
+<!-- 11b. Seller Dashboard Module -->
+<script src="js/seller-dashboard.js"></script>
+
+<!-- 12. App Init -->
+<script>
+(function() {
+    'use strict';
+
+    // ── Cart Renderer ─────────────────────────────────────────────────────────
+    function renderCart() {
+        const container = document.getElementById('cartItems');
+        const empty     = document.getElementById('cartEmpty');
+        const summary   = document.getElementById('cartSummary');
+        const checkBtn  = document.getElementById('cartCheckoutBtn');
+        if (!container) return;
+
+        const cart = AppState.cart || [];
+
+        if (cart.length === 0) {
+            container.innerHTML = '';
+            if (empty)   empty.classList.remove('hidden');
+            if (checkBtn) checkBtn.disabled = true;
+            if (summary) summary.innerHTML = '';
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+        if (checkBtn) checkBtn.disabled = false;
+
+        const isAr = AppState.language !== 'en';
+        container.innerHTML = cart.map((item, idx) => `
+          <div class="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 hover:border-brand-300 transition cart-item" data-id="${item.id}">
+            <img src="${item.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
+              class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+              onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+            <div class="flex-1 min-w-0">
+              <h3 class="font-black text-gray-900 truncate">${item.title || '—'}</h3>
+              <p class="text-sm text-gray-500 mt-0.5">${item.sellerName || ''}</p>
+              <p class="text-brand-700 font-black text-lg mt-2">${formatCurrency(item.price || 0)}</p>
+            </div>
+            <button onclick="removeFromCart('${item.id}')"
+              class="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition flex-shrink-0 self-start">
+              <i class="fa-solid fa-trash text-sm"></i>
+            </button>
+          </div>
+        `).join('');
+
+        // Update summary
+        const { subtotal, fees, total } = getCartTotals();
+        if (summary) {
+            summary.innerHTML = `
+              <div class="flex justify-between text-sm text-gray-600">
+                <span data-i18n="cart.subtotal">${t('cart.subtotal')}</span>
+                <span class="font-bold">${formatCurrency(subtotal)}</span>
+              </div>
+              <div class="flex justify-between text-sm text-gray-600">
+                <span>${t('cart.fees')} (${PLATFORM.FEE_PERCENT}%)</span>
+                <span class="font-bold">${formatCurrency(fees)}</span>
+              </div>
+              <hr class="border-gray-100">
+              <div class="flex justify-between text-lg font-black text-brand-700">
+                <span data-i18n="cart.total">${t('cart.total')}</span>
+                <span>${formatCurrency(total)}</span>
+              </div>`;
+        }
+        updateCartCount();
+    }
+
+    // ── UI Event Handlers ─────────────────────────────────────────────────────
+    window.toggleUserMenu = function() {
+        document.getElementById('userDropdown')?.classList.toggle('active');
+    };
+    window.toggleMobileMenu = function() {
+        document.getElementById('mobileMenu')?.classList.toggle('hidden');
+    };
+    window.toggleNotifDropdown = function() {
+        document.getElementById('notifDropdown')?.classList.toggle('hidden');
+    };
+    window.markAllNotifsRead = async function() {
+        const user = AppState.currentUser;
+        if (!user) return;
+        try {
+            const snap = await db.collection(COLLECTIONS.NOTIFICATIONS)
+                .where('userId','==',user.uid).where('read','==',false).get();
+            const batch = db.batch();
+            snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+            await batch.commit();
+        } catch (_) {}
+    };
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#userMenuWrap'))     document.getElementById('userDropdown')?.classList.remove('active');
+        if (!e.target.closest('#currencyToggle') && !e.target.closest('#currencyMenu')) document.getElementById('currencyMenu')?.classList.remove('active');
+        if (!e.target.closest('#notifBtn') && !e.target.closest('#notifDropdown')) document.getElementById('notifDropdown')?.classList.add('hidden');
+        if (!e.target.closest('nav') && !e.target.closest('#mobileMenu')) document.getElementById('mobileMenu')?.classList.add('hidden');
+    });
+
+    // ── Hash-based routing ────────────────────────────────────────────────────
+    function handleHash() {
+        const hash = window.location.hash.replace('#','') || 'home';
+        const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service'];
+        if (validPages.includes(hash)) navigateTo(hash);
+    }
+    window.addEventListener('popstate', handleHash);
+
+    // ── Featured Services Loader ──────────────────────────────────────────────
+    async function loadFeaturedServices() {
+        try {
+            const snap = await db.collection(COLLECTIONS.SERVICES)
+                .where('active','==',true)
+                .where('featured','==',true)
+                .limit(8).get();
+
+            const container = document.getElementById('featuredServices');
+            if (!container) return;
+
+            if (snap.empty) {
+                // Load any active services
+                const allSnap = await db.collection(COLLECTIONS.SERVICES)
+                    .where('active','==',true).limit(8).get();
+                if (allSnap.empty) { container.innerHTML = `<p class="text-gray-400 col-span-4 text-center py-8">لا توجد خدمات بعد</p>`; return; }
+                _renderFeaturedCards(allSnap.docs, container);
+            } else {
+                _renderFeaturedCards(snap.docs, container);
+            }
+        } catch (err) {
+            console.warn('[Featured] Error:', err.message);
+        }
+    }
+
+    function _renderFeaturedCards(docs, container) {
+        const isAr = AppState.language !== 'en';
+        container.innerHTML = docs.map(doc => {
+            const s = { id: doc.id, ...doc.data() };
+            const stars = Math.round(s.rating || 5);
+            return `
+            <div class="service-card card cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
+              <div class="relative">
+                <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
+                  class="w-full h-48 object-cover"
+                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
+                ${s.featured ? '<span class="absolute top-3 start-3 bg-brand-600 text-white text-xs font-bold px-2 py-1 rounded-lg">⭐ مميز</span>' : ''}
+              </div>
+              <div class="p-4">
+                <div class="flex items-center gap-2 mb-2">
+                  <img src="${s.sellerAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.sellerName||'U')}"
+                    class="w-6 h-6 rounded-full object-cover">
+                  <span class="text-xs text-gray-500 font-bold">${s.sellerName || '—'}</span>
+                </div>
+                <h3 class="font-black text-gray-900 text-sm mb-2 line-clamp-2 leading-snug">${s.title || '—'}</h3>
+                <div class="flex items-center gap-1 mb-3">
+                  ${Array.from({length:5},(_,i)=>`<i class="fa-solid fa-star text-xs ${i<stars?'text-yellow-400':'text-gray-200'}"></i>`).join('')}
+                  <span class="text-xs text-gray-400">(${s.reviewCount||0})</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-black text-brand-700" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
+                  <button onclick="event.stopPropagation();RequestSystem.openRequestModal({id:'${s.id}',title:${JSON.stringify(s.title||'')},price:${s.price||0},image:${JSON.stringify(s.image||'')},sellerId:'${s.sellerId||''}',sellerName:${JSON.stringify(s.sellerName||'')},deliveryDays:${s.deliveryDays||3}})"
+                    class="bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-brand-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-paper-plane"></i>${isAr?'طلب':'Request'}
+                  </button>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+    }
+
+    window.filterByCategory = function(cat) {
+        AppState.filterCategory = cat;
+        navigateTo('services');
+        setTimeout(() => {
+            if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
+        }, 100);
+    };
+
+    // ── Auth State Observer ───────────────────────────────────────────────────
+    // Track if this is the first auth state change (page load)
+    let _authFirstRun = true;
+
+    auth.onAuthStateChanged(async (user) => {
+        const isFirstRun = _authFirstRun;
+        _authFirstRun = false;
+
+        if (user) {
+            try {
+                // Ensure user doc exists
+                if (typeof window._ensureUserDoc === 'function') {
+                    await window._ensureUserDoc(user);
+                }
+
+                const snap    = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
+                const profile = snap.data() || {};
+
+                AppState.currentUser = {
+                    uid:           user.uid,
+                    email:         user.email,
+                    displayName:   profile.name   || user.displayName || (user.email||'').split('@')[0],
+                    photoURL:      profile.avatar  || user.photoURL   || '',
+                    phone:         profile.phone   || user.phoneNumber || '',
+                    role:          profile.role    || 'buyer',
+                    acceptedTerms: profile.acceptedTerms || false,
+                };
+
+                // Wallet listener — delayed to avoid permission-denied race condition
+                setTimeout(() => {
+                    db.collection(COLLECTIONS.WALLET).doc(user.uid).onSnapshot(
+                        snap => { if (snap.exists) AppState.wallet = snap.data(); },
+                        err  => {
+                            if (err.code !== 'permission-denied') {
+                                console.warn('[Wallet] listener:', err.code);
+                            }
+                        }
+                    );
+                }, 1500);
+
+                _updateNavForUser(AppState.currentUser);
+                _startNotifListener(user.uid);
+                updateCartCount();
+
+                // Navigate home on first load if no hash in URL
+                if (isFirstRun && !window.location.hash) {
+                    navigateTo('home');
+                }
+
+                // Show Terms modal if not accepted
+                if (!AppState.currentUser.acceptedTerms) {
+                    setTimeout(_showTermsModal, 500);
+                }
+
+            } catch (err) {
+                console.warn('[Auth] Profile load error:', err.code || err.message);
+                AppState.currentUser = {
+                    uid: user.uid, email: user.email,
+                    displayName: user.displayName || 'User',
+                    photoURL: user.photoURL || '',
+                    role: 'buyer', acceptedTerms: false,
+                };
+                _updateNavForUser(AppState.currentUser);
+                if (!window.location.hash) navigateTo('home');
+            }
+        } else {
+            AppState.currentUser = null;
+            _updateNavForGuest();
+        }
+
+        // ── Hide loading screen ──
+        const loadingScreen = document.getElementById('appLoadingScreen');
+        if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => loadingScreen.remove(), 600);
+        }
+    });
+
+    function _updateNavForUser(user) {
+        document.getElementById('guestButtons')?.classList.add('hidden');
+        document.getElementById('userMenuWrap')?.classList.remove('hidden');
+        document.getElementById('notifBtn')?.classList.remove('hidden');
+
+        const navName = document.getElementById('navName');
+        if (navName) navName.textContent = user.displayName?.split(' ')[0] || '';
+
+        const navAvatar = document.getElementById('navAvatar');
+        if (navAvatar) { navAvatar.src = user.photoURL || ''; navAvatar.onerror = () => navAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'U')}&background=0284c7&color=fff`; }
+
+        const adminBtn = document.getElementById('adminNavBtn');
+        if (adminBtn) adminBtn.classList.toggle('hidden', user.role !== 'admin');
+    }
+
+    function _updateNavForGuest() {
+        document.getElementById('guestButtons')?.classList.remove('hidden');
+        document.getElementById('userMenuWrap')?.classList.add('hidden');
+        document.getElementById('notifBtn')?.classList.add('hidden');
+    }
+
+    // ── Terms Modal ───────────────────────────────────────────────────────────
+    function _showTermsModal() {
+        if (document.getElementById('termsModal')) return;
+        const isAr = AppState.language !== 'en';
+        const modal = document.createElement('div');
+        modal.id = 'termsModal';
+        modal.innerHTML = `
+          <div class="terms-box">
+            <div class="sticky top-0 bg-white border-b border-gray-100 p-6 rounded-t-3xl">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-brand-100 rounded-2xl flex items-center justify-center">
+                  <i class="fa-solid fa-shield-check text-brand-600 text-xl"></i>
+                </div>
+                <div>
+                  <h2 class="font-black text-gray-900 text-lg">${isAr ? 'الشروط والأحكام' : 'Terms & Conditions'}</h2>
+                  <p class="text-gray-500 text-sm">${isAr ? 'يرجى قراءة الشروط قبل الاستخدام' : 'Please read before using the platform'}</p>
+                </div>
+              </div>
+            </div>
+            <div class="p-6 space-y-5 text-sm text-gray-700 leading-relaxed">
+              <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <h3 class="font-black text-blue-800 mb-2 flex items-center gap-2">
+                  <i class="fa-solid fa-store"></i> ${isAr ? 'دور المنصة' : 'Platform Role'}
+                </h3>
+                <p>${isAr
+                  ? 'مول الخدمات وسيط بين البائعين والمشترين فقط. المنصة ليست طرفاً في أي اتفاقية خدمة بين المستخدمين.'
+                  : 'Mall Services acts as an intermediary between buyers and sellers only. The platform is not a party to any service agreement between users.'
+                }</p>
+              </div>
+              <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+                <h3 class="font-black text-orange-800 mb-2 flex items-center gap-2">
+                  <i class="fa-solid fa-credit-card"></i> ${isAr ? 'سياسة الدفع والاسترداد' : 'Payment & Refund Policy'}
+                </h3>
+                <ul class="space-y-2 list-none">
+                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-green-500 mt-0.5 flex-shrink-0"></i><span>${isAr ? 'يتم تحويل المبلغ لحساب الضمان (Escrow) فور الدفع.' : 'Payment is transferred to escrow immediately upon checkout.'}</span></li>
+                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-green-500 mt-0.5 flex-shrink-0"></i><span>${isAr ? 'يمكن طلب الاسترداد قبل بدء تنفيذ الخدمة.' : 'Refunds can be requested before service delivery begins.'}</span></li>
+                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-xmark text-red-500 mt-0.5 flex-shrink-0"></i><span>${isAr ? 'لا يمكن الاسترداد بعد تسليم الخدمة واعتماد المشتري للتسليم.' : 'No refunds after service delivery is confirmed by the buyer.'}</span></li>
+                  <li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-green-500 mt-0.5 flex-shrink-0"></i><span>${isAr ? 'يحق للمشتري رفع نزاع خلال 7 أيام من التسليم.' : 'Buyers may raise a dispute within 7 days of delivery.'}</span></li>
+                </ul>
+              </div>
+              <div class="bg-purple-50 border border-purple-200 rounded-2xl p-4">
+                <h3 class="font-black text-purple-800 mb-2 flex items-center gap-2">
+                  <i class="fa-solid fa-user-shield"></i> ${isAr ? 'مسؤولية المستخدم' : 'User Responsibility'}
+                </h3>
+                <p>${isAr
+                  ? 'المستخدم مسؤول عن دقة المعلومات المقدمة واحترام شروط الخدمة. يُحظر نشر محتوى غير قانوني أو مضلل.'
+                  : 'Users are responsible for the accuracy of information provided and compliance with service terms. Illegal or misleading content is prohibited.'
+                }</p>
+              </div>
+              <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+                <h3 class="font-black text-green-800 mb-2 flex items-center gap-2">
+                  <i class="fa-solid fa-lock"></i> ${isAr ? 'الخصوصية والأمان' : 'Privacy & Security'}
+                </h3>
+                <p>${isAr
+                  ? 'نحن نحمي بياناتك وفقاً لأعلى معايير الأمان. لن يتم مشاركة بياناتك مع أطراف ثالثة بدون موافقتك.'
+                  : 'We protect your data according to the highest security standards. Your data will not be shared with third parties without your consent.'
+                }</p>
+              </div>
+            </div>
+            <div class="sticky bottom-0 bg-white border-t border-gray-100 p-6 rounded-b-3xl space-y-3">
+              <button onclick="if(window.AuthManager&&AuthManager.acceptTerms){AuthManager.acceptTerms()}else{document.getElementById('termsModal').remove()}"
+                class="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-800 text-white rounded-2xl font-black text-base shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-check-circle"></i>
+                ${isAr ? 'أوافق على الشروط والأحكام' : 'I Accept the Terms & Conditions'}
+              </button>
+              <button onclick="AuthManager.logout()"
+                class="w-full py-3 text-gray-500 font-bold border-2 border-gray-200 rounded-2xl hover:bg-gray-50 transition text-sm">
+                ${isAr ? 'تسجيل الخروج' : 'Sign Out'}
+              </button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+    }
+
+    function _startNotifListener(uid) {
+        if (typeof NotificationsManager !== 'undefined') {
+            NotificationsManager.startListener(uid);
+            return;
+        }
+        // Fallback if notifications.js not loaded yet
+        db.collection(COLLECTIONS.NOTIFICATIONS)
+            .where('userId','==',uid).where('read','==',false)
+            .orderBy('createdAt','desc').limit(20)
+            .onSnapshot(snap => {
+                const count = snap.size;
+                document.querySelectorAll('[data-notif-count]').forEach(el => {
+                    el.textContent = count;
+                    el.classList.toggle('hidden', count === 0);
+                });
+
+                const list = document.getElementById('notifList');
+                if (!list) return;
+                if (snap.empty) { list.innerHTML = '<p class="text-center text-gray-400 text-sm py-8">لا توجد إشعارات</p>'; return; }
+
+                list.innerHTML = snap.docs.map(doc => {
+                    const n = doc.data();
+                    return `
+                    <div class="px-4 py-3 hover:bg-gray-50 transition cursor-pointer" onclick="if('${n.orderId}')openWorkspace('${n.orderId}');toggleNotifDropdown()">
+                      <p class="text-sm font-bold text-gray-900">${n.title || ''}</p>
+                      <p class="text-xs text-gray-500 mt-0.5">${n.message || ''}</p>
+                      <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(n.createdAt)}</p>
+                    </div>`;
+                }).join('');
+            }, err => { if (err.code !== 'failed-precondition') console.warn('[Notif]', err.code); });
+    }
+
+    // ── App Start ─────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        // Expose renderCart globally
+        window.renderCart = renderCart;
+
+        // Handle Google sign-in redirect result (fires after returning from Google)
+        if (window.AuthManager && typeof AuthManager.handleGoogleRedirectResult === 'function') {
+            AuthManager.handleGoogleRedirectResult();
+        }
+
+        // Start on home
+        handleHash();
+        if (!window.location.hash) navigateTo('home');
+
+        // Load featured services after short delay
+        setTimeout(loadFeaturedServices, 500);
+
+        // Initial cart render
+        renderCart();
+        updateCartCount();
+
+        console.log('✅ Mall Services v3.0 ready — Chat | Firebase | Paymob | Google Auth');
+
+        // ── Newsletter subscription ──────────────────────────────────────────
+        window.homeSubscribe = function() {
+          const email = document.getElementById('homeNewsletterEmail')?.value?.trim();
+          const msg   = document.getElementById('homeNewsletterMsg');
+          if (!email || !email.includes('@')) {
+            if(msg){msg.style.color='#fca5a5';msg.textContent='يرجى إدخال بريد صحيح';msg.style.display='block';}
+            return;
+          }
+          if(msg){msg.style.color='#86efac';msg.textContent='✅ تم الاشتراك بنجاح! شكراً';msg.style.display='block';}
+          document.getElementById('homeNewsletterEmail').value='';
+          // Save subscriber to Firestore
+          if(window.db){
+            window.db.collection('newsletter_subscribers').add({
+              email, createdAt: firebase.firestore.FieldValue.serverTimestamp(), source:'homepage'
+            }).catch(()=>{});
+          }
+          if(window.trackEvent) trackEvent('newsletter_subscribe','engagement','homepage');
+        };
+
+        // ── Load blog posts on homepage ──────────────────────────────────────
+        // Called when page-home becomes visible
+        const _origNavigateHome = window.navigateTo;
+        // Load homepage blog on first render
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            if (window.BlogEngine && window.db && document.getElementById('home-blog-grid')) {
+              BlogEngine.renderBlogList('home-blog-grid', { limit: 3 });
+            }
+          }, 800);
+        });
+
+        window.navigateTo = function(page) {
+          // ── Guard: admin page is admin-only ──────────────────────────────
+          if (page === 'admin') {
+            if (!AppState.currentUser || AppState.currentUser.role !== 'admin') {
+              var isAr = AppState.language !== 'en';
+              showToast(isAr ? '🚫 هذه الصفحة للمسؤولين فقط' : '🚫 Admin access only', 'error');
+              return; // block navigation entirely
+            }
+          }
+          _origNavigateHome(page);
+          if (page === 'home' && window.BlogEngine && window.db) {
+            setTimeout(() => BlogEngine.renderBlogList('home-blog-grid', { limit: 3 }), 300);
+          }
+          if (page === 'admin' && AppState.currentUser && AppState.currentUser.role === 'admin') {
+            setTimeout(() => { if(window.AdminAI) AdminAI.loadPosts(); }, 200);
+          }
+        };
+
+        // ── Admin AI Module ──────────────────────────────────────────────────
+        window.AdminAI = (function() {
+          var self = {
+            _activeTab: 'posts',
+
+            // ── Admin token fetch helper ────────────────────────────────────
+            _fetchAI: async function(body) {
+              // The ADMIN_SECRET header is optional — Netlify function skips check if ADMIN_SECRET env is not set
+              var headers = { 'Content-Type': 'application/json' };
+              // Pass uid as a lightweight token so the function can log admin identity
+              if (window.AppState && window.AppState.currentUser) {
+                headers['X-Admin-Token'] = window.AppState.currentUser.uid;
+              }
+              var res = await fetch('/.netlify/functions/ai-generate', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(body),
+              });
+              return res.json();
+            },
+
+            tab: function(name, btn) {
+              ['posts','ai','seo'].forEach(function(t) {
+                var panel = document.getElementById('admin-tab-'+t);
+                var b     = document.getElementById('tab-'+t+'-btn');
+                if (panel) panel.classList.toggle('hidden', t !== name);
+                if (b) {
+                  b.classList.toggle('bg-brand-600',   t === name);
+                  b.classList.toggle('text-white',     t === name);
+                  b.classList.toggle('shadow-glow',    t === name);
+                  b.classList.toggle('bg-white',       t !== name);
+                  b.classList.toggle('text-gray-600',  t !== name);
+                  b.classList.toggle('border',         t !== name);
+                  b.classList.toggle('border-gray-200',t !== name);
+                }
+              });
+              self._activeTab = name;
+              if (name === 'posts') self.loadPosts();
+              if (name === 'ai')    self.loadTopics();
+              if (name === 'seo')   self.renderSEOChecklist();
+            },
+
+            loadPosts: async function() {
+              if (!window.db) return;
+              var tbody = document.getElementById('admin-posts-tbody');
+              var label = document.getElementById('posts-count-label');
+              if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</td></tr>';
+              try {
+                var snap = await window.db.collection('blog_posts').orderBy('createdAt','desc').limit(60).get();
+                var all  = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+                var statPosts = document.getElementById('stat-posts');
+                var statAi    = document.getElementById('stat-ai');
+                var statViews = document.getElementById('stat-views');
+                var statPub   = document.getElementById('stat-pub');
+                if (statPosts) statPosts.textContent = all.length;
+                if (statAi)    statAi.textContent    = all.filter(function(p){ return p.aiGenerated; }).length;
+                if (statViews) statViews.textContent = all.reduce(function(s,p){ return s+(p.views||0); },0).toLocaleString('ar-EG');
+                if (statPub)   statPub.textContent   = all.filter(function(p){ return p.published; }).length;
+                if (label) label.textContent = all.length + ' مقال';
+                if (!tbody) return;
+                if (all.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="5" class="text-center py-12 text-gray-400">لا توجد مقالات — ولّد أول مقال من تبويب AI</td></tr>';
+                  return;
+                }
+                // rows built via DOM
+                all.forEach(function(p) {
+                  var pubClass = p.published
+                    ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700';
+                  var pubLabel = p.published ? '✅ منشور' : '⏸ موقوف';
+                  var safeTitle = (p.title||'').slice(0,20).replace(/'/g,'');
+                  // Use data attributes to avoid quote nesting issues
+                  var tr = document.createElement('tr');
+                  tr.className = 'hover:bg-gray-50 transition border-b border-gray-50';
+                  tr.innerHTML = '<td class="px-4 py-3 max-w-xs"><p class="font-bold text-gray-900 text-sm truncate">' + (p.title||'') + '</p><p class="text-xs text-gray-400 font-mono">' + (p.slug||'').slice(0,28) + '</p></td>'
+                    + '<td class="px-4 py-3 hidden sm:table-cell"><span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full">' + (p.category||'').replace(/-/g,' ') + '</span></td>'
+                    + '<td class="px-4 py-3"><button data-id="' + p.id + '" data-pub="' + (!p.published) + '" data-title="' + safeTitle + '" class="admin-toggle-pub text-xs font-bold px-3 py-1 rounded-full transition ' + pubClass + '">' + pubLabel + '</button></td>'
+                    + '<td class="px-4 py-3 hidden md:table-cell text-gray-500 font-mono text-sm">' + ((p.views||0).toLocaleString()) + '</td>'
+                    + '<td class="px-4 py-3"><div class="flex gap-2"><a href="/blog/' + p.slug + '" target="_blank" class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition" title="عرض"><i class="fa-solid fa-eye text-xs"></i></a>'
+                    + '<button data-del-id="' + p.id + '" class="admin-del-post w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-100 transition" title="حذف"><i class="fa-solid fa-trash text-xs"></i></button></div></td>';
+                  tbody.appendChild(tr);
+                });
+                // Event delegation for toggle/delete buttons
+                tbody.addEventListener('click', function(e) {
+                  var toggleBtn = e.target.closest('.admin-toggle-pub');
+                  var deleteBtn = e.target.closest('.admin-del-post');
+                  if (toggleBtn) {
+                    window.AdminAI.togglePublish(toggleBtn.dataset.id, toggleBtn.dataset.pub === 'true', toggleBtn.dataset.title);
+                  }
+                  if (deleteBtn) {
+                    window.AdminAI.deletePost(deleteBtn.dataset.delId);
+                  }
+                });
+              } catch(err) {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-400">خطأ: '+err.message+'</td></tr>';
+              }
+            },
+
+            togglePublish: async function(id, newVal, title) {
+              try {
+                await window.db.collection('blog_posts').doc(id).update({
+                  published: newVal,
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast((newVal ? '✅ تم نشر ' : '⏸ تم إيقاف ') + '"' + title + '"', newVal ? 'success' : 'info');
+                self.loadPosts();
+              } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+            },
+
+            deletePost: async function(id) {
+              if (!confirm('حذف هذا المقال نهائياً؟')) return;
+              try {
+                await window.db.collection('blog_posts').doc(id).delete();
+                showToast('🗑️ تم حذف المقال', 'success');
+                self.loadPosts();
+              } catch(e) { showToast('خطأ: ' + e.message, 'error'); }
+            },
+
+            loadTopics: async function() {
+              var container = document.getElementById('topics-bank');
+              if (!container) return;
+              try {
+                var data   = await self._fetchAI({action:'topics'});
+                var topics = data.topics || [];
+                var frag = document.createDocumentFragment();
+                topics.forEach(function(t) {
+                  var btn = document.createElement('button');
+                  btn.className = 'text-xs bg-gray-100 hover:bg-brand-100 hover:text-brand-700 text-gray-600 px-3 py-1.5 rounded-full font-medium transition cursor-pointer border border-transparent hover:border-brand-300';
+                  btn.textContent = t;
+                  btn.addEventListener('click', function() {
+                    var inp = document.getElementById('ai-topic-input');
+                    if (inp) inp.value = t;
+                  });
+                  frag.appendChild(btn);
+                });
+                container.innerHTML = '';
+                container.appendChild(frag);
+              } catch(e) {
+                container.innerHTML = '<p class="text-xs text-gray-400">أضف GEMINI_API_KEY في Netlify Environment Variables</p>';
+              }
+            },
+
+            generate: async function() {
+              // ── Admin-only guard ──────────────────────────────────────────
+              if (!AppState.currentUser || AppState.currentUser.role !== 'admin') {
+                showToast('🚫 ' + (AppState.language !== 'en' ? 'توليد المقالات للمسؤولين فقط' : 'Article generation is admin-only'), 'error');
+                return;
+              }
+              var btn     = document.getElementById('ai-gen-btn');
+              var btnText = document.getElementById('ai-gen-btn-text');
+              var result  = document.getElementById('ai-result');
+              var topicEl = document.getElementById('ai-topic-input');
+              var countEl = document.getElementById('ai-count-select');
+              var topic   = topicEl ? topicEl.value.trim() : '';
+              var count   = countEl ? parseInt(countEl.value) || 1 : 1;
+              if (btn) btn.disabled = true;
+              if (btnText) btnText.textContent = 'جاري التوليد...';
+              if (result) {
+                result.classList.remove('hidden');
+                result.className = 'rounded-xl p-4 text-sm font-medium bg-yellow-50 border border-yellow-200 text-yellow-800';
+                result.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>يتم توليد المقال... قد يستغرق 20-40 ثانية';
+              }
+              try {
+                var body = topic ? {action:'generate', topic:topic} : {action:'bulk', count:count};
+                var data = await self._fetchAI(body);
+                if (data.success) {
+                  var n = (data.results && data.results.length) || 1;
+                  if (result) {
+                    result.className = 'rounded-xl p-4 text-sm font-medium bg-green-50 border border-green-200 text-green-800';
+                    result.innerHTML = '✅ تم توليد ' + n + ' مقال بنجاح! سيظهر في قائمة المقالات.';
+                  }
+                  self.loadPosts();
+                  if (window.trackEvent) trackEvent('ai_generate', 'admin', 'count_' + n);
+                } else {
+                  if (result) {
+                    result.className = 'rounded-xl p-4 text-sm font-medium bg-red-50 border border-red-200 text-red-700';
+                    result.innerHTML = '❌ خطأ: ' + (data.error || 'مجهول') + '<br><small>تأكد من إضافة GEMINI_API_KEY في Netlify Environment Variables</small>';
+                  }
+                }
+              } catch(e) {
+                if (result) {
+                  result.className = 'rounded-xl p-4 text-sm font-medium bg-red-50 border border-red-200 text-red-700';
+                  result.innerHTML = '❌ ' + e.message;
+                }
+              } finally {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = 'ابدأ التوليد';
+              }
+            },
+
+            generateOne: async function() {
+              // ── Admin-only guard ──────────────────────────────────────────
+              if (!AppState.currentUser || AppState.currentUser.role !== 'admin') {
+                showToast('🚫 ' + (AppState.language !== 'en' ? 'توليد المقالات للمسؤولين فقط' : 'Article generation is admin-only'), 'error');
+                return;
+              }
+              var btn = document.getElementById('admin-gen-btn');
+              if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوليد...'; }
+              try {
+                var data = await self._fetchAI({action:'generate'});
+                if (data.success) {
+                  showToast('✅ تم توليد: ' + (data.title||'').slice(0,40) + '…', 'success');
+                  self.loadPosts();
+                } else {
+                  showToast('❌ ' + (data.error||'خطأ'), 'error');
+                }
+              } catch(e) {
+                showToast('❌ ' + e.message, 'error');
+              } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> توليد مقال AI الآن'; }
+              }
+            },
+
+            renderSEOChecklist: function() {
+              var el = document.getElementById('seo-checklist');
+              if (!el) return;
+              var checks = [
+                {done:true,  label:'Google Site Verification مضاف'},
+                {done:true,  label:'Sitemap.xml ثابت موجود'},
+                {done:true,  label:'Sitemap ديناميكي من Firestore'},
+                {done:true,  label:'robots.txt محسن'},
+                {done:true,  label:'Meta tags ديناميكية لكل مقال'},
+                {done:true,  label:'Open Graph + Twitter Cards'},
+                {done:true,  label:'JSON-LD Structured Data'},
+                {done:true,  label:'توليد محتوى تلقائي يومي'},
+                {done:true,  label:'نظام مدونة ديناميكي من Firestore'},
+                {done:false, label:'أضف GEMINI_API_KEY في Netlify Env Vars'},
+                {done:false, label:'أضف UNSPLASH_ACCESS_KEY للصور'},
+                {done:false, label:'ربط Google Analytics'},
+                {done:false, label:'تقديم طلب Google AdSense'}
+              ];
+              var html = '';
+              checks.forEach(function(c) {
+                var iconClass = c.done ? 'fa-circle-check text-green-500' : 'fa-circle-xmark text-red-400';
+                var textClass = c.done ? 'text-gray-700' : 'text-gray-400';
+                html += '<div class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">'
+                  + '<i class="fa-solid '+iconClass+' mt-0.5 flex-shrink-0"></i>'
+                  + '<span class="text-sm '+textClass+'">'+c.label+'</span></div>';
+              });
+              el.innerHTML = html;
+            }
+          };
+          return self;
+        })();
+        // Init admin when navigating to admin page (handled above)
+        
+
+        // ── Network status ────────────────────────────────────────────────────
+        const offlineBanner = document.getElementById('offlineBanner');
+        function _handleOnline()  { offlineBanner && offlineBanner.classList.remove('show'); }
+        function _handleOffline() { offlineBanner && offlineBanner.classList.add('show'); }
+        window.addEventListener('online',  _handleOnline);
+        window.addEventListener('offline', _handleOffline);
+        if (!navigator.onLine) _handleOffline();
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('[SW] Registered:', reg.scope))
+                .catch(err => console.warn('[SW] Registration failed:', err));
+        }
+    });
+
+})();
+</script>
+</body>
+</html>

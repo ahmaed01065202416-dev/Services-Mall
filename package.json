@@ -1,0 +1,20 @@
+{
+  "name": "mall-services-v3",
+  "version": "3.0.0",
+  "description": "Mall Services - Professional Services Marketplace Platform",
+  "private": true,
+  "scripts": {
+    "dev":   "npx live-server --port=3000 --open=/index.html",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "npx wrangler pages deploy . --project-name=mall-services"
+  },
+  "dependencies": {
+    "axios": "^1.6.7"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+name = "mall-services"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+# This file is only needed if you deploy via `npx wrangler pages deploy .`
+# If you connect the GitHub repo through the Cloudflare dashboard instead,
+# you don't need this file at all — just set:
+#   Build command:   (leave empty)
+#   Build output directory: /

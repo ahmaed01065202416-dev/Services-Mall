@@ -1,0 +1,177 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+    function isSignedIn()  { return request.auth != null; }
+    function isOwner(uid)  { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin()     {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isSeller()    {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['seller','admin'];
+    }
+    function isSellerOwner(sellerId) {
+      return isSignedIn() && request.auth.uid == sellerId;
+    }
+
+    // ── users ─────────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if isSignedIn();
+      allow create: if isOwner(userId);
+      // User can update own doc; admin can update anyone's
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── services ──────────────────────────────────────────────────────────────
+    match /services/{serviceId} {
+      // Public read — customers and guests can view services
+      allow read: if true;
+      // Only verified sellers can create their own services
+      allow create: if isSeller()
+                    && request.resource.data.sellerId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['title','price','sellerId','createdAt']);
+      // Only the owning seller (or admin) can update
+      allow update: if (isSellerOwner(resource.data.sellerId) && isSeller()) || isAdmin();
+      // Only the owning seller (or admin) can delete
+      allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
+    }
+
+    // ── orders ────────────────────────────────────────────────────────────────
+    match /orders/{orderId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if isSignedIn()
+                    && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId  ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── payments ──────────────────────────────────────────────────────────────
+    match /payments/{paymentId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.userId ||
+                        request.auth.uid == resource.data.sellerId || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── wallet ────────────────────────────────────────────────────────────────
+    match /wallet/{userId} {
+      allow read:   if isOwner(userId) || isAdmin();
+      allow write:  if isAdmin(); // Only admin / cloud functions write wallet
+    }
+    match /wallet_transactions/{txId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── reviews ───────────────────────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read:   if true;
+      allow create: if isSignedIn()
+                    && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isOwner(resource.data.buyerId) || isAdmin();
+      allow delete: if isOwner(resource.data.buyerId) || isAdmin();
+    }
+
+    // ── articles / blog_posts ─────────────────────────────────────────────────
+    match /articles/{articleId} {
+      allow read: if true;
+      // Only admins can create / update / delete articles
+      allow write: if isAdmin();
+    }
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── analytics ─────────────────────────────────────────────────────────────
+    match /analytics/{docId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── subscriptions ─────────────────────────────────────────────────────────
+    match /subscriptions/{subId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── notifications ─────────────────────────────────────────────────────────
+    match /notifications/{notifId} {
+      allow read:   if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // ── chats / messages ──────────────────────────────────────────────────────
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn() &&
+                            (request.auth.uid in resource.data.participants || isAdmin());
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+    match /messages/{msgId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ── coupons ───────────────────────────────────────────────────────────────
+    match /coupons/{couponId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── disputes ──────────────────────────────────────────────────────────────
+    match /disputes/{disputeId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId  ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId  ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── service_views counter (public increment) ───────────────────────────────
+    match /service_views/{viewId} {
+      allow read:   if true;
+      allow create: if true;  // anonymous view tracking
+      allow update, delete: if isAdmin();
+    }
+
+    // ── categories (public) ──────────────────────────────────────────────────
+    match /categories/{catId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // ── settings (admin only) ────────────────────────────────────────────────
+    match /settings/{docId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

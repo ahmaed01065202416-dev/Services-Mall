@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدونة مول الخدمات | نصائح الأعمال الرقمية والذكاء الاصطناعي</title>
+<meta name="description" content="أحدث المقالات المُنشأة بالذكاء الاصطناعي عن الخدمات الرقمية، التجارة الإلكترونية، الربح من الإنترنت، والذكاء الاصطناعي في مصر.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://services-mall2.netlify.app/blog">
+<meta property="og:title" content="مدونة مول الخدمات">
+<meta property="og:description" content="مقالات يومية بالذكاء الاصطناعي عن الخدمات الرقمية والتجارة الإلكترونية">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://services-mall2.netlify.app/icons/icon-512.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Blog","name":"مدونة مول الخدمات","url":"https://services-mall2.netlify.app/blog","description":"مقالات SEO يومية بالذكاء الاصطناعي","inLanguage":"ar","publisher":{"@type":"Organization","name":"مول الخدمات"}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" href="/icons/icon-192.png">
+<style>
+:root{--brand:#2563eb;--brand-light:#dbeafe;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--bg:#f8fafc}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;direction:rtl}
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:18px;color:var(--brand)}
+.nav-logo img{width:34px;height:34px;border-radius:10px}
+.nav-links{display:flex;gap:6px}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:600;font-size:14px;padding:7px 14px;border-radius:10px;transition:all .2s}
+.nav-links a:hover,.nav-links a.active{background:var(--brand-light);color:var(--brand)}
+.nav-cta{background:var(--brand);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 18px;border-radius:12px;transition:all .2s}
+.nav-cta:hover{background:#1d4ed8}
+
+/* Hero */
+.blog-hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1e40af 100%);padding:80px 20px;text-align:center;position:relative;overflow:hidden}
+.blog-hero::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")}
+.blog-hero-inner{position:relative;max-width:700px;margin:0 auto}
+.ai-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,.25);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;padding:6px 16px;border-radius:50px;font-size:13px;font-weight:700;margin-bottom:18px}
+.blog-hero h1{font-size:clamp(26px,5vw,46px);font-weight:900;color:#fff;margin-bottom:14px;line-height:1.3}
+.gradient-text{background:linear-gradient(90deg,#60a5fa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.blog-hero p{font-size:16px;color:rgba(255,255,255,.8);margin-bottom:28px}
+
+/* Search */
+.search-wrap{position:relative;max-width:500px;margin:0 auto}
+.search-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;placeholder:rgba(255,255,255,.5);padding:14px 48px 14px 20px;border-radius:16px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.search-input:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4)}
+.search-input::placeholder{color:rgba(255,255,255,.5)}
+.search-btn{position:absolute;left:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:16px}
+
+/* Categories */
+.cats-strip{display:flex;gap:8px;overflow-x:auto;padding:20px 0 8px;scrollbar-width:none;-ms-overflow-style:none}
+.cats-strip::-webkit-scrollbar{display:none}
+.cat-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:50px;border:2px solid #e5e7eb;background:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
+.cat-btn:hover,.cat-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
+
+/* Grid */
+.blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+@media(max-width:640px){.blog-grid{grid-template-columns:1fr}}
+
+/* Ad slots */
+.ad-slot{background:#f9fafb;border:1px dashed #e5e7eb;border-radius:14px;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;gap:4px}
+
+/* Article body styles */
+.article-body h2{font-size:20px;font-weight:900;color:#111827;margin:28px 0 12px;padding-right:14px;border-right:4px solid #2563eb;line-height:1.4}
+.article-body h3{font-size:17px;font-weight:800;color:#111827;margin:20px 0 10px}
+.article-body p{font-size:15px;color:#374151;margin-bottom:14px;line-height:1.9}
+.article-body ul,.article-body ol{margin:10px 0 16px;padding-right:22px}
+.article-body li{font-size:15px;color:#374151;margin-bottom:7px;line-height:1.8}
+.article-body strong{font-weight:800;color:#111827}
+.article-body a{color:#2563eb;text-decoration:none}
+.article-body table{width:100%;border-collapse:collapse;margin:18px 0;border-radius:12px;overflow:hidden;font-size:14px}
+.article-body th{background:#2563eb;color:#fff;padding:10px 14px;text-align:right;font-weight:700}
+.article-body td{padding:9px 14px;border-bottom:1px solid #e5e7eb}
+.article-body tr:hover td{background:#f8fafc}
+.article-body blockquote{border-right:4px solid #ec4899;padding:14px 18px;margin:18px 0;background:#fdf2f8;border-radius:0 12px 12px 0;color:#6b21a8;font-style:italic}
+
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@media(max-width:640px){.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo"><img src="/icons/logo.jpg" alt="Services Mall" loading="lazy" style="border-radius:9px;object-fit:cover;width:34px;height:34px"><span>Services Mall</span></a>
+    <div class="nav-links">
+      <a href="/">الرئيسية</a>
+      <a href="/blog" class="active">المدونة</a>
+      <a href="/about">عنّا</a>
+      <a href="/contact">تواصل</a>
+    </div>
+    <a href="/" class="nav-cta"><i class="fa-solid fa-rocket" style="margin-left:6px"></i>انضم مجاناً</a>
+  </div>
+</nav>
+
+<!-- ── BLOG LIST VIEW ─────────────────────────────────────────────────── -->
+<div id="blog-list-view">
+
+  <!-- Hero -->
+  <section class="blog-hero">
+    <div class="blog-hero-inner">
+      <div class="ai-badge"><i class="fa-solid fa-robot"></i> يُنشر تلقائياً بالذكاء الاصطناعي</div>
+      <h1>مدونة <span class="gradient-text">مول الخدمات</span></h1>
+      <p>مقالات SEO يومية مُنشأة بالذكاء الاصطناعي — نصائح عملية للأعمال الرقمية في مصر والوطن العربي</p>
+      <div class="search-wrap">
+        <input type="search" class="search-input" id="blog-search" placeholder="ابحث في المقالات..." oninput="BlogEngine.filterSearch(this.value)">
+        <button class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <div style="max-width:1200px;margin:0 auto;padding:32px 20px">
+
+    <!-- Categories -->
+    <div class="cats-strip" id="cats-strip">
+      <button class="cat-btn active" onclick="BlogEngine.filterCat('all',this)"><i class="fa-solid fa-border-all" style="font-size:11px"></i> الكل</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('ربح-من-الانترنت',this)"><i class="fa-solid fa-coins" style="font-size:11px"></i> ربح من الإنترنت</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('تسويق-رقمي',this)"><i class="fa-solid fa-chart-line" style="font-size:11px"></i> تسويق رقمي</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('ذكاء-اصطناعي',this)"><i class="fa-solid fa-robot" style="font-size:11px"></i> ذكاء اصطناعي</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('تجارة-الكترونية',this)"><i class="fa-solid fa-cart-shopping" style="font-size:11px"></i> تجارة إلكترونية</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('عمل-حر',this)"><i class="fa-solid fa-laptop" style="font-size:11px"></i> عمل حر</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('دفع-الكتروني',this)"><i class="fa-solid fa-credit-card" style="font-size:11px"></i> دفع إلكتروني</button>
+      <button class="cat-btn" onclick="BlogEngine.filterCat('تحسين-بحث',this)"><i class="fa-solid fa-magnifying-glass" style="font-size:11px"></i> تحسين البحث</button>
+    </div>
+
+    <!-- Ad Top -->
+    <div class="ad-slot" style="margin-bottom:28px">
+      <i class="fa-solid fa-rectangle-ad" style="font-size:28px;opacity:.25"></i>
+      <span>إعلان — Google AdSense</span>
+    </div>
+
+    <!-- Posts Grid -->
+    <div class="blog-grid" id="blog-grid">
+      <!-- Loaded by BlogEngine -->
+    </div>
+
+    <!-- Load More -->
+    <div style="text-align:center;margin-top:32px" id="load-more-wrap" style="display:none">
+      <button id="load-more-btn" onclick="BlogEngine.loadMore()"
+        style="background:#fff;border:2px solid #e5e7eb;color:#374151;padding:12px 32px;border-radius:14px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s"
+        onmouseover="this.style.borderColor='#2563eb';this.style.color='#2563eb'"
+        onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#374151'">
+        <i class="fa-solid fa-rotate-right" style="margin-left:8px"></i>تحميل المزيد
+      </button>
+    </div>
+
+    <!-- Ad Bottom -->
+    <div class="ad-slot" style="margin-top:32px">
+      <i class="fa-solid fa-rectangle-ad" style="font-size:28px;opacity:.25"></i>
+      <span>إعلان — Google AdSense</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── BLOG POST VIEW ─────────────────────────────────────────────────── -->
+<div id="blog-post-view" style="display:none">
+  <div id="blog-post-container" style="min-height:60vh;padding-top:60px"></div>
+</div>
+
+<!-- Footer -->
+<footer style="background:#111827;color:#9ca3af;padding:36px 20px;margin-top:60px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px">
+    <div>
+      <span style="color:#fff;font-weight:900;font-size:15px">مول الخدمات</span>
+      <span style="margin-right:16px"><a href="/" style="color:#9ca3af;text-decoration:none">الرئيسية</a></span>
+      <span style="margin-right:16px"><a href="/privacy" style="color:#9ca3af;text-decoration:none">الخصوصية</a></span>
+      <span><a href="/contact" style="color:#9ca3af;text-decoration:none">تواصل معنا</a></span>
+    </div>
+    <span>© 2025 مول الخدمات — صُنع بـ ❤️ في مصر 🇪🇬</span>
+  </div>
+</footer>
+
+<a href="https://wa.me/201000000000" target="_blank" rel="noopener"
+  style="position:fixed;bottom:24px;left:24px;z-index:999;width:54px;height:54px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;text-decoration:none;box-shadow:0 4px 16px rgba(37,211,102,.4)">
+  <i class="fa-brands fa-whatsapp"></i>
+</a>
+
+<!-- Firebase (same config as main site) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  // Same Firebase project as main site
+  if (!window._firebaseInitialized) {
+    firebase.initializeApp({
+      apiKey:       "AIzaSyDfWKWN5CTlBA-krEMXsmYmaI8j7fyuw20",
+      authDomain:   "services-mall.firebaseapp.com",
+      projectId:    "services-mall",
+      storageBucket:"services-mall.firebasestorage.app",
+    });
+    window.db  = firebase.firestore();
+    window._firebaseInitialized = true;
+  }
+</script>
+
+<!-- DOMPurify for safe HTML rendering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
+
+<!-- Blog Engine -->
+<script src="/js/blog-engine.js"></script>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let _activeCat   = 'all';
+  let _searchQuery = '';
+  let _allPosts    = [];
+  let _lastDoc     = null;
+  const PAGE_SIZE  = 9;
+
+  // ── Filter by category ─────────────────────────────────────────────────────
+  BlogEngine.filterCat = function(cat, btn) {
+    _activeCat = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadPosts(true);
+  };
+
+  // ── Filter by search ───────────────────────────────────────────────────────
+  let _searchTimer;
+  BlogEngine.filterSearch = function(q) {
+    _searchQuery = q.trim();
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => {
+      if (_searchQuery.length === 0 || _searchQuery.length > 1) loadPosts(true);
+    }, 350);
+  };
+
+  // ── Load posts from Firestore ──────────────────────────────────────────────
+  async function loadPosts(reset) {
+    const grid = document.getElementById('blog-grid');
+    if (!grid) return;
+
+    if (reset) {
+      _allPosts = []; _lastDoc = null;
+      grid.innerHTML = Array.from({length:6}).map(() => `
+        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;overflow:hidden;min-height:280px"></div>`).join('');
+    }
+
+    try {
+      let q = window.db.collection('blog_posts')
+        .where('published','==',true)
+        .orderBy('createdAt','desc')
+        .limit(PAGE_SIZE + 1);
+
+      if (_activeCat !== 'all') q = q.where('category','==',_activeCat);
+      if (_lastDoc)             q = q.startAfter(_lastDoc);
+
+      const snap  = await q.get();
+      const docs  = snap.docs.slice(0, PAGE_SIZE);
+      const posts = docs.map(d => ({ id:d.id,...d.data() }));
+
+      _lastDoc = docs.length === PAGE_SIZE ? docs[docs.length-1] : null;
+      document.getElementById('load-more-wrap').style.display = (snap.docs.length > PAGE_SIZE) ? 'block' : 'none';
+
+      // Client-side search
+      const filtered = _searchQuery
+        ? posts.filter(p => (p.title||'').includes(_searchQuery) || (p.excerpt||'').includes(_searchQuery) || (p.keywords||[]).some(k=>k.includes(_searchQuery)))
+        : posts;
+
+      if (reset) { _allPosts = filtered; grid.innerHTML = ''; }
+      else        { _allPosts = [..._allPosts, ...filtered]; }
+
+      if (_allPosts.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#9ca3af">
+          <i class="fa-solid fa-newspaper" style="font-size:48px;margin-bottom:16px;opacity:.3;display:block"></i>
+          <p style="font-weight:700;font-size:16px">لا توجد مقالات</p>
+          <p style="font-size:13px;margin-top:6px">جرّب تصنيفاً آخر أو انتظر النشر التلقائي</p></div>`;
+        return;
+      }
+
+      if (reset) {
+        grid.innerHTML = _allPosts.map(p => buildCard(p)).join('');
+      } else {
+        filtered.forEach(p => { grid.insertAdjacentHTML('beforeend', buildCard(p)); });
+      }
+      addHoverEffects();
+    } catch(err) {
+      console.warn('[Blog] load error:', err);
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#ef4444">خطأ في التحميل</div>`;
+    }
+  }
+
+  BlogEngine.loadMore = function() { loadPosts(false); };
+
+  function buildCard(post) {
+    const catColors = {'ربح-من-الانترنت':'#10b981','تسويق-رقمي':'#3b82f6','ذكاء-اصطناعي':'#8b5cf6','تجارة-الكترونية':'#f97316','عمل-حر':'#f59e0b','دفع-الكتروني':'#14b8a6','تصميم-مواقع':'#ec4899','تحسين-بحث':'#6366f1','استثمار':'#eab308'};
+    const c = catColors[post.category] || '#6b7280';
+    const excerpt = (post.excerpt || (post.content||'').replace(/<[^>]*>/g,'')).slice(0,120) + '…';
+    const date = (() => { try { const d = post.createdAt?.toDate ? post.createdAt.toDate() : new Date(post.createdAt?.seconds?post.createdAt.seconds*1000:Date.now()); return d.toLocaleDateString('ar-EG',{month:'short',day:'numeric'}); } catch{return '';} })();
+    const words = (post.content||'').replace(/<[^>]*>/g,'').split(/\s+/).length;
+    const readMin = Math.max(1,Math.round(words/200));
+    return `
+    <article onclick="openPost('${post.slug}')" style="cursor:pointer;background:#fff;border-radius:18px;border:1px solid #e5e7eb;overflow:hidden;transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column" class="blog-card-item">
+      <div style="height:185px;overflow:hidden;position:relative;background:#f3f4f6">
+        <img src="${post.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'}" alt="${post.title}" loading="lazy"
+          style="width:100%;height:100%;object-fit:cover;transition:transform .4s"
+          onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'">
+        <div style="position:absolute;top:10px;right:10px;background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${(post.category||'').replace(/-/g,' ')}</div>
+        ${post.aiGenerated?'<div style="position:absolute;top:10px;left:10px;background:#8b5cf6;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:50px">🤖 AI</div>':''}
+      </div>
+      <div style="padding:16px;flex:1;display:flex;flex-direction:column">
+        <h3 style="font-size:15px;font-weight:900;color:#111827;line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${post.title}</h3>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6;flex:1;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${excerpt}</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:10px">
+          <span><i class="fa-regular fa-calendar" style="margin-left:4px"></i>${date}</span>
+          <span><i class="fa-regular fa-clock" style="margin-left:4px"></i>${readMin} دقائق</span>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function addHoverEffects() {
+    document.querySelectorAll('.blog-card-item').forEach(card => {
+      card.addEventListener('mouseenter', () => { card.style.transform='translateY(-4px)'; card.style.boxShadow='0 12px 36px rgba(0,0,0,.1)'; });
+      card.addEventListener('mouseleave', () => { card.style.transform=''; card.style.boxShadow=''; });
+    });
+  }
+
+  // ── Open post ──────────────────────────────────────────────────────────────
+  function openPost(slug) {
+    document.getElementById('blog-list-view').style.display = 'none';
+    document.getElementById('blog-post-view').style.display = 'block';
+    window.history.pushState({ blogSlug:slug }, '', '/blog/' + slug);
+    BlogEngine.renderPost(slug, 'blog-post-container');
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  BlogEngine.showBlogList = function() {
+    document.getElementById('blog-post-view').style.display = 'none';
+    document.getElementById('blog-list-view').style.display = 'block';
+    window.history.pushState({}, '', '/blog');
+    document.title = 'مدونة مول الخدمات';
+    window.scrollTo({ top:0, behavior:'smooth' });
+  };
+
+  // ── Handle direct /blog/:slug URLs ─────────────────────────────────────────
+  (function init() {
+    const path = window.location.pathname;
+    const slugMatch = path.match(/^\/blog\/(.+)$/);
+    if (slugMatch && slugMatch[1]) {
+      document.getElementById('blog-list-view').style.display = 'none';
+      document.getElementById('blog-post-view').style.display = 'block';
+      BlogEngine.renderPost(slugMatch[1], 'blog-post-container');
+    } else {
+      loadPosts(true);
+    }
+  })();
+
+  // ── Handle browser back/forward ────────────────────────────────────────────
+  window.addEventListener('popstate', (e) => {
+    const slug = e.state?.blogSlug || window.location.pathname.match(/^\/blog\/(.+)$/)?.[1];
+    if (slug) {
+      document.getElementById('blog-list-view').style.display = 'none';
+      document.getElementById('blog-post-view').style.display = 'block';
+      BlogEngine.renderPost(slug, 'blog-post-container');
+    } else {
+      BlogEngine.showBlogList();
+    }
+  });
+</script>
+</body>
+</html>
