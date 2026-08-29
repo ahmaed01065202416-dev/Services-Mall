@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "chats": {
+      "$orderId": {
+
+        "buyerId": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.val() === auth.uid",
+          ".validate": "newData.isString()"
+        },
+        "sellerId": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.val() === auth.uid",
+          ".validate": "newData.isString()"
+        },
+
+        "messages": {
+          ".read": "auth != null && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
+          ".indexOn": ["createdAt"],
+
+          "$messageId": {
+            ".write": "auth != null && !data.exists() && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid) && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId','senderName','type','createdAt'])",
+
+            "readBy": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
+                ".validate": "newData.isBoolean()"
+              }
+            }
+          }
+        },
+
+        "typing": {
+          "$uid": {
+            ".read": "auth != null && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
+      }
+    }
+  }
+}

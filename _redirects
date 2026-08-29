@@ -1,0 +1,57 @@
+# ── (Removed) legacy redirect shim for old API paths ──────────────────────────
+# A previous version of this file rewrote old function paths to /api/* with a
+# 200-status rewrite. Cloudflare Pages doesn't reliably proxy POST requests
+# through that kind of rewrite (confirmed live: it returned a bare 405 with
+# no body instead of forwarding the request — that's what broke the AI
+# article button, escrow release, and withdrawal requests). All frontend code
+# now calls /api/payment, /api/ai-generate, /api/sitemap-dynamic etc. directly,
+# so no shim is needed — deleting it instead of leaving a trap for the next
+# edit that forgets and calls an old path again.
+# (kept — this one is a GET-only alias, not affected by the POST bug above,
+# and may already be submitted somewhere like Search Console)
+/sitemap-live.xml /api/sitemap-dynamic 200
+
+# Blog routes
+/blog /blog/index.html 200
+/blog/ /blog/index.html 200
+
+# Article slugs
+/blog/افضل-خدمات-رقمية-في-مصر-2025 /blog/افضل-خدمات-رقمية-في-مصر-2025/index.html 200
+/blog/بوابات-الدفع-الالكتروني-مصر /blog/بوابات-الدفع-الالكتروني-مصر/index.html 200
+/blog/كيفية-الربح-من-الانترنت-مصر /blog/كيفية-الربح-من-الانترنت-مصر/index.html 200
+/blog/تحسين-محركات-البحث-للمواقع-العربية /blog/تحسين-محركات-البحث-للمواقع-العربية/index.html 200
+/blog/التجارة-الالكترونية-في-مصر /blog/التجارة-الالكترونية-في-مصر/index.html 200
+/blog/freelancing-egypt-2025 /blog/freelancing-egypt-2025/index.html 200
+/blog/digital-marketing-arabic /blog/digital-marketing-arabic/index.html 200
+/blog/escrow-payment-protection /blog/escrow-payment-protection/index.html 200
+/blog/web-design-trends-2025 /blog/web-design-trends-2025/index.html 200
+/blog/paymob-instapay-guide /blog/paymob-instapay-guide/index.html 200
+
+# ⚠️ FIXED: this list only covered the 6 hand-written static posts — any
+# other /blog/<slug> (every AI-generated article, functions/api/ai-generate.js)
+# matched NO rule here and fell through to the final SPA catch-all below,
+# which serves the main app's index.html — not blog/index.html. That file has
+# no blog-post view at all, so visitors, shared links, and search-engine
+# crawlers landed on the homepage instead of the article. blog/index.html
+# already handles direct /blog/:slug loads correctly (see its own init() at
+# the bottom of that file) — it just never used to be reached for these URLs.
+/blog/:slug /blog/index.html 200
+
+# Static pages
+/about /about/index.html 200
+/about/ /about/index.html 200
+/contact /contact/index.html 200
+/contact/ /contact/index.html 200
+/privacy /privacy/index.html 200
+/privacy/ /privacy/index.html 200
+/terms /terms/index.html 200
+/terms/ /terms/index.html 200
+
+# Sitemaps
+/sitemap.xml /sitemap.xml 200
+/sitemap-main.xml /sitemap-main.xml 200
+/blog-sitemap.xml /blog-sitemap.xml 200
+/robots.txt /robots.txt 200
+
+# SPA fallback for main app
+/* /index.html 200

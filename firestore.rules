@@ -20,9 +20,29 @@ service cloud.firestore {
     // ── users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isOwner(userId);
-      // User can update own doc; admin can update anyone's
-      allow update: if isOwner(userId) || isAdmin();
+      // New accounts must start as 'buyer' or 'seller' (both are real choices
+      // on the registration form) — never 'admin'.
+      allow create: if isOwner(userId)
+                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller']);
+      // 🔒 CRITICAL FIX: this used to be `allow update: if isOwner(userId) ||
+      // isAdmin();` with ZERO field restriction — meaning ANY logged-in user
+      // could open devtools and run
+      //   db.collection('users').doc(myUid).update({role:'admin'})
+      // and instantly grant themselves full admin access (release any
+      // escrow, resolve disputes in their own favor, edit/delete any user,
+      // etc. — everything gated by isAdmin()/isSeller(), which both read
+      // this exact field). Now: only a fixed set of real profile fields can
+      // be self-edited, and 'role' can only move buyer→seller (the app's
+      // actual self-upgrade flow) — never to/from 'admin', and never by
+      // anyone editing someone else's doc.
+      allow update: if isAdmin() || (
+                      isOwner(userId) &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['name','displayName','phone','avatar','photoURL','bio',
+                                  'role','updatedAt','acceptedTerms','termsAcceptedAt']) &&
+                      (!('role' in request.resource.data.diff(resource.data).affectedKeys()) ||
+                       (resource.data.role == 'buyer' && request.resource.data.role == 'seller'))
+                    );
       allow delete: if isAdmin();
     }
 
@@ -34,24 +54,58 @@ service cloud.firestore {
       allow create: if isSeller()
                     && request.resource.data.sellerId == request.auth.uid
                     && request.resource.data.keys().hasAll(['title','price','sellerId','createdAt']);
-      // Only the owning seller (or admin) can update
-      allow update: if (isSellerOwner(resource.data.sellerId) && isSeller()) || isAdmin();
+      // Only the owning seller can update — but ONLY content fields. Trust/
+      // stat fields (rating, reviewCount, qualityScore, featured, orderCount,
+      // ordersCount, views, active) are server/admin-computed and must never
+      // be settable by the seller themselves, even via direct SDK calls that
+      // bypass the app's own UI (a seller could otherwise self-boost their
+      // rating or "quality" ranking with a few lines in devtools).
+      allow update: if isAdmin() || (
+                      isSellerOwner(resource.data.sellerId) && isSeller() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['title','description','category','price','deliveryDays',
+                                  'revisions','image','tags','active','status','recurring','updatedAt'])
+                    );
       // Only the owning seller (or admin) can delete
       allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
     }
 
     // ── orders ────────────────────────────────────────────────────────────────
+    // ⚠️ Paid orders (escrowHeld / payment_held / completed) are ONLY ever
+    // written by the server (functions/api/payment.js) using a service-account
+    // token, which bypasses these rules entirely. The client may still create
+    // a free "custom request" order (see js/request-system.js — no payment
+    // involved), but can never create or flip an order into a paid state,
+    // and can never touch price/escrow/payment fields on an existing order.
     match /orders/{orderId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
+      // ⚠️ FIXED: js/request-system.js (the free "custom request" flow) never
+      // sends an `escrowHeld` field at all — and dot-accessing a field that
+      // isn't in the document throws in Firestore Rules, which would deny
+      // (or error out) every single free-request creation. Guarded the same
+      // way `role` is guarded above: only check the value when the field is
+      // actually present.
       allow create: if isSignedIn()
-                    && request.resource.data.buyerId == request.auth.uid;
+                    && request.resource.data.buyerId == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.paymentStatus == 'no_payment'
+                    && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true);
       allow update: if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
-                        isAdmin());
+                        isAdmin()) &&
+                       (isAdmin() || (
+                         request.resource.data.status != 'completed' &&
+                         request.resource.data.escrowHeld == resource.data.escrowHeld &&
+                         request.resource.data.escrowAmount == resource.data.escrowAmount &&
+                         request.resource.data.price == resource.data.price &&
+                         request.resource.data.paymentId == resource.data.paymentId &&
+                         request.resource.data.buyerId == resource.data.buyerId &&
+                         request.resource.data.sellerId == resource.data.sellerId
+                       ));
       allow delete: if isAdmin();
     }
 
@@ -65,14 +119,50 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ── wallet ────────────────────────────────────────────────────────────────
-    match /wallet/{userId} {
+    // ── wallets ───────────────────────────────────────────────────────────────
+    // ⚠️ FIXED: this used to be declared as /wallet/{userId} (singular) while
+    // every bit of app code reads/writes /wallets/{userId} (plural) — meaning
+    // this collection had NO matching rule and was fully denied by default.
+    // Balance changes always go through the server (functions/api/payment.js),
+    // which uses a service-account token and bypasses these rules anyway.
+    match /wallets/{userId} {
       allow read:   if isOwner(userId) || isAdmin();
-      allow write:  if isAdmin(); // Only admin / cloud functions write wallet
+      allow write:  if isAdmin(); // only admin (client) / server (bypasses rules)
     }
-    match /wallet_transactions/{txId} {
+    // ── transactions ──────────────────────────────────────────────────────────
+    // ⚠️ FIXED: same mismatch — code uses COLLECTIONS.TRANSACTIONS = 'transactions',
+    // this block used to be named 'wallet_transactions' and never matched anything.
+    match /transactions/{txId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.userId || isAdmin());
+      allow write:  if isAdmin(); // records are created server-side on payment/release
+    }
+    // ── escrow ────────────────────────────────────────────────────────────────
+    // ⚠️ ADDED: this collection had no rule block at all before (fully denied).
+    // Buyer/seller may only read their own escrow record, or freeze it when
+    // opening a dispute. Release/refund always go through the server.
+    match /escrow/{orderId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if false; // server-only (service account bypasses this rule)
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId) &&
+                       resource.data.status == 'held' &&
+                       request.resource.data.status == 'frozen' &&
+                       request.resource.data.amount   == resource.data.amount &&
+                       request.resource.data.buyerId  == resource.data.buyerId &&
+                       request.resource.data.sellerId == resource.data.sellerId
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+    // ── withdrawals ───────────────────────────────────────────────────────────
+    // ⚠️ ADDED: also had no rule block before (fully denied) — sellers could
+    // never actually submit a withdrawal request.
+    match /withdrawals/{reqId} {
+      allow read:   if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
@@ -82,7 +172,15 @@ service cloud.firestore {
       allow read:   if true;
       allow create: if isSignedIn()
                     && request.resource.data.buyerId == request.auth.uid;
-      allow update: if isOwner(resource.data.buyerId) || isAdmin();
+      // Buyer can edit their own rating/text, but not re-target the review to
+      // a different seller/service/order after the fact.
+      allow update: if isAdmin() || (
+                      isOwner(resource.data.buyerId) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','text','updatedAt']) &&
+                      request.resource.data.sellerId  == resource.data.sellerId &&
+                      request.resource.data.serviceId == resource.data.serviceId &&
+                      request.resource.data.orderId   == resource.data.orderId
+                    );
       allow delete: if isOwner(resource.data.buyerId) || isAdmin();
     }
 
@@ -106,13 +204,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ── subscriptions ─────────────────────────────────────────────────────────
+    // ── subscriptions (recurring monthly services) ────────────────────────────
+    // Written mainly by the server (functions/api/subscription.js) using a
+    // service-account token that bypasses these rules. The client only ever
+    // reads its own subscriptions here — creation/charging/status changes
+    // always go through the server so a buyer can't fake an "active"
+    // subscription or a seller can't fake a charge.
     match /subscriptions/{subId} {
       allow read:   if isSignedIn() &&
-                       (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId) || isAdmin();
-      allow delete: if isAdmin();
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow write:  if isAdmin(); // server (service account) bypasses this anyway
     }
 
     // ── notifications ─────────────────────────────────────────────────────────
@@ -128,11 +231,15 @@ service cloud.firestore {
       allow read, write: if isSignedIn() &&
                             (request.auth.uid in resource.data.participants || isAdmin());
       match /messages/{msgId} {
-        allow read, write: if isSignedIn();
+        allow read, write: if false; // legacy — chat moved to Realtime Database
       }
     }
+    // ⚠️ FIXED: chat has moved to Realtime Database (see database.rules.json).
+    // This Firestore collection is no longer written to. It previously allowed
+    // ANY signed-in user to read/write ANY message regardless of which order
+    // it belonged to — a real privacy hole — now closed entirely.
     match /messages/{msgId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if false;
     }
 
     // ── coupons ───────────────────────────────────────────────────────────────
@@ -147,11 +254,18 @@ service cloud.firestore {
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() &&
-                       (request.auth.uid == resource.data.buyerId  ||
-                        request.auth.uid == resource.data.sellerId ||
-                        isAdmin());
+      // Must be filed as either the buyer or the seller named in the dispute —
+      // not an arbitrary third party naming other people's UIDs.
+      allow create: if isSignedIn() &&
+                       (request.resource.data.buyerId == request.auth.uid ||
+                        request.resource.data.sellerId == request.auth.uid);
+      // ⚠️ TIGHTENED: buyer/seller no longer need direct update access — the
+      // only update in the app is resolving the dispute (status/resolution),
+      // which now goes through functions/api/payment.js (resolveDispute)
+      // using a service-account token that bypasses this rule anyway. Letting
+      // either party update their own dispute doc directly served no real
+      // feature and let them rewrite reason/status/resolution themselves.
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -168,10 +282,41 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── reports (admin content-moderation queue) ─────────────────────────────
+    // ⚠️ ADDED: had no rule block at all — the admin Reports panel in
+    // dashboard.js was permission-denied on every read/write.
+    // NOTE: nothing in the app currently *creates* a report (no "report this
+    // service/user" button exists yet) — this only fixes admin access to
+    // whatever reports get added later. Flagging as a real feature gap.
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
+    }
+
+    // ── fraud_flags (anti-fraud chat monitor — write-only for users, admin reads) ─
+    match /fraud_flags/{flagId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
     // ── settings (admin only) ────────────────────────────────────────────────
     match /settings/{docId} {
       allow read:  if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    // ── pending_payments (server-only) ─────────────────────────────────────────
+    // Created by functions/api/payment.js while a payment is in flight, and
+    // consumed by functions/api/fawaterak-webhook.js once it's confirmed.
+    // The browser never needs to read or write this directly — service-account
+    // calls bypass this rule entirely, so this is an explicit belt-and-suspenders deny.
+    match /pending_payments/{id} {
+      allow read, write: if false;
+    }
+
+    // ── rate_limits (server-only) ────────────────────────────────────────────
+    match /rate_limits/{id} {
+      allow read, write: if false;
     }
   }
 }

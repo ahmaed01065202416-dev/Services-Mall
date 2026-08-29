@@ -49,10 +49,9 @@ self.addEventListener('fetch', (event) => {
     'cdnjs.cloudflare.com', 'tailwindcss.com',
     'fonts.gstatic.com', 'fonts.googleapis.com',
     'unsplash.com', 'ui-avatars.com',
-    'paymob.com', 'paypal.com', 'stripe.com',
-    'atfawry.com', 'google-analytics.com',
-    'googletagmanager.com', 'netlify.com',
-    'netlify.app', '/.netlify/', '/api/', 'pages.dev', 'firebaseapp.com'
+    'fawaterk.com', 'google-analytics.com',
+    'googletagmanager.com', '/api/',
+    'pages.dev', 'firebaseapp.com'
   ];
   if (EXTERNAL_KEYWORDS.some(kw => req.url.includes(kw))) return;
 

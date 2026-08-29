@@ -6,20 +6,20 @@
   <meta name="description" content="مول الخدمات — منصتك الأولى للخدمات الرقمية الاحترافية في مصر. تصميم مواقع، برمجة، تسويق رقمي، كتابة محتوى وأكثر — مع ضمان استرداد كامل عبر نظام Escrow.">
   <meta name="google-site-verification" content="z2bKviBbmgwGNYsqFn_DVgWrGsdtutjAVzT99_iqexk" />
   <meta name="keywords" content="خدمات رقمية, فريلانسر مصر, تصميم مواقع, برمجة, تسويق رقمي, كتابة محتوى, SEO, مول الخدمات, mall services egypt, خدمات اون لاين">
-  <meta name="theme-color" content="#0284c7">
+  <meta name="theme-color" content="#12734F">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="author" content="مول الخدمات">
   <meta name="language" content="Arabic">
   <meta name="geo.region" content="EG">
   <meta name="geo.placename" content="Cairo, Egypt">
-  <link rel="canonical" href="https://services-mall2.netlify.app/">
+  <link rel="canonical" href="https://mall-services.pages.dev/">
 
   <!-- Open Graph -->
   <meta property="og:title" content="مول الخدمات | منصة الخدمات الرقمية الأولى في مصر">
   <meta property="og:description" content="اطلب أفضل الخدمات من محترفين معتمدين مع ضمان استرداد كامل. تصميم، برمجة، تسويق، كتابة محتوى وأكثر.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://services-mall2.netlify.app/">
-  <meta property="og:image" content="https://services-mall2.netlify.app/icons/icon-512.png">
+  <meta property="og:url" content="https://mall-services.pages.dev/">
+  <meta property="og:image" content="https://mall-services.pages.dev/icons/icon-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta property="og:locale" content="ar_EG">
@@ -29,7 +29,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="مول الخدمات | منصة الخدمات الرقمية الأولى في مصر">
   <meta name="twitter:description" content="اطلب أفضل الخدمات من محترفين معتمدين مع ضمان استرداد كامل.">
-  <meta name="twitter:image" content="https://services-mall2.netlify.app/icons/icon-512.png">
+  <meta name="twitter:image" content="https://mall-services.pages.dev/icons/icon-512.png">
 
   <title>مول الخدمات | منصة الخدمات الرقمية الاحترافية في مصر</title>
 
@@ -40,14 +40,14 @@
     "@type": "Organization",
     "name": "مول الخدمات",
     "alternateName": "Mall Services",
-    "url": "https://services-mall2.netlify.app",
-    "logo": "https://services-mall2.netlify.app/icons/icon-512.png",
+    "url": "https://mall-services.pages.dev",
+    "logo": "https://mall-services.pages.dev/icons/icon-512.png",
     "description": "منصة عربية للخدمات الرقمية تربط المحترفين بأصحاب الأعمال",
     "foundingDate": "2023",
     "foundingLocation": {"@type": "Place", "name": "Cairo, Egypt"},
     "areaServed": {"@type": "Place", "name": "Arab World"},
     "contactPoint": {"@type": "ContactPoint", "contactType": "customer service", "availableLanguage": ["Arabic", "English"]},
-    "sameAs": ["https://services-mall2.netlify.app"]
+    "sameAs": ["https://mall-services.pages.dev"]
   }
   </script>
   <!-- Structured Data: WebSite with SearchAction -->
@@ -56,11 +56,11 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "مول الخدمات",
-    "url": "https://services-mall2.netlify.app",
+    "url": "https://mall-services.pages.dev",
     "inLanguage": "ar",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://services-mall2.netlify.app/#services?q={search_term_string}",
+      "target": "https://mall-services.pages.dev/#services?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   }
@@ -92,7 +92,7 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -102,6 +102,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 
   <!-- TailwindCSS — CDN with inline config (must define config BEFORE loading script) -->
   <script>
@@ -110,17 +111,36 @@
     window.tailwindConfig = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Cairo','Inter','sans-serif'] },
+          fontFamily: {
+            sans:    ['IBM Plex Sans Arabic','IBM Plex Sans','sans-serif'],
+            display: ['Amiri','Fraunces','serif'],
+            mono:    ['IBM Plex Mono','monospace'],
+          },
           colors: {
+            // "برنس" — أخضر زمردي عميق: الثقة والمال المحجوز بأمان
             brand: {
-              50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',
-              400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',
-              800:'#075985',900:'#0c4a6e'
+              50:'#EAF5F0',100:'#CFE9DD',200:'#9ED0BB',300:'#6BB699',
+              400:'#3D9C7B',500:'#1F8564',600:'#12734F',700:'#0E5C40',
+              800:'#0B4732',900:'#083527'
             },
+            // "الختم" — ذهبي نحاسي: قيمة، أمانة، خاتم الضمان
             accent: {
-              50:'#fdf4ff',100:'#fae8ff',200:'#f5d0fe',300:'#f0abfc',
-              400:'#e879f9',500:'#d946ef',600:'#c026d3',700:'#a21caf'
-            }
+              50:'#FBF3E4',100:'#F5E3C0',200:'#ECCB8C',300:'#E1AF5C',
+              400:'#D3993E',500:'#C08A2E',600:'#A06F22',700:'#7D561B',
+              800:'#5C3F14',900:'#3E2A0D'
+            },
+            // "المحضر" — حبر أخضر داكن يكاد يكون أسود: خلفية القبو/الهيرو
+            ink: { 700:'#233B32',800:'#1A2D26',900:'#12201B' },
+            // Reference-image palette (home page hero/products only) — navy + turquoise
+            navy: {
+              50:'#EEF2F8',100:'#DCE3F0',200:'#B3C1DC',300:'#8A9FC8',
+              400:'#4F6293',500:'#2E4166',600:'#223355',700:'#1B2A4A',
+              800:'#16213E',900:'#0F1830'
+            },
+            turquoise: {
+              50:'#E7FBF8',100:'#C7F5EE',200:'#93EBDE',300:'#5CDBC9',
+              400:'#2DC7B4',500:'#14B8A6',600:'#0D9488',700:'#0B7A70'
+            },
           }
         }
       }
@@ -146,8 +166,8 @@
     *{margin:0;padding:0;box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{
-      font-family:'Cairo','Inter',sans-serif;
-      background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 50%,#f0f9ff 100%);
+      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;
+      background:linear-gradient(180deg,#F6F4EC 0%,#F1EFE4 100%);
       min-height:100vh;
       -webkit-font-smoothing:antialiased;
     }
@@ -158,37 +178,37 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
     /* ── Typography ─────────────────────────────── */
-    [lang=en] body,[lang=en] .en-only{font-family:'Inter',sans-serif}
+    [lang=en] body,[lang=en] .en-only{font-family:'IBM Plex Sans',sans-serif}
     .gradient-text{
-      background:linear-gradient(135deg,#0284c7 0%,#d946ef 100%);
+      background:linear-gradient(135deg,#12734F 0%,#C08A2E 100%);
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
     }
 
     /* ── Buttons ─────────────────────────────────── */
     .btn-primary{
-      background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);
+      background:linear-gradient(135deg,#12734F 0%,#0E5C40 100%);
       color:#fff;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;box-shadow:0 4px 15px rgba(2,132,199,.3);
+      transition:all .3s ease;box-shadow:0 4px 15px rgba(18,115,79,.3);
       border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(2,132,199,.4)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(18,115,79,.4)}
     .btn-primary:active{transform:translateY(0)}
     .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
     .btn-secondary{
-      background:#fff;color:#0284c7;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;border:2px solid #0284c7;cursor:pointer;
+      background:#fff;color:#12734F;padding:14px 28px;border-radius:16px;font-weight:700;
+      transition:all .3s ease;border:2px solid #12734F;cursor:pointer;
       display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-secondary:hover{background:#0284c7;color:#fff;transform:translateY(-2px)}
+    .btn-secondary:hover{background:#12734F;color:#fff;transform:translateY(-2px)}
 
     /* ── Forms ───────────────────────────────────── */
     .form-input{
       width:100%;padding:14px 18px;background:rgba(249,250,251,.8);
       border:2px solid #e5e7eb;border-radius:14px;transition:all .3s ease;
-      font-family:'Cairo','Inter',sans-serif;font-size:15px;color:#111827
+      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;color:#111827
     }
-    .form-input:focus{border-color:#0284c7;outline:none;box-shadow:0 0 0 4px rgba(2,132,199,.1);background:#fff}
+    .form-input:focus{border-color:#12734F;outline:none;box-shadow:0 0 0 4px rgba(18,115,79,.1);background:#fff}
     .form-input::placeholder{color:#9ca3af}
 
     /* ── Cards ───────────────────────────────────── */
@@ -230,7 +250,7 @@
 
     /* ── Chat Bubbles ────────────────────────────── */
     .chat-bubble{max-width:75%;padding:12px 16px;border-radius:18px;position:relative;word-break:break-word;line-height:1.6}
-    .chat-bubble.sent{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
+    .chat-bubble.sent{background:linear-gradient(135deg,#12734F,#0E5C40);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
     .chat-bubble.received{background:#f3f4f6;color:#1f2937;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
     /* ── Skeleton ────────────────────────────────── */
@@ -240,17 +260,17 @@
     /* ── Scrollbar ───────────────────────────────── */
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
-    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#0284c7,#0369a1);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#12734F,#0E5C40);border-radius:10px}
 
     /* ── Tab System ──────────────────────────────── */
     .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
-    .tab-btn.active{color:#0284c7;border-bottom-color:#0284c7}
+    .tab-btn.active{color:#12734F;border-bottom-color:#12734F}
 
     /* ── Dropdown ────────────────────────────────── */
     .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
     .dropdown.active{display:block;animation:fadeIn .2s ease-out}
     .dropdown a,.dropdown button{display:block;width:100%;padding:12px 18px;text-align:right;color:#374151;text-decoration:none;transition:all .2s ease;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-size:14px}
-    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#0284c7}
+    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#12734F}
 
     /* ── LTR overrides (English mode) ───────────────*/
     html[dir=ltr] .dropdown a,html[dir=ltr] .dropdown button{text-align:left}
@@ -262,7 +282,7 @@
     .chat-messages-area::-webkit-scrollbar{width:4px}
     .chat-messages-area::-webkit-scrollbar-track{background:transparent}
     .chat-messages-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
-    .chat-text-input:focus{outline:none;border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
+    .chat-text-input:focus{outline:none;border-color:#12734F;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
     .chat-send-btn:active{transform:scale(.92)}
     .chat-file-input{display:none !important}
     .emoji-quick{transition:transform .15s}
@@ -275,7 +295,7 @@
 
     /* ── Nav ─────────────────────────────────────── */
     .nav-link{position:relative;transition:all .3s ease}
-    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#0284c7,#0369a1);border-radius:2px;transition:width .3s ease}
+    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#1B2A4A,#14B8A6);border-radius:2px;transition:width .3s ease}
     html[dir=ltr] .nav-link::after{right:auto;left:0}
     .nav-link.active::after{width:100%}
 
@@ -307,7 +327,7 @@
     /* ── App Loading Screen ──────────────────────── */
     #appLoadingScreen{
       position:fixed;inset:0;z-index:99999;
-      background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);
+      background:linear-gradient(135deg,#1B2A4A 0%,#0F1830 100%);
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
       transition:opacity .5s ease;
     }
@@ -348,9 +368,20 @@
 </head>
 <body>
 
+<!-- ── Signature seal glyph — reused everywhere escrow protection is shown ── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="seal-icon" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="2.5"/>
+    <circle cx="32" cy="32" r="23" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3"/>
+    <path d="M20 33.5 L27.5 41 L45 22" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
 <!-- ── App Loading Screen (shown until Firebase auth state resolves) ── -->
 <div id="appLoadingScreen">
-  <img src="/icons/logo.jpg" alt="Services Mall" style="width:110px;height:110px;border-radius:24px;object-fit:cover;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px">
+  <div style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px">
+    <svg style="width:60px;height:60px;color:#fff"><use href="#seal-icon"/></svg>
+  </div>
   <div class="spinner"></div>
   <p style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
   <p style="color:rgba(255,255,255,.7);font-size:13px;font-weight:600">خدماتك أونلاين</p>
@@ -369,19 +400,20 @@
 <nav class="glass sticky top-0 z-50 border-b border-white/40 shadow-sm">
   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
 
-    <!-- Logo -->
+    <!-- Logo — new mark: the same "seal" glyph used for the escrow trust
+         story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
-      <div class="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center shadow-sm">
-        <img src="/icons/logo.jpg" alt="Services Mall" style="width:32px;height:32px;border-radius:8px;object-fit:cover">
+      <div class="w-9 h-9 bg-gradient-to-br from-navy-800 to-turquoise-500 rounded-xl flex items-center justify-center shadow-sm">
+        <svg class="w-5 h-5 text-white"><use href="#seal-icon"/></svg>
       </div>
       <span class="font-black text-gray-900 text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
 
     <!-- Desktop Nav Links -->
     <div class="hidden md:flex items-center gap-1">
-      <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.home">الرئيسية</button>
-      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.services">الخدمات</button>
-      <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition" data-i18n="nav.orders">طلباتي</button>
+      <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
+      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
     </div>
 
     <!-- Right Controls -->
@@ -412,7 +444,7 @@
       <!-- Cart hidden -->
 
       <!-- Notifications -->
-      <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-brand-100 text-gray-700 hover:text-brand-600 transition hidden">
+      <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-navy-100 text-gray-700 hover:text-navy-700 transition hidden">
         <i class="fa-solid fa-bell"></i>
         <span data-notif-count class="hidden">0</span>
       </button>
@@ -424,7 +456,7 @@
       </div>
 
       <div id="userMenuWrap" class="relative hidden">
-        <button onclick="toggleUserMenu()" class="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 hover:bg-brand-100 transition">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-2 bg-navy-50 border border-navy-200 rounded-xl px-3 py-2 hover:bg-navy-100 transition">
           <img id="navAvatar" src="" class="w-7 h-7 rounded-full object-cover" alt="">
           <span id="navName" class="text-sm font-bold text-gray-900 hidden sm:block max-w-24 truncate"></span>
           <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
@@ -475,81 +507,144 @@
 
 <!-- ─── HOME ──────────────────────────────────────────────── -->
 <div id="page-home" class="page">
-  <!-- Hero -->
-  <section class="relative overflow-hidden py-20 px-4">
-    <div class="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-700 to-accent-600 opacity-95"></div>
-    <div class="absolute inset-0" style="background:url('https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600') center/cover no-repeat;opacity:.08"></div>
-    <!-- Animated circles -->
-    <div class="absolute top-20 start-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse-slow"></div>
-    <div class="absolute bottom-10 end-20 w-48 h-48 bg-accent-400/10 rounded-full blur-2xl animate-pulse-slow" style="animation-delay:1s"></div>
+  <!-- Hero — navy/turquoise reference layout: pill search + category chips + icon illustration -->
+  <section class="relative overflow-hidden py-16 md:py-24 px-4 border-b border-gray-100" style="background:linear-gradient(180deg,#F3F6FB 0%,#EAF0F8 100%)">
+    <div class="relative max-w-7xl mx-auto grid md:grid-cols-2 gap-10 md:gap-14 items-center">
 
-    <div class="relative max-w-5xl mx-auto text-center">
-      <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm font-bold mb-8 border border-white/20">
-        <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
-        <span>الأكثر ثقة في مصر والوطن العربي</span>
-      </div>
-      <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight" data-i18n="home.hero.title">
-        منصتك الأولى<br>للخدمات الرقمية الاحترافية
-      </h1>
-      <p class="text-xl text-brand-100 mb-10 max-w-2xl mx-auto leading-relaxed" data-i18n="home.hero.subtitle">
-        اطلب أفضل الخدمات من خبراء معتمدين بأمان تام وضمان استرداد كامل
-      </p>
-      <div class="flex flex-wrap gap-4 justify-center">
-        <button onclick="navigateTo('services')" class="bg-white text-brand-700 font-black px-8 py-4 rounded-2xl hover:bg-brand-50 transition shadow-lg flex items-center gap-3 text-lg">
-          <i class="fa-solid fa-grid-2"></i><span data-i18n="home.hero.cta">استعرض الخدمات</span>
-        </button>
-        <button onclick="navigateTo('register')" class="bg-white/15 backdrop-blur-sm text-white font-black px-8 py-4 rounded-2xl hover:bg-white/25 transition border-2 border-white/30 flex items-center gap-3 text-lg">
+      <!-- Text + Search -->
+      <div class="text-center md:text-start">
+        <h1 class="font-sans font-black text-4xl md:text-5xl text-navy-900 mb-5 leading-tight" data-i18n="home.hero.title">
+          منصتك الأولى للخدمات الرقمية الاحترافية
+        </h1>
+        <p class="text-lg text-navy-500 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed" data-i18n="home.hero.subtitle">
+          اطلب أفضل الخدمات من خبراء معتمدين — فلوسك محجوزة عندنا لحد ما توافق إنك استلمت
+        </p>
+
+        <!-- Prominent pill search — reference layout -->
+        <div class="bg-white shadow-xl shadow-navy-900/10 rounded-full p-1.5 flex items-center gap-1 max-w-xl mx-auto md:mx-0">
+          <i class="fa-solid fa-magnifying-glass text-navy-300 ms-4 hidden sm:block"></i>
+          <input type="text" id="heroSearchInput" class="flex-1 min-w-0 bg-transparent border-0 outline-none px-4 py-3 text-navy-900 placeholder:text-navy-300 text-sm"
+            placeholder="ابحث هنا... عن أي خدمة بتدور؟" data-i18n="home.hero.searchPlaceholder"
+            onkeypress="if(event.key==='Enter'){event.preventDefault();doHeroSearch();}">
+          <button onclick="doHeroSearch()" class="bg-navy-800 hover:bg-navy-900 text-white font-bold px-7 py-3 rounded-full transition flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0">
+            <span data-i18n="home.hero.searchBtn">بحث</span>
+          </button>
+        </div>
+
+        <!-- Category pill chips — alternating navy/turquoise/outline -->
+        <div class="flex flex-wrap gap-2 mt-5 justify-center md:justify-start">
+          <button onclick="filterByCategory('marketing')" data-i18n="home.hero.chip1" class="px-4 py-2 rounded-full text-sm font-bold bg-navy-800 text-white hover:bg-navy-900 transition">تسويق رقمي</button>
+          <button onclick="filterByCategory('programming')" data-i18n="home.hero.chip2" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-500 text-white hover:bg-turquoise-600 transition">الأمن السيبراني</button>
+          <button onclick="filterByCategory('seo')" data-i18n="home.hero.chip3" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">استشارات تقنية</button>
+          <button onclick="filterByCategory('design')" data-i18n="home.hero.chip4" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">خدمات صحية</button>
+        </div>
+
+        <button onclick="navigateTo('register')" class="inline-flex items-center gap-3 bg-turquoise-500 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-turquoise-600 transition mt-8">
           <i class="fa-solid fa-rocket"></i><span data-i18n="home.hero.sell">ابدأ البيع</span>
         </button>
       </div>
 
-      <!-- Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16">
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
-          <p class="text-3xl font-black text-white">+5,200</p>
-          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
+      <!-- Flat icon illustration — reference style (not a photo) -->
+      <div class="relative hidden md:flex items-center justify-center">
+        <div class="w-72 h-72 lg:w-80 lg:h-80 bg-turquoise-50 rounded-full flex items-center justify-center">
+          <svg viewBox="0 0 200 200" class="w-44 h-44 lg:w-52 lg:h-52" fill="none">
+            <path d="M58 92 a19 19 0 0 1 7-37 a27 27 0 0 1 53-9 a21 21 0 0 1 4 43 z" stroke="#0D9488" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+            <rect x="69" y="54" width="6" height="17" rx="2" fill="#14B8A6"/>
+            <rect x="83" y="44" width="6" height="27" rx="2" fill="#14B8A6"/>
+            <rect x="97" y="49" width="6" height="22" rx="2" fill="#14B8A6"/>
+            <rect x="45" y="100" width="110" height="70" rx="10" fill="#fff" stroke="#1B2A4A" stroke-width="4"/>
+            <rect x="55" y="110" width="90" height="50" rx="5" fill="#1B2A4A" opacity=".07"/>
+            <circle cx="100" cy="135" r="16" fill="none" stroke="#0D9488" stroke-width="4"/>
+            <path d="M100 128v14l9 5" stroke="#0D9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="100" y1="170" x2="100" y2="182" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
+            <line x1="78" y1="182" x2="122" y2="182" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
-          <p class="text-3xl font-black text-white">+1,800</p>
-          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.sellers">بائع محترف</p>
+        <!-- Floating escrow trust card — keeps the differentiator, new palette -->
+        <div class="absolute -bottom-4 -start-6 bg-white rounded-2xl shadow-xl border border-navy-50 p-4 flex items-center gap-3 max-w-[230px]">
+          <div class="w-11 h-11 bg-navy-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-navy-700"><use href="#seal-icon"/></svg>
+          </div>
+          <div>
+            <p class="font-black text-navy-900 text-sm">فلوسك في أمان</p>
+            <p class="text-navy-400 text-xs mt-0.5">محجوزة لحد ما توافق</p>
+          </div>
         </div>
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
-          <p class="text-3xl font-black text-white">+42,000</p>
-          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
+        <div class="absolute -top-5 -end-5 bg-white rounded-2xl shadow-xl border border-navy-50 px-4 py-3 flex items-center gap-2">
+          <span class="text-turquoise-500 text-lg">⭐</span>
+          <span class="font-black text-navy-900">4.9</span>
+          <span class="text-navy-400 text-xs">/5</span>
         </div>
-        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15">
-          <p class="text-3xl font-black text-white">4.9 ⭐</p>
-          <p class="text-brand-200 text-sm mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
-        </div>
+      </div>
+    </div>
+
+    <!-- Stats — real counts from Firestore, loaded by loadHomeStats() below.
+         Shows "—" (not a fake number) until the real count arrives, and can
+         go down as well as up since it's a live count, not a marketing figure. -->
+    <div class="relative max-w-5xl mx-auto mt-14 md:mt-16 pt-10 border-t border-navy-100/60 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div>
+        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statServices">—</p>
+        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
+      </div>
+      <div>
+        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statSellers">—</p>
+        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.sellers">بائع محترف</p>
+      </div>
+      <div>
+        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statOrders">—</p>
+        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
+      </div>
+      <div>
+        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statRating">— ⭐</p>
+        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
       </div>
     </div>
   </section>
 
-  <!-- Why us -->
+  <!-- Why us — real photos instead of icon circles -->
   <section class="py-16 px-4 bg-white">
     <div class="max-w-6xl mx-auto">
-      <h2 class="text-3xl font-black text-gray-900 text-center mb-12">لماذا مول الخدمات؟</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="text-center p-6">
-          <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-shield-halved text-amber-600 text-2xl"></i>
+      <h2 class="font-sans font-black text-3xl text-gray-900 text-center mb-3">لماذا مول الخدمات؟</h2>
+      <p class="text-gray-400 text-center mb-12 max-w-xl mx-auto">الأمان والاحترافية مش شعار — دي طريقة شغلنا في كل طلب</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
+          <div class="relative h-44 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1583508915901-b5f84c1dcde1?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="نظام الضمان" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
+            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <svg class="w-5 h-5 text-navy-700"><use href="#seal-icon"/></svg>
+            </div>
           </div>
-          <h3 class="font-black text-gray-900 text-lg mb-2">نظام الضمان Escrow</h3>
-          <p class="text-gray-500 text-sm leading-relaxed">أموالك محمية حتى تستلم خدمتك كاملاً. لا نحول للبائع إلا بعد تأكيدك.</p>
+          <div class="p-5">
+            <h3 class="font-black text-gray-900 text-lg mb-2">نظام الضمان Escrow</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">أموالك محمية حتى تستلم خدمتك كاملاً. لا نحول للبائع إلا بعد تأكيدك.</p>
+          </div>
         </div>
-        <div class="text-center p-6">
-          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-credit-card text-green-600 text-2xl"></i>
+        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
+          <div class="relative h-44 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1612299273045-362a39972259?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="وسائل الدفع" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
+            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <i class="fa-solid fa-credit-card text-turquoise-600"></i>
+            </div>
           </div>
-          <h3 class="font-black text-gray-900 text-lg mb-2">10+ وسيلة دفع</h3>
-          <p class="text-gray-500 text-sm leading-relaxed">Paymob، فوري، محافظ إلكترونية، PayPal، Stripe، تحويل بنكي وأكثر.</p>
+          <div class="p-5">
+            <h3 class="font-black text-gray-900 text-lg mb-2">10+ وسيلة دفع</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">دفع آمن عبر فواتيرك — بطاقات ائتمان، فوري، ومحافظ إلكترونية، من صفحة واحدة.</p>
+          </div>
         </div>
-        <div class="text-center p-6">
-          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-rotate-left text-blue-600 text-2xl"></i>
+        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
+          <div class="relative h-44 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1620344527458-28900b32d695?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="ضمان الاسترداد" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
+            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <i class="fa-solid fa-rotate-left text-navy-700"></i>
+            </div>
           </div>
-          <h3 class="font-black text-gray-900 text-lg mb-2">ضمان الاسترداد</h3>
-          <p class="text-gray-500 text-sm leading-relaxed">إذا لم تكن راضياً، فريق الدعم يحل النزاع ويعيد أموالك كاملاً.</p>
+          <div class="p-5">
+            <h3 class="font-black text-gray-900 text-lg mb-2">ضمان الاسترداد</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">إذا لم تكن راضياً، فريق الدعم يحل النزاع ويعيد أموالك كاملاً.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -560,7 +655,7 @@
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-3xl font-black text-gray-900" data-i18n="home.featured">خدمات مميزة</h2>
-        <button onclick="navigateTo('services')" class="text-brand-600 font-bold flex items-center gap-2 hover:gap-3 transition-all">
+        <button onclick="navigateTo('services')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all">
           <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
         </button>
       </div>
@@ -574,31 +669,55 @@
   <!-- Categories -->
   <section class="py-16 px-4 bg-white">
     <div class="max-w-7xl mx-auto">
-      <h2 class="text-3xl font-black text-gray-900 text-center mb-10" data-i18n="home.categories">تصفح التصنيفات</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <button onclick="filterByCategory('design')"     class="flex flex-col items-center gap-3 p-5 bg-purple-50 rounded-2xl hover:bg-purple-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-purple-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-palette text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">تصميم</span>
+      <h2 class="font-sans font-black text-3xl text-gray-900 text-center mb-10" data-i18n="home.categories">تصفح التصنيفات</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <button onclick="filterByCategory('design')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1613909207039-6b173b755cc1?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="تصميم" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-palette text-navy-700 text-sm"></i></div>
+            <span class="text-white font-black text-sm">تصميم</span>
+          </div>
         </button>
-        <button onclick="filterByCategory('programming')" class="flex flex-col items-center gap-3 p-5 bg-blue-50 rounded-2xl hover:bg-blue-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-blue-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-code text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">برمجة</span>
+        <button onclick="filterByCategory('programming')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="برمجة" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-code text-turquoise-600 text-sm"></i></div>
+            <span class="text-white font-black text-sm">برمجة</span>
+          </div>
         </button>
-        <button onclick="filterByCategory('marketing')"  class="flex flex-col items-center gap-3 p-5 bg-green-50 rounded-2xl hover:bg-green-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-green-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-line text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">تسويق</span>
+        <button onclick="filterByCategory('marketing')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1606836606933-94d15b61617b?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="تسويق" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-chart-line text-navy-700 text-sm"></i></div>
+            <span class="text-white font-black text-sm">تسويق</span>
+          </div>
         </button>
-        <button onclick="filterByCategory('writing')"    class="flex flex-col items-center gap-3 p-5 bg-yellow-50 rounded-2xl hover:bg-yellow-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-yellow-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen-fancy text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">كتابة</span>
+        <button onclick="filterByCategory('writing')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1546514714-df0ccc50d7bf?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="كتابة" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-pen-fancy text-turquoise-600 text-sm"></i></div>
+            <span class="text-white font-black text-sm">كتابة</span>
+          </div>
         </button>
-        <button onclick="filterByCategory('video')"      class="flex flex-col items-center gap-3 p-5 bg-red-50 rounded-2xl hover:bg-red-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-red-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-video text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">فيديو</span>
+        <button onclick="filterByCategory('video')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1664575197229-3bbebc281874?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="فيديو" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-video text-navy-700 text-sm"></i></div>
+            <span class="text-white font-black text-sm">فيديو</span>
+          </div>
         </button>
-        <button onclick="filterByCategory('seo')"        class="flex flex-col items-center gap-3 p-5 bg-brand-50 rounded-2xl hover:bg-brand-100 hover:-translate-y-1 transition-all group">
-          <div class="w-12 h-12 bg-brand-500 group-hover:scale-110 transition-transform rounded-xl flex items-center justify-center"><i class="fa-solid fa-magnifying-glass-chart text-white"></i></div>
-          <span class="text-sm font-bold text-gray-700">SEO</span>
+        <button onclick="filterByCategory('seo')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
+          <img src="https://images.unsplash.com/photo-1682668938117-a45b79fb4476?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SEO" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 start-3 flex items-center gap-2">
+            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-magnifying-glass-chart text-turquoise-600 text-sm"></i></div>
+            <span class="text-white font-black text-sm">SEO</span>
+          </div>
         </button>
       </div>
     </div>
@@ -615,7 +734,7 @@
           <h2 class="text-3xl font-black text-gray-900">من مدونتنا</h2>
           <p class="text-gray-500 mt-1 text-sm">مقالات SEO يومية — موضوعات الأعمال الرقمية في مصر</p>
         </div>
-        <a href="/blog" class="text-brand-600 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm border border-brand-200 px-4 py-2 rounded-xl hover:bg-brand-50">
+        <a href="/blog" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm border border-navy-200 px-4 py-2 rounded-xl hover:bg-navy-50">
           <span>عرض جميع المقالات</span><i class="fa-solid fa-arrow-left"></i>
         </a>
       </div>
@@ -630,7 +749,7 @@
   </section>
 
   <!-- ── Newsletter Section ─────────────────────────────────────────────── -->
-  <section class="py-16 px-4" style="background:linear-gradient(135deg,#0369a1,#7c3aed)">
+  <section class="py-16 px-4" style="background:linear-gradient(135deg,#16213E,#0F1830)">
     <div class="max-w-2xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 border border-white/20">
         <i class="fa-solid fa-envelope-open-text text-yellow-300"></i>
@@ -644,7 +763,7 @@
           style="min-width:200px"
           onkeypress="if(event.key==='Enter')homeSubscribe()">
         <button onclick="homeSubscribe()"
-          class="bg-white text-brand-700 font-black px-6 py-3 rounded-xl hover:bg-blue-50 transition whitespace-nowrap text-sm flex items-center gap-2">
+          class="bg-white text-navy-800 font-black px-6 py-3 rounded-xl hover:bg-turquoise-50 transition whitespace-nowrap text-sm flex items-center gap-2">
           <i class="fa-solid fa-paper-plane"></i> اشتراك مجاني
         </button>
       </div>
@@ -658,24 +777,40 @@
     <div class="max-w-5xl mx-auto">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
         <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-shield-halved text-green-600 text-xl"></i></div>
+          <div class="w-12 h-12 bg-navy-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-shield-halved text-navy-700 text-xl"></i></div>
           <span class="text-sm font-bold text-gray-700">ضمان استرداد كامل</span>
         </div>
         <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-lock text-blue-600 text-xl"></i></div>
+          <div class="w-12 h-12 bg-turquoise-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-lock text-turquoise-600 text-xl"></i></div>
           <span class="text-sm font-bold text-gray-700">دفع آمن 100%</span>
         </div>
         <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-headset text-purple-600 text-xl"></i></div>
+          <div class="w-12 h-12 bg-navy-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-headset text-navy-700 text-xl"></i></div>
           <span class="text-sm font-bold text-gray-700">دعم 7/24</span>
         </div>
         <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-star text-amber-600 text-xl"></i></div>
+          <div class="w-12 h-12 bg-turquoise-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-star text-turquoise-600 text-xl"></i></div>
           <span class="text-sm font-bold text-gray-700">تقييم 4.9/5</span>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
+  <footer style="background:#0F1830" class="py-10 px-4">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="text-center md:text-right">
+        <p class="text-white font-black">مول الخدمات</p>
+        <p class="text-brand-200/60 text-xs mt-1">© 2026 جميع الحقوق محفوظة</p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+        <a href="/terms.html" target="_blank" class="text-brand-200/80 hover:text-white transition">الشروط والأحكام</a>
+        <a href="/privacy.html" target="_blank" class="text-brand-200/80 hover:text-white transition">سياسة الخصوصية</a>
+        <a href="/refund-policy.html" target="_blank" class="text-brand-200/80 hover:text-white transition">سياسة الاسترجاع</a>
+        <a href="mailto:support@mall-services.com" class="text-brand-200/80 hover:text-white transition">تواصل معنا</a>
+      </div>
+    </div>
+  </footer>
 
 </div>
 
@@ -697,12 +832,13 @@
           <option value="price_asc">السعر: الأقل</option>
           <option value="price_desc">السعر: الأعلى</option>
           <option value="rating">التقييم</option>
+          <option value="quality">الأعلى جودة</option>
         </select>
       </div>
     </div>
 
     <!-- Category Pills -->
-    <div class="flex gap-2 overflow-x-auto pb-2 mb-6">
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-3">
       <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
       <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎨 تصميم</button>
       <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">💻 برمجة</button>
@@ -710,6 +846,15 @@
       <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">✍️ كتابة</button>
       <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎬 فيديو</button>
       <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🔍 SEO</button>
+    </div>
+
+    <!-- Express Delivery Hub — services delivered in 24h or less -->
+    <div class="mb-6">
+      <button onclick="ServicesManager.toggleExpress()" id="expressToggleBtn"
+        class="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-xl text-sm font-bold hover:bg-orange-100 transition">
+        <i class="fa-solid fa-bolt"></i>
+        <span>⚡ خدمات سريعة — تسليم خلال 24 ساعة</span>
+      </button>
     </div>
 
     <div id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
@@ -720,10 +865,10 @@
   </div>
 </div>
 
-<!-- ─── CART (hidden — payment disabled) ────────────────────── -->
+<!-- ─── CART (rendered dynamically, hidden until populated) ─── -->
 <div id="page-cart" class="page" style="display:none"></div>
 
-<!-- ─── PAYMENT (hidden — payment disabled) ─────────────────── -->
+<!-- ─── PAYMENT (rendered dynamically by PaymentSystem) ──────── -->
 <div id="page-payment" class="page" style="display:none"></div>
 
 <!-- ─── ORDERS ──────────────────────────────────────────────── -->
@@ -806,6 +951,15 @@
               <span class="text-sm font-bold">بائع</span>
             </label>
           </div>
+          <label class="flex items-start gap-2 text-xs text-gray-500 px-1">
+            <input type="checkbox" id="acceptTermsCheckbox" class="mt-0.5 accent-brand-600">
+            <span>
+              أوافق على
+              <a href="/terms.html" target="_blank" class="text-brand-600 font-bold underline">الشروط والأحكام</a>
+              و
+              <a href="/privacy.html" target="_blank" class="text-brand-600 font-bold underline">سياسة الخصوصية</a>
+            </span>
+          </label>
           <button onclick="AuthManager.register()" class="btn-primary w-full py-4" data-i18n="auth.register">إنشاء الحساب</button>
         </div>
         <p class="text-center mt-4 text-sm text-gray-500">
@@ -986,7 +1140,7 @@
               <span class="text-sm font-medium flex-1">Sitemap XML ثابت</span>
               <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
             </a>
-            <a href="/.netlify/functions/sitemap-dynamic" target="_blank"
+            <a href="/api/sitemap-dynamic" target="_blank"
               class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
               <i class="fa-solid fa-bolt text-purple-500 w-5"></i>
               <span class="text-sm font-medium flex-1">Sitemap ديناميكي (Firestore)</span>
@@ -1084,11 +1238,33 @@
       <!-- Form -->
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-black text-gray-700 mb-2">تفاصيل الطلب <span class="text-red-500">*</span></label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-black text-gray-700">تفاصيل الطلب <span class="text-red-500">*</span></label>
+            <button type="button" onclick="RequestSystem.openBriefAssistant()"
+              class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ساعدني أكتب الطلب بالذكاء الاصطناعي
+            </button>
+          </div>
           <textarea id="requestDetails" rows="4"
             class="form-input w-full resize-none text-sm"
             placeholder="صف ما تحتاجه بالتفصيل... (الهدف، المخرجات المطلوبة، أي ملاحظات مهمة)"></textarea>
         </div>
+
+        <!-- AI Brief Assistant (collapsible) -->
+        <div id="briefAssistantBox" class="hidden bg-purple-50 border border-purple-200 rounded-2xl p-4 space-y-3">
+          <p class="text-xs text-purple-800 font-bold flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            جاوب على شوية أسئلة سريعة وهنكتبلك الطلب بشكل احترافي
+          </p>
+          <input type="text" id="briefGoal" class="form-input w-full text-sm" placeholder="إيه الهدف من الخدمة دي بالظبط؟">
+          <input type="text" id="briefOutcome" class="form-input w-full text-sm" placeholder="عايز تستلم إيه في الآخر؟ (مثال: 5 تصاميم، مقال 800 كلمة)">
+          <input type="text" id="briefNotes" class="form-input w-full text-sm" placeholder="أي تفاصيل أو تفضيلات مهمة؟ (اختياري)">
+          <button type="button" onclick="RequestSystem.generateBrief()" id="briefGenBtn"
+            class="w-full btn-primary py-2.5 text-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-sparkles"></i> اكتب لي الطلب
+          </button>
+        </div>
+
         <div>
           <label class="block text-sm font-black text-gray-700 mb-2">الميعاد المطلوب (اختياري)</label>
           <input type="text" id="requestDeadline"
@@ -1124,17 +1300,17 @@
 <!-- Mobile Bottom Nav -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-50 pb-safe">
   <div class="flex items-center justify-around py-2">
-    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="home">
+    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="home">
       <i class="fa-solid fa-home text-lg"></i><span class="text-xs font-bold" data-i18n="nav.home">الرئيسية</span>
     </button>
-    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="services">
+    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="services">
       <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-xs font-bold" data-i18n="nav.services">الخدمات</span>
     </button>
     <!-- Cart hidden -->
-    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition" data-mobile-nav="orders">
+    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="orders">
       <i class="fa-solid fa-receipt text-lg"></i><span class="text-xs font-bold" data-i18n="nav.orders">طلباتي</span>
     </button>
-    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-brand-600 transition">
+    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition">
       <i class="fa-solid fa-user text-lg"></i><span class="text-xs font-bold">حسابي</span>
     </button>
   </div>
@@ -1150,13 +1326,13 @@
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 //  FIREBASE INIT v4.0
-//  • authDomain = project's own .firebaseapp.com  (NEVER a netlify domain)
+//  • authDomain = project's own .firebaseapp.com
 //  • Authorized Domains in Firebase Console must include:
-//      mall-services2.netlify.app
-//      services-mall1.netlify.app
+//      mall-services.pages.dev
+//      (+ your custom domain here, if you add one later — e.g. mallservices.com)
 //  • Google Cloud OAuth must include both domains in origins + redirect URIs:
-//      https://mall-services2.netlify.app/__/auth/handler
-//      https://services-mall1.netlify.app/__/auth/handler
+//      https://mall-services.pages.dev/__/auth/handler
+//      (+ https://yourcustomdomain.com/__/auth/handler once you have one)
 // ══════════════════════════════════════════════════════════════════════════════
 const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyDfWKWN5CTlBA-krEMXsmYmaI8j7fyuw20",
@@ -1179,6 +1355,11 @@ if (!firebase.apps.length) {
 const auth    = firebase.auth();
 const db      = firebase.firestore();
 const storage = firebase.storage();
+// Realtime Database — used ONLY for chat messages (js/chat.js). Firestore's
+// per-document read/write pricing gets expensive fast for a live chat feed;
+// RTDB bills by bandwidth/storage instead, which fits this pattern much better.
+const rtdb    = firebase.database();
+window.rtdb   = rtdb;
 
 // Google provider — no hardcoded domain, works on any authorized domain
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -1215,6 +1396,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 <!-- 4. Payment System -->
 <script src="js/request-system.js"></script>
+<script src="js/subscription-system.js"></script>
 
 <!-- 5. Escrow -->
 <script src="js/escrow.js"></script>
@@ -1226,7 +1408,6 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script src="js/order-workspace.js"></script>
 
 <!-- 7b. Dedicated Chat Module -->
-<script src="js/chat.js"></script>
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
 <script src="js/blog-engine.js"></script>
@@ -1417,7 +1598,58 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         }, 100);
     };
 
-    // ── Auth State Observer ───────────────────────────────────────────────────
+    // Hero search bar (home page) — navigates to services and applies the
+    // typed query + selected category, same delayed-call pattern as filterByCategory.
+    window.doHeroSearch = function() {
+        const query = document.getElementById('heroSearchInput')?.value.trim() || '';
+        const cat   = document.getElementById('heroSearchCategory')?.value || '';
+        AppState.filterCategory = cat;
+        navigateTo('services');
+        setTimeout(() => {
+            if (cat && typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
+            if (query && typeof ServicesManager?.search === 'function') {
+                const input = document.getElementById('servicesSearch');
+                if (input) input.value = query;
+                ServicesManager.search(query);
+            }
+        }, 100);
+    };
+
+    // ── Home page stats — real counts from Firestore, not hardcoded marketing
+    //    numbers. Fetched from /api/home-stats (server-side, service account)
+    //    rather than queried directly from the client: `orders` and `users`
+    //    reads are locked down by firestore.rules to "your own data only", so
+    //    a guest browsing the homepage couldn't run these counts directly —
+    //    see functions/api/home-stats.js for why. Runs once per session via
+    //    the initHomePage convention (fires on first load + every home visit,
+    //    but only actually fetches once). ─────────────────────────────────────
+    function _formatStatNumber(n) {
+        if (n == null) return '—';
+        return '+' + n.toLocaleString('en-US');
+    }
+    window.initHomePage = function() { loadHomeStats(); };
+    window.loadHomeStats = async function() {
+        if (window._homeStatsLoaded) return;
+        window._homeStatsLoaded = true;
+        try {
+            const resp = await fetch('/api/home-stats');
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'failed');
+
+            const elServices = document.getElementById('statServices');
+            const elSellers  = document.getElementById('statSellers');
+            const elOrders   = document.getElementById('statOrders');
+            const elRating   = document.getElementById('statRating');
+
+            if (elServices) elServices.textContent = _formatStatNumber(data.services);
+            if (elSellers)  elSellers.textContent  = _formatStatNumber(data.sellers);
+            if (elOrders)   elOrders.textContent   = _formatStatNumber(data.completedOrders);
+            if (elRating)   elRating.textContent   = (data.avgRating != null ? data.avgRating.toFixed(1) : '—') + ' ⭐';
+        } catch (err) {
+            console.error('[loadHomeStats]', err);
+            window._homeStatsLoaded = false; // allow a retry on next visit
+        }
+    };
     // Track if this is the first auth state change (page load)
     let _authFirstRun = true;
 
@@ -1643,7 +1875,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         renderCart();
         updateCartCount();
 
-        console.log('✅ Mall Services v3.0 ready — Chat | Firebase | Paymob | Google Auth');
+        console.log('✅ Mall Services v3.0 ready — Chat | Firebase | Fawaterak | Google Auth');
 
         // ── Newsletter subscription ──────────────────────────────────────────
         window.homeSubscribe = function() {
@@ -1701,13 +1933,13 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
             // ── Admin token fetch helper ────────────────────────────────────
             _fetchAI: async function(body) {
-              // The ADMIN_SECRET header is optional — Netlify function skips check if ADMIN_SECRET env is not set
+              // The ADMIN_SECRET header is optional — Function skips the check if ADMIN_SECRET env is not set
               var headers = { 'Content-Type': 'application/json' };
               // Pass uid as a lightweight token so the function can log admin identity
               if (window.AppState && window.AppState.currentUser) {
                 headers['X-Admin-Token'] = window.AppState.currentUser.uid;
               }
-              var res = await fetch('/.netlify/functions/ai-generate', {
+              var res = await fetch('/api/ai-generate', {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(body),
@@ -1832,7 +2064,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 container.innerHTML = '';
                 container.appendChild(frag);
               } catch(e) {
-                container.innerHTML = '<p class="text-xs text-gray-400">أضف GEMINI_API_KEY في Netlify Environment Variables</p>';
+                container.innerHTML = '<p class="text-xs text-gray-400">أضف GEMINI_API_KEY في Cloudflare Pages Environment Variables</p>';
               }
             },
 
@@ -1870,7 +2102,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 } else {
                   if (result) {
                     result.className = 'rounded-xl p-4 text-sm font-medium bg-red-50 border border-red-200 text-red-700';
-                    result.innerHTML = '❌ خطأ: ' + (data.error || 'مجهول') + '<br><small>تأكد من إضافة GEMINI_API_KEY في Netlify Environment Variables</small>';
+                    result.innerHTML = '❌ خطأ: ' + (data.error || 'مجهول') + '<br><small>تأكد من إضافة GEMINI_API_KEY في Cloudflare Pages Environment Variables</small>';
                   }
                 }
               } catch(e) {
@@ -1920,7 +2152,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 {done:true,  label:'JSON-LD Structured Data'},
                 {done:true,  label:'توليد محتوى تلقائي يومي'},
                 {done:true,  label:'نظام مدونة ديناميكي من Firestore'},
-                {done:false, label:'أضف GEMINI_API_KEY في Netlify Env Vars'},
+                {done:false, label:'أضف GEMINI_API_KEY في Cloudflare Env Vars'},
                 {done:false, label:'أضف UNSPLASH_ACCESS_KEY للصور'},
                 {done:false, label:'ربط Google Analytics'},
                 {done:false, label:'تقديم طلب Google AdSense'}

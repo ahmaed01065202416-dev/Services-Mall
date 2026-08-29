@@ -5,12 +5,19 @@ Disallow: /wallet
 Disallow: /orders
 Disallow: /workspace
 Disallow: /dashboard
-Disallow: /netlify/
+Disallow: /api/
 Disallow: /*.env
 
 # Crawl-delay
 Crawl-delay: 1
 
 # Sitemaps
-Sitemap: https://services-mall2.netlify.app/sitemap.xml
-Sitemap: https://services-mall2.netlify.app/blog-sitemap.xml
+Sitemap: https://mall-services.pages.dev/sitemap.xml
+Sitemap: https://mall-services.pages.dev/blog-sitemap.xml
+# ⚠️ ADDED: blog-sitemap.xml only lists the 9 hand-written static articles
+# (hardcoded, last touched 2025-05-21) — it never picks up AI-generated posts
+# (functions/api/ai-generate.js writes to Firestore, not this file). The
+# dynamic sitemap (functions/api/sitemap-dynamic.js, exposed here via
+# _redirects) reads blog_posts from Firestore on every request, so it's the
+# one that actually reflects new/published AI articles.
+Sitemap: https://mall-services.pages.dev/sitemap-live.xml

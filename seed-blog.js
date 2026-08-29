@@ -225,7 +225,7 @@ async function seed() {
 
   console.log(`\n✅ Seeded ${ok}/${POSTS.length} posts`);
   console.log('\nNext steps:');
-  console.log('  1. Add GEMINI_API_KEY to Netlify env vars');
+  console.log('  1. Add GEMINI_API_KEY to your Cloudflare Pages project env vars');
   console.log('  2. Set your Firestore user role to "admin"');
   console.log('  3. Visit /blog to see the articles\n');
 }
