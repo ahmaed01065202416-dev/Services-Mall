@@ -1,5 +1,5 @@
 // functions/api/ai-generate.js — Cloudflare Pages Function
-// AI Article Generator — Gemini 1.5 Flash / OpenAI GPT-4o-mini
+// AI Article Generator — Gemini 2.5 Flash / OpenAI GPT-4o-mini
 // Saves articles to Firebase Firestore automatically
 // Route: /api/ai-generate (frontend calls this path directly)
 //
@@ -66,8 +66,11 @@ async function callGemini(topic, keywords, key) {
 
 ابدأ مباشرة بالـ HTML بدون أي مقدمة نصية.`;
 
+  // ⚠️ CHANGED: gemini-1.5-flash was fully retired by Google (returns 404 for
+  // every request as of 2026) — switched to gemini-2.5-flash, the currently
+  // supported equivalent for this same v1beta generateContent endpoint.
   const json = await fetchJSON(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

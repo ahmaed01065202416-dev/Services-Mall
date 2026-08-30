@@ -7,7 +7,7 @@
  * back-and-forth clarification messages.
  *
  * ⚠️ COST NOTE: this calls the same Gemini/OpenAI key already used for blog
- * generation. Each call costs a small fraction of a cent (Gemini 1.5 Flash /
+ * generation. Each call costs a small fraction of a cent (Gemini 2.5 Flash /
  * GPT-4o-mini, short prompt+response) — genuinely marginal, but not literally
  * $0, and it's now reachable by any logged-in buyer instead of admin-only.
  * The per-user daily cap below (10/day) exists specifically to keep that
@@ -61,15 +61,20 @@ function _buildPrompt({ goal, outcome, notes, serviceTitle }) {
 
 async function _callGemini(prompt, key) {
     if (!key) throw new Error('GEMINI_API_KEY missing');
+    // ⚠️ CHANGED: gemini-1.5-flash is retired (404s on every call) — moved to
+    // gemini-2.5-flash, same fix as functions/api/ai-generate.js.
     const res = await fetchJSON(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 400 } }),
         }
     );
     const text = res.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!text) throw new Error('Empty Gemini response');
+    if (!text) {
+        const apiErr = res.error?.message || JSON.stringify(res).slice(0, 300);
+        throw new Error(`Empty Gemini response — ${apiErr}`);
+    }
     return text.trim();
 }
 
