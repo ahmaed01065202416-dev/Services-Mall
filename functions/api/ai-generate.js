@@ -79,7 +79,13 @@ async function callGemini(topic, keywords, key) {
   );
 
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('Empty Gemini response');
+  // ⚠️ CHANGED: surface Google's actual error (invalid key, region/model
+  // restriction, quota, etc.) instead of a generic "Empty Gemini response"
+  // that hid the real cause during setup — see functions/api/ai-generate.js.
+  if (!text) {
+    const apiErr = json.error?.message || json.candidates?.[0]?.finishReason || JSON.stringify(json).slice(0, 300);
+    throw new Error(`Empty Gemini response — ${apiErr}`);
+  }
   return text;
 }
 
@@ -100,7 +106,12 @@ async function callOpenAI(topic, keywords, key) {
   });
 
   const text = json.choices?.[0]?.message?.content || '';
-  if (!text) throw new Error('Empty OpenAI response');
+  // ⚠️ CHANGED: same reasoning as callGemini above — surface OpenAI's actual
+  // error instead of a generic message.
+  if (!text) {
+    const apiErr = json.error?.message || JSON.stringify(json).slice(0, 300);
+    throw new Error(`Empty OpenAI response — ${apiErr}`);
+  }
   return text;
 }
 
