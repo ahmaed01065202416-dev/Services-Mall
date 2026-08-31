@@ -48,6 +48,15 @@ const PLATFORM = {
     MIN_WITHDRAWAL:   100,
     MAX_WITHDRAWAL:   50000,
     WITHDRAWAL_NOTE:  '',
+    // Gateway/transfer cost deducted at withdrawal time (e.g. Kashier's payout
+    // fee) — separate from the platform commission (already deducted from the
+    // wallet balance when the order was completed). Shown to the seller as a
+    // net-amount preview before they submit the request. Default 0 until the
+    // real payout provider fee is known — update via admin settings.
+    WITHDRAWAL_FEE_PERCENT: 0,
+    // Payout cadence shown to sellers so they know when to expect money —
+    // wording only, does not restrict when a withdrawal request can be made.
+    PAYOUT_SCHEDULE_NOTE: 'الأرباح بتتحول كل 15 يوم من تاريخ آخر سحب (ممكن يوم أو يومين فرق حسب المعالجة).',
     // ── Platform Info ─────────────────────────────────────────────────
     CURRENCY:         'ج.م',
     CURRENCY_CODE:    'EGP',
@@ -118,12 +127,12 @@ const PAYMENT_METHODS = {
 // ── Escrow auto-dispute window ──────────────────────────────────────────────
 // If a buyer never clicks "confirm receipt" after a real DELIVERED order, the
 // payment used to be stuck in escrow forever (no seller-side dispute button,
-// no timeout). Server now opens a SYSTEM dispute (freezes escrow for admin
-// review) after this many days unless a dispute is already open — it no
-// longer auto-pays the seller, since a physical product may still be in
-// transit. See functions/api/payment.js (autoReleaseStale) + cron-worker.
-// Keep this in sync with AUTO_RELEASE_DAYS in functions/api/payment.js.
-const AUTO_RELEASE_DAYS = 7;
+// no timeout). After this many days of silence the server opens a DISPUTE for
+// admin review — it does NOT auto-pay the seller, since a delivery (e.g. a
+// physical product) can still legitimately be in transit past the deadline.
+// See functions/api/payment.js (autoFlagStaleDeliveries) + cron-worker.
+// Keep this in sync with AUTO_DISPUTE_DAYS in functions/api/payment.js.
+const AUTO_DISPUTE_DAYS = 7;
 
 // ── Global AppState ───────────────────────────────────────────────────────────
 window.AppState = window.AppState || {
@@ -519,7 +528,7 @@ window._feeLabel = function() {
 };
 // ── Expose to Global Scope ───────────────────────────────────────────────────
 Object.assign(window, {
-    COLLECTIONS, PLATFORM, CURRENCIES, ORDER_STATUS, PAYMENT_METHODS, AUTO_RELEASE_DAYS,
+    COLLECTIONS, PLATFORM, CURRENCIES, ORDER_STATUS, PAYMENT_METHODS, AUTO_DISPUTE_DAYS,
     serverTimestamp, increment, saveToStorage, uploadFile,
     generateId, formatDateAr, formatTimeAgo, formatCurrency, convertCurrency,
     updateCartCount, getStatusText, getStatusClass,

@@ -380,20 +380,22 @@
               ` : ''}
 
               <!-- ── Auto-dispute notice — visible to both parties while DELIVERED ──
-                   ⚠️ CHANGED (was "auto-release to seller"): a silent buyer no longer
-                   means an automatic payout — for physical products the item may still
-                   be in transit even after the seller marks DELIVERED. Server now opens
-                   a SYSTEM dispute after AUTO_RELEASE_DAYS (functions/api/payment.js
-                   autoReleaseStale, run by cron-worker) unless a dispute is already
-                   open, freezing the escrow for admin review instead of paying out —
-                   this banner reflects that to both sides up front. -->
+                   ⚠️ CHANGED (per Ahmed's feedback): originally this window ended in
+                   an automatic payout to the seller — wrong for anything that can
+                   still be legitimately in transit (e.g. a physical product), since
+                   it could pay for something the buyer never actually received. Now
+                   it ends in an automatic DISPUTE for admin review instead — the
+                   seller still gets a guaranteed outcome (never stuck forever), a
+                   human just decides refund vs. pay instead of the clock deciding
+                   "pay" by default. See functions/api/payment.js
+                   (autoFlagStaleDeliveries, run by cron-worker). -->
               ${order.status === ORDER_STATUS.DELIVERED ? `
               <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
                 <i class="fa-solid fa-clock text-amber-600 mt-0.5"></i>
                 <p class="text-sm text-amber-800 leading-relaxed">
                   ${isBuyer
-                    ? (isAr ? `لو معملتش حاجة خلال ${AUTO_RELEASE_DAYS} أيام من تاريخ التسليم، هيتفتح نزاع تلقائي والمبلغ هيتجمد لحين مراجعة الأدمن. أكّد الاستلام لو وصلك المنتج، أو افتح نزاع بنفسك لو فيه مشكلة.` : `If you take no action within ${AUTO_RELEASE_DAYS} days of delivery, a dispute opens automatically and the amount is frozen for admin review. Confirm receipt if the item arrived, or open a dispute yourself if there's an issue.`)
-                    : (isAr ? `لو العميل معملش حاجة خلال ${AUTO_RELEASE_DAYS} أيام من التسليم، هيتفتح نزاع تلقائي والمبلغ هيتجمد لحين مراجعة الأدمن — مش هيتحول لمحفظتك أوتوماتيك. لو العميل مش بيرد أو رافض بدون سبب، تقدر تفتح نزاع دلوقتي بنفسك.` : `If the buyer takes no action within ${AUTO_RELEASE_DAYS} days, a dispute opens automatically and the amount is frozen for admin review — it will not auto-transfer to your wallet. If they're unresponsive or refusing without reason, you can open a dispute now.`)}
+                    ? (isAr ? `لو معملتش حاجة خلال ${AUTO_DISPUTE_DAYS} أيام من تاريخ التسليم، هيتفتح نزاع تلقائي وهتراجعه إدارة الموقع — الفلوس مش هتتحول تلقائي للبائع. لو استلمت فعلاً، أكّد الاستلام دلوقتي أسرع للبائع.` : `If you take no action within ${AUTO_DISPUTE_DAYS} days of delivery, a dispute opens automatically for admin review — the amount does NOT auto-release to the seller. If you already received it, confirm now to pay the seller faster.`)
+                    : (isAr ? `لو العميل معملش حاجة خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم، هيتفتح نزاع تلقائي وتراجعه الإدارة (مش تحويل مباشر للفلوس). لو العميل مش بيرد أو رافض بدون سبب، تقدر تفتح نزاع بنفسك دلوقتي بدل ما تستنى.` : `If the buyer takes no action within ${AUTO_DISPUTE_DAYS} days, a dispute opens automatically for admin review (not a direct payout). If they're unresponsive or refusing without reason, you can open a dispute yourself now instead of waiting.`)}
                 </p>
               </div>
               ` : ''}

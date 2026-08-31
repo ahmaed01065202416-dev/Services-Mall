@@ -102,7 +102,7 @@ export async function onRequest(context) {
     console.log(`[Payment] Action: ${action} | IP: ${ip}`);
 
     // Actions that touch money/orders require a verified Firebase ID token.
-    const AUTH_REQUIRED = new Set(['fawaterakPay', 'releaseEscrow', 'requestWithdrawal', 'resolveDispute']);
+    const AUTH_REQUIRED = new Set(['fawaterakPay', 'kashierPay', 'releaseEscrow', 'requestWithdrawal', 'resolveDispute']);
     let auth = null;
     if (AUTH_REQUIRED.has(action)) {
         const authHeader = request.headers.get('Authorization') || '';
@@ -123,16 +123,17 @@ export async function onRequest(context) {
     try {
         switch (action) {
             case 'fawaterakPay':   return await handleFawaterak(body, env, CORS, auth);
+            case 'kashierPay':     return await handleKashier(body, env, CORS, auth);
             case 'releaseEscrow':  return await handleReleaseEscrow(body, env, CORS, auth);
             case 'resolveDispute': return await handleResolveDispute(body, env, CORS, auth);
             case 'requestWithdrawal': return await handleRequestWithdrawal(body, env, CORS, auth);
             case 'checkKeys':      return handleCheckKeys(env, CORS);
-            case 'autoReleaseStale': {
+            case 'autoFlagStaleDeliveries': {
                 // Cron-only (mirrors subscription.js chargeDue) — not in AUTH_REQUIRED
                 // because cron has no Firebase user, just the admin secret.
                 const adminToken = request.headers.get('X-Admin-Token');
                 if (!env.ADMIN_SECRET || adminToken !== env.ADMIN_SECRET) return json(401, CORS, { error: 'Unauthorized' });
-                return await handleAutoReleaseStale(env, CORS);
+                return await handleAutoFlagStaleDeliveries(env, CORS);
             }
             default:
                 return json(400, CORS, { error: `Unknown action: ${action}` });
@@ -346,6 +347,52 @@ async function handleFawaterak(body, env, CORS, auth) {
     return json(200, CORS, { redirectUrl: resp.data.url, orderId, invoiceKey: resp.data.invoiceKey, simulated: false });
 }
 
+// ── Kashier — ⚠️ SCAFFOLD, NOT VERIFIED ──────────────────────────────────────
+// This mirrors handleFawaterak's structure (same resolvePaymentTarget /
+// pending_payments / finalizePendingPayment pipeline) so wiring it in is a
+// small diff once it's real. The endpoint path, request body shape, and
+// response field names below are placeholders — I don't have access to
+// Kashier's real API reference (it's behind a merchant login), so guessing
+// exact values here would risk the same silent-failure bug we found and
+// fixed in ai-generate.js earlier. Before enabling KASHIER_API_KEY:
+//   1. Log into the Kashier merchant dashboard → Developer/API docs.
+//   2. Replace `base`, the request path, and the request body fields below
+//      with what their "create payment"/hosted-checkout docs actually show.
+//   3. Confirm the response field that holds the redirect/checkout URL.
+//   4. Do the same for functions/api/kashier-webhook.js (signature method +
+//      field names — do NOT assume HMAC-SHA256 or any field name below).
+// Until then this throws instead of silently no-oping, so a half-wired
+// integration fails loudly in testing rather than looking done.
+async function handleKashier(body, env, CORS, auth) {
+    const { customerData = {}, currency = 'EGP' } = body;
+    const target = await resolvePaymentTarget(body, env, auth);
+    const { total } = target;
+    const orderId = genOrderId();
+    await fsCreate(env, 'pending_payments', buildPendingPaymentDoc(target, auth, currency, 'kashier'), orderId);
+
+    if (!env.KASHIER_API_KEY) {
+        const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'kashier' });
+        return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`, simulated: true, orderId, orderIds: result.orderIds });
+    }
+
+    throw new Error(
+        'Kashier integration is a scaffold — fill in the real endpoint/body/response ' +
+        'fields in handleKashier() (functions/api/payment.js) from your Kashier ' +
+        'merchant dashboard docs before enabling KASHIER_API_KEY.'
+    );
+
+    // Once real, this will look roughly like:
+    // const base = env.KASHIER_BASE_URL || 'https://TODO-confirm-real-host';
+    // const resp = await apiPost(`${base}/TODO-real-path`, {
+    //     amount: total, currency,
+    //     customer: { name: customerData.name || '', email: customerData.email || '', phone: customerData.phone || '' },
+    //     merchantOrderId: orderId,
+    //     redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`,
+    //     webhookUrl: `${env.SITE_URL || env.ALLOWED_ORIGINS}/api/kashier-webhook`,
+    // }, { 'Authorization': `Bearer ${env.KASHIER_API_KEY}` });
+    // return json(200, CORS, { redirectUrl: resp.TODO_real_url_field, orderId, simulated: false });
+}
+
 // ── Two-tier affiliate commission ─────────────────────────────────────────────
 // Pays the referrer a % of the PLATFORM'S OWN FEE (never an extra charge on
 // the buyer or seller) — capped at the referred user's first 5 sales/purchases,
@@ -392,12 +439,12 @@ async function _creditAffiliateCommission(env, cfg, platformFee, buyerId, seller
     }
 }
 
-// ── Release escrow funds to the seller ────────────────────────────────────────
 // ── Shared: pay the seller out of a held escrow ───────────────────────────────
-// Used by a buyer's manual "confirm receipt" (handleReleaseEscrow), the
-// automatic timeout (handleAutoReleaseStale), and a dispute resolved in the
-// seller's favor (handleResolveDispute's pay_seller branch) — one guarded
-// path for every way money can leave escrow to a seller.
+// Used by a buyer's manual "confirm receipt" (handleReleaseEscrow) and a
+// dispute resolved in the seller's favor (handleResolveDispute's pay_seller
+// branch) — one guarded path for every way money can leave escrow to a seller.
+// (The stale-delivery timeout, handleAutoFlagStaleDeliveries below, does NOT
+// use this — it opens a dispute instead of paying automatically.)
 async function _releaseEscrowToSeller(env, orderId, order, escrow, cfg, buildNotice) {
     const platformFee = calcFee(escrow.amount, cfg);
     const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
@@ -447,22 +494,21 @@ async function handleReleaseEscrow(body, env, CORS, auth) {
     return json(200, CORS, { success: true, sellerAmount, platformFee });
 }
 
-// ── Auto-dispute: protects the BUYER when nobody confirms receipt in time ────
-// ⚠️ CHANGED (was auto-release-to-seller): this used to pay the seller
-// automatically once an order sat DELIVERED for more than AUTO_RELEASE_DAYS.
-// For physical products that silently pays out the seller even though the
-// item may still be in transit and never actually reached the buyer — the
-// buyer's silence isn't proof of receipt. Now it opens a SYSTEM dispute
-// instead: order → 'disputed', escrow → 'frozen', a dispute record is
-// created (raisedByRole: 'system'), and it lands in the admin's normal
-// disputes queue (dashboard.js adminTab('disputes')) for a human decision —
-// same resolveDispute() path used for any other dispute, so no money moves
-// until admin (or the buyer confirming manually) actually acts. Still only
-// fires on plain silence: an existing dispute already froze the escrow and
-// took it out of this query, so this never overrides an active disagreement.
-async function handleAutoReleaseStale(env, CORS) {
-    const AUTO_RELEASE_DAYS = 7; // keep in sync with js/constants.js AUTO_RELEASE_DAYS
-    const cutoff = new Date(Date.now() - AUTO_RELEASE_DAYS * 24 * 60 * 60 * 1000);
+// ── Auto-flag stale deliveries → opens a DISPUTE, does NOT auto-pay ──────────
+// ⚠️ CHANGED (per Ahmed's feedback): this used to auto-*release* the money to
+// the seller after AUTO_DISPUTE_DAYS of silence. That's wrong for anything
+// that isn't instant — e.g. a physical product can still legitimately be in
+// transit to the buyer past the deadline, so silently paying the seller out
+// could pay for something the buyer never actually received. Now it opens a
+// system-raised DISPUTE for admin review instead — the seller still gets a
+// guaranteed outcome (it doesn't sit forever), but a human decides refund vs.
+// pay instead of the clock deciding "pay" by default. See js/order-workspace.js
+// for the matching banner text change. A dispute already open (by either
+// party) freezes the escrow and takes the order out of this query, so this
+// never fires twice on the same order.
+async function handleAutoFlagStaleDeliveries(env, CORS) {
+    const AUTO_DISPUTE_DAYS = 7; // keep in sync with js/constants.js AUTO_DISPUTE_DAYS
+    const cutoff = new Date(Date.now() - AUTO_DISPUTE_DAYS * 24 * 60 * 60 * 1000);
 
     const staleOrders = await fsQuery(env, {
         from: [{ collectionId: 'orders' }],
@@ -488,43 +534,33 @@ async function handleAutoReleaseStale(env, CORS) {
 
             const disputeId = crypto.randomUUID();
             await fsCommit(env, [
-                writeUpdate(env, `orders/${order.id}`, { status: 'disputed', updatedAt: new Date() }),
-                writeUpdate(env, `escrow/${order.id}`, { status: 'frozen', frozenAt: new Date() }, { updateTime: escrow._updateTime }),
                 writeCreate(env, `disputes/${disputeId}`, {
                     orderId: order.id,
-                    raisedBy: 'system',
-                    raisedByName: 'النظام (تلقائي)',
-                    raisedByRole: 'system',
-                    reason: `فتح تلقائيًا: لم يتم تأكيد الاستلام خلال ${AUTO_RELEASE_DAYS} أيام من التسليم`,
-                    status: 'open',
-                    adminNotes: '',
-                    resolution: null,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
+                    raisedBy: 'system', raisedByName: 'نظام تلقائي', raisedByRole: 'system',
+                    reason: `لم يتفاعل العميل خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم — تم فتح النزاع تلقائيًا للمراجعة بدل تحويل المبلغ مباشرة (فقد يكون المنتج لا يزال في الطريق للعميل).`,
+                    status: 'open', adminNotes: '', resolution: null,
+                    createdAt: new Date(), updatedAt: new Date(),
                 }),
+                writeUpdate(env, `escrow/${order.id}`, { status: 'frozen', frozenAt: new Date() }, { updateTime: escrow._updateTime }),
+                writeUpdate(env, `orders/${order.id}`, { status: 'disputed', updatedAt: new Date() }),
                 writeCreate(env, `notifications/${crypto.randomUUID()}`, {
-                    userId: order.buyerId, type: 'auto_dispute', title: '⚠️ تم فتح نزاع تلقائيًا',
-                    message: `لعدم تأكيد الاستلام خلال ${AUTO_RELEASE_DAYS} أيام من التسليم، تم فتح نزاع تلقائي وتجميد المبلغ لحين المراجعة`,
+                    userId: order.buyerId, type: 'auto_disputed', title: '⚠️ تم فتح نزاع تلقائي على طلبك',
+                    message: `مضى ${AUTO_DISPUTE_DAYS} أيام على التسليم بدون رد منك، فتم تحويل الطلب لمراجعة الإدارة. لو استلمت الخدمة بالفعل، أكّد الاستلام في أقرب وقت.`,
                     orderId: order.id, read: false, createdAt: new Date(),
                 }),
                 writeCreate(env, `notifications/${crypto.randomUUID()}`, {
-                    userId: order.sellerId, type: 'auto_dispute', title: '⚠️ تم فتح نزاع تلقائيًا',
-                    message: `العميل لم يؤكد استلام الطلب خلال ${AUTO_RELEASE_DAYS} أيام، تم فتح نزاع تلقائي والمبلغ مجمد لحين مراجعة الأدمن`,
-                    orderId: order.id, read: false, createdAt: new Date(),
-                }),
-                writeCreate(env, `notifications/${crypto.randomUUID()}`, {
-                    userId: 'ADMIN', type: 'dispute', title: 'نزاع تلقائي جديد!',
-                    message: `نزاع تلقائي على الطلب #${order.id.substr(-8)} (لعدم تفاعل العميل خلال ${AUTO_RELEASE_DAYS} أيام)`,
+                    userId: escrow.sellerId, type: 'auto_disputed', title: '⚠️ تم فتح نزاع تلقائي على طلبك',
+                    message: `العميل لم يتفاعل خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم، فتم تحويل الطلب لمراجعة الإدارة بدل غلقه تلقائيًا.`,
                     orderId: order.id, read: false, createdAt: new Date(),
                 }),
             ]);
             results.push({ orderId: order.id, disputeId });
         } catch (err) {
-            console.error('[autoReleaseStale] failed for order', order.id, err.message);
+            console.error('[autoFlagStaleDeliveries] failed for order', order.id, err.message);
         }
     }
 
-    return json(200, CORS, { success: true, disputed: results.length, orders: results });
+    return json(200, CORS, { success: true, flagged: results.length, orders: results });
 }
 
 // ── Admin: resolve a dispute (refund the buyer OR pay the seller) ────────────
@@ -621,6 +657,16 @@ async function handleRequestWithdrawal(body, env, CORS, auth) {
     const balance = Number(wallet && wallet.balance) || 0;
     if (amt > balance) return json(400, CORS, { error: 'رصيدك غير كافٍ لهذا المبلغ' });
 
+    // ⚠️ ADDED: net amount after the payout provider's transfer fee (e.g.
+    // Kashier's cost to move money out), separate from the platform commission
+    // already deducted when the order completed. `amt` still leaves the
+    // seller's earned balance in full — feeAmount/netAmount are just recorded
+    // so both the seller and the admin see exactly what will actually arrive,
+    // instead of the fee being an invisible surprise at payout time.
+    const feePercent = Number(cfg.WITHDRAWAL_FEE_PERCENT) || 0;
+    const feeAmount  = Number((amt * feePercent / 100).toFixed(2));
+    const netAmount  = Number((amt - feeAmount).toFixed(2));
+
     const user = await fsGet(env, `users/${auth.uid}`);
     const reqId = crypto.randomUUID();
 
@@ -628,12 +674,13 @@ async function handleRequestWithdrawal(body, env, CORS, auth) {
         writeIncrement(env, `wallets/${auth.uid}`, 'balance', -amt),
         writeCreate(env, `withdrawals/${reqId}`, {
             userId: auth.uid, userName: (user && user.displayName) || '', userEmail: (user && user.email) || auth.email || '',
-            amount: amt, method: method || 'bank', accountInfo: String(accountInfo || '').slice(0, 300),
+            amount: amt, feePercent, feeAmount, netAmount,
+            method: method || 'bank', accountInfo: String(accountInfo || '').slice(0, 300),
             status: 'pending', createdAt: new Date(),
         }),
     ]);
 
-    return json(200, CORS, { success: true, requestId: reqId, newBalance: Number((balance - amt).toFixed(2)) });
+    return json(200, CORS, { success: true, requestId: reqId, netAmount, feeAmount, newBalance: Number((balance - amt).toFixed(2)) });
 }
 
 // ── Check Which Keys Are Configured (no secrets returned) ────────────────────

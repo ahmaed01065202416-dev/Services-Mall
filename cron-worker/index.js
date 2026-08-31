@@ -75,12 +75,11 @@ async function runDailyJob(env) {
       console.error('[CRON] Subscription billing job failed:', sErr.message);
     }
 
-    // Auto-dispute escrow for orders stuck in DELIVERED past AUTO_RELEASE_DAYS
-    // with no dispute opened — protects buyers from a silent auto-payout when
-    // a physical item may still be in transit. Opens a system dispute for
-    // admin review instead of paying the seller. See functions/api/payment.js
-    // (autoReleaseStale).
-    let autoReleaseResult = null;
+    // Flag orders stuck in DELIVERED past AUTO_DISPUTE_DAYS with no dispute
+    // opened — opens a dispute for admin review (does NOT auto-pay the
+    // seller; the delivery could still be legitimately in transit). See
+    // functions/api/payment.js (autoFlagStaleDeliveries).
+    let autoDisputeResult = null;
     try {
       const arRes = await fetch(`${baseUrl}/api/payment`, {
         method: 'POST',
@@ -88,15 +87,15 @@ async function runDailyJob(env) {
           'Content-Type': 'application/json',
           ...(env.ADMIN_SECRET ? { 'X-Admin-Token': env.ADMIN_SECRET } : {}),
         },
-        body: JSON.stringify({ action: 'autoReleaseStale' }),
+        body: JSON.stringify({ action: 'autoFlagStaleDeliveries' }),
       });
-      autoReleaseResult = await arRes.json();
-      console.log('[CRON] Auto-disputed stale escrows:', autoReleaseResult.disputed);
+      autoDisputeResult = await arRes.json();
+      console.log('[CRON] Auto-flagged stale deliveries:', autoDisputeResult.flagged);
     } catch (arErr) {
-      console.error('[CRON] Auto-dispute job failed:', arErr.message);
+      console.error('[CRON] Auto-flag job failed:', arErr.message);
     }
 
-    return { ok: true, generated: result.count, qualityScores: qualityResult && qualityResult.sellersProcessed, subscriptionsCharged: subsResult && subsResult.processed, autoDisputed: autoReleaseResult && autoReleaseResult.disputed };
+    return { ok: true, generated: result.count, qualityScores: qualityResult && qualityResult.sellersProcessed, subscriptionsCharged: subsResult && subsResult.processed, autoFlagged: autoDisputeResult && autoDisputeResult.flagged };
   } catch (err) {
     console.error('[CRON] Failed:', err.message);
     return { error: err.message };

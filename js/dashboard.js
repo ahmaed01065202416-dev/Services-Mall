@@ -295,7 +295,7 @@
                         <div>
                           <p class="font-black text-gray-900">${isAr?'نزاع على الطلب':'Dispute on order'} #${(d.orderId||'').substr(-8).toUpperCase()}</p>
                           <p class="text-sm text-gray-600 mt-1">${escapeHtml(d.reason||'—')}</p>
-                          <p class="text-xs text-gray-400 mt-1">${isAr?'رُفع بواسطة:':'Raised by:'} ${escapeHtml(d.raisedByName||d.raisedBy||'—')}${d.raisedByRole ? ` <span class="font-bold">(${d.raisedByRole==='seller' ? (isAr?'بائع':'seller') : d.raisedByRole==='system' ? (isAr?'تلقائي':'system') : (isAr?'مشتري':'buyer')})</span>` : ''}</p>
+                          <p class="text-xs text-gray-400 mt-1">${isAr?'رُفع بواسطة:':'Raised by:'} ${escapeHtml(d.raisedByName||d.raisedBy||'—')}${d.raisedByRole ? ` <span class="font-bold">(${d.raisedByRole==='seller' ? (isAr?'بائع':'seller') : d.raisedByRole==='system' ? (isAr?'⏱️ تلقائي — لا رد من العميل':'⏱️ automatic — no buyer response') : (isAr?'مشتري':'buyer')})</span>` : ''}</p>
                         </div>
                         <span class="text-xs bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full flex-shrink-0">${isAr?'مفتوح':'Open'}</span>
                       </div>
@@ -419,19 +419,20 @@
                         <p class="font-black text-gray-900">${escapeHtml(r.userName||'—')}</p>
                         <p class="text-sm text-gray-600">${escapeHtml(r.method||'—')} · ${escapeHtml(r.accountInfo||'—')}</p>
                         <p class="text-xs text-gray-400">${formatDateAr(r.createdAt)}</p>
+                        ${r.feeAmount ? `<p class="text-xs text-gray-500 mt-1">${isAr?'إجمالي':'Gross'}: ${formatCurrency(r.amount||0)} − ${isAr?'عمولة تحويل':'transfer fee'} ${formatCurrency(r.feeAmount)} = <span class="font-bold text-gray-700">${isAr?'صافي يتحول له':'net to pay'}: ${formatCurrency(r.netAmount)}</span></p>` : ''}
                       </div>
-                      <span class="font-black text-amber-700 text-xl">${formatCurrency(r.amount||0)}</span>
+                      <span class="font-black text-amber-700 text-xl">${formatCurrency(r.feeAmount ? r.netAmount : (r.amount||0))}</span>
                       <div class="flex gap-2">
-                        <button onclick="WalletManager.approveWithdrawal('${r.id}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ موافقة':'✓ Approve'}</button>
+                        <button onclick="WalletManager.approveWithdrawal('${r.id}')" title="${isAr?'اضغط بعد ما تحوّل الفلوس فعليًا للبائع':'Click after you have actually paid the seller'}" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ تم استلام الأرباح':'✓ Seller Paid'}</button>
                         <button onclick="WalletManager.rejectWithdrawal('${r.id}')" class="text-sm px-4 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">${isAr?'✕ رفض':'✕ Reject'}</button>
                       </div>
                     </div>`).join('')}</div>`}
                 <h4 class="font-black text-gray-700 mb-3 text-sm">${isAr?'سجل السحوبات':'Withdrawal History'}</h4>
                 <div class="space-y-2">${all.map(r=>`
                   <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                    <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800">${escapeHtml(r.userName||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(r.method||'—')} · ${escapeHtml(r.accountInfo||'—')}</p></div>
-                    <span class="font-black text-sm">${formatCurrency(r.amount||0)}</span>
-                    <span class="text-xs font-bold px-2 py-1 rounded-lg ${r.status==='approved'?'bg-green-100 text-green-700':r.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}">${r.status==='approved'?(isAr?'مقبول':'Approved'):r.status==='rejected'?(isAr?'مرفوض':'Rejected'):(isAr?'معلق':'Pending')}</span>
+                    <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800">${escapeHtml(r.userName||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(r.method||'—')} · ${escapeHtml(r.accountInfo||'—')}${r.status==='completed'&&r.paidAt?` · ${isAr?'اتحوّلت':'paid'} ${formatDateAr(r.paidAt)}`:''}</p></div>
+                    <span class="font-black text-sm">${formatCurrency(r.feeAmount ? r.netAmount : (r.amount||0))}</span>
+                    <span class="text-xs font-bold px-2 py-1 rounded-lg ${r.status==='completed'?'bg-green-100 text-green-700':r.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}">${r.status==='completed'?(isAr?'✓ اتدفعت':'Paid'):r.status==='rejected'?(isAr?'مرفوض':'Rejected'):(isAr?'معلق':'Pending')}</span>
                   </div>`).join('')}
                 </div>`;
 
@@ -1218,11 +1219,16 @@
               <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
                 <h3 class="text-xl font-black text-gray-900 mb-6">${isAr?'طلب سحب':'Withdrawal Request'}</h3>
                 ${PLATFORM.WITHDRAWAL_NOTE?`<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-700">${PLATFORM.WITHDRAWAL_NOTE}</div>`:''}
+                ${PLATFORM.PAYOUT_SCHEDULE_NOTE?`<div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 text-sm text-blue-700 flex items-start gap-2"><i class="fa-solid fa-calendar-days mt-0.5"></i><span>${escapeHtml(PLATFORM.PAYOUT_SCHEDULE_NOTE)}</span></div>`:''}
                 <div class="space-y-4">
                   <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'المبلغ (ج.م)':'Amount (EGP)'}</label>
-                    <input type="number" id="withdrawAmount" class="form-input" min="${PLATFORM.MIN_WITHDRAWAL}" max="${Math.min(balance,PLATFORM.MAX_WITHDRAWAL)}" value="${balance}" placeholder="${PLATFORM.MIN_WITHDRAWAL}">
+                    <input type="number" id="withdrawAmount" class="form-input" min="${PLATFORM.MIN_WITHDRAWAL}" max="${Math.min(balance,PLATFORM.MAX_WITHDRAWAL)}" value="${balance}" placeholder="${PLATFORM.MIN_WITHDRAWAL}" oninput="WalletManager.updateWithdrawPreview()">
                     <p class="text-xs text-gray-400 mt-1">${isAr?'الرصيد':'Balance'}: ${formatCurrency(balance)} · ${isAr?'الحد الأقصى':'Max'}: ${formatCurrency(PLATFORM.MAX_WITHDRAWAL)}</p></div>
-                  <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'طريقة الاستلام':'Payout Method'}</label>
+                  <!-- ⚠️ ADDED: net-amount preview — the seller sees exactly what
+                       will arrive after the payout provider's transfer fee, before
+                       they submit, instead of finding out later. -->
+                  <div id="withdrawPreview" class="bg-gray-50 rounded-xl p-3 text-sm ${PLATFORM.WITHDRAWAL_FEE_PERCENT ? '' : 'hidden'}"></div>
+                  <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'طريقة الاستلام (داخل مصر فقط حاليًا)':'Payout Method (Egypt only for now)'}</label>
                     <select id="withdrawMethod" class="form-input"><option value="bank">${isAr?'تحويل بنكي':'Bank Transfer'}</option><option value="vodafone">${isAr?'فودافون كاش':'Vodafone Cash'}</option><option value="instapay">InstaPay</option></select></div>
                   <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'تفاصيل الحساب':'Account Details'}</label>
                     <input type="text" id="withdrawAccount" class="form-input" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}" dir="ltr"></div>
@@ -1233,6 +1239,24 @@
                 </div>
               </div>`;
             document.body.appendChild(modal);
+            WalletManager.updateWithdrawPreview();
+        },
+
+        updateWithdrawPreview() {
+            const isAr = AppState.language !== 'en';
+            const el = document.getElementById('withdrawPreview');
+            if (!el) return;
+            const amt = parseFloat(document.getElementById('withdrawAmount')?.value) || 0;
+            const feePercent = Number(PLATFORM.WITHDRAWAL_FEE_PERCENT) || 0;
+            if (!feePercent || amt <= 0) { el.classList.add('hidden'); return; }
+            const fee = Number((amt * feePercent / 100).toFixed(2));
+            const net = Number((amt - fee).toFixed(2));
+            el.classList.remove('hidden');
+            el.innerHTML = `
+              <div class="flex justify-between text-gray-500"><span>${isAr?'مبلغ السحب':'Withdrawal amount'}</span><span>${formatCurrency(amt)}</span></div>
+              <div class="flex justify-between text-gray-500 mt-1"><span>${isAr?'عمولة التحويل':'Transfer fee'} (${feePercent}%)</span><span>-${formatCurrency(fee)}</span></div>
+              <div class="flex justify-between font-black text-gray-900 mt-2 pt-2 border-t border-gray-200"><span>${isAr?'هيوصلك صافي':'You will receive'}</span><span>${formatCurrency(net)}</span></div>
+            `;
         },
 
         async submitWithdrawal() {
@@ -1257,15 +1281,45 @@
                 if (AppState.wallet) AppState.wallet.balance = data.newBalance;
                 document.getElementById('withdrawModal')?.remove();
                 hideLoading();
-                showToast(isAr?'تم إرسال طلب السحب! سيُعالج خلال 24-48 ساعة':'Request submitted! Processing in 24-48h','success',6000);
+                const netMsg = data.feeAmount > 0
+                    ? (isAr ? `تم إرسال الطلب! هيوصلك صافي ${formatCurrency(data.netAmount)} بعد خصم عمولة التحويل` : `Request submitted! You'll receive ${formatCurrency(data.netAmount)} net after the transfer fee`)
+                    : (isAr ? 'تم إرسال طلب السحب!' : 'Request submitted!');
+                showToast(netMsg,'success',6000);
             } catch(e) { hideLoading(); showToast(e.message || t('general.error'),'error'); }
         },
 
+        // ⚠️ CHANGED: this used to just flip a status flag with no real meaning
+        // (no notification, no distinction from "still pending"). Now it's the
+        // admin's actual confirmation that they've sent the money externally
+        // (bank transfer / Vodafone Cash / InstaPay) — it closes the request out
+        // as 'completed' and notifies the seller with the exact date & time so
+        // they have a clear, timestamped record of when they got paid.
         async approveWithdrawal(reqId) {
+            const isAr = AppState.language !== 'en';
             showLoading();
             try {
-                await window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId).update({ status:'approved', processedAt:serverTimestamp() });
-                hideLoading(); showToast(AppState.language==='en'?'Approved':'تمت الموافقة','success');
+                const snap = await window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId).get();
+                const req  = snap.data();
+                if (!req) throw new Error(isAr?'الطلب غير موجود':'Request not found');
+
+                const paidAt = new Date();
+                const dateStr = paidAt.toLocaleDateString(isAr?'ar-EG':'en-GB', { year:'numeric', month:'long', day:'numeric' });
+                const timeStr = paidAt.toLocaleTimeString(isAr?'ar-EG':'en-GB', { hour:'2-digit', minute:'2-digit' });
+                const paidAmount = req.feeAmount ? req.netAmount : req.amount;
+
+                const batch = window.db.batch();
+                batch.update(window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId), { status:'completed', paidAt: serverTimestamp() });
+                batch.set(window.db.collection(COLLECTIONS.NOTIFICATIONS).doc(), {
+                    userId: req.userId, type: 'withdrawal_paid',
+                    title: isAr ? '💸 تم تحويل أرباحك' : '💸 Your payout was sent',
+                    message: isAr
+                        ? `تم تحويل ${formatCurrency(paidAmount)} لحسابك يوم ${dateStr} الساعة ${timeStr}`
+                        : `${formatCurrency(paidAmount)} was transferred to you on ${dateStr} at ${timeStr}`,
+                    read: false, createdAt: serverTimestamp(),
+                });
+                await batch.commit();
+
+                hideLoading(); showToast(isAr?'تم تسجيل الدفع وإشعار البائع':'Payment recorded and seller notified','success');
                 adminTab('withdraw');
             } catch(e) { hideLoading(); showToast(e.message,'error'); }
         },
