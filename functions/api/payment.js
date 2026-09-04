@@ -536,6 +536,7 @@ async function handleAutoFlagStaleDeliveries(env, CORS) {
             await fsCommit(env, [
                 writeCreate(env, `disputes/${disputeId}`, {
                     orderId: order.id,
+                    buyerId: order.buyerId || null, sellerId: escrow.sellerId || null,
                     raisedBy: 'system', raisedByName: 'نظام تلقائي', raisedByRole: 'system',
                     reason: `لم يتفاعل العميل خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم — تم فتح النزاع تلقائيًا للمراجعة بدل تحويل المبلغ مباشرة (فقد يكون المنتج لا يزال في الطريق للعميل).`,
                     status: 'open', adminNotes: '', resolution: null,

@@ -6,7 +6,11 @@
   <meta name="description" content="مول الخدمات — منصتك الأولى للخدمات الرقمية الاحترافية في مصر. تصميم مواقع، برمجة، تسويق رقمي، كتابة محتوى وأكثر — مع ضمان استرداد كامل عبر نظام Escrow.">
   <meta name="google-site-verification" content="z2bKviBbmgwGNYsqFn_DVgWrGsdtutjAVzT99_iqexk" />
   <meta name="keywords" content="خدمات رقمية, فريلانسر مصر, تصميم مواقع, برمجة, تسويق رقمي, كتابة محتوى, SEO, مول الخدمات, mall services egypt, خدمات اون لاين">
-  <meta name="theme-color" content="#12734F">
+  <meta name="theme-color" content="#1B2A4A">
+  <!-- ⚠️ ADDED: there was no favicon link anywhere in the project — the
+       browser tab showed a generic blank icon. Reuses the same seal glyph
+       as the logo/hero, in the new navy/turquoise palette. -->
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="author" content="مول الخدمات">
   <meta name="language" content="Arabic">
@@ -65,17 +69,30 @@
     }
   }
   </script>
-  <!-- Google Analytics 4 placeholder — replace G-XXXXXXXXXX with your real ID -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <!-- ⚠️ PERFORMANCE FIX: Google Analytics was loading unconditionally with the
+       placeholder ID "G-XXXXXXXXXX" — that's not a real property, so it was
+       pure waste: ~144 KB downloaded, ~68 KB of it never even used, plus
+       ~257ms of main-thread time, for analytics that literally go nowhere.
+       Flagged by both PageSpeed and GTmetrix reports. Every js/*.js caller
+       already guards with `if (window.trackEvent)`, so leaving trackEvent
+       undefined is completely safe — nothing breaks, it just no-ops.
+       TO ENABLE: replace G-XXXXXXXXXX below with your real Measurement ID
+       (Google Analytics → Admin → Data Streams → your stream), then remove
+       the "if (false)" wrapper. -->
   <script>
+  if (false) { // ← change to `if (true)` once you have a real Measurement ID
+    const gaScript = document.createElement('script');
+    gaScript.async = true;
+    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX'; // ← your real ID here too
+    document.head.appendChild(gaScript);
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX', { 'anonymize_ip': true });
-    // Custom event tracking helpers
+    gtag('config', 'G-XXXXXXXXXX', { 'anonymize_ip': true }); // ← and here
     window.trackEvent = function(action, category, label) {
       gtag('event', action, { 'event_category': category, 'event_label': label });
     };
+  }
   </script>
 
   <!-- PWA -->
@@ -104,62 +121,19 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 
-  <!-- TailwindCSS — CDN with inline config (must define config BEFORE loading script) -->
-  <script>
-    // Define tailwind config BEFORE loading Tailwind script
-    window.tailwind = window.tailwind || {};
-    window.tailwindConfig = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans:    ['IBM Plex Sans Arabic','IBM Plex Sans','sans-serif'],
-            display: ['Amiri','Fraunces','serif'],
-            mono:    ['IBM Plex Mono','monospace'],
-          },
-          colors: {
-            // "برنس" — أخضر زمردي عميق: الثقة والمال المحجوز بأمان
-            brand: {
-              50:'#EAF5F0',100:'#CFE9DD',200:'#9ED0BB',300:'#6BB699',
-              400:'#3D9C7B',500:'#1F8564',600:'#12734F',700:'#0E5C40',
-              800:'#0B4732',900:'#083527'
-            },
-            // "الختم" — ذهبي نحاسي: قيمة، أمانة، خاتم الضمان
-            accent: {
-              50:'#FBF3E4',100:'#F5E3C0',200:'#ECCB8C',300:'#E1AF5C',
-              400:'#D3993E',500:'#C08A2E',600:'#A06F22',700:'#7D561B',
-              800:'#5C3F14',900:'#3E2A0D'
-            },
-            // "المحضر" — حبر أخضر داكن يكاد يكون أسود: خلفية القبو/الهيرو
-            ink: { 700:'#233B32',800:'#1A2D26',900:'#12201B' },
-            // Reference-image palette (home page hero/products only) — navy + turquoise
-            navy: {
-              50:'#EEF2F8',100:'#DCE3F0',200:'#B3C1DC',300:'#8A9FC8',
-              400:'#4F6293',500:'#2E4166',600:'#223355',700:'#1B2A4A',
-              800:'#16213E',900:'#0F1830'
-            },
-            turquoise: {
-              50:'#E7FBF8',100:'#C7F5EE',200:'#93EBDE',300:'#5CDBC9',
-              400:'#2DC7B4',500:'#14B8A6',600:'#0D9488',700:'#0B7A70'
-            },
-          }
-        }
-      }
-    };
-  </script>
-  <script>
-    // Tailwind Play CDN — loads after config is ready
-    (function() {
-      var s = document.createElement('script');
-      s.src = 'https://cdn.tailwindcss.com';
-      s.onload = function() {
-        if (typeof tailwind !== 'undefined' && tailwind.config) {
-          tailwind.config = window.tailwindConfig;
-        }
-      };
-      s.onerror = function() { console.warn('[Tailwind] CDN failed to load — styles may be missing'); };
-      document.head.appendChild(s);
-    })();
-  </script>
+  <!-- ⚠️ PERFORMANCE FIX: this used to load cdn.tailwindcss.com and compile
+       Tailwind live in the browser on every single page view — flagged
+       explicitly by both PageSpeed and GTmetrix ("should not be used in
+       production"), and was the single longest main-thread task on the page
+       (~482ms) plus ~123 KB transferred (37.6 KB of it never even used).
+       Now a plain pre-built stylesheet, same as any other CSS file — no JS
+       execution needed at all. The theme (colors/fonts) that used to live in
+       the inline `window.tailwindConfig` script now lives in
+       tailwind.config.js — that file is the source of truth going forward.
+       Rebuild after any class/theme change with:
+         npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
+  -->
+  <link rel="stylesheet" href="/css/tailwind.css">
 
   <style>
     /* ── Reset & Base ────────────────────────────── */
@@ -348,12 +322,26 @@
     #offlineBanner.show{transform:translateY(0)}
 
     /* ── Skeleton ────────────────────────────────── */
+    /* ⚠️ PERFORMANCE FIX: animating `background-position` forces the browser
+       to repaint every frame (not GPU-composited) — flagged by GTmetrix as
+       "non-composited animations" across every skeleton on the page. Same
+       shimmer look, now done with `transform: translateX()` on an overlay
+       pseudo-element instead, which the browser can composite on the GPU. */
     .skeleton{
-      background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
-      background-size:200% 100%;animation:shimmer 1.5s infinite;
+      position:relative;
+      overflow:hidden;
+      background:#eef1f5;
       border-radius:8px;
     }
-    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .skeleton::after{
+      content:'';
+      position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.6) 50%,transparent 100%);
+      transform:translateX(-100%);
+      animation:shimmer 1.5s infinite;
+      will-change:transform;
+    }
+    @keyframes shimmer{100%{transform:translateX(100%)}}
 
     /* ── Terms Modal ─────────────────────────────── */
     #termsModal{
@@ -741,9 +729,9 @@
       <!-- Dynamic grid loaded by blog-engine -->
       <div id="home-blog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px">
         <!-- Skeleton placeholders -->
-        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px"></div>
-        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px;animation-delay:.15s"></div>
-        <div style="background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:18px;height:280px;animation-delay:.3s"></div>
+        <div class="skeleton" style="border-radius:18px;height:280px"></div>
+        <div class="skeleton" style="border-radius:18px;height:280px"></div>
+        <div class="skeleton" style="border-radius:18px;height:280px"></div>
       </div>
     </div>
   </section>
@@ -1400,6 +1388,12 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 <!-- 5. Escrow -->
 <script src="js/escrow.js"></script>
+
+<!-- 5b. Payment (⚠️ ADDED — this tag was missing entirely, so window.PaymentSystem
+     was never defined and every "ادفع الآن" click threw "PaymentSystem is not
+     defined" instead of opening the payment gateway. The file itself was
+     always complete and correct — it just never got wired into the page.) -->
+<script src="js/payment-system.js"></script>
 
 <!-- 6. Orders Manager -->
 <script src="js/orders.js"></script>

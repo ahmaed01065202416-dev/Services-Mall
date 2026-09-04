@@ -62,13 +62,22 @@
             try {
                 // ⚠️ ADDED: raisedByName/raisedByRole so the admin disputes tab
                 // (js/dashboard.js) shows a real name + "buyer"/"seller" instead
-                // of a bare uid — that context matters when deciding refund vs pay.
+                // of a bare uid. Also — ⚠️ FIXED: the dispute doc used to be
+                // written with no buyerId/sellerId fields at all, but
+                // firestore.rules' disputes read/create rules check exactly
+                // those fields — dot-accessing a field that isn't on the
+                // document throws in Rules, so opening AND reading back a
+                // dispute was denied with "Missing or insufficient
+                // permissions" every time. Fetching the order here for the
+                // role/name lookup anyway, so storing buyerId/sellerId costs
+                // nothing extra and fixes both rules at once.
                 const uid = AppState.currentUser?.uid;
                 let raisedByName = AppState.currentUser?.displayName || AppState.currentUser?.email || uid;
                 let raisedByRole = '';
+                let orderData = {};
                 try {
                     const orderSnap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
-                    const orderData = orderSnap.data() || {};
+                    orderData = orderSnap.data() || {};
                     if (orderData.buyerId === uid)  { raisedByRole = 'buyer';  raisedByName = orderData.buyerName  || raisedByName; }
                     if (orderData.sellerId === uid) { raisedByRole = 'seller'; raisedByName = orderData.sellerName || raisedByName; }
                 } catch (_) { /* non-critical — falls back to uid/displayName above */ }
@@ -93,6 +102,8 @@
                 const disputeRef = window.db.collection(COLLECTIONS.DISPUTES).doc();
                 batch.set(disputeRef, {
                     orderId,
+                    buyerId:      orderData.buyerId  || null,
+                    sellerId:     orderData.sellerId || null,
                     raisedBy:     uid,
                     raisedByName,
                     raisedByRole,

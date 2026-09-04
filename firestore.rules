@@ -93,16 +93,22 @@ service cloud.firestore {
                     && request.resource.data.status == 'pending'
                     && request.resource.data.paymentStatus == 'no_payment'
                     && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true);
+      // ⚠️ FIXED: same class of bug as the `escrowHeld` fix on `create` above,
+      // just in `update` this time — dot-accessing `escrowAmount`/`paymentId`
+      // when the order is a free custom request (js/request-system.js never
+      // sets them) throws in Rules, which denied EVERY accept/reject on the
+      // no-payment request flow with "Missing or insufficient permissions".
+      // Guarded the same way: only compare a field if it existed before.
       allow update: if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin()) &&
                        (isAdmin() || (
                          request.resource.data.status != 'completed' &&
-                         request.resource.data.escrowHeld == resource.data.escrowHeld &&
-                         request.resource.data.escrowAmount == resource.data.escrowAmount &&
+                         (!('escrowHeld' in resource.data)   || request.resource.data.escrowHeld   == resource.data.escrowHeld) &&
+                         (!('escrowAmount' in resource.data) || request.resource.data.escrowAmount == resource.data.escrowAmount) &&
+                         (!('paymentId' in resource.data)    || request.resource.data.paymentId    == resource.data.paymentId) &&
                          request.resource.data.price == resource.data.price &&
-                         request.resource.data.paymentId == resource.data.paymentId &&
                          request.resource.data.buyerId == resource.data.buyerId &&
                          request.resource.data.sellerId == resource.data.sellerId
                        ));
@@ -168,20 +174,25 @@ service cloud.firestore {
     }
 
     // ── reviews ───────────────────────────────────────────────────────────────
+    // ⚠️ FIXED: this rule checked `buyerId`, but js/order-workspace.js (the
+    // only place a review is ever created) writes the reviewer's uid to
+    // `reviewerId` — a field-name mismatch, not a missing-field issue this
+    // time. Every review submission was being denied with the exact same
+    // "Missing or insufficient permissions" error as the two bugs above.
     match /reviews/{reviewId} {
       allow read:   if true;
       allow create: if isSignedIn()
-                    && request.resource.data.buyerId == request.auth.uid;
+                    && request.resource.data.reviewerId == request.auth.uid;
       // Buyer can edit their own rating/text, but not re-target the review to
       // a different seller/service/order after the fact.
       allow update: if isAdmin() || (
-                      isOwner(resource.data.buyerId) &&
+                      isOwner(resource.data.reviewerId) &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','text','updatedAt']) &&
                       request.resource.data.sellerId  == resource.data.sellerId &&
                       request.resource.data.serviceId == resource.data.serviceId &&
                       request.resource.data.orderId   == resource.data.orderId
                     );
-      allow delete: if isOwner(resource.data.buyerId) || isAdmin();
+      allow delete: if isOwner(resource.data.reviewerId) || isAdmin();
     }
 
     // ── articles / blog_posts ─────────────────────────────────────────────────
