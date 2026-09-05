@@ -154,27 +154,27 @@
     /* ── Typography ─────────────────────────────── */
     [lang=en] body,[lang=en] .en-only{font-family:'IBM Plex Sans',sans-serif}
     .gradient-text{
-      background:linear-gradient(135deg,#12734F 0%,#C08A2E 100%);
+      background:linear-gradient(135deg,#1B2A4A 0%,#14B8A6 100%);
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
     }
 
     /* ── Buttons ─────────────────────────────────── */
     .btn-primary{
-      background:linear-gradient(135deg,#12734F 0%,#0E5C40 100%);
+      background:linear-gradient(135deg,#1B2A4A 0%,#0F1830 100%);
       color:#fff;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;box-shadow:0 4px 15px rgba(18,115,79,.3);
+      transition:all .3s ease;box-shadow:0 4px 15px rgba(27,42,74,.3);
       border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(18,115,79,.4)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(27,42,74,.4)}
     .btn-primary:active{transform:translateY(0)}
     .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
     .btn-secondary{
-      background:#fff;color:#12734F;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;border:2px solid #12734F;cursor:pointer;
+      background:#fff;color:#1B2A4A;padding:14px 28px;border-radius:16px;font-weight:700;
+      transition:all .3s ease;border:2px solid #1B2A4A;cursor:pointer;
       display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-secondary:hover{background:#12734F;color:#fff;transform:translateY(-2px)}
+    .btn-secondary:hover{background:#1B2A4A;color:#fff;transform:translateY(-2px)}
 
     /* ── Forms ───────────────────────────────────── */
     .form-input{
@@ -182,7 +182,7 @@
       border:2px solid #e5e7eb;border-radius:14px;transition:all .3s ease;
       font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;color:#111827
     }
-    .form-input:focus{border-color:#12734F;outline:none;box-shadow:0 0 0 4px rgba(18,115,79,.1);background:#fff}
+    .form-input:focus{border-color:#1B2A4A;outline:none;box-shadow:0 0 0 4px rgba(27,42,74,.1);background:#fff}
     .form-input::placeholder{color:#9ca3af}
 
     /* ── Cards ───────────────────────────────────── */
@@ -224,7 +224,7 @@
 
     /* ── Chat Bubbles ────────────────────────────── */
     .chat-bubble{max-width:75%;padding:12px 16px;border-radius:18px;position:relative;word-break:break-word;line-height:1.6}
-    .chat-bubble.sent{background:linear-gradient(135deg,#12734F,#0E5C40);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
+    .chat-bubble.sent{background:linear-gradient(135deg,#1B2A4A,#0F1830);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
     .chat-bubble.received{background:#f3f4f6;color:#1f2937;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
     /* ── Skeleton ────────────────────────────────── */
@@ -234,17 +234,17 @@
     /* ── Scrollbar ───────────────────────────────── */
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
-    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#12734F,#0E5C40);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#1B2A4A,#0F1830);border-radius:10px}
 
     /* ── Tab System ──────────────────────────────── */
     .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
-    .tab-btn.active{color:#12734F;border-bottom-color:#12734F}
+    .tab-btn.active{color:#1B2A4A;border-bottom-color:#1B2A4A}
 
     /* ── Dropdown ────────────────────────────────── */
     .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
     .dropdown.active{display:block;animation:fadeIn .2s ease-out}
     .dropdown a,.dropdown button{display:block;width:100%;padding:12px 18px;text-align:right;color:#374151;text-decoration:none;transition:all .2s ease;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-size:14px}
-    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#12734F}
+    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#1B2A4A}
 
     /* ── LTR overrides (English mode) ───────────────*/
     html[dir=ltr] .dropdown a,html[dir=ltr] .dropdown button{text-align:left}
@@ -256,7 +256,7 @@
     .chat-messages-area::-webkit-scrollbar{width:4px}
     .chat-messages-area::-webkit-scrollbar-track{background:transparent}
     .chat-messages-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
-    .chat-text-input:focus{outline:none;border-color:#12734F;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
+    .chat-text-input:focus{outline:none;border-color:#1B2A4A;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
     .chat-send-btn:active{transform:scale(.92)}
     .chat-file-input{display:none !important}
     .emoji-quick{transition:transform .15s}
@@ -469,10 +469,10 @@
   <!-- Mobile Menu -->
   <div id="mobileMenu" class="hidden md:hidden border-t border-gray-100 px-4 pb-4 bg-white">
     <div class="grid grid-cols-2 gap-2 mt-3">
-      <button onclick="navigateTo('home');toggleMobileMenu()"     class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-home text-brand-500"></i><span data-i18n="nav.home">الرئيسية</span></button>
-      <button onclick="navigateTo('services');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-grid-2 text-brand-500"></i><span data-i18n="nav.services">الخدمات</span></button>
-      <button onclick="navigateTo('orders');toggleMobileMenu()"   class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-bag-shopping text-brand-500"></i><span data-i18n="nav.orders">طلباتي</span></button>
-      <button onclick="toggleLanguage()"                           class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-globe text-brand-500"></i><span id="mobileLanguageBtn">English</span></button>
+      <button onclick="navigateTo('home');toggleMobileMenu()"     class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-home text-navy-500"></i><span data-i18n="nav.home">الرئيسية</span></button>
+      <button onclick="navigateTo('services');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-grid-2 text-navy-500"></i><span data-i18n="nav.services">الخدمات</span></button>
+      <button onclick="navigateTo('orders');toggleMobileMenu()"   class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-bag-shopping text-navy-500"></i><span data-i18n="nav.orders">طلباتي</span></button>
+      <button onclick="toggleLanguage()"                           class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-globe text-navy-500"></i><span id="mobileLanguageBtn">English</span></button>
     </div>
   </div>
 </nav>
@@ -481,7 +481,7 @@
 <div id="notifDropdown" class="hidden fixed top-16 end-4 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] overflow-hidden">
   <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
     <h3 class="font-black text-gray-900 text-sm" data-i18n="nav.notifications">الإشعارات</h3>
-    <button onclick="markAllNotifsRead()" class="text-xs text-brand-600 font-bold">مقروء الكل</button>
+    <button onclick="markAllNotifsRead()" class="text-xs text-navy-600 font-bold">مقروء الكل</button>
   </div>
   <div id="notifList" class="max-h-80 overflow-y-auto divide-y divide-gray-50">
     <p class="text-center text-gray-400 text-sm py-8">لا توجد إشعارات</p>
@@ -525,6 +525,7 @@
           <button onclick="filterByCategory('programming')" data-i18n="home.hero.chip2" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-500 text-white hover:bg-turquoise-600 transition">الأمن السيبراني</button>
           <button onclick="filterByCategory('seo')" data-i18n="home.hero.chip3" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">استشارات تقنية</button>
           <button onclick="filterByCategory('design')" data-i18n="home.hero.chip4" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">خدمات صحية</button>
+          <button onclick="filterByType('product')" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200 hover:border-turquoise-400 transition">📦 تصفح المنتجات</button>
         </div>
 
         <button onclick="navigateTo('register')" class="inline-flex items-center gap-3 bg-turquoise-500 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-turquoise-600 transition mt-8">
@@ -650,6 +651,60 @@
       <div id="featuredServices" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <!-- Skeleton loading -->
         ${Array(4).fill('<div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>').join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- ⚠️ ADDED: highlight tiles (icon-badge style from the reference design) —
+       the four big entry points: browse products, browse services, digital
+       downloads, and everything. Sits above the full category grid below. -->
+  <section class="py-14 px-4" style="background:linear-gradient(180deg,#F3F6FB 0%,#fff 100%)">
+    <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-5">
+      <button onclick="filterByCategory('programming')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
+        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-navy-50 flex items-center justify-center rotate-45">
+          <i class="fa-solid fa-code text-navy-800 text-2xl -rotate-45"></i>
+        </div>
+        <p class="font-black text-gray-900 text-sm mb-1">برمجة وتطبيقات</p>
+        <p class="text-xs text-gray-400">أفضل وجهة لخدمات ومنتجات البرمجة</p>
+      </button>
+      <button onclick="filterByType('product')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
+        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-turquoise-50 flex items-center justify-center rotate-45">
+          <i class="fa-solid fa-box-open text-turquoise-600 text-2xl -rotate-45"></i>
+        </div>
+        <p class="font-black text-gray-900 text-sm mb-1">منتجات حصرية</p>
+        <p class="text-xs text-gray-400">تسليم فوري تلقائي بعد الدفع</p>
+      </button>
+      <button onclick="filterByType('service')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
+        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-navy-50 flex items-center justify-center rotate-45">
+          <i class="fa-solid fa-headset text-navy-800 text-2xl -rotate-45"></i>
+        </div>
+        <p class="font-black text-gray-900 text-sm mb-1">خدمات مباشرة</p>
+        <p class="text-xs text-gray-400">اطلب شغل مخصص من خبير معتمد</p>
+      </button>
+      <button onclick="filterByType('')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
+        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-turquoise-50 flex items-center justify-center rotate-45">
+          <i class="fa-solid fa-grid-2 text-turquoise-600 text-2xl -rotate-45"></i>
+        </div>
+        <p class="font-black text-gray-900 text-sm mb-1">كل الإعلانات</p>
+        <p class="text-xs text-gray-400">تصفح كل حاجة في مكان واحد</p>
+      </button>
+    </div>
+  </section>
+
+  <!-- ⚠️ ADDED: Trending Offers — horizontal scroll carousel, reference style -->
+  <section class="py-12 px-4 bg-white border-t border-gray-100">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-sans font-black text-2xl text-gray-900">🔥 العروض الرائجة</h2>
+        <button onclick="navigateTo('services')" class="text-navy-700 font-bold text-sm hover:gap-3 flex items-center gap-2 transition-all">
+          <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
+        </button>
+      </div>
+      <div id="trendingOffersRow" class="flex gap-4 overflow-x-auto pb-3" style="scrollbar-width:thin">
+        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
+        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
+        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
+        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
       </div>
     </div>
   </section>
@@ -789,13 +844,13 @@
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="text-center md:text-right">
         <p class="text-white font-black">مول الخدمات</p>
-        <p class="text-brand-200/60 text-xs mt-1">© 2026 جميع الحقوق محفوظة</p>
+        <p class="text-navy-200/60 text-xs mt-1">© 2026 جميع الحقوق محفوظة</p>
       </div>
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-        <a href="/terms.html" target="_blank" class="text-brand-200/80 hover:text-white transition">الشروط والأحكام</a>
-        <a href="/privacy.html" target="_blank" class="text-brand-200/80 hover:text-white transition">سياسة الخصوصية</a>
-        <a href="/refund-policy.html" target="_blank" class="text-brand-200/80 hover:text-white transition">سياسة الاسترجاع</a>
-        <a href="mailto:support@mall-services.com" class="text-brand-200/80 hover:text-white transition">تواصل معنا</a>
+        <a href="/terms.html" target="_blank" class="text-navy-200/80 hover:text-white transition">الشروط والأحكام</a>
+        <a href="/privacy.html" target="_blank" class="text-navy-200/80 hover:text-white transition">سياسة الخصوصية</a>
+        <a href="/refund-policy.html" target="_blank" class="text-navy-200/80 hover:text-white transition">سياسة الاسترجاع</a>
+        <a href="mailto:support@mall-services.com" class="text-navy-200/80 hover:text-white transition">تواصل معنا</a>
       </div>
     </div>
   </footer>
@@ -825,15 +880,22 @@
       </div>
     </div>
 
+    <!-- ⚠️ ADDED: services vs products split — the two-section request -->
+    <div class="flex gap-2 mb-4 bg-gray-100 p-1.5 rounded-2xl w-fit">
+      <button onclick="ServicesManager.filterType('')" data-type="" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-navy-800 text-white">الكل</button>
+      <button onclick="ServicesManager.filterType('service')" data-type="service" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600">🛠️ خدمات</button>
+      <button onclick="ServicesManager.filterType('product')" data-type="product" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600">📦 منتجات</button>
+    </div>
+
     <!-- Category Pills -->
     <div class="flex gap-2 overflow-x-auto pb-2 mb-3">
-      <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
-      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎨 تصميم</button>
-      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">💻 برمجة</button>
-      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">📈 تسويق</button>
-      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">✍️ كتابة</button>
-      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🎬 فيديو</button>
-      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-brand-400 transition">🔍 SEO</button>
+      <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
+      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🎨 تصميم</button>
+      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">💻 برمجة</button>
+      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">📈 تسويق</button>
+      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">✍️ كتابة</button>
+      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🎬 فيديو</button>
+      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🔍 SEO</button>
     </div>
 
     <!-- Express Delivery Hub — services delivered in 24h or less -->
@@ -882,12 +944,12 @@
     <div class="w-full max-w-md">
       <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
         <div class="text-center mb-8">
-          <div class="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-user-circle text-brand-600 text-2xl"></i>
+          <div class="w-16 h-16 bg-navy-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-user-circle text-navy-600 text-2xl"></i>
           </div>
           <h1 class="text-2xl font-black text-gray-900" data-i18n="auth.login">تسجيل الدخول</h1>
         </div>
-        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-brand-400 hover:bg-brand-50 transition mb-6">
+        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-navy-400 hover:bg-navy-50 transition mb-6">
           <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           <span data-i18n="auth.google">متابعة بـ Google</span>
         </button>
@@ -898,9 +960,9 @@
           <button onclick="AuthManager.loginWithEmail()" class="btn-primary w-full py-4" data-i18n="auth.login">تسجيل الدخول</button>
         </div>
         <div class="flex items-center justify-between mt-4 text-sm">
-          <button onclick="AuthManager.forgotPassword()" class="text-brand-600 hover:underline" data-i18n="auth.forgot">نسيت كلمة المرور؟</button>
+          <button onclick="AuthManager.forgotPassword()" class="text-navy-600 hover:underline" data-i18n="auth.forgot">نسيت كلمة المرور؟</button>
           <button onclick="navigateTo('register')" class="text-gray-500">
-            <span data-i18n="auth.no_account">ليس لديك حساب؟</span> <span class="text-brand-600 font-bold" data-i18n="auth.register">سجّل</span>
+            <span data-i18n="auth.no_account">ليس لديك حساب؟</span> <span class="text-navy-600 font-bold" data-i18n="auth.register">سجّل</span>
           </button>
         </div>
       </div>
@@ -919,7 +981,7 @@
           </div>
           <h1 class="text-2xl font-black text-gray-900" data-i18n="auth.register">إنشاء حساب</h1>
         </div>
-        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-brand-400 hover:bg-brand-50 transition mb-6">
+        <button onclick="AuthManager.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-gray-200 rounded-2xl py-3.5 font-bold text-gray-700 hover:border-navy-400 hover:bg-navy-50 transition mb-6">
           <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           <span data-i18n="auth.google">متابعة بـ Google</span>
         </button>
@@ -930,29 +992,29 @@
           <input type="tel"      id="registerPhone"    class="form-input" placeholder="رقم الهاتف (اختياري)" data-i18n="auth.phone" dir="ltr">
           <input type="password" id="registerPassword" class="form-input" placeholder="كلمة المرور (8 أحرف+)" data-i18n="auth.password">
           <div class="flex gap-3">
-            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-brand-400 transition" id="roleBuyerLabel">
-              <input type="radio" name="role" value="buyer" class="accent-brand-600" checked>
+            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-navy-400 transition" id="roleBuyerLabel">
+              <input type="radio" name="role" value="buyer" class="accent-navy-600" checked>
               <span class="text-sm font-bold">مشتري</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-brand-400 transition" id="roleSellerLabel">
-              <input type="radio" name="role" value="seller" class="accent-brand-600">
+            <label class="flex items-center gap-2 cursor-pointer p-3 border-2 rounded-xl flex-1 hover:border-navy-400 transition" id="roleSellerLabel">
+              <input type="radio" name="role" value="seller" class="accent-navy-600">
               <span class="text-sm font-bold">بائع</span>
             </label>
           </div>
           <label class="flex items-start gap-2 text-xs text-gray-500 px-1">
-            <input type="checkbox" id="acceptTermsCheckbox" class="mt-0.5 accent-brand-600">
+            <input type="checkbox" id="acceptTermsCheckbox" class="mt-0.5 accent-navy-600">
             <span>
               أوافق على
-              <a href="/terms.html" target="_blank" class="text-brand-600 font-bold underline">الشروط والأحكام</a>
+              <a href="/terms.html" target="_blank" class="text-navy-600 font-bold underline">الشروط والأحكام</a>
               و
-              <a href="/privacy.html" target="_blank" class="text-brand-600 font-bold underline">سياسة الخصوصية</a>
+              <a href="/privacy.html" target="_blank" class="text-navy-600 font-bold underline">سياسة الخصوصية</a>
             </span>
           </label>
           <button onclick="AuthManager.register()" class="btn-primary w-full py-4" data-i18n="auth.register">إنشاء الحساب</button>
         </div>
         <p class="text-center mt-4 text-sm text-gray-500">
           <span data-i18n="auth.have_account">لديك حساب؟</span>
-          <button onclick="navigateTo('login')" class="text-brand-600 font-bold ms-1" data-i18n="auth.login">تسجيل الدخول</button>
+          <button onclick="navigateTo('login')" class="text-navy-600 font-bold ms-1" data-i18n="auth.login">تسجيل الدخول</button>
         </p>
       </div>
     </div>
@@ -981,7 +1043,7 @@
     <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
       <div>
         <h1 class="text-2xl font-black text-gray-900 flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-brand-600 to-purple-600 rounded-xl flex items-center justify-center">
+          <div class="w-10 h-10 bg-gradient-to-br from-navy-600 to-purple-600 rounded-xl flex items-center justify-center">
             <i class="fa-solid fa-gauge text-white text-sm"></i>
           </div>
           لوحة التحكم
@@ -1021,13 +1083,13 @@
 
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 overflow-x-auto pb-1">
-      <button onclick="AdminAI.tab('posts',this)"  id="tab-posts-btn"  class="admin-tab-btn active flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-brand-600 text-white shadow-glow">
+      <button onclick="AdminAI.tab('posts',this)"  id="tab-posts-btn"  class="admin-tab-btn active flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-navy-600 text-white shadow-glow">
         <i class="fa-solid fa-newspaper"></i> المقالات
       </button>
-      <button onclick="AdminAI.tab('ai',this)"     id="tab-ai-btn"     class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-brand-400 transition">
+      <button onclick="AdminAI.tab('ai',this)"     id="tab-ai-btn"     class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-navy-400 transition">
         <i class="fa-solid fa-robot"></i> <span class="flex items-center gap-1.5">توليد AI <span class="bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded-full">Admin</span></span>
       </button>
-      <button onclick="AdminAI.tab('seo',this)"    id="tab-seo-btn"    class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-brand-400 transition">
+      <button onclick="AdminAI.tab('seo',this)"    id="tab-seo-btn"    class="admin-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap bg-white text-gray-600 border border-gray-200 hover:border-navy-400 transition">
         <i class="fa-solid fa-magnifying-glass"></i> SEO
       </button>
     </div>
@@ -1096,7 +1158,7 @@
 
         <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
           <h3 class="font-black text-lg text-gray-900 mb-4 flex items-center gap-2">
-            <i class="fa-solid fa-list text-brand-600"></i>
+            <i class="fa-solid fa-list text-navy-600"></i>
             بنك المواضيع
           </h3>
           <p class="text-xs text-gray-500 mb-4">انقر على أي موضوع لاستخدامه:</p>
@@ -1119,12 +1181,12 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-card">
           <h3 class="font-black text-lg text-gray-900 mb-5 flex items-center gap-2">
-            <i class="fa-solid fa-sitemap text-brand-600"></i> أدوات SEO
+            <i class="fa-solid fa-sitemap text-navy-600"></i> أدوات SEO
           </h3>
           <div class="space-y-3">
             <a href="/sitemap.xml" target="_blank"
               class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-gray-100">
-              <i class="fa-solid fa-sitemap text-brand-500 w-5"></i>
+              <i class="fa-solid fa-sitemap text-navy-500 w-5"></i>
               <span class="text-sm font-medium flex-1">Sitemap XML ثابت</span>
               <i class="fa-solid fa-external-link text-gray-300 text-xs"></i>
             </a>
@@ -1178,8 +1240,8 @@
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div id="addServiceContent">
       <div class="text-center py-12">
-        <div class="w-16 h-16 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-          <i class="fa-solid fa-layer-group text-brand-600 text-2xl"></i>
+        <div class="w-16 h-16 bg-navy-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <i class="fa-solid fa-layer-group text-navy-600 text-2xl"></i>
         </div>
         <p class="text-gray-400">جاري التحميل...</p>
       </div>
@@ -1207,7 +1269,7 @@
       <div class="flex items-center justify-between mb-5">
         <div>
           <h2 class="text-xl font-black text-gray-900">طلب الخدمة</h2>
-          <p id="requestServiceName" class="text-sm text-brand-600 font-bold mt-0.5"></p>
+          <p id="requestServiceName" class="text-sm text-navy-600 font-bold mt-0.5"></p>
         </div>
         <button onclick="closeModal('requestServiceModal')"
           class="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-200 transition">
@@ -1216,9 +1278,9 @@
       </div>
 
       <!-- Info box -->
-      <div class="bg-brand-50 border border-brand-200 rounded-2xl p-4 mb-5 flex gap-3">
-        <i class="fa-solid fa-circle-info text-brand-600 text-lg flex-shrink-0 mt-0.5"></i>
-        <p class="text-sm text-brand-800 leading-relaxed">
+      <div class="bg-navy-50 border border-navy-200 rounded-2xl p-4 mb-5 flex gap-3">
+        <i class="fa-solid fa-circle-info text-navy-600 text-lg flex-shrink-0 mt-0.5"></i>
+        <p class="text-sm text-navy-800 leading-relaxed">
           اكتب تفاصيل ما تحتاجه وسيصل طلبك مباشرةً لمقدم الخدمة، ثم تنطلق المحادثة بينكما فوراً.
         </p>
       </div>
@@ -1229,7 +1291,7 @@
           <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-black text-gray-700">تفاصيل الطلب <span class="text-red-500">*</span></label>
             <button type="button" onclick="RequestSystem.openBriefAssistant()"
-              class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+              class="text-xs font-bold text-navy-600 hover:text-navy-800 flex items-center gap-1">
               <i class="fa-solid fa-wand-magic-sparkles"></i> ساعدني أكتب الطلب بالذكاء الاصطناعي
             </button>
           </div>
@@ -1448,14 +1510,14 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
         const isAr = AppState.language !== 'en';
         container.innerHTML = cart.map((item, idx) => `
-          <div class="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 hover:border-brand-300 transition cart-item" data-id="${item.id}">
+          <div class="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 hover:border-navy-300 transition cart-item" data-id="${item.id}">
             <img src="${item.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
               class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
               onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
             <div class="flex-1 min-w-0">
               <h3 class="font-black text-gray-900 truncate">${item.title || '—'}</h3>
               <p class="text-sm text-gray-500 mt-0.5">${item.sellerName || ''}</p>
-              <p class="text-brand-700 font-black text-lg mt-2">${formatCurrency(item.price || 0)}</p>
+              <p class="text-navy-700 font-black text-lg mt-2">${formatCurrency(item.price || 0)}</p>
             </div>
             <button onclick="removeFromCart('${item.id}')"
               class="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition flex-shrink-0 self-start">
@@ -1477,7 +1539,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <span class="font-bold">${formatCurrency(fees)}</span>
               </div>
               <hr class="border-gray-100">
-              <div class="flex justify-between text-lg font-black text-brand-700">
+              <div class="flex justify-between text-lg font-black text-navy-700">
                 <span data-i18n="cart.total">${t('cart.total')}</span>
                 <span>${formatCurrency(total)}</span>
               </div>`;
@@ -1559,7 +1621,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
                   class="w-full h-48 object-cover"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
-                ${s.featured ? '<span class="absolute top-3 start-3 bg-brand-600 text-white text-xs font-bold px-2 py-1 rounded-lg">⭐ مميز</span>' : ''}
+                ${s.featured ? '<span class="absolute top-3 start-3 bg-navy-600 text-white text-xs font-bold px-2 py-1 rounded-lg">⭐ مميز</span>' : ''}
               </div>
               <div class="p-4">
                 <div class="flex items-center gap-2 mb-2">
@@ -1573,9 +1635,9 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                   <span class="text-xs text-gray-400">(${s.reviewCount||0})</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="font-black text-brand-700" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
+                  <span class="font-black text-navy-700" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
                   <button onclick="event.stopPropagation();RequestSystem.openRequestModal({id:'${s.id}',title:${JSON.stringify(s.title||'')},price:${s.price||0},image:${JSON.stringify(s.image||'')},sellerId:'${s.sellerId||''}',sellerName:${JSON.stringify(s.sellerName||'')},deliveryDays:${s.deliveryDays||3}})"
-                    class="bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-brand-700 transition flex items-center gap-1">
+                    class="bg-navy-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-navy-700 transition flex items-center gap-1">
                     <i class="fa-solid fa-paper-plane"></i>${isAr?'طلب':'Request'}
                   </button>
                 </div>
@@ -1589,6 +1651,16 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         navigateTo('services');
         setTimeout(() => {
             if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
+        }, 100);
+    };
+
+    // ⚠️ ADDED: jump straight to the "منتجات" tab on the services page —
+    // mirrors filterByCategory's pattern.
+    window.filterByType = function(type) {
+        AppState.filterType = type;
+        navigateTo('services');
+        setTimeout(() => {
+            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
         }, 100);
     };
 
@@ -1621,7 +1693,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         if (n == null) return '—';
         return '+' + n.toLocaleString('en-US');
     }
-    window.initHomePage = function() { loadHomeStats(); };
+    window.initHomePage = function() { loadHomeStats(); loadTrendingOffers(); };
     window.loadHomeStats = async function() {
         if (window._homeStatsLoaded) return;
         window._homeStatsLoaded = true;
@@ -1642,6 +1714,47 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         } catch (err) {
             console.error('[loadHomeStats]', err);
             window._homeStatsLoaded = false; // allow a retry on next visit
+        }
+    };
+
+    // ⚠️ ADDED: "Trending Offers" horizontal carousel — most recent active
+    // listings (services + products mixed), compact card style.
+    window.loadTrendingOffers = async function() {
+        if (!window.db || window._trendingLoaded) return;
+        window._trendingLoaded = true;
+        const row = document.getElementById('trendingOffersRow');
+        if (!row) return;
+        try {
+            const snap = await window.db.collection(COLLECTIONS.SERVICES)
+                .where('active', '==', true)
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+            if (snap.empty) { row.innerHTML = ''; return; }
+
+            row.innerHTML = snap.docs.map(d => {
+                const s = { id: d.id, ...d.data() };
+                const isProduct = s.listingType === 'product';
+                const actionBtn = isProduct
+                    ? `<button onclick="RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">اشترِ الآن</button>`
+                    : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-navy-800 text-white text-xs font-bold py-2 rounded-xl hover:bg-navy-900 transition">اطلب الآن</button>`;
+                return `
+                <div class="flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow" style="width:220px">
+                  <div class="relative h-32 bg-gray-100">
+                    ${s.image ? `<img src="${s.image}" class="w-full h-full object-cover" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-3xl"></i></div>`}
+                    <span class="absolute top-2 start-2 text-[10px] font-black px-2 py-1 rounded-lg ${isProduct ? 'bg-turquoise-500 text-white' : 'bg-navy-800 text-white'}">${isProduct ? '📦 منتج' : '🛠️ خدمة'}</span>
+                  </div>
+                  <div class="p-3">
+                    <p class="font-bold text-gray-900 text-sm truncate mb-1">${escapeHtml(s.title||'')}</p>
+                    <p class="font-black text-navy-900 text-sm mb-2">${formatCurrency(s.price||0)}</p>
+                    ${actionBtn}
+                  </div>
+                </div>`;
+            }).join('');
+        } catch (err) {
+            console.error('[loadTrendingOffers]', err);
+            row.innerHTML = '';
+            window._trendingLoaded = false;
         }
     };
     // Track if this is the first auth state change (page load)
@@ -1752,8 +1865,8 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
           <div class="terms-box">
             <div class="sticky top-0 bg-white border-b border-gray-100 p-6 rounded-t-3xl">
               <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-brand-100 rounded-2xl flex items-center justify-center">
-                  <i class="fa-solid fa-shield-check text-brand-600 text-xl"></i>
+                <div class="w-12 h-12 bg-navy-100 rounded-2xl flex items-center justify-center">
+                  <i class="fa-solid fa-shield-check text-navy-600 text-xl"></i>
                 </div>
                 <div>
                   <h2 class="font-black text-gray-900 text-lg">${isAr ? 'الشروط والأحكام' : 'Terms & Conditions'}</h2>
@@ -1803,7 +1916,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             </div>
             <div class="sticky bottom-0 bg-white border-t border-gray-100 p-6 rounded-b-3xl space-y-3">
               <button onclick="if(window.AuthManager&&AuthManager.acceptTerms){AuthManager.acceptTerms()}else{document.getElementById('termsModal').remove()}"
-                class="w-full py-4 bg-gradient-to-r from-brand-600 to-brand-800 text-white rounded-2xl font-black text-base shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2">
+                class="w-full py-4 bg-gradient-to-r from-navy-600 to-navy-800 text-white rounded-2xl font-black text-base shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-check-circle"></i>
                 ${isAr ? 'أوافق على الشروط والأحكام' : 'I Accept the Terms & Conditions'}
               </button>
@@ -1947,7 +2060,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 var b     = document.getElementById('tab-'+t+'-btn');
                 if (panel) panel.classList.toggle('hidden', t !== name);
                 if (b) {
-                  b.classList.toggle('bg-brand-600',   t === name);
+                  b.classList.toggle('bg-navy-600',   t === name);
                   b.classList.toggle('text-white',     t === name);
                   b.classList.toggle('shadow-glow',    t === name);
                   b.classList.toggle('bg-white',       t !== name);
@@ -1995,7 +2108,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                   var tr = document.createElement('tr');
                   tr.className = 'hover:bg-gray-50 transition border-b border-gray-50';
                   tr.innerHTML = '<td class="px-4 py-3 max-w-xs"><p class="font-bold text-gray-900 text-sm truncate">' + (p.title||'') + '</p><p class="text-xs text-gray-400 font-mono">' + (p.slug||'').slice(0,28) + '</p></td>'
-                    + '<td class="px-4 py-3 hidden sm:table-cell"><span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full">' + (p.category||'').replace(/-/g,' ') + '</span></td>'
+                    + '<td class="px-4 py-3 hidden sm:table-cell"><span class="bg-navy-100 text-navy-700 text-xs font-bold px-2 py-0.5 rounded-full">' + (p.category||'').replace(/-/g,' ') + '</span></td>'
                     + '<td class="px-4 py-3"><button data-id="' + p.id + '" data-pub="' + (!p.published) + '" data-title="' + safeTitle + '" class="admin-toggle-pub text-xs font-bold px-3 py-1 rounded-full transition ' + pubClass + '">' + pubLabel + '</button></td>'
                     + '<td class="px-4 py-3 hidden md:table-cell text-gray-500 font-mono text-sm">' + ((p.views||0).toLocaleString()) + '</td>'
                     + '<td class="px-4 py-3"><div class="flex gap-2"><a href="/blog/' + p.slug + '" target="_blank" class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition" title="عرض"><i class="fa-solid fa-eye text-xs"></i></a>'
@@ -2047,7 +2160,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 var frag = document.createDocumentFragment();
                 topics.forEach(function(t) {
                   var btn = document.createElement('button');
-                  btn.className = 'text-xs bg-gray-100 hover:bg-brand-100 hover:text-brand-700 text-gray-600 px-3 py-1.5 rounded-full font-medium transition cursor-pointer border border-transparent hover:border-brand-300';
+                  btn.className = 'text-xs bg-gray-100 hover:bg-navy-100 hover:text-navy-700 text-gray-600 px-3 py-1.5 rounded-full font-medium transition cursor-pointer border border-transparent hover:border-navy-300';
                   btn.textContent = t;
                   btn.addEventListener('click', function() {
                     var inp = document.getElementById('ai-topic-input');

@@ -122,13 +122,13 @@
 
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h2 class="font-black text-gray-900 text-lg mb-5 flex items-center gap-2">
-                    <i class="fa-solid fa-credit-card text-brand-600"></i>
+                    <i class="fa-solid fa-credit-card text-navy-600"></i>
                     ${isAr ? 'وسيلة الدفع' : 'Payment Method'}
                   </h2>
 
                   <!-- Fawaterak — the only checkout method (card, Fawry, mobile
                        wallets, Meeza — all on one hosted page) -->
-                  <div class="w-full flex items-center gap-4 p-4 border-2 border-brand-500 bg-brand-50 rounded-2xl">
+                  <div class="w-full flex items-center gap-4 p-4 border-2 border-navy-500 bg-navy-50 rounded-2xl">
                     <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow">
                       <i class="fa-solid fa-file-invoice text-white text-xl"></i>
                     </div>
@@ -136,7 +136,7 @@
                       <p class="font-black text-gray-900">${isAr ? 'فواتيرك' : 'Fawaterak'}</p>
                       <p class="text-xs text-gray-500 mt-0.5">${isAr ? 'بطاقة، فوري، فودافون كاش، ميزة — من صفحة واحدة' : 'Card, Fawry, mobile wallets, Meeza — one checkout page'}</p>
                     </div>
-                    <i class="fa-solid fa-circle-check text-brand-600 text-lg flex-shrink-0"></i>
+                    <i class="fa-solid fa-circle-check text-navy-600 text-lg flex-shrink-0"></i>
                   </div>
                 </div>
 
@@ -157,7 +157,7 @@
 
                 <!-- Pay Button -->
                 <button onclick="PaymentSystem.processPayment()" id="payNowBtn"
-                  class="w-full py-5 bg-gradient-to-r from-brand-600 to-brand-800 text-white rounded-2xl font-black text-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
+                  class="w-full py-5 bg-gradient-to-r from-navy-600 to-navy-800 text-white rounded-2xl font-black text-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
                   <i class="fa-solid fa-lock"></i>
                   <span id="pay-btn-label">${t('pay.pay_now')} — ${formatCurrency(total)}</span>
                 </button>
@@ -166,14 +166,14 @@
                 <div class="bg-white rounded-2xl p-4 flex flex-wrap items-center justify-center gap-6 border border-gray-100">
                   <span class="text-xs text-gray-400 font-bold">Powered by</span>
                   <div class="flex items-center gap-1">
-                    <div class="w-5 h-5 bg-brand-600 rounded flex items-center justify-center"><span class="text-white text-xs font-black">F</span></div>
+                    <div class="w-5 h-5 bg-navy-600 rounded flex items-center justify-center"><span class="text-white text-xs font-black">F</span></div>
                     <span class="text-xs font-black text-gray-700">Fawaterak</span>
                   </div>
                   <div class="flex items-center gap-2 text-xs text-gray-400">
                     <i class="fa-solid fa-shield-check text-green-500"></i> SSL 256-bit
                   </div>
                   <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <i class="fa-solid fa-lock text-brand-500"></i> Escrow
+                    <i class="fa-solid fa-lock text-navy-500"></i> Escrow
                   </div>
                   <div class="flex items-center gap-2 text-xs text-gray-400">
                     <i class="fa-solid fa-rotate-left text-orange-500"></i> ${isAr ? 'ضمان استرداد' : 'Money-Back'}
@@ -185,7 +185,7 @@
               <div class="lg:col-span-1">
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-6">
                   <h3 class="font-black text-gray-900 text-lg mb-5 flex items-center gap-2">
-                    <i class="fa-solid fa-receipt text-brand-600"></i>
+                    <i class="fa-solid fa-receipt text-navy-600"></i>
                     ${isAr ? 'ملخص الطلب' : 'Order Summary'}
                   </h3>
                   <div class="space-y-3 mb-5">
@@ -195,7 +195,7 @@
                           class="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-100">
                         <div class="flex-1 min-w-0">
                           <p class="font-bold text-gray-900 text-sm line-clamp-2">${escapeHtml(item.title || '')}</p>
-                          <p class="text-brand-600 font-black">${formatCurrency(item.price || 0)}</p>
+                          <p class="text-navy-600 font-black">${formatCurrency(item.price || 0)}</p>
                         </div>
                       </div>`).join('')}
                   </div>
@@ -210,7 +210,7 @@
                     </div>
                     <div class="flex justify-between font-black text-gray-900 text-xl border-t border-gray-100 pt-2 mt-2">
                       <span>${isAr ? 'الإجمالي' : 'Total'}</span>
-                      <span class="text-brand-600" id="total-display">${formatCurrency(total)}</span>
+                      <span class="text-navy-600" id="total-display">${formatCurrency(total)}</span>
                     </div>
                   </div>
 

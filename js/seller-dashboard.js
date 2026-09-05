@@ -28,25 +28,25 @@
               <!-- Tabs -->
               <div class="flex gap-2 overflow-x-auto pb-1 border-b border-gray-100">
                 <button onclick="SellerDash.tab('overview')" id="sdTab_overview"
-                  class="sd-tab-btn active flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-brand-600 text-brand-700 bg-brand-50 transition">
+                  class="sd-tab-btn active flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-navy-600 text-navy-700 bg-navy-50 transition">
                   <i class="fa-solid fa-gauge"></i>${isAr ? 'نظرة عامة' : 'Overview'}
                 </button>
                 <button onclick="SellerDash.tab('my-services')" id="sdTab_my-services"
-                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-brand-600 transition">
+                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-navy-600 transition">
                   <i class="fa-solid fa-layer-group"></i>${isAr ? 'خدماتي' : 'My Services'}
                 </button>
                 <button onclick="SellerDash.tab('analytics')" id="sdTab_analytics"
-                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-brand-600 transition">
+                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-navy-600 transition">
                   <i class="fa-solid fa-chart-line"></i>${isAr ? 'الإحصائيات' : 'Analytics'}
                 </button>
                 <button onclick="SellerDash.tab('activity')" id="sdTab_activity"
-                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-brand-600 transition">
+                  class="sd-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 border-transparent text-gray-500 hover:text-navy-600 transition">
                   <i class="fa-solid fa-bell"></i>${isAr ? 'النشاطات' : 'Activity'}
                 </button>
               </div>
               <!-- Tab Content -->
               <div id="sdTabContent">
-                <div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-brand-500 text-2xl"></i></div>
+                <div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>
               </div>
             </div>`;
 
@@ -59,17 +59,17 @@
             document.querySelectorAll('.sd-tab-btn').forEach(b => {
                 const isActive = b.id === `sdTab_${name}`;
                 b.classList.toggle('active', isActive);
-                b.classList.toggle('border-brand-600', isActive);
-                b.classList.toggle('text-brand-700', isActive);
-                b.classList.toggle('bg-brand-50', isActive);
+                b.classList.toggle('border-navy-600', isActive);
+                b.classList.toggle('text-navy-700', isActive);
+                b.classList.toggle('bg-navy-50', isActive);
                 b.classList.toggle('border-transparent', !isActive);
                 b.classList.toggle('text-gray-500', !isActive);
-                b.classList.remove('hover:text-brand-600');
+                b.classList.remove('hover:text-navy-600');
             });
 
             const container = document.getElementById('sdTabContent');
             if (!container) return;
-            container.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-brand-500 text-2xl"></i></div>`;
+            container.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
 
             if (name === 'overview')     await this.renderOverview(container);
             else if (name === 'my-services') await this.renderMyServices(container);
@@ -108,7 +108,7 @@
                 <!-- Stats Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                   ${this._statCard('fa-coins','from-amber-400 to-orange-500', isAr?'إجمالي الأرباح':'Total Earnings', formatCurrency(totalEarnings))}
-                  ${this._statCard('fa-cart-shopping','from-brand-500 to-brand-700', isAr?'إجمالي الطلبات':'Total Orders', orders.length)}
+                  ${this._statCard('fa-cart-shopping','from-navy-500 to-navy-700', isAr?'إجمالي الطلبات':'Total Orders', orders.length)}
                   ${this._statCard('fa-layer-group','from-teal-500 to-teal-700', isAr?'خدماتي':'My Services', services.length)}
                   ${this._statCard('fa-users','from-purple-500 to-purple-700', isAr?'العملاء':'Customers', buyerSet.size)}
                   ${this._statCard('fa-eye','from-pink-500 to-rose-600', isAr?'المشاهدات':'Views', totalViews)}
@@ -118,9 +118,9 @@
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                   <button onclick="ServicesManager.openAddServiceForm()"
-                    class="bg-brand-50 border-2 border-dashed border-brand-300 rounded-2xl p-4 text-center hover:border-brand-500 hover:bg-brand-100 transition">
-                    <i class="fa-solid fa-plus-circle text-brand-600 text-2xl mb-2 block"></i>
-                    <p class="text-sm font-bold text-brand-700">${isAr?'إضافة خدمة':'Add Service'}</p>
+                    class="bg-navy-50 border-2 border-dashed border-navy-300 rounded-2xl p-4 text-center hover:border-navy-500 hover:bg-navy-100 transition">
+                    <i class="fa-solid fa-plus-circle text-navy-600 text-2xl mb-2 block"></i>
+                    <p class="text-sm font-bold text-navy-700">${isAr?'إضافة خدمة':'Add Service'}</p>
                   </button>
                   <button onclick="SellerDash.tab('my-services')"
                     class="bg-teal-50 border-2 border-dashed border-teal-300 rounded-2xl p-4 text-center hover:border-teal-500 hover:bg-teal-100 transition">
@@ -143,7 +143,7 @@
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                   <div class="flex items-center justify-between mb-4">
                     <h3 class="font-black text-gray-900">${isAr?'آخر الطلبات':'Recent Orders'}</h3>
-                    <button onclick="navigateTo('orders')" class="text-sm text-brand-600 font-bold hover:underline">${isAr?'عرض الكل':'View All'}</button>
+                    <button onclick="navigateTo('orders')" class="text-sm text-navy-600 font-bold hover:underline">${isAr?'عرض الكل':'View All'}</button>
                   </div>
                   ${recentOrders.length === 0
                     ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد طلبات بعد':'No orders yet'}</p>`
@@ -153,7 +153,7 @@
                         <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p>
                         <p class="text-xs text-gray-400">${escapeHtml(o.buyerName||'—')} · ${formatDateAr(o.createdAt)}</p>
                       </div>
-                      <span class="font-black text-brand-700 text-sm">${formatCurrency(o.price||0)}</span>
+                      <span class="font-black text-navy-700 text-sm">${formatCurrency(o.price||0)}</span>
                       <span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span>
                     </div>`).join('')}</div>`
                   }
@@ -264,7 +264,7 @@
                   </div>
                   <!-- Stats Row -->
                   <div class="flex flex-wrap gap-4 text-xs text-gray-500 mb-3">
-                    <span><i class="fa-solid fa-tag text-brand-400 me-1"></i>${formatCurrency(s.price||0)}</span>
+                    <span><i class="fa-solid fa-tag text-navy-400 me-1"></i>${formatCurrency(s.price||0)}</span>
                     <span><i class="fa-solid fa-eye text-blue-400 me-1"></i>${s.views||0} ${isAr?'مشاهدة':'views'}</span>
                     <span><i class="fa-solid fa-cart-shopping text-green-400 me-1"></i>${s.ordersCount||s.orderCount||0} ${isAr?'طلب':'orders'}</span>
                     <span><i class="fa-solid fa-folder text-purple-400 me-1"></i>${s.category||'—'}</span>
@@ -273,7 +273,7 @@
                   <!-- Action Buttons -->
                   <div class="flex flex-wrap gap-2">
                     <button onclick="ServicesManager._renderAddServiceForm(${editData});navigateTo('add-service')"
-                      class="flex items-center gap-1.5 text-xs px-3 py-2 bg-brand-50 text-brand-700 rounded-xl font-bold hover:bg-brand-100 transition">
+                      class="flex items-center gap-1.5 text-xs px-3 py-2 bg-navy-50 text-navy-700 rounded-xl font-bold hover:bg-navy-100 transition">
                       <i class="fa-solid fa-pen"></i>${isAr?'تعديل':'Edit'}
                     </button>
                     <button onclick="SellerDash.toggleServiceStatus('${s.id}', ${isPaused})"
@@ -396,7 +396,7 @@
                     <p class="text-xs text-gray-400 mt-1">${isAr?'متوسط التقييم':'Avg Rating'}</p>
                   </div>
                   <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center">
-                    <i class="fa-solid fa-layer-group text-brand-500 text-2xl mb-2"></i>
+                    <i class="fa-solid fa-layer-group text-navy-500 text-2xl mb-2"></i>
                     <p class="text-xl font-black text-gray-900">${services.length}</p>
                     <p class="text-xs text-gray-400 mt-1">${isAr?'خدمات نشطة':'Active Services'}</p>
                   </div>
@@ -417,7 +417,7 @@
                     ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد بيانات':'No data yet'}</p>`
                     : `<div class="space-y-3">${topServices.map((s,i) => `
                     <div class="flex items-center gap-3">
-                      <span class="w-6 h-6 bg-brand-100 text-brand-700 rounded-full text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
+                      <span class="w-6 h-6 bg-navy-100 text-navy-700 rounded-full text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
                       <div class="flex-1 min-w-0">
                         <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(s.title||'—')}</p>
                         <div class="flex gap-2 text-xs text-gray-400 mt-0.5">
@@ -425,7 +425,7 @@
                           <span><i class="fa-solid fa-eye me-1 text-blue-400"></i>${s.views||0}</span>
                         </div>
                       </div>
-                      <span class="font-black text-brand-700 text-sm flex-shrink-0">${formatCurrency(s.price||0)}</span>
+                      <span class="font-black text-navy-700 text-sm flex-shrink-0">${formatCurrency(s.price||0)}</span>
                     </div>`).join('')}</div>`
                   }
                 </div>
@@ -463,8 +463,8 @@
                 return `
                 <div class="flex-1 flex flex-col items-center gap-1">
                   <span class="text-xs font-bold text-gray-500" style="font-size:10px">${d.total > 0 ? Math.round(d.total/1000)+'k' : ''}</span>
-                  <div class="w-full bg-brand-100 rounded-t-lg flex flex-col justify-end" style="height:120px">
-                    <div class="bg-gradient-to-t from-brand-600 to-brand-400 rounded-t-lg transition-all duration-500"
+                  <div class="w-full bg-navy-100 rounded-t-lg flex flex-col justify-end" style="height:120px">
+                    <div class="bg-gradient-to-t from-navy-600 to-navy-400 rounded-t-lg transition-all duration-500"
                       style="height:${Math.max(pct,2)}%"></div>
                   </div>
                   <span class="text-xs text-gray-400">${d.label}</span>
@@ -475,7 +475,7 @@
         _renderStatusBars(orders, isAr) {
             const statuses = {
                 pending:    { label: isAr?'معلق':'Pending',     cls: 'bg-amber-400' },
-                in_progress:{ label: isAr?'جاري':'In Progress', cls: 'bg-brand-500' },
+                in_progress:{ label: isAr?'جاري':'In Progress', cls: 'bg-navy-500' },
                 completed:  { label: isAr?'مكتمل':'Completed',  cls: 'bg-green-500' },
                 cancelled:  { label: isAr?'ملغي':'Cancelled',   cls: 'bg-red-400' },
             };
@@ -523,7 +523,7 @@
                     activities.push({
                         type: 'order',
                         icon: 'fa-cart-shopping',
-                        color: 'bg-brand-100 text-brand-600',
+                        color: 'bg-navy-100 text-navy-600',
                         title: isAr ? `طلب جديد: ${o.serviceTitle||'—'}` : `New Order: ${o.serviceTitle||'—'}`,
                         sub: `${o.buyerName||'—'} · ${formatCurrency(o.price||0)}`,
                         time: o.createdAt,

@@ -66,17 +66,17 @@
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-bag-shopping text-blue-600 text-2xl mb-2"></i><p id="buyerTotalOrders" class="text-2xl font-black text-gray-900">—</p><p class="text-sm text-gray-500">${isAr?'الطلبات':'Orders'}</p></div>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-circle-check text-green-600 text-2xl mb-2"></i><p id="buyerCompletedOrders" class="text-2xl font-black text-gray-900">—</p><p class="text-sm text-gray-500">${isAr?'مكتملة':'Completed'}</p></div>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-wallet text-amber-600 text-2xl mb-2"></i><p class="text-2xl font-black text-gray-900">${formatCurrency(wallet.balance||0)}</p><p class="text-sm text-gray-500">${isAr?'المحفظة':'Wallet'}</p></div>
-                <div class="bg-gradient-to-br from-brand-50 to-brand-100 rounded-2xl p-5 border border-brand-200 text-center cursor-pointer hover:border-brand-400 transition" onclick="DashboardManager.switchToSellerView()">
-  <i class="fa-solid fa-rocket text-brand-600 text-2xl mb-2"></i>
-  <p class="font-black text-brand-700 text-sm">${isAr?'انتقل للبيع':'Start Selling'}</p>
-  <p class="text-brand-500 text-xs mt-1">${isAr?'لوحة البائع':'Seller View'}</p>
+                <div class="bg-gradient-to-br from-navy-50 to-navy-100 rounded-2xl p-5 border border-navy-200 text-center cursor-pointer hover:border-navy-400 transition" onclick="DashboardManager.switchToSellerView()">
+  <i class="fa-solid fa-rocket text-navy-600 text-2xl mb-2"></i>
+  <p class="font-black text-navy-700 text-sm">${isAr?'انتقل للبيع':'Start Selling'}</p>
+  <p class="text-navy-500 text-xs mt-1">${isAr?'لوحة البائع':'Seller View'}</p>
 </div>
               </div>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <button onclick="navigateTo('orders')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-brand-300 transition"><i class="fa-solid fa-receipt text-brand-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('orders.title')}</p></button>
-                <button onclick="navigateTo('wallet')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-brand-300 transition"><i class="fa-solid fa-wallet text-green-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.wallet')}</p></button>
-                <button onclick="navigateTo('profile')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-brand-300 transition"><i class="fa-solid fa-user text-purple-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.profile')}</p></button>
-                <button onclick="navigateTo('services')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-brand-300 transition"><i class="fa-solid fa-store text-orange-500 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${isAr?'تصفح الخدمات':'Browse'}</p></button>
+                <button onclick="navigateTo('orders')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-receipt text-navy-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('orders.title')}</p></button>
+                <button onclick="navigateTo('wallet')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-wallet text-green-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.wallet')}</p></button>
+                <button onclick="navigateTo('profile')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-user text-purple-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.profile')}</p></button>
+                <button onclick="navigateTo('services')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-store text-orange-500 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${isAr?'تصفح الخدمات':'Browse'}</p></button>
               </div>
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"><h3 class="font-black text-gray-900 mb-4">${isAr?'آخر الطلبات':'Recent Orders'}</h3><div id="buyerRecentOrders"></div></div>
             </div>`;
@@ -116,7 +116,7 @@
                   <button onclick="DashboardManager.switchToBuyerView()" class="btn-secondary text-sm px-4 py-2.5 flex items-center gap-2">
                     <i class="fa-solid fa-bag-shopping"></i>${isAr?'واجهة المشتري':'Buyer View'}
                   </button>
-                  <button onclick="navigateTo('wallet')" class="bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm px-4 py-2.5 flex items-center gap-2 hover:border-brand-400 transition">
+                  <button onclick="navigateTo('wallet')" class="bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm px-4 py-2.5 flex items-center gap-2 hover:border-navy-400 transition">
                     <i class="fa-solid fa-wallet text-amber-500"></i>
                     <span class="font-black">${formatCurrency(wallet.balance||0)}</span>
                   </button>
@@ -149,7 +149,7 @@
                       <img src="${s.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                       <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(s.title||'—')}</p><p class="text-sm text-gray-500">${formatCurrency(s.price||0)} · ${s.orderCount||0} ${isAr?'طلب':'orders'}</p></div>
                       <div class="flex gap-2">
-                        <button onclick="ServicesManager._renderAddServiceForm(${editData});navigateTo('add-service')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-brand-100 hover:text-brand-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="ServicesManager._renderAddServiceForm(${editData});navigateTo('add-service')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button onclick="ServicesManager.deleteService('${s.id}')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-100 hover:text-red-600 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                       </div>
                     </div>`;
@@ -175,7 +175,7 @@
                 if (c) c.innerHTML = recent.length===0 ? `<p class="text-gray-400 text-center py-4">${t('orders.empty')}</p>` : recent.map(o=>`
                   <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2" onclick="openWorkspace('${o.id}')">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(o.buyerName||'—')} · ${formatDateAr(o.createdAt)}</p></div>
-                    <div class="flex items-center gap-2"><span class="font-black text-brand-700 text-sm">${formatCurrency(o.price||0)}</span><span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span></div>
+                    <div class="flex items-center gap-2"><span class="font-black text-navy-700 text-sm">${formatCurrency(o.price||0)}</span><span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span></div>
                   </div>`).join('');
             } catch(e) { console.warn('[Seller] Stats:',e.message); }
         },
@@ -224,7 +224,7 @@
                 const row = document.getElementById('adminStatsRow');
                 if (!row) return;
                 row.innerHTML = `
-                  <div class="bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${usersSnap.size}</p><p class="text-brand-200 text-sm mt-1">${isAr?'مستخدم':'Users'}</p></div>
+                  <div class="bg-gradient-to-br from-navy-500 to-navy-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${usersSnap.size}</p><p class="text-navy-200 text-sm mt-1">${isAr?'مستخدم':'Users'}</p></div>
                   <div class="bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${servicesSnap.size}</p><p class="text-teal-200 text-sm mt-1">${isAr?'خدمة':'Services'}</p></div>
                   <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${ordersSnap.size}</p><p class="text-amber-200 text-sm mt-1">${isAr?'طلب':'Orders'}</p></div>
                   <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${formatCurrency(calcPlatformFee(totalRevenue))}</p><p class="text-purple-200 text-sm mt-1">${isAr?'إيرادات المنصة':'Platform Revenue'}</p></div>`;
@@ -241,7 +241,7 @@
         const container = document.getElementById('adminTabContent');
         if (!container) return;
         const isAr = AppState.language !== 'en';
-        container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-brand-500 text-2xl"></i></div>`;
+        container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
         try {
 
             // ── ORDERS ────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@
                       <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p>
                       <p class="text-xs text-gray-400">${escapeHtml(o.buyerName||'—')} → ${escapeHtml(o.sellerName||'—')} · ${formatDateAr(o.createdAt)}</p>
                     </div>
-                    <span class="font-black text-brand-700 text-sm">${formatCurrency(o.price||0)}</span>
+                    <span class="font-black text-navy-700 text-sm">${formatCurrency(o.price||0)}</span>
                     <span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span>
                     <div class="flex gap-1">
                       <button title="${isAr?'إتمام قسري':'Force Complete'}" onclick="window._adminForceStatus('${o.id}','completed')" class="w-7 h-7 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center hover:bg-green-200 transition"><i class="fa-solid fa-check"></i></button>
@@ -448,7 +448,7 @@
                 <div class="space-y-2" id="couponsList">
                 ${coupons.length===0 ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد كوبونات':'No coupons yet'}</p>` : coupons.map(c=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                    <div class="w-20 bg-brand-100 rounded-lg text-center py-2"><p class="font-black text-brand-700 text-sm tracking-widest">${c.code||'—'}</p></div>
+                    <div class="w-20 bg-navy-100 rounded-lg text-center py-2"><p class="font-black text-navy-700 text-sm tracking-widest">${c.code||'—'}</p></div>
                     <div class="flex-1 min-w-0">
                       <p class="text-sm font-bold text-gray-800">${c.type==='percent'?`${c.value}% خصم`:c.type==='fixed'?`خصم ${formatCurrency(c.value)}`:'—'}</p>
                       ${c.minOrder?`<p class="text-xs text-gray-400">${isAr?'حد أدنى':'Min'}: ${formatCurrency(c.minOrder)}</p>`:''}
@@ -532,7 +532,7 @@
                     <span class="text-2xl">${c.icon||'📦'}</span>
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900">${escapeHtml(c.name_ar||c.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(c.name_en||'')}</p></div>
                     <span class="text-xs text-gray-400 w-6 text-center">${c.order||i}</span>
-                    <button onclick="window._adminEditCategory('${c.id}','${(c.name_ar||'').replace(/'/g,"\\'")}','${(c.name_en||'').replace(/'/g,"\\'")}','${c.icon||''}',${c.order||0})" class="w-7 h-7 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-brand-100 hover:text-brand-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="window._adminEditCategory('${c.id}','${(c.name_ar||'').replace(/'/g,"\\'")}','${(c.name_en||'').replace(/'/g,"\\'")}','${c.icon||''}',${c.order||0})" class="w-7 h-7 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="window._adminDeleteCategory('${c.id}')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                   </div>`).join('')}
                 </div>`;
@@ -618,7 +618,7 @@
                 <div class="space-y-6">
                   <!-- KPIs -->
                   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div class="bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${formatCurrency(totalRev)}</p><p class="text-brand-200 text-xs mt-1">${isAr?'إجمالي المبيعات':'Total Sales'}</p></div>
+                    <div class="bg-gradient-to-br from-navy-500 to-navy-700 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${formatCurrency(totalRev)}</p><p class="text-navy-200 text-xs mt-1">${isAr?'إجمالي المبيعات':'Total Sales'}</p></div>
                     <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${formatCurrency(platRev)}</p><p class="text-purple-200 text-xs mt-1">${isAr?'إيراداتك':'Your Revenue'}</p></div>
                     <div class="bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${completed.length}</p><p class="text-teal-200 text-xs mt-1">${isAr?'طلب مكتمل':'Completed Orders'}</p></div>
                     <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${usersSnap.size}</p><p class="text-amber-200 text-xs mt-1">${isAr?'إجمالي المستخدمين':'Total Users'}</p></div>
@@ -632,8 +632,8 @@
                       : `<div class="flex items-end gap-3 h-36 px-2">
                         ${sortedMonths.map(([month,v])=>`
                         <div class="flex-1 flex flex-col items-center gap-1">
-                          <span class="text-xs font-black text-brand-700">${formatCurrency(v.revenue)}</span>
-                          <div class="w-full bg-brand-500 rounded-t-lg transition-all" style="height:${Math.max(8,Math.round(v.revenue/maxRev*100))}px"></div>
+                          <span class="text-xs font-black text-navy-700">${formatCurrency(v.revenue)}</span>
+                          <div class="w-full bg-navy-500 rounded-t-lg transition-all" style="height:${Math.max(8,Math.round(v.revenue/maxRev*100))}px"></div>
                           <span class="text-xs text-gray-400">${month.slice(5)}</span>
                         </div>`).join('')}
                       </div>`}
@@ -645,7 +645,7 @@
                       <h3 class="font-black text-gray-900 mb-4">🏆 ${isAr?'أكثر البائعين إيراداً':'Top Sellers'}</h3>
                       ${topSellers.length===0 ? `<p class="text-gray-400 text-center py-4">${isAr?'لا يوجد':'No data'}</p>` : topSellers.map((s,i)=>`
                       <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                        <span class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
+                        <span class="w-6 h-6 rounded-full bg-navy-100 text-navy-700 text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
                         <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-900 truncate">${escapeHtml(s.name||'')}</p><p class="text-xs text-gray-400">${s.orders} ${isAr?'طلب':'orders'}</p></div>
                         <span class="font-black text-teal-700 text-sm">${formatCurrency(s.revenue)}</span>
                       </div>`).join('')}
@@ -780,7 +780,7 @@
                       <label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'نص الإشعار':'Message'}</label>
                       <textarea id="bc_msg" class="form-input w-full h-28 resize-none" placeholder="${isAr?'اكتب الرسالة هنا...':'Write your message here...'}"></textarea>
                     </div>
-                    <button onclick="window._adminSendBroadcast(${totalUsers})" id="bcBtn" class="w-full py-3.5 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-black rounded-xl hover:from-brand-600 hover:to-brand-800 transition flex items-center justify-center gap-2">
+                    <button onclick="window._adminSendBroadcast(${totalUsers})" id="bcBtn" class="w-full py-3.5 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black rounded-xl hover:from-navy-600 hover:to-navy-800 transition flex items-center justify-center gap-2">
                       <i class="fa-solid fa-paper-plane"></i>${isAr?'إرسال الإشعار':'Send Notification'}
                     </button>
                   </div>
@@ -844,7 +844,7 @@
                 <div class="grid grid-cols-3 gap-3 mb-6">
                   <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center"><p class="text-xl font-black text-green-700">${formatCurrency(totalIn)}</p><p class="text-xs text-green-600 mt-1">${isAr?'إجمالي الدخل':'Total In'}</p></div>
                   <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center"><p class="text-xl font-black text-red-700">${formatCurrency(totalOut)}</p><p class="text-xs text-red-600 mt-1">${isAr?'إجمالي المدفوع':'Total Out'}</p></div>
-                  <div class="bg-brand-50 border border-brand-200 rounded-xl p-4 text-center"><p class="text-xl font-black text-brand-700">${formatCurrency(totalIn-totalOut)}</p><p class="text-xs text-brand-600 mt-1">${isAr?'صافي المنصة':'Net'}</p></div>
+                  <div class="bg-navy-50 border border-navy-200 rounded-xl p-4 text-center"><p class="text-xl font-black text-navy-700">${formatCurrency(totalIn-totalOut)}</p><p class="text-xs text-navy-600 mt-1">${isAr?'صافي المنصة':'Net'}</p></div>
                 </div>
                 <h4 class="font-black text-gray-900 mb-3">${isAr?'سجل المدفوعات':'Payment Records'}</h4>
                 <div class="space-y-2">${payments.length===0 ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد مدفوعات':'No payments'}</p>` : payments.map(p=>`
@@ -915,7 +915,7 @@
                 <div class="max-w-2xl mx-auto space-y-5">
                   <!-- ── Commission ──────────────────────────────────── -->
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-percent text-brand-500"></i>${isAr?'العمولة':'Commission'}</h3>
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-percent text-navy-500"></i>${isAr?'العمولة':'Commission'}</h3>
                     <p class="text-xs text-gray-400 mb-4">${isAr?'تُخصم من كل دفعة يستلمها البائع':'Deducted from every seller payout'}</p>
 
                     <!-- Fee Type selector -->
@@ -925,7 +925,7 @@
                         ${['percent','fixed','both'].map(v=>`
                           <button type="button" onclick="window._selectFeeType('${v}')"
                             id="feeTypeBtn_${v}"
-                            class="feeTypBtn py-2 rounded-xl text-sm font-bold border transition-all ${(cfg.FEE_TYPE||'percent')===v?'bg-brand-600 text-white border-brand-600':'bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-400'}">
+                            class="feeTypBtn py-2 rounded-xl text-sm font-bold border transition-all ${(cfg.FEE_TYPE||'percent')===v?'bg-navy-600 text-white border-navy-600':'bg-gray-50 text-gray-600 border-gray-200 hover:border-navy-400'}">
                             ${v==='percent'?(isAr?'نسبة %':'Percent %'):v==='fixed'?(isAr?'مبلغ ثابت':'Fixed'):( isAr?'نسبة + ثابت':'Both')}
                           </button>`).join('')}
                       </div>
@@ -936,9 +936,9 @@
                       <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'النسبة المئوية':'Percentage'}</label>
                       <div class="flex items-center gap-3">
                         <input type="range" id="cfg_fee" min="0" max="30" step="0.5"
-                          value="${cfg.FEE_PERCENT??5}" class="flex-1 accent-brand-500"
+                          value="${cfg.FEE_PERCENT??5}" class="flex-1 accent-navy-500"
                           oninput="document.getElementById('cfg_fee_val').textContent=this.value+'%'">
-                        <span id="cfg_fee_val" class="w-20 text-center font-black text-brand-700 text-xl bg-brand-50 rounded-xl py-2">${cfg.FEE_PERCENT??5}%</span>
+                        <span id="cfg_fee_val" class="w-20 text-center font-black text-navy-700 text-xl bg-navy-50 rounded-xl py-2">${cfg.FEE_PERCENT??5}%</span>
                       </div>
                       <div class="flex justify-between text-xs text-gray-300 mt-1"><span>0%</span><span>15%</span><span>30%</span></div>
                     </div>
@@ -951,9 +951,9 @@
                     </div>
 
                     <!-- Live preview -->
-                    <div class="bg-brand-50 rounded-xl p-3 text-sm mt-2">
-                      <p class="text-xs font-bold text-brand-700 mb-1">${isAr?'مثال على طلب بـ 500 ج.م:':'Example on 500 EGP order:'}</p>
-                      <div class="flex justify-between text-brand-800 font-bold" id="feePreview">
+                    <div class="bg-navy-50 rounded-xl p-3 text-sm mt-2">
+                      <p class="text-xs font-bold text-navy-700 mb-1">${isAr?'مثال على طلب بـ 500 ج.م:':'Example on 500 EGP order:'}</p>
+                      <div class="flex justify-between text-navy-800 font-bold" id="feePreview">
                         <span>${isAr?'عمولة المنصة':'Platform fee'}</span>
                         <span id="feePreviewVal">—</span>
                       </div>
@@ -969,7 +969,7 @@
                     <div class="mt-4 border-t border-gray-100 pt-4">
                       <label class="flex items-center gap-3 cursor-pointer mb-3">
                         <div class="relative"><input type="checkbox" id="cfg_tiers_enabled" ${cfg.TIERS_ENABLED?'checked':''} class="sr-only peer" onchange="document.getElementById('tiersEditor').classList.toggle('hidden',!this.checked)">
-                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div></div>
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-navy-600"></div></div>
                         <span class="text-sm font-bold text-gray-700">${isAr?'شرائح العمولة (حسب قيمة الطلب)':'Commission Tiers (by order amount)'}</span>
                       </label>
                       <div id="tiersEditor" class="${cfg.TIERS_ENABLED?'':' hidden'}">
@@ -977,7 +977,7 @@
                         <div id="tiersRows">
                           ${_renderTierRows(cfg,isAr)}
                         </div>
-                        <button type="button" onclick="window._addTierRow()" class="text-sm text-brand-600 font-bold hover:underline mt-1"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة شريحة':'Add Tier'}</button>
+                        <button type="button" onclick="window._addTierRow()" class="text-sm text-navy-600 font-bold hover:underline mt-1"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة شريحة':'Add Tier'}</button>
                       </div>
                     </div>
                   </div>
@@ -1024,7 +1024,7 @@
                       </div>
                     </div>
                   </div>
-                  <button onclick="window._savePlatformSettings()" id="saveSettingsBtn" class="w-full py-4 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-black text-lg rounded-2xl hover:from-brand-600 hover:to-brand-800 transition-all flex items-center justify-center gap-2">
+                  <button onclick="window._savePlatformSettings()" id="saveSettingsBtn" class="w-full py-4 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black text-lg rounded-2xl hover:from-navy-600 hover:to-navy-800 transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i>${isAr?'حفظ الإعدادات':'Save Settings'}
                   </button>
                 </div>`;
@@ -1034,15 +1034,15 @@
                     ['percent','fixed','both'].forEach(v => {
                         const btn = document.getElementById('feeTypeBtn_'+v);
                         if (!btn) return;
-                        if (v === type) { btn.className = btn.className.replace(/bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-400/g,'').trim() + ' bg-brand-600 text-white border-brand-600'; }
-                        else           { btn.className = btn.className.replace(/bg-brand-600 text-white border-brand-600/g,'').trim() + ' bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-400'; }
+                        if (v === type) { btn.className = btn.className.replace(/bg-gray-50 text-gray-600 border-gray-200 hover:border-navy-400/g,'').trim() + ' bg-navy-600 text-white border-navy-600'; }
+                        else           { btn.className = btn.className.replace(/bg-navy-600 text-white border-navy-600/g,'').trim() + ' bg-gray-50 text-gray-600 border-gray-200 hover:border-navy-400'; }
                     });
                     document.getElementById('cfg_percent_row')?.classList.toggle('hidden', type==='fixed');
                     document.getElementById('cfg_fixed_row')?.classList.toggle('hidden', type==='percent');
                     window._updateFeePreview();
                 };
                 window._updateFeePreview = function() {
-                    const type    = document.getElementById('feeTypeBtn_percent')?.classList.contains('bg-brand-600')?'percent':document.getElementById('feeTypeBtn_fixed')?.classList.contains('bg-brand-600')?'fixed':'both';
+                    const type    = document.getElementById('feeTypeBtn_percent')?.classList.contains('bg-navy-600')?'percent':document.getElementById('feeTypeBtn_fixed')?.classList.contains('bg-navy-600')?'fixed':'both';
                     const pct     = parseFloat(document.getElementById('cfg_fee')?.value)||0;
                     const fixed   = parseFloat(document.getElementById('cfg_fee_fixed')?.value)||0;
                     const feeMin  = parseFloat(document.getElementById('cfg_fee_min')?.value)||0;
@@ -1080,7 +1080,7 @@
                     btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                     try {
                         const newCfg = {
-                            FEE_TYPE:        document.getElementById('feeTypeBtn_percent')?.classList.contains('bg-brand-600')?'percent':document.getElementById('feeTypeBtn_fixed')?.classList.contains('bg-brand-600')?'fixed':'both',
+                            FEE_TYPE:        document.getElementById('feeTypeBtn_percent')?.classList.contains('bg-navy-600')?'percent':document.getElementById('feeTypeBtn_fixed')?.classList.contains('bg-navy-600')?'fixed':'both',
                             FEE_PERCENT:     parseFloat(document.getElementById('cfg_fee')?.value)||5,
                             FEE_FIXED:       parseFloat(document.getElementById('cfg_fee_fixed')?.value)||0,
                             FEE_MIN:         parseFloat(document.getElementById('cfg_fee_min')?.value)||0,
@@ -1130,13 +1130,13 @@
             container.innerHTML = `
             <div>
               <h1 class="text-2xl font-black text-gray-900 mb-8">${t('nav.wallet')}</h1>
-              <div class="bg-gradient-to-br from-brand-600 to-brand-900 rounded-3xl p-7 text-white mb-8 relative overflow-hidden">
+              <div class="bg-gradient-to-br from-navy-600 to-navy-900 rounded-3xl p-7 text-white mb-8 relative overflow-hidden">
                 <div class="absolute top-0 end-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/4 translate-x-1/4"></div>
                 <div class="relative">
-                  <p class="text-brand-200 text-sm mb-1">${isAr?'الرصيد المتاح':'Available Balance'}</p>
+                  <p class="text-navy-200 text-sm mb-1">${isAr?'الرصيد المتاح':'Available Balance'}</p>
                   <p class="text-4xl font-black mb-6">${formatCurrency(wallet.balance||0)}</p>
                   <div class="flex gap-3 flex-wrap">
-                    <button onclick="WalletManager.openWithdrawForm()" class="bg-white text-brand-700 font-black px-6 py-3 rounded-xl hover:bg-brand-50 transition text-sm flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i>${t('dash.withdraw')}</button>
+                    <button onclick="WalletManager.openWithdrawForm()" class="bg-white text-navy-700 font-black px-6 py-3 rounded-xl hover:bg-navy-50 transition text-sm flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i>${t('dash.withdraw')}</button>
                   </div>
                 </div>
               </div>
@@ -1144,7 +1144,7 @@
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8" id="affiliateCard"></div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <h3 class="font-black text-gray-900 mb-5">${isAr?'سجل المعاملات':'Transaction History'}</h3>
-                <div id="walletTransactions"><div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-brand-500 text-2xl"></i></div></div>
+                <div id="walletTransactions"><div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div></div>
               </div>
             </div>`;
             this._loadTransactions();

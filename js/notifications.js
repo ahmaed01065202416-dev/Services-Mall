@@ -67,13 +67,13 @@
             list.innerHTML = notifications.map(n => {
                 const iconMap = {
                     new_order:           { icon: 'fa-bag-shopping',       bg: 'bg-green-100',  color: 'text-green-600'  },
-                    new_request:         { icon: 'fa-paper-plane',        bg: 'bg-brand-100',  color: 'text-brand-600'  },
+                    new_request:         { icon: 'fa-paper-plane',        bg: 'bg-navy-100',  color: 'text-navy-600'  },
                     buyer_instructions:  { icon: 'fa-paper-plane',       bg: 'bg-blue-100',   color: 'text-blue-600'   },
                     payment_received: { icon: 'fa-circle-dollar-to-slot', bg: 'bg-blue-100', color: 'text-blue-600'  },
                     delivery:         { icon: 'fa-box-open',            bg: 'bg-purple-100', color: 'text-purple-600' },
                     dispute:          { icon: 'fa-triangle-exclamation', bg: 'bg-red-100',   color: 'text-red-600'   },
                     review:           { icon: 'fa-star',                bg: 'bg-yellow-100', color: 'text-yellow-600' },
-                    message:          { icon: 'fa-message',             bg: 'bg-brand-100',  color: 'text-brand-600' },
+                    message:          { icon: 'fa-message',             bg: 'bg-navy-100',  color: 'text-navy-600' },
                     default:          { icon: 'fa-bell',                bg: 'bg-gray-100',   color: 'text-gray-600'  },
                 };
                 const style = iconMap[n.type] || iconMap.default;
@@ -89,7 +89,7 @@
                     <p class="text-xs text-gray-500 mt-0.5 leading-relaxed">${escapeHtml(n.message || '')}</p>
                     <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(n.createdAt)}</p>
                   </div>
-                  ${!n.read ? '<div class="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0 mt-2"></div>' : ''}
+                  ${!n.read ? '<div class="w-2 h-2 bg-navy-500 rounded-full flex-shrink-0 mt-2"></div>' : ''}
                 </div>`;
             }).join('');
         },

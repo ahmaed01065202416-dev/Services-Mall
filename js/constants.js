@@ -359,7 +359,7 @@ function showLoading(msg = AppState.language === 'en' ? 'Loading...' : 'جاري
         loader.className = 'fixed inset-0 bg-black/50 z-[100000] flex items-center justify-center';
         loader.innerHTML = `
             <div class="bg-white rounded-3xl p-8 flex flex-col items-center gap-4 shadow-2xl">
-                <div class="w-14 h-14 rounded-full border-4 border-brand-200 border-t-brand-600 animate-spin"></div>
+                <div class="w-14 h-14 rounded-full border-4 border-navy-200 border-t-navy-600 animate-spin"></div>
                 <p id="loaderMsg" class="text-gray-700 font-semibold text-lg">${escapeHtml(msg)}</p>
             </div>`;
         document.body.appendChild(loader);

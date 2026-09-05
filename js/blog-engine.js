@@ -170,7 +170,7 @@
         container.innerHTML = `<div style="text-align:center;padding:80px;color:#6b7280">
           <i class="fa-solid fa-search" style="font-size:48px;margin-bottom:16px;opacity:.3;display:block"></i>
           <p style="font-weight:700;font-size:18px">المقال غير موجود</p>
-          <button onclick="BlogEngine.showBlogList()" style="margin-top:20px;background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">
+          <button onclick="BlogEngine.showBlogList()" style="margin-top:20px;background:#1B2A4A;color:#fff;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">
             العودة للمدونة</button></div>`;
         return;
       }
@@ -189,7 +189,7 @@
       if (!progressBar) {
         progressBar = document.createElement('div');
         progressBar.id = 'reading-progress';
-        progressBar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#2563eb,#ec4899);transform-origin:left;z-index:9999;transform:scaleX(0);transition:transform .1s';
+        progressBar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1B2A4A,#ec4899);transform-origin:left;z-index:9999;transform:scaleX(0);transition:transform .1s';
         document.body.appendChild(progressBar);
       }
       const onScroll = () => {
@@ -248,13 +248,13 @@
             <!-- Keywords -->
             ${post.keywords?.length ? `
             <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
-              ${post.keywords.map(k => `<span style="background:#eff6ff;color:#2563eb;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
+              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#1B2A4A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
             </div>` : ''}
 
             <!-- Share -->
             <div style="margin-top:28px;background:#f8fafc;border-radius:16px;padding:20px;border:1px solid #e5e7eb">
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:14px">
-                <i class="fa-solid fa-share-nodes" style="color:#2563eb;margin-left:8px"></i>شارك هذا المقال
+                <i class="fa-solid fa-share-nodes" style="color:#1B2A4A;margin-left:8px"></i>شارك هذا المقال
               </p>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}" target="_blank" rel="noopener"
@@ -297,11 +297,11 @@
 
             <!-- CTA -->
             <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;text-align:center">
-              <i class="fa-solid fa-store" style="font-size:32px;color:#2563eb;margin-bottom:10px;display:block"></i>
+              <i class="fa-solid fa-store" style="font-size:32px;color:#1B2A4A;margin-bottom:10px;display:block"></i>
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:6px">ابدأ على المنصة</p>
               <p style="font-size:12px;color:#6b7280;margin-bottom:14px">آلاف المحترفين في انتظارك</p>
               <button onclick="navigateTo('services')"
-                style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">
+                style="width:100%;padding:10px;background:#1B2A4A;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">
                 استعرض الخدمات
               </button>
             </div>

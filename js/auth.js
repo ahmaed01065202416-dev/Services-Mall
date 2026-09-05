@@ -352,7 +352,7 @@
                 <img id="profileAvatarPreview" src="${user.photoURL || avatarFallback}"
                   class="w-20 h-20 rounded-2xl object-cover"
                   onerror="this.src='${avatarFallback}'">
-                <label class="absolute bottom-0 end-0 w-7 h-7 bg-brand-600 text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-brand-700 transition">
+                <label class="absolute bottom-0 end-0 w-7 h-7 bg-navy-600 text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-navy-700 transition">
                   <i class="fa-solid fa-pen text-xs"></i>
                   <input type="file" accept="image/*" class="hidden" id="avatarFileInput" onchange="AuthManager._uploadAvatar(this)">
                 </label>
@@ -360,7 +360,7 @@
               <div>
                 <h2 class="font-black text-gray-900 text-xl">${escapeHtml(user.displayName || '')}</h2>
                 <p class="text-gray-500">${user.email || ''}</p>
-                <span class="inline-block mt-1 text-xs bg-brand-50 text-brand-600 font-bold px-3 py-1 rounded-full">
+                <span class="inline-block mt-1 text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">
                   ${user.role === 'admin' ? '👑 Admin' : user.role === 'seller' ? '🏪 '+(isAr?'بائع':'Seller') : '🛍️ '+(isAr?'مشتري':'Buyer')}
                 </span>
               </div>

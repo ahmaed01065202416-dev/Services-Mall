@@ -118,7 +118,7 @@
                       <i class="fa-solid fa-user text-xs text-gray-400"></i>
                       ${escapeHtml(isBuyer ? (order.sellerName || '—') : (order.buyerName || '—'))}
                     </span>
-                    <span class="flex items-center gap-1 font-black text-brand-700">
+                    <span class="flex items-center gap-1 font-black text-navy-700">
                       <i class="fa-solid fa-coins text-xs"></i>${formatCurrency(order.price || 0)}
                     </span>
                     <span class="flex items-center gap-1">
@@ -167,7 +167,7 @@
             // Update filter buttons
             document.querySelectorAll('.order-filter-btn').forEach(btn => {
                 const active = btn.dataset.status === status;
-                btn.classList.toggle('bg-brand-600', active);
+                btn.classList.toggle('bg-navy-600', active);
                 btn.classList.toggle('text-white', active);
                 btn.classList.toggle('bg-white', !active);
                 btn.classList.toggle('text-gray-600', !active);
@@ -250,7 +250,7 @@
                 ${statuses.map(s => `
                   <button onclick="OrdersManager.filterOrders('${s.key}')"
                     data-status="${s.key}"
-                    class="order-filter-btn flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 transition ${s.key === 'all' ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-600'}">
+                    class="order-filter-btn flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 transition ${s.key === 'all' ? 'bg-navy-600 text-white border-navy-600' : 'bg-white text-gray-600'}">
                     ${s.label}
                   </button>`).join('')}
               </div>

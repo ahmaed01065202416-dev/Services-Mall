@@ -151,7 +151,7 @@
                       </div>
                       <div class="flex gap-2 flex-shrink-0">
                         <!-- Attach file -->
-                        <label class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-brand-100 hover:text-brand-600 transition cursor-pointer"
+                        <label class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition cursor-pointer"
                           title="${isAr ? 'إرفاق ملف' : 'Attach file'}">
                           <i class="fa-solid fa-paperclip"></i>
                           <input type="file" class="hidden" onchange="OrderWorkspace.sendFile(this)" multiple accept="*/*">
@@ -164,7 +164,7 @@
                         </label>
                         <!-- Send -->
                         <button onclick="OrderWorkspace.sendMessage()"
-                          class="w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center hover:bg-brand-700 transition active:scale-95">
+                          class="w-10 h-10 bg-navy-600 text-white rounded-xl flex items-center justify-center hover:bg-navy-700 transition active:scale-95">
                           <i class="fa-solid fa-paper-plane"></i>
                         </button>
                       </div>
@@ -202,7 +202,7 @@
               <!-- Order Details -->
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
-                  <i class="fa-solid fa-receipt text-brand-600"></i>
+                  <i class="fa-solid fa-receipt text-navy-600"></i>
                   ${isAr ? 'تفاصيل الطلب' : 'Order Details'}
                 </h3>
                 <div class="space-y-3 text-sm">
@@ -216,7 +216,7 @@
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-500">${isAr ? 'المبلغ' : 'Amount'}</span>
-                    <span class="font-black text-brand-700">${formatCurrency(order.price || 0)}</span>
+                    <span class="font-black text-navy-700">${formatCurrency(order.price || 0)}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-500">${isAr ? 'نوع الطلب' : 'Order Type'}</span>
@@ -228,6 +228,15 @@
                   </div>
                 </div>
               </div>
+
+              <!-- ⚠️ ADDED: seller-defined stage tracker — separate from the
+                   automatic status timeline below. Lets the seller describe
+                   exactly what step of THEIR work the order is at, in their
+                   own words (e.g. "مراجعة أولى", "تعديلات") — the automatic
+                   timeline only tracks the big lifecycle states (accepted →
+                   delivered → completed), not granular in-progress work.
+                   Only relevant for services (products are instant). -->
+              ${order.listingType !== 'product' && [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS].includes(order.status) ? _renderStageTracker(order, isSeller, isAr) : ''}
 
               <!-- ── SELLER: Accept/Reject a custom request (before any payment) ── -->
               ${isSeller && order.status === ORDER_STATUS.PENDING && order.paymentStatus === 'no_payment' ? `
@@ -292,11 +301,11 @@
 
                 <!-- Drop zone -->
                 <div id="deliveryDropZone"
-                  class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-brand-400 hover:bg-brand-50 transition cursor-pointer mb-3"
+                  class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-navy-400 hover:bg-navy-50 transition cursor-pointer mb-3"
                   onclick="document.getElementById('deliveryFiles').click()"
-                  ondragover="event.preventDefault();this.classList.add('border-brand-500','bg-brand-50')"
-                  ondragleave="this.classList.remove('border-brand-500','bg-brand-50')"
-                  ondrop="event.preventDefault();this.classList.remove('border-brand-500','bg-brand-50');OrderWorkspace.handleDeliveryDrop(event)">
+                  ondragover="event.preventDefault();this.classList.add('border-navy-500','bg-navy-50')"
+                  ondragleave="this.classList.remove('border-navy-500','bg-navy-50')"
+                  ondrop="event.preventDefault();this.classList.remove('border-navy-500','bg-navy-50');OrderWorkspace.handleDeliveryDrop(event)">
                   <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
                   <p class="text-sm text-gray-500 font-bold">${isAr ? 'اسحب الملفات هنا أو انقر للاختيار' : 'Drag files here or click to browse'}</p>
                   <p class="text-xs text-gray-400 mt-1">${isAr ? 'الحد الأقصى 50MB لكل ملف' : 'Max 50MB per file'}</p>
@@ -321,7 +330,7 @@
               ${isBuyer && (order.status === ORDER_STATUS.PAYMENT_HELD || order.status === ORDER_STATUS.IN_PROGRESS) ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-3 flex items-center gap-2">
-                  <i class="fa-solid fa-paper-plane text-brand-600"></i>
+                  <i class="fa-solid fa-paper-plane text-navy-600"></i>
                   ${isAr ? 'أرسل تعليماتك للبائع' : 'Send Instructions to Seller'}
                 </h3>
                 <p class="text-xs text-gray-500 mb-3">
@@ -338,7 +347,7 @@
                   placeholder="${isAr ? 'اكتب تعليماتك هنا... مثال: أريد تصميم شعار باللون الأزرق مع اسم...' : 'Write your instructions... e.g. I want a blue logo with the name...'}">${order.buyerInstructions || ''}</textarea>
 
                 <!-- File upload -->
-                <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center mb-3 hover:border-brand-400 hover:bg-brand-50 transition cursor-pointer"
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center mb-3 hover:border-navy-400 hover:bg-navy-50 transition cursor-pointer"
                   onclick="document.getElementById('buyer-files-input').click()">
                   <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-400 mb-1 block"></i>
                   <p class="text-xs text-gray-500 font-bold">${isAr ? 'ارفع ملفات (صور، PDF، ZIP، فيديو) — حد 50MB' : 'Upload files (images, PDF, ZIP, video) — max 50MB'}</p>
@@ -451,7 +460,7 @@
     // ── Tab Builder ───────────────────────────────────────────────────────────
     function _tab(id, i18nKey, icon) {
         return `<button onclick="wsActivateTab('${id}')" id="ws-tab-btn-${id}"
-          class="ws-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-brand-600 hover:bg-brand-50 transition flex items-center justify-center gap-2 border-b-2 border-transparent">
+          class="ws-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-navy-600 hover:bg-navy-50 transition flex items-center justify-center gap-2 border-b-2 border-transparent">
           <i class="fa-solid ${icon}"></i>
           <span>${t(i18nKey)}</span>
         </button>`;
@@ -464,8 +473,8 @@
             const btn   = document.getElementById(`ws-tab-btn-${id}`);
             if (panel) panel.classList.toggle('hidden', id !== tab);
             if (btn) {
-                btn.classList.toggle('text-brand-600',     id === tab);
-                btn.classList.toggle('border-brand-500',   id === tab);
+                btn.classList.toggle('text-navy-600',     id === tab);
+                btn.classList.toggle('border-navy-500',   id === tab);
                 btn.classList.toggle('bg-white',           id === tab);
                 btn.classList.toggle('text-gray-500',      id !== tab);
                 btn.classList.toggle('border-transparent', id !== tab);
@@ -616,13 +625,13 @@
 
         return `
         <a href="${file.url}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
-          class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-brand-400 hover:shadow-md transition group w-full">
+          class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-bold text-gray-900 truncate">${_escapeHtml(file.name || 'File')}</p>
             <p class="text-xs text-gray-400">${_formatFileSize(file.size)}</p>
           </div>
-          <i class="fa-solid fa-download text-gray-300 group-hover:text-brand-600 transition flex-shrink-0"></i>
+          <i class="fa-solid fa-download text-gray-300 group-hover:text-navy-600 transition flex-shrink-0"></i>
         </a>`;
     }
 
@@ -915,7 +924,7 @@
         if (files.length === 0) { list.innerHTML = ''; return; }
         list.innerHTML = files.map(f => `
           <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-sm">
-            <i class="fa-solid fa-file text-brand-500 flex-shrink-0"></i>
+            <i class="fa-solid fa-file text-navy-500 flex-shrink-0"></i>
             <span class="flex-1 truncate font-medium">${_escapeHtml(f.name)}</span>
             <span class="text-gray-400 text-xs flex-shrink-0">${_formatFileSize(f.size)}</span>
             ${f.size > MAX_FILE_SIZE ? '<span class="text-red-500 text-xs font-bold">!</span>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
@@ -929,7 +938,7 @@
         const isAr  = AppState.language !== 'en';
         const steps = [
             { icon: 'fa-paper-plane',    color: 'bg-blue-500',   label: isAr ? 'تم تقديم الطلب'        : 'Request Placed',      date: order.createdAt,   done: true },
-            { icon: 'fa-comments',       color: 'bg-brand-500',  label: isAr ? 'التواصل مع مقدم الخدمة': 'Discussing with Seller', date: null,             done: [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED, ORDER_STATUS.PENDING].includes(order.status) },
+            { icon: 'fa-comments',       color: 'bg-navy-500',  label: isAr ? 'التواصل مع مقدم الخدمة': 'Discussing with Seller', date: null,             done: [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED, ORDER_STATUS.PENDING].includes(order.status) },
             { icon: 'fa-hourglass-half', color: 'bg-amber-500',  label: isAr ? 'جاري تنفيذ الخدمة'     : 'In Progress',         date: null,              done: [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(order.status) },
             { icon: 'fa-box-open',       color: 'bg-purple-500', label: isAr ? 'تم تسليم الخدمة'       : 'Service Delivered',   date: order.deliveredAt, done: [ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(order.status) },
             { icon: 'fa-circle-check',   color: 'bg-green-500',  label: isAr ? 'مكتمل'                  : 'Completed',           date: order.completedAt, done: order.status === ORDER_STATUS.COMPLETED },
@@ -975,7 +984,7 @@
 
             container.innerHTML = files.reverse().map(f => `
               <div class="group">
-                <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-brand-400 hover:shadow-sm transition">
+                <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-sm transition">
                   ${_fileDownloadCard(f)}
                 </div>
                 <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '📦' : ''}</p>
@@ -1001,7 +1010,7 @@
 
     function _linkify(str) {
         return str.replace(/(https?:\/\/[^\s<>"]+)/g,
-            '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-brand-600 hover:text-brand-800">$1</a>');
+            '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-navy-600 hover:text-navy-800">$1</a>');
     }
 
     function _formatFileSize(bytes) {
@@ -1111,11 +1120,126 @@
         if (!files.length) { preview.innerHTML = ''; return; }
         preview.innerHTML = files.map(f => `
             <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-sm">
-              <i class="fa-solid fa-file text-brand-500 flex-shrink-0"></i>
+              <i class="fa-solid fa-file text-navy-500 flex-shrink-0"></i>
               <span class="flex-1 truncate font-medium">${escapeHtml(f.name)}</span>
               <span class="text-gray-400 text-xs flex-shrink-0">${f.size > 1048576 ? (f.size/1048576).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB'}</span>
               ${f.size > 50*1024*1024 ? '<i class="fa-solid fa-exclamation-triangle text-red-500 text-xs"></i>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
             </div>`).join('');
+    }
+
+    // ── Seller-defined stage tracker (separate from the automatic status
+    //    timeline) — the seller describes their own work steps in plain
+    //    words and marks progress; the buyer sees it as a read-only stepper.
+    const DEFAULT_STAGES = ['استلام الطلب', 'قيد التنفيذ', 'مراجعة العميل', 'التسليم النهائي'];
+
+    function _renderStageTracker(order, isSeller, isAr) {
+        const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES;
+        const current = Math.min(order.currentStageIndex || 0, stages.length - 1);
+
+        if (isSeller) {
+            return `
+              <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-black text-gray-900 mb-1 flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-navy-700"></i>
+                  ${isAr ? 'مراحل تنفيذ الطلب' : 'Work Stages'}
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">${isAr ? 'عدّل أسماء المراحل براحتك، واضغط على أي مرحلة لتحديدها كالمرحلة الحالية للعميل.' : "Edit the stage names as you like, and click any stage to mark it as the buyer's current stage."}</p>
+                <div id="stageEditorList" class="space-y-2 mb-3">
+                  ${stages.map((name, i) => `
+                    <div class="flex items-center gap-2">
+                      <button onclick="OrderWorkspace.setOrderStage('${order.id}',${i})"
+                        class="w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-black transition ${i < current ? 'bg-turquoise-500 text-white' : i === current ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-400'}">
+                        ${i < current ? '<i class="fa-solid fa-check"></i>' : i + 1}
+                      </button>
+                      <input type="text" class="form-input flex-1 text-sm py-2 stage-name-input" value="${escapeHtml(name)}" maxlength="60">
+                    </div>`).join('')}
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="OrderWorkspace.addStageField('${order.id}')" class="text-xs font-bold text-navy-700 hover:underline">+ ${isAr?'إضافة مرحلة':'Add stage'}</button>
+                  <button onclick="OrderWorkspace.saveCustomStages('${order.id}')" class="mr-auto text-xs font-bold bg-navy-800 text-white px-4 py-2 rounded-xl hover:bg-navy-900 transition">${isAr?'حفظ المراحل':'Save stages'}</button>
+                </div>
+              </div>`;
+        }
+
+        // Buyer / admin: read-only stepper
+        return `
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-navy-700"></i>
+              ${isAr ? 'مرحلة تنفيذ الطلب' : 'Work Stage'}
+            </h3>
+            <div class="space-y-3">
+              ${stages.map((name, i) => `
+                <div class="flex items-center gap-3">
+                  <div class="w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-black ${i < current ? 'bg-turquoise-500 text-white' : i === current ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-400'}">
+                    ${i < current ? '<i class="fa-solid fa-check"></i>' : i + 1}
+                  </div>
+                  <span class="text-sm ${i === current ? 'font-black text-navy-900' : i < current ? 'text-gray-400 line-through' : 'text-gray-400'}">${escapeHtml(name)}</span>
+                  ${i === current ? `<span class="text-xs text-turquoise-600 font-bold mr-auto">${isAr?'جارٍ الآن':'In progress'}</span>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>`;
+    }
+
+    function addStageField(orderId) {
+        const list = document.getElementById('stageEditorList');
+        if (!list) return;
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2';
+        div.innerHTML = `
+          <span class="w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-black bg-gray-100 text-gray-400">${list.children.length + 1}</span>
+          <input type="text" class="form-input flex-1 text-sm py-2 stage-name-input" placeholder="${AppState.language==='en'?'New stage name':'اسم المرحلة الجديدة'}" maxlength="60">`;
+        list.appendChild(div);
+    }
+
+    async function saveCustomStages(orderId) {
+        const isAr = AppState.language !== 'en';
+        const names = Array.from(document.querySelectorAll('.stage-name-input')).map(i => i.value.trim()).filter(Boolean);
+        if (names.length < 1) { showToast(isAr ? 'لازم مرحلة واحدة على الأقل' : 'At least one stage is required', 'warning'); return; }
+        showLoading();
+        try {
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).update({
+                customStages: names,
+                updatedAt: _ts(),
+            });
+            hideLoading();
+            showToast(isAr ? '✅ اتحفظت المراحل' : '✅ Stages saved', 'success');
+            openWorkspace(orderId);
+        } catch (err) {
+            hideLoading();
+            showToast(t('general.error') + ': ' + err.message, 'error');
+        }
+    }
+
+    async function setOrderStage(orderId, index) {
+        const isAr = AppState.language !== 'en';
+        showLoading();
+        try {
+            const snap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
+            const order = snap.data() || {};
+            const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES;
+
+            const batch = window.db.batch();
+            batch.update(window.db.collection(COLLECTIONS.ORDERS).doc(orderId), {
+                currentStageIndex: index,
+                customStages: order.customStages || stages, // persist the defaults the first time a stage is set
+                updatedAt: _ts(),
+            });
+            if (order.buyerId) {
+                batch.set(window.db.collection(COLLECTIONS.NOTIFICATIONS).doc(), {
+                    userId: order.buyerId, type: 'stage_update',
+                    title: isAr ? '📍 تحديث في مرحلة طلبك' : '📍 Your order stage was updated',
+                    message: isAr ? `المرحلة الحالية: ${stages[index]}` : `Current stage: ${stages[index]}`,
+                    orderId, read: false, createdAt: _ts(),
+                });
+            }
+            await batch.commit();
+            hideLoading();
+            openWorkspace(orderId);
+        } catch (err) {
+            hideLoading();
+            showToast(t('general.error') + ': ' + err.message, 'error');
+        }
     }
 
     // ── Seller responds to a pending custom request (accept/reject) ──────────
@@ -1164,6 +1288,7 @@
         handleDeliveryDrop, wsActivateTab,
         sendBuyerInstructions, previewBuyerFiles,
         respondToRequest,
+        addStageField, saveCustomStages, setOrderStage,
     };
     window.openWorkspace = openWorkspace;
     window.wsActivateTab = wsActivateTab;

@@ -243,12 +243,41 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
     if (pending.mode === 'existing_order') {
         const orderId = pending.orderId;
         const item = pending.item;
-        await fsSet(env, `orders/${orderId}`, {
-            status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
-            merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
-            escrowHeld: true, escrowAmount: item.price, price: item.price,
-            chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
-        }, true);
+
+        // ⚠️ ADDED: products (listingType: 'product') are ready-made digital
+        // items — no seller approval or manual delivery step. As soon as
+        // payment clears, auto-attach the seller's digital delivery content
+        // and mark the order 'delivered' immediately (instead of leaving it
+        // at 'payment_held' waiting for the seller to do something). This
+        // still goes through the exact same confirm-receipt / 7-day
+        // auto-dispute safety net as a normal delivery — only the "seller
+        // manually delivers" step is skipped, not the buyer-protection path.
+        let productDelivery = null;
+        let stockLimitedSvc = null;
+        try {
+            const svc = await fsGet(env, `services/${item.serviceId}`);
+            if (svc && svc.listingType === 'product' && svc.digitalDelivery) {
+                productDelivery = svc.digitalDelivery;
+                if (svc.stockLimit != null) stockLimitedSvc = svc;
+            }
+        } catch (_) { /* if this lookup fails, fall back to the normal service flow below */ }
+
+        const orderUpdate = productDelivery
+            ? {
+                status: 'delivered', paymentMethod: method, paymentId: String(paymentId),
+                merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
+                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
+                listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
+                digitalDelivery: productDelivery,
+            }
+            : {
+                status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
+                merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
+                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
+            };
+        await fsSet(env, `orders/${orderId}`, orderUpdate, true);
 
         await fsCreate(env, 'escrow', {
             orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
@@ -256,12 +285,32 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             createdAt: new Date(),
         }, orderId);
 
+        // ⚠️ ADDED: decrement stock for a stock-limited product. Best-effort,
+        // not a transaction — under a genuine race between two simultaneous
+        // last-unit buyers the count could briefly go negative by one; given
+        // the low concurrency expected here, that tradeoff is accepted rather
+        // than adding transaction complexity for it. Auto-deactivates the
+        // listing once stock hits zero so it stops appearing as purchasable.
+        if (stockLimitedSvc) {
+            const newStock = Math.max(0, (stockLimitedSvc.stockLimit || 0) - 1);
+            const stockUpdate = { stockLimit: newStock };
+            if (newStock === 0) stockUpdate.active = false;
+            await fsSet(env, `services/${item.serviceId}`, stockUpdate, true);
+        }
+
         if (item.sellerId) {
             await fsCreate(env, 'notifications', {
                 userId: item.sellerId, type: 'payment_confirmed', title: '💰 تم الدفع!',
-                message: `المشتري دفع طلب: ${item.title}`, orderId, read: false, createdAt: new Date(),
+                message: productDelivery ? `تم بيع منتج تلقائيًا: ${item.title}` : `المشتري دفع طلب: ${item.title}`,
+                orderId, read: false, createdAt: new Date(),
             });
         }
+        await fsCreate(env, 'notifications', {
+            userId: pending.uid, type: productDelivery ? 'product_delivered' : 'payment_confirmed',
+            title: productDelivery ? '📦 منتجك جاهز!' : '✅ تم الدفع',
+            message: productDelivery ? `منتجك "${item.title}" جاهز للتحميل الآن` : `تم دفع طلب: ${item.title}`,
+            orderId, read: false, createdAt: new Date(),
+        });
 
         await fsSet(env, `pending_payments/${pendingId}`, { status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds: [orderId] }, true);
         return { ok: true, orderIds: [orderId] };

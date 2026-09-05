@@ -228,8 +228,85 @@
         }
     }
 
+    // ── Instant product purchase — no request/approval step ───────────────────
+    // ⚠️ ADDED: for listingType 'product' (ready-made digital items — templates,
+    // e-books, scripts...), the buyer shouldn't have to submit a request and
+    // wait for seller approval like a custom service. This creates the order
+    // directly at status 'accepted' (firestore.rules only allows that for
+    // listingType 'product' — see the comment there) and hands straight off to
+    // the existing "pay for an accepted order" flow (PaymentSystem.payForOrder),
+    // so it reuses the exact same payment/escrow/dispute protection as every
+    // other order — only the request/approval step is skipped, not the
+    // buyer/seller protections around the money itself.
+    async function buyProductNow(service) {
+        const isAr = AppState.language !== 'en';
+        if (!AppState.currentUser) {
+            showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning');
+            navigateTo('login');
+            return;
+        }
+        if (!service || !service.id) { showToast(isAr ? 'خطأ: بيانات المنتج غير مكتملة' : 'Error: incomplete product data', 'error'); return; }
+        if (AppState.currentUser.uid === service.sellerId) {
+            showToast(isAr ? 'لا يمكنك شراء منتجك الخاص' : "You can't buy your own product", 'warning');
+            return;
+        }
+
+        const user = AppState.currentUser;
+        showLoading(isAr ? 'جاري تجهيز طلبك...' : 'Preparing your order...');
+        try {
+            // ⚠️ ADDED: re-check stock/expiry against the LIVE service doc, not
+            // the (possibly stale) card data passed in — stock can change
+            // between the buyer loading the page and clicking buy.
+            const svcSnap = await window.db.collection(COLLECTIONS.SERVICES).doc(service.id).get();
+            const svcData = svcSnap.data();
+            if (!svcData) throw new Error(isAr ? 'المنتج لم يعد متاحًا' : 'This product is no longer available');
+            if (svcData.expiryDate && new Date(svcData.expiryDate) < new Date()) {
+                hideLoading();
+                showToast(isAr ? 'انتهى عرض هذا المنتج' : 'This product offer has expired', 'warning');
+                return;
+            }
+            if (svcData.stockLimit != null && svcData.stockLimit <= 0) {
+                hideLoading();
+                showToast(isAr ? 'نفدت الكمية المتاحة من هذا المنتج' : 'This product is out of stock', 'warning');
+                return;
+            }
+
+            const orderId = generateId('ord_');
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set({
+                id: orderId,
+                serviceId:     service.id,
+                serviceTitle:  service.title,
+                serviceImage:  service.image || '',
+                image:         service.image || '',
+                sellerId:      service.sellerId,
+                sellerName:    service.sellerName || '',
+                buyerId:       user.uid,
+                buyerName:     user.displayName || user.email || '',
+                buyerAvatar:   user.photoURL || '',
+                price:         service.price || 0,
+                deliveryDays:  service.deliveryDays || 0,
+                listingType:   'product',
+                status:        ORDER_STATUS.ACCEPTED,
+                paymentStatus: 'no_payment',
+                createdAt:     serverTimestamp(),
+                updatedAt:     serverTimestamp(),
+            });
+
+            hideLoading();
+            if (window.PaymentSystem) {
+                await window.PaymentSystem.payForOrder(orderId);
+            } else {
+                navigateTo('orders');
+            }
+        } catch (err) {
+            hideLoading();
+            console.error('[RequestSystem] buyProductNow failed:', err);
+            showToast(isAr ? 'حدث خطأ، حاول مرة أخرى' : 'Something went wrong, please try again', 'error');
+        }
+    }
+
     // ── Expose ────────────────────────────────────────────────────────────────
-    window.RequestSystem = { openRequestModal, submitRequest, openBriefAssistant, generateBrief };
+    window.RequestSystem = { openRequestModal, submitRequest, openBriefAssistant, generateBrief, buyProductNow };
 
     console.log('✅ RequestSystem loaded — No-payment request flow');
 })();

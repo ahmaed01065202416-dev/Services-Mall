@@ -64,7 +64,8 @@ service cloud.firestore {
                       isSellerOwner(resource.data.sellerId) && isSeller() &&
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['title','description','category','price','deliveryDays',
-                                  'revisions','image','tags','active','status','recurring','updatedAt'])
+                                  'revisions','image','tags','active','status','recurring','updatedAt',
+                                  'listingType','digitalDelivery','stockLimit','expiryDate'])
                     );
       // Only the owning seller (or admin) can delete
       allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
@@ -88,11 +89,19 @@ service cloud.firestore {
       // (or error out) every single free-request creation. Guarded the same
       // way `role` is guarded above: only check the value when the field is
       // actually present.
+      // ⚠️ ADDED: products (listingType: 'product') skip the seller-approval
+      // step entirely (see js/request-system.js buyProductNow) — the buyer
+      // is allowed to create the order directly at status 'accepted' ONLY
+      // when listingType is 'product'; a normal service request must still
+      // start at 'pending' and wait for the seller.
       allow create: if isSignedIn()
                     && request.resource.data.buyerId == request.auth.uid
-                    && request.resource.data.status == 'pending'
                     && request.resource.data.paymentStatus == 'no_payment'
-                    && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true);
+                    && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true)
+                    && (
+                         request.resource.data.status == 'pending'
+                         || (request.resource.data.status == 'accepted' && request.resource.data.listingType == 'product')
+                       );
       // ⚠️ FIXED: same class of bug as the `escrowHeld` fix on `create` above,
       // just in `update` this time — dot-accessing `escrowAmount`/`paymentId`
       // when the order is a free custom request (js/request-system.js never
