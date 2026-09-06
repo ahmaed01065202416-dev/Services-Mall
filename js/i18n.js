@@ -63,6 +63,7 @@
             'cart.checkout':      'إتمام الشراء',
             'cart.remove':        'حذف',
             'cart.continue':      'مواصلة التسوق',
+            'cart.short':         'السلة',
 
             // Payment
             'pay.title':          'إتمام الدفع',
@@ -217,6 +218,7 @@
             'cart.checkout':      'Checkout',
             'cart.remove':        'Remove',
             'cart.continue':      'Continue Shopping',
+            'cart.short':         'Cart',
 
             // Payment
             'pay.title':          'Complete Payment',

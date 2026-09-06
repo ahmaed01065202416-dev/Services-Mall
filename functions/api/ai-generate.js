@@ -45,6 +45,18 @@ async function fetchJSON(url, options) {
 }
 
 // ── Gemini API call ──────────────────────────────────────────────────────────
+// ⚠️ FIXED: two separate problems found together —
+// 1. The model name was "gemini-1.5-flash", which Google fully retired
+//    (all Gemini 1.0/1.5 models now 404) — every single call was failing.
+//    Updated to a currently-supported model. Google renames/retires models
+//    fairly often; if this starts failing again, check
+//    https://ai.google.dev/gemini-api/docs/models for the current name.
+// 2. fetchJSON() never checked the HTTP status, so a 404/error response body
+//    (which still parses as valid JSON) silently fell through to "Empty
+//    Gemini response" — hiding the real reason. Now surfaces whatever error
+//    message Google actually returned.
+const GEMINI_MODEL = 'gemini-3.7-flash';
+
 async function callGemini(topic, keywords, key) {
   if (!key) throw new Error('GEMINI_API_KEY missing');
 
@@ -67,7 +79,7 @@ async function callGemini(topic, keywords, key) {
 ابدأ مباشرة بالـ HTML بدون أي مقدمة نصية.`;
 
   const json = await fetchJSON(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,8 +90,9 @@ async function callGemini(topic, keywords, key) {
     }
   );
 
+  if (json.error) throw new Error(`Gemini API error: ${json.error.message || JSON.stringify(json.error)}`);
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('Empty Gemini response');
+  if (!text) throw new Error('Empty Gemini response — raw: ' + JSON.stringify(json).slice(0, 300));
   return text;
 }
 
@@ -100,6 +113,7 @@ async function callOpenAI(topic, keywords, key) {
   });
 
   const text = json.choices?.[0]?.message?.content || '';
+  if (json.error) throw new Error(`OpenAI API error: ${json.error.message || JSON.stringify(json.error)}`);
   if (!text) throw new Error('Empty OpenAI response');
   return text;
 }

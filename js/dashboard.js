@@ -624,19 +624,12 @@
                     <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white text-center"><p class="text-2xl font-black">${usersSnap.size}</p><p class="text-amber-200 text-xs mt-1">${isAr?'إجمالي المستخدمين':'Total Users'}</p></div>
                   </div>
 
-                  <!-- Monthly Bar Chart -->
+                  <!-- Monthly Revenue Chart (Chart.js) -->
                   <div class="bg-white rounded-2xl border border-gray-100 p-5">
                     <h3 class="font-black text-gray-900 mb-4">${isAr?'الإيرادات الشهرية':'Monthly Revenue'}</h3>
                     ${sortedMonths.length===0
                       ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد بيانات':'No data yet'}</p>`
-                      : `<div class="flex items-end gap-3 h-36 px-2">
-                        ${sortedMonths.map(([month,v])=>`
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                          <span class="text-xs font-black text-navy-700">${formatCurrency(v.revenue)}</span>
-                          <div class="w-full bg-navy-500 rounded-t-lg transition-all" style="height:${Math.max(8,Math.round(v.revenue/maxRev*100))}px"></div>
-                          <span class="text-xs text-gray-400">${month.slice(5)}</span>
-                        </div>`).join('')}
-                      </div>`}
+                      : `<div style="height:220px"><canvas id="adminRevenueChart"></canvas></div>`}
                   </div>
 
                   <div class="grid md:grid-cols-2 gap-4">
@@ -667,10 +660,37 @@
                   <div class="bg-gray-50 rounded-2xl border border-gray-100 p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div><p class="text-lg font-black text-gray-900">${allOrders.length}</p><p class="text-xs text-gray-500">${isAr?'إجمالي الطلبات':'Total Orders'}</p></div>
                     <div><p class="text-lg font-black text-gray-900">${servicesSnap.size}</p><p class="text-xs text-gray-500">${isAr?'الخدمات':'Services'}</p></div>
-                    <div><p class="text-lg font-black text-gray-900">${allOrders.length>0?Math.round(completed.length/orders.length*100):0}%</p><p class="text-xs text-gray-500">${isAr?'معدل الإتمام':'Completion Rate'}</p></div>
+                    <div><p class="text-lg font-black text-gray-900">${allOrders.length>0?Math.round(completed.length/allOrders.length*100):0}%</p><p class="text-xs text-gray-500">${isAr?'معدل الإتمام':'Completion Rate'}</p></div>
                     <div><p class="text-lg font-black text-gray-900">${completed.length>0?formatCurrency(totalRev/completed.length):formatCurrency(0)}</p><p class="text-xs text-gray-500">${isAr?'متوسط قيمة الطلب':'Avg Order Value'}</p></div>
                   </div>
                 </div>`;
+
+                // ⚠️ ADDED: real Chart.js chart (was a hand-drawn div bar chart) —
+                // destroy any previous instance first since adminTab can be
+                // called repeatedly without a full page reload.
+                if (sortedMonths.length > 0 && window.Chart) {
+                    const canvas = document.getElementById('adminRevenueChart');
+                    if (canvas) {
+                        if (window._adminRevenueChartInstance) window._adminRevenueChartInstance.destroy();
+                        window._adminRevenueChartInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: sortedMonths.map(([m]) => m),
+                                datasets: [{
+                                    label: isAr ? 'الإيرادات' : 'Revenue',
+                                    data: sortedMonths.map(([, v]) => v.revenue),
+                                    backgroundColor: '#1B2A4A',
+                                    borderRadius: 6,
+                                }],
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } },
+                            },
+                        });
+                    }
+                }
 
             // ── REVIEWS ───────────────────────────────────────────────────────
             } else if (tab === 'reviews') {
@@ -1140,6 +1160,10 @@
                   </div>
                 </div>
               </div>
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8">
+                <h3 class="font-black text-gray-900 mb-4">${isAr?'حركة المحفظة (آخر 6 شهور)':'Wallet Activity (last 6 months)'}</h3>
+                <div style="height:180px"><canvas id="walletChart"></canvas></div>
+              </div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8" id="mySubscriptions"></div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8" id="affiliateCard"></div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -1193,6 +1217,11 @@
             const isAr = AppState.language !== 'en';
             try {
                 const snap = await window.db.collection(COLLECTIONS.TRANSACTIONS).where('userId','==',user.uid).orderBy('createdAt','desc').limit(20).get();
+
+                // ⚠️ ADDED: wallet activity chart — grouped from the same 20
+                // recent transactions already being fetched (no extra read).
+                this._renderWalletChart(snap.docs.map(d => d.data()), isAr);
+
                 if (snap.empty) { container.innerHTML = `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد معاملات':'No transactions yet'}</p>`; return; }
                 container.innerHTML = snap.docs.map(doc => {
                     const tx = doc.data(), isEarning = tx.type==='earning';
@@ -1206,6 +1235,41 @@
                 if (e.code==='failed-precondition') container.innerHTML = `<p class="text-gray-400 text-center py-4 text-sm">${isAr?'جاري تهيئة السجل...':'Setting up...'}</p>`;
                 else container.innerHTML = `<p class="text-red-400 text-center py-4">${t('general.error')}</p>`;
             }
+        },
+
+        _renderWalletChart(txs, isAr) {
+            const canvas = document.getElementById('walletChart');
+            if (!canvas || !window.Chart) return;
+
+            const months = {};
+            txs.forEach(tx => {
+                if (!tx.createdAt) return;
+                const d = tx.createdAt.toDate ? tx.createdAt.toDate() : new Date(tx.createdAt);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                if (!months[key]) months[key] = { in: 0, out: 0 };
+                if (tx.type === 'earning' || tx.type === 'refund') months[key].in += (tx.amount || 0);
+                else months[key].out += (tx.amount || 0);
+            });
+            const sorted = Object.entries(months).sort((a,b) => a[0] > b[0] ? 1 : -1).slice(-6);
+
+            if (window._walletChartInstance) window._walletChartInstance.destroy();
+            if (sorted.length === 0) return;
+
+            window._walletChartInstance = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(([m]) => m),
+                    datasets: [
+                        { label: isAr ? 'داخل' : 'In',  data: sorted.map(([,v]) => v.in),  backgroundColor: '#0D9488', borderRadius: 6 },
+                        { label: isAr ? 'خارج' : 'Out', data: sorted.map(([,v]) => v.out), backgroundColor: '#1B2A4A', borderRadius: 6 },
+                    ],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } },
+                },
+            });
         },
 
         openWithdrawForm() {

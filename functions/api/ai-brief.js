@@ -61,15 +61,18 @@ function _buildPrompt({ goal, outcome, notes, serviceTitle }) {
 
 async function _callGemini(prompt, key) {
     if (!key) throw new Error('GEMINI_API_KEY missing');
+    // ⚠️ FIXED: same retired-model bug as functions/api/ai-generate.js —
+    // gemini-1.5-flash 404s now. See that file's comment for details.
     const res = await fetchJSON(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${key}`,
         {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 400 } }),
         }
     );
+    if (res.error) throw new Error(`Gemini API error: ${res.error.message || JSON.stringify(res.error)}`);
     const text = res.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!text) throw new Error('Empty Gemini response');
+    if (!text) throw new Error('Empty Gemini response — raw: ' + JSON.stringify(res).slice(0, 300));
     return text.trim();
 }
 

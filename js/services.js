@@ -186,9 +186,9 @@
                     <i class="fa-solid fa-eye text-navy-700"></i>
                   </button>
                   ${s.listingType === 'product' ? `
-                  <button onclick="event.stopPropagation();RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                  <button onclick="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 bg-turquoise-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
-                    <i class="fa-solid fa-cart-shopping text-white"></i>
+                    <i class="fa-solid fa-cart-plus text-white"></i>
                   </button>` : `
                   <button onclick="event.stopPropagation();RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 bg-navy-800 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
@@ -251,7 +251,7 @@
                            + '<button onclick="event.stopPropagation();ServicesManager._renderAddServiceForm(' + editDataStr + ');navigateTo(\'add-service\')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
                     }
                     if (s.listingType === 'product') {
-                      return '<button onclick="event.stopPropagation();RequestSystem.buyProductNow(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-shopping text-xs\"></i>' + (lang !== 'en' ? 'اشترِ الآن' : 'Buy Now') + '</button>';
+                      return '<button onclick="event.stopPropagation();addToCart(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-plus text-xs\"></i>' + (lang !== 'en' ? 'أضف للسلة' : 'Add to Cart') + '</button>';
                     }
                     if (s.recurring) {
                       return '<button onclick="event.stopPropagation();SubscriptionSystem.subscribe(\'' + s.id + '\',' + serviceDataStr + ')" class="flex-1 bg-purple-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-purple-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-rotate text-xs\"></i>' + (lang !== 'en' ? 'اشترك شهرياً' : 'Subscribe monthly') + '</button>';
@@ -350,9 +350,13 @@
                           </div>
                           <div class="flex gap-3">
                             ${s.listingType === 'product' ? `
-                            <button onclick="closeModal('serviceModal');RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                            <button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
-                              <i class="fa-solid fa-cart-shopping"></i>${AppState.language !== 'en' ? 'Buy Now' : 'اشترِ الآن'}
+                              <i class="fa-solid fa-cart-plus"></i>${AppState.language !== 'en' ? 'Add to Cart' : 'أضف للسلة'}
+                            </button>
+                            <button onclick="closeModal('serviceModal');RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                              class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
+                              <i class="fa-solid fa-bolt"></i>${AppState.language !== 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : `
                             <button onclick="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">

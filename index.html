@@ -114,6 +114,11 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- Chart.js — real charting library for dashboard/wallet charts (no custom
+       AI-generated-looking graphics; standard bar/line charts, Font Awesome
+       icons only everywhere else). -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+
   <!-- Firebase SDK (compat - no CSP issues) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -133,7 +138,7 @@
        Rebuild after any class/theme change with:
          npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
   -->
-  <link rel="stylesheet" href="/css/tailwind.css">
+  <link rel="stylesheet" href="/css/tailwind.css?v=v3">
 
   <style>
     /* ── Reset & Base ────────────────────────────── */
@@ -429,7 +434,11 @@
         </div>
       </div>
 
-      <!-- Cart hidden -->
+      <!-- Cart -->
+      <button onclick="navigateTo('cart')" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-navy-100 text-gray-700 hover:text-navy-700 transition">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span data-cart-count class="hidden absolute -top-1 -end-1 bg-turquoise-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
+      </button>
 
       <!-- Notifications -->
       <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-navy-100 text-gray-700 hover:text-navy-700 transition hidden">
@@ -533,21 +542,22 @@
         </button>
       </div>
 
-      <!-- Flat icon illustration — reference style (not a photo) -->
+      <!-- ⚠️ REPLACED: the hand-drawn SVG cloud/monitor illustration read as
+           "AI-generated stock art" — swapped for a plain icon badge using the
+           same Font Awesome icon set as the rest of the site (Option 1 from
+           the mockups: one big shield icon + 3 small satellite badges). -->
       <div class="relative hidden md:flex items-center justify-center">
-        <div class="w-72 h-72 lg:w-80 lg:h-80 bg-turquoise-50 rounded-full flex items-center justify-center">
-          <svg viewBox="0 0 200 200" class="w-44 h-44 lg:w-52 lg:h-52" fill="none">
-            <path d="M58 92 a19 19 0 0 1 7-37 a27 27 0 0 1 53-9 a21 21 0 0 1 4 43 z" stroke="#0D9488" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
-            <rect x="69" y="54" width="6" height="17" rx="2" fill="#14B8A6"/>
-            <rect x="83" y="44" width="6" height="27" rx="2" fill="#14B8A6"/>
-            <rect x="97" y="49" width="6" height="22" rx="2" fill="#14B8A6"/>
-            <rect x="45" y="100" width="110" height="70" rx="10" fill="#fff" stroke="#1B2A4A" stroke-width="4"/>
-            <rect x="55" y="110" width="90" height="50" rx="5" fill="#1B2A4A" opacity=".07"/>
-            <circle cx="100" cy="135" r="16" fill="none" stroke="#0D9488" stroke-width="4"/>
-            <path d="M100 128v14l9 5" stroke="#0D9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="100" y1="170" x2="100" y2="182" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
-            <line x1="78" y1="182" x2="122" y2="182" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
-          </svg>
+        <div class="w-72 h-72 lg:w-80 lg:h-80 bg-turquoise-50 rounded-full flex items-center justify-center relative">
+          <i class="fa-solid fa-shield-halved text-navy-900" style="font-size:88px"></i>
+          <div class="absolute top-2 end-6 w-14 h-14 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center">
+            <i class="fa-solid fa-code text-turquoise-600 text-xl"></i>
+          </div>
+          <div class="absolute bottom-4 start-2 w-14 h-14 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center">
+            <i class="fa-solid fa-cloud text-turquoise-600 text-xl"></i>
+          </div>
+          <div class="absolute top-1/3 -start-6 w-12 h-12 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center">
+            <i class="fa-solid fa-headset text-navy-800 text-lg"></i>
+          </div>
         </div>
         <!-- Floating escrow trust card — keeps the differentiator, new palette -->
         <div class="absolute -bottom-4 -start-6 bg-white rounded-2xl shadow-xl border border-navy-50 p-4 flex items-center gap-3 max-w-[230px]">
@@ -916,7 +926,45 @@
 </div>
 
 <!-- ─── CART (rendered dynamically, hidden until populated) ─── -->
-<div id="page-cart" class="page" style="display:none"></div>
+<div id="page-cart" class="page">
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+      <i class="fa-solid fa-cart-shopping text-navy-700"></i>
+      <span data-i18n="cart.title">سلة الشراء</span>
+    </h1>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <!-- Items -->
+      <div class="md:col-span-2 space-y-3">
+        <div id="cartItems"></div>
+        <div id="cartEmpty" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-100">
+          <i class="fa-solid fa-cart-shopping text-5xl text-gray-200 mb-4"></i>
+          <p class="font-black text-gray-700 text-lg mb-1" data-i18n="cart.empty">سلتك فارغة</p>
+          <p class="text-gray-400 text-sm mb-6" data-i18n="cart.empty_sub">أضف خدمات لبدء طلبك</p>
+          <button onclick="navigateTo('services')" class="bg-navy-800 text-white font-bold px-6 py-3 rounded-xl hover:bg-navy-900 transition">
+            <span data-i18n="cart.continue">مواصلة التسوق</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="md:col-span-1">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sticky top-24">
+          <h2 class="font-black text-gray-900 mb-4">ملخص الطلب</h2>
+          <div id="cartSummary" class="space-y-2"></div>
+          <button id="cartCheckoutBtn" onclick="PaymentSystem.openPaymentPage('cart')" disabled
+            class="w-full bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl hover:bg-navy-900 transition mt-5 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-lock"></i><span data-i18n="cart.checkout">إتمام الشراء</span>
+          </button>
+          <p class="text-xs text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-shield-halved text-turquoise-600"></i>
+            فلوسك محجوزة بأمان لحد ما تستلم
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ─── PAYMENT (rendered dynamically by PaymentSystem) ──────── -->
 <div id="page-payment" class="page" style="display:none"></div>
@@ -1356,7 +1404,10 @@
     <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="services">
       <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-xs font-bold" data-i18n="nav.services">الخدمات</span>
     </button>
-    <!-- Cart hidden -->
+    <button onclick="navigateTo('cart')" class="relative flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="cart">
+      <i class="fa-solid fa-cart-shopping text-lg"></i><span class="text-xs font-bold" data-i18n="cart.short">السلة</span>
+      <span data-cart-count class="hidden absolute top-0 end-2 bg-turquoise-500 text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
+    </button>
     <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="orders">
       <i class="fa-solid fa-receipt text-lg"></i><span class="text-xs font-bold" data-i18n="nav.orders">طلباتي</span>
     </button>
@@ -1736,7 +1787,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 const s = { id: d.id, ...d.data() };
                 const isProduct = s.listingType === 'product';
                 const actionBtn = isProduct
-                    ? `<button onclick="RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">اشترِ الآن</button>`
+                    ? `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">أضف للسلة</button>`
                     : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-navy-800 text-white text-xs font-bold py-2 rounded-xl hover:bg-navy-900 transition">اطلب الآن</button>`;
                 return `
                 <div class="flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow" style="width:220px">
@@ -1965,6 +2016,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     document.addEventListener('DOMContentLoaded', () => {
         // Expose renderCart globally
         window.renderCart = renderCart;
+        window.initCartPage = renderCart; // called automatically by navigateTo('cart')
 
         // Handle Google sign-in redirect result (fires after returning from Google)
         if (window.AuthManager && typeof AuthManager.handleGoogleRedirectResult === 'function') {

@@ -319,16 +319,40 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
     const orderIds = [];
     for (const item of pending.items) {
         const orderId = crypto.randomUUID();
+
+        // ⚠️ ADDED: cart checkout used to always create orders at
+        // 'payment_held' and wait for the seller to manually deliver — but a
+        // cart item can be a listingType:'product' just as easily as the
+        // single-item "buy now" flow (resolveOrderItems doesn't distinguish).
+        // Without this, a product bought through the cart would NOT
+        // auto-deliver, unlike the exact same product bought via "buy now" —
+        // an inconsistency, not a deliberate difference. Mirrors the
+        // existing_order branch above exactly.
+        let productDelivery = null;
+        let stockLimitedSvc = null;
+        try {
+            const svc = await fsGet(env, `services/${item.serviceId}`);
+            if (svc && svc.listingType === 'product' && svc.digitalDelivery) {
+                productDelivery = svc.digitalDelivery;
+                if (svc.stockLimit != null) stockLimitedSvc = svc;
+            }
+        } catch (_) { /* fall back to the normal service flow below */ }
+
         await fsCreate(env, 'orders', {
             serviceId: item.serviceId, serviceTitle: item.title, image: item.image,
             price: item.price, deliveryDays: item.deliveryDays,
             buyerId: pending.uid, sellerId: item.sellerId, sellerName: item.sellerName,
-            status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
+            status: productDelivery ? 'delivered' : 'payment_held',
+            paymentMethod: method, paymentId: String(paymentId),
             merchantOrderId: pendingId,
             currency: pending.currency, escrowHeld: true, escrowAmount: item.price,
             chatEnabled: true, filesEnabled: true, buyerFiles: [],
             deliveryDeadline: new Date(Date.now() + (item.deliveryDays || 3) * 86400000).toISOString(),
             createdAt: new Date(), updatedAt: new Date(),
+            ...(productDelivery ? {
+                listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
+                digitalDelivery: productDelivery,
+            } : {}),
         }, orderId);
 
         await fsCreate(env, 'escrow', {
@@ -337,11 +361,27 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             createdAt: new Date(),
         }, orderId);
 
+        if (stockLimitedSvc) {
+            const newStock = Math.max(0, (stockLimitedSvc.stockLimit || 0) - 1);
+            const stockUpdate = { stockLimit: newStock };
+            if (newStock === 0) stockUpdate.active = false;
+            await fsSet(env, `services/${item.serviceId}`, stockUpdate, true);
+        }
+
         if (item.sellerId) {
             await fsCreate(env, 'notifications', {
-                userId: item.sellerId, type: 'new_order', title: '🛒 طلب جديد!',
-                message: `طلب خدمة: ${item.title}`, orderId, serviceId: item.serviceId,
+                userId: item.sellerId, type: 'new_order',
+                title: productDelivery ? '💰 تم بيع منتج!' : '🛒 طلب جديد!',
+                message: productDelivery ? `تم بيع منتج تلقائيًا: ${item.title}` : `طلب خدمة: ${item.title}`,
+                orderId, serviceId: item.serviceId,
                 read: false, createdAt: new Date(),
+            });
+        }
+        if (productDelivery) {
+            await fsCreate(env, 'notifications', {
+                userId: pending.uid, type: 'product_delivered', title: '📦 منتجك جاهز!',
+                message: `منتجك "${item.title}" جاهز للتحميل الآن`,
+                orderId, read: false, createdAt: new Date(),
             });
         }
         orderIds.push(orderId);
