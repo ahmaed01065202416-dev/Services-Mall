@@ -114,6 +114,14 @@ service cloud.firestore {
                         isAdmin()) &&
                        (isAdmin() || (
                          request.resource.data.status != 'completed' &&
+                         // ⚠️ ADDED (per Ahmed's feedback): a seller could otherwise
+                         // flip status straight to 'delivered' on an order that was
+                         // never paid (still 'pending'/'accepted') — client UI now
+                         // hides that button too, but this is the real server-side
+                         // gate. Delivery is only allowed once the order is already
+                         // in a paid state.
+                         (request.resource.data.status != 'delivered' ||
+                          resource.data.status in ['payment_held','in_progress','revision']) &&
                          (!('escrowHeld' in resource.data)   || request.resource.data.escrowHeld   == resource.data.escrowHeld) &&
                          (!('escrowAmount' in resource.data) || request.resource.data.escrowAmount == resource.data.escrowAmount) &&
                          (!('paymentId' in resource.data)    || request.resource.data.paymentId    == resource.data.paymentId) &&

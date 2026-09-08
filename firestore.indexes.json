@@ -128,6 +128,14 @@
       "collectionGroup": "services",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "sellerId",  "order": "ASCENDING"  },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "services",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },

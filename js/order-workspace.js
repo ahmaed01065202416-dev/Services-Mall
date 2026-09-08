@@ -288,8 +288,23 @@
               </div>
               ` : ''}
 
+              <!-- ── SELLER: accepted, waiting on buyer to pay ───────────── -->
+              ${isSeller && order.status === ORDER_STATUS.ACCEPTED ? `
+              <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center gap-3">
+                <i class="fa-solid fa-hourglass-half text-amber-500 text-xl"></i>
+                <p class="text-sm text-amber-700 font-bold">
+                  ${isAr ? 'وافقت على الطلب — بانتظار دفع العميل. هتقدر تسلّم بعد ما تتحول حالة الطلب لمدفوع.' : 'You accepted — waiting for the buyer to pay. You can deliver once the order is marked paid.'}
+                </p>
+              </div>
+              ` : ''}
+
               <!-- ── SELLER: Delivery Panel ───────────────────────────── -->
-              ${isSeller ? `
+              <!-- ⚠️ FIXED (per Ahmed's feedback): this used to render for the
+                   seller regardless of order.status, so a seller could deliver
+                   (and the buyer could be marked "delivered") on a request that
+                   was never paid — PENDING or ACCEPTED, before PAYMENT_HELD.
+                   Now only shown once the buyer has actually paid. -->
+              ${isSeller && (order.status === ORDER_STATUS.PAYMENT_HELD || order.status === ORDER_STATUS.IN_PROGRESS || order.status === ORDER_STATUS.REVISION) ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
                   <i class="fa-solid fa-box-open text-purple-600"></i>

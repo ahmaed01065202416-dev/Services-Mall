@@ -116,11 +116,16 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                  <button onclick="ServicesManager.openAddServiceForm()"
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+                  <button onclick="ServicesManager.openAddServiceForm('service')"
                     class="bg-navy-50 border-2 border-dashed border-navy-300 rounded-2xl p-4 text-center hover:border-navy-500 hover:bg-navy-100 transition">
                     <i class="fa-solid fa-plus-circle text-navy-600 text-2xl mb-2 block"></i>
                     <p class="text-sm font-bold text-navy-700">${isAr?'إضافة خدمة':'Add Service'}</p>
+                  </button>
+                  <button onclick="ServicesManager.openAddServiceForm('product')"
+                    class="bg-turquoise-50 border-2 border-dashed border-turquoise-400 rounded-2xl p-4 text-center hover:border-turquoise-600 hover:bg-turquoise-100 transition">
+                    <i class="fa-solid fa-box text-turquoise-600 text-2xl mb-2 block"></i>
+                    <p class="text-sm font-bold text-turquoise-700">${isAr?'إضافة منتج':'Add Product'}</p>
                   </button>
                   <button onclick="SellerDash.tab('my-services')"
                     class="bg-teal-50 border-2 border-dashed border-teal-300 rounded-2xl p-4 text-center hover:border-teal-500 hover:bg-teal-100 transition">
@@ -192,19 +197,29 @@
                 container.innerHTML = `
                 <div class="flex items-center justify-between mb-6">
                   <h3 class="font-black text-gray-900 text-lg">${isAr ? `خدماتي (${services.length})` : `My Services (${services.length})`}</h3>
-                  <button onclick="ServicesManager.openAddServiceForm()" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i>${isAr ? 'إضافة خدمة' : 'Add Service'}
-                  </button>
+                  <div class="flex gap-2">
+                    <button onclick="ServicesManager.openAddServiceForm('service')" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2">
+                      <i class="fa-solid fa-plus"></i>${isAr ? 'إضافة خدمة' : 'Add Service'}
+                    </button>
+                    <button onclick="ServicesManager.openAddServiceForm('product')" class="btn-secondary text-sm px-4 py-2.5 flex items-center gap-2 border-turquoise-400 text-turquoise-700 hover:bg-turquoise-600 hover:text-white">
+                      <i class="fa-solid fa-box"></i>${isAr ? 'إضافة منتج' : 'Add Product'}
+                    </button>
+                  </div>
                 </div>
 
                 ${services.length === 0
                   ? `<div class="text-center py-16 bg-white rounded-2xl border border-gray-100">
                       <i class="fa-solid fa-layer-group text-gray-200 text-5xl mb-4"></i>
                       <h3 class="font-black text-gray-500 mb-2">${isAr ? 'لا توجد خدمات بعد' : 'No services yet'}</h3>
-                      <p class="text-gray-400 text-sm mb-5">${isAr ? 'أضف خدمتك الأولى الآن' : 'Add your first service now'}</p>
-                      <button onclick="ServicesManager.openAddServiceForm()" class="btn-primary px-8">
-                        <i class="fa-solid fa-plus me-2"></i>${isAr ? 'إضافة خدمة' : 'Add Service'}
-                      </button>
+                      <p class="text-gray-400 text-sm mb-5">${isAr ? 'أضف خدمتك أو منتجك الأول الآن' : 'Add your first service or product now'}</p>
+                      <div class="flex gap-2 justify-center">
+                        <button onclick="ServicesManager.openAddServiceForm('service')" class="btn-primary px-8">
+                          <i class="fa-solid fa-plus me-2"></i>${isAr ? 'إضافة خدمة' : 'Add Service'}
+                        </button>
+                        <button onclick="ServicesManager.openAddServiceForm('product')" class="btn-secondary px-8 border-turquoise-400 text-turquoise-700 hover:bg-turquoise-600 hover:text-white">
+                          <i class="fa-solid fa-plus me-2"></i>${isAr ? 'إضافة منتج' : 'Add Product'}
+                        </button>
+                      </div>
                     </div>`
                   : `<div class="space-y-4" id="myServicesList">${services.map(s => this._serviceRow(s, isAr)).join('')}</div>`
                 }`;

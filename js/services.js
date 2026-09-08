@@ -416,7 +416,10 @@
         },
 
         // ── Add Service Form ──────────────────────────────────────────────────
-        openAddServiceForm() {
+        // defaultType: 'service' | 'product' — preselects the listing-type
+        // radio when opening a blank form (e.g. from the "Add Product" quick
+        // action). Ignored when editing an existing listing.
+        openAddServiceForm(defaultType) {
             const user = AppState.currentUser;
             if (!user) { showToast(t('general.login_req'), 'warning'); navigateTo('login'); return; }
             if (user.role !== 'seller' && user.role !== 'admin') {
@@ -424,14 +427,15 @@
                 return;
             }
             navigateTo('add-service');
-            this._renderAddServiceForm();
+            this._renderAddServiceForm(null, defaultType);
         },
 
-        _renderAddServiceForm(service = null) {
+        _renderAddServiceForm(service = null, defaultType) {
             const container = document.getElementById('addServiceContent');
             if (!container) return;
             const isAr  = AppState.language !== 'en';
             const isEdit = !!service;
+            const wantsProduct = service ? service.listingType === 'product' : defaultType === 'product';
 
             const categories = [
                 { value: 'design',      label: isAr ? '🎨 تصميم'  : '🎨 Design'    },
@@ -451,7 +455,7 @@
                 <button onclick="navigateTo('dashboard')" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition">
                   <i class="fa-solid fa-arrow-${isAr?'right':'left'}"></i>
                 </button>
-                <h1 class="text-2xl font-black text-gray-900">${isEdit ? (isAr?'تعديل الإعلان':'Edit Listing') : (isAr?'إضافة إعلان جديد':'Add New Listing')}</h1>
+                <h1 class="text-2xl font-black text-gray-900">${isEdit ? (isAr?'تعديل الإعلان':'Edit Listing') : (wantsProduct ? (isAr?'إضافة منتج جديد':'Add New Product') : (isAr?'إضافة خدمة جديدة':'Add New Service'))}</h1>
               </div>
 
               <form onsubmit="event.preventDefault();ServicesManager.saveService('${service?.id||''}')" class="space-y-6">
@@ -466,11 +470,11 @@
                     <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'نوع الإعلان':'Listing Type'} *</label>
                     <div class="grid grid-cols-2 gap-3">
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-navy-700 has-[:checked]:bg-navy-50 border-gray-200">
-                        <input type="radio" name="svcListingType" value="service" id="svcTypeService" onchange="ServicesManager.toggleListingType()" ${!service || service.listingType!=='product' ? 'checked' : ''} class="w-4 h-4 accent-navy-700">
+                        <input type="radio" name="svcListingType" value="service" id="svcTypeService" onchange="ServicesManager.toggleListingType()" ${!wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-navy-700">
                         <div><p class="font-bold text-gray-900 text-sm">${isAr?'🛠️ خدمة':'🛠️ Service'}</p><p class="text-xs text-gray-400">${isAr?'شغل مخصص، محتاج موافقتك':'Custom work, needs your approval'}</p></div>
                       </label>
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-turquoise-500 has-[:checked]:bg-turquoise-50 border-gray-200">
-                        <input type="radio" name="svcListingType" value="product" id="svcTypeProduct" onchange="ServicesManager.toggleListingType()" ${service?.listingType==='product' ? 'checked' : ''} class="w-4 h-4 accent-turquoise-600">
+                        <input type="radio" name="svcListingType" value="product" id="svcTypeProduct" onchange="ServicesManager.toggleListingType()" ${wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-turquoise-600">
                         <div><p class="font-bold text-gray-900 text-sm">${isAr?'📦 منتج جاهز':'📦 Ready Product'}</p><p class="text-xs text-gray-400">${isAr?'تسليم فوري تلقائي':'Instant automatic delivery'}</p></div>
                       </label>
                     </div>
