@@ -16,6 +16,12 @@ service cloud.firestore {
     function isSellerOwner(sellerId) {
       return isSignedIn() && request.auth.uid == sellerId;
     }
+    // Used only by the notifications rule below, to validate that a
+    // cross-user notification (buyer -> seller, seller -> buyer, etc.) is
+    // actually tied to a real order the sender is a real participant of.
+    function _order(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data;
+    }
 
     // ── users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
@@ -247,9 +253,45 @@ service cloud.firestore {
     }
 
     // ── notifications ─────────────────────────────────────────────────────────
+    // ⚠️ FULLY CLOSED (previous pass only blocked the fromAdmin=true spoof and
+    // left general cross-user notification creation open — this replaces that
+    // with a real per-type allow-list). Every legitimate client call site that
+    // creates a notification FOR someone else was inventoried:
+    //   - 'new_request'         buyer -> seller   (js/request-system.js)
+    //   - 'delivery'             seller -> buyer   (js/order-workspace.js)
+    //   - 'buyer_instructions'   buyer -> seller   (js/order-workspace.js)
+    //   - 'stage_update'         seller -> buyer   (js/order-workspace.js)
+    //   - 'dispute'              buyer/seller -> literal 'ADMIN' (js/escrow.js)
+    // Each of those requires an orderId and is only allowed when the sender
+    // (request.auth.uid) and the target (request.resource.data.userId) are
+    // actually the buyer/seller of that specific order, and the target field
+    // matches the direction that flow is supposed to send in — so a stranger
+    // can no longer fabricate a notification into someone else's feed at all,
+    // let alone as any other type ('new_order', 'payment_confirmed',
+    // 'withdrawal_paid', 'affiliate_commission', etc. all require isAdmin(),
+    // i.e. only the server's service-account writes, which bypass rules).
     match /notifications/{notifId} {
       allow read:   if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isSignedIn();
+      allow create: if isAdmin() || (
+        isSignedIn() && request.resource.data.orderId is string && (
+          (request.resource.data.type == 'new_request' &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          (request.resource.data.type == 'delivery' &&
+           request.auth.uid == _order(request.resource.data.orderId).sellerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).buyerId) ||
+          (request.resource.data.type == 'buyer_instructions' &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          (request.resource.data.type == 'stage_update' &&
+           request.auth.uid == _order(request.resource.data.orderId).sellerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).buyerId) ||
+          (request.resource.data.type == 'dispute' &&
+           request.resource.data.userId == 'ADMIN' &&
+           (request.auth.uid == _order(request.resource.data.orderId).buyerId ||
+            request.auth.uid == _order(request.resource.data.orderId).sellerId))
+        )
+      );
       allow update: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }

@@ -25,7 +25,7 @@
  *    assets (JS/CSS/images) stay cache-first for speed, since a stale JS
  *    file for a few minutes matters much less than a stale whole page.
  */
-const LOCAL_CACHE = 'mall-local-v3.7';
+const LOCAL_CACHE = 'mall-local-v3.13';
 
 const LOCAL_ASSETS = [
   '/index.html',

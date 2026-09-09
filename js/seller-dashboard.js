@@ -561,7 +561,7 @@
                         type: 'review',
                         icon: 'fa-star',
                         color: 'bg-yellow-100 text-yellow-600',
-                        title: isAr ? `تقييم جديد — ${r.rating||0} ⭐` : `New Review — ${r.rating||0} ⭐`,
+                        title: isAr ? `تقييم جديد — ${r.rating||0}/5` : `New Review — ${r.rating||0}/5`,
                         sub: r.text || '',
                         time: r.createdAt,
                     });

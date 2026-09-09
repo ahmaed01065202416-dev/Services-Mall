@@ -534,7 +534,7 @@
           <button onclick="filterByCategory('programming')" data-i18n="home.hero.chip2" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-500 text-white hover:bg-turquoise-600 transition">الأمن السيبراني</button>
           <button onclick="filterByCategory('seo')" data-i18n="home.hero.chip3" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">استشارات تقنية</button>
           <button onclick="filterByCategory('design')" data-i18n="home.hero.chip4" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">خدمات صحية</button>
-          <button onclick="filterByType('product')" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200 hover:border-turquoise-400 transition">📦 تصفح المنتجات</button>
+          <button onclick="filterByType('product')" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200 hover:border-turquoise-400 transition"><i class="fa-solid fa-box me-1.5"></i>تصفح المنتجات</button>
         </div>
 
         <button onclick="navigateTo('register')" class="inline-flex items-center gap-3 bg-turquoise-500 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-turquoise-600 transition mt-8">
@@ -570,7 +570,7 @@
           </div>
         </div>
         <div class="absolute -top-5 -end-5 bg-white rounded-2xl shadow-xl border border-navy-50 px-4 py-3 flex items-center gap-2">
-          <span class="text-turquoise-500 text-lg">⭐</span>
+          <i class="fa-solid fa-star text-turquoise-500 text-lg"></i>
           <span class="font-black text-navy-900">4.9</span>
           <span class="text-navy-400 text-xs">/5</span>
         </div>
@@ -594,7 +594,7 @@
         <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
       </div>
       <div>
-        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statRating">— ⭐</p>
+        <p class="text-2xl md:text-3xl font-black text-navy-900"><span id="statRating">—</span> <i class="fa-solid fa-star text-yellow-400 text-xl align-middle"></i></p>
         <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
       </div>
     </div>
@@ -705,7 +705,7 @@
   <section class="py-12 px-4 bg-white border-t border-gray-100">
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="font-sans font-black text-2xl text-gray-900">🔥 العروض الرائجة</h2>
+        <h2 class="font-sans font-black text-2xl text-gray-900"><i class="fa-solid fa-fire text-orange-500 me-1.5"></i>العروض الرائجة</h2>
         <button onclick="navigateTo('services')" class="text-navy-700 font-bold text-sm hover:gap-3 flex items-center gap-2 transition-all">
           <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
         </button>
@@ -893,19 +893,19 @@
     <!-- ⚠️ ADDED: services vs products split — the two-section request -->
     <div class="flex gap-2 mb-4 bg-gray-100 p-1.5 rounded-2xl w-fit">
       <button onclick="ServicesManager.filterType('')" data-type="" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-navy-800 text-white">الكل</button>
-      <button onclick="ServicesManager.filterType('service')" data-type="service" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600">🛠️ خدمات</button>
-      <button onclick="ServicesManager.filterType('product')" data-type="product" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600">📦 منتجات</button>
+      <button onclick="ServicesManager.filterType('service')" data-type="service" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600"><i class="fa-solid fa-toolbox me-1.5"></i>خدمات</button>
+      <button onclick="ServicesManager.filterType('product')" data-type="product" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600"><i class="fa-solid fa-box me-1.5"></i>منتجات</button>
     </div>
 
     <!-- Category Pills -->
     <div class="flex gap-2 overflow-x-auto pb-2 mb-3">
       <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
-      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🎨 تصميم</button>
-      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">💻 برمجة</button>
-      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">📈 تسويق</button>
-      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">✍️ كتابة</button>
-      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🎬 فيديو</button>
-      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">🔍 SEO</button>
+      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-palette me-1.5"></i>تصميم</button>
+      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-laptop-code me-1.5"></i>برمجة</button>
+      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-chart-line me-1.5"></i>تسويق</button>
+      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-pen-nib me-1.5"></i>كتابة</button>
+      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-video me-1.5"></i>فيديو</button>
+      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-magnifying-glass-chart me-1.5"></i>SEO</button>
     </div>
 
     <!-- Express Delivery Hub — services delivered in 24h or less -->
@@ -913,7 +913,7 @@
       <button onclick="ServicesManager.toggleExpress()" id="expressToggleBtn"
         class="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-xl text-sm font-bold hover:bg-orange-100 transition">
         <i class="fa-solid fa-bolt"></i>
-        <span>⚡ خدمات سريعة — تسليم خلال 24 ساعة</span>
+        <span>خدمات سريعة — تسليم خلال 24 ساعة</span>
       </button>
     </div>
 
@@ -1672,7 +1672,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
                   class="w-full h-48 object-cover"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
-                ${s.featured ? '<span class="absolute top-3 start-3 bg-navy-600 text-white text-xs font-bold px-2 py-1 rounded-lg">⭐ مميز</span>' : ''}
+                ${s.featured ? '<span class="absolute top-3 start-3 bg-navy-600 text-white text-xs font-bold px-2 py-1 rounded-lg"><i class="fa-solid fa-star"></i> مميز</span>' : ''}
               </div>
               <div class="p-4">
                 <div class="flex items-center gap-2 mb-2">
@@ -1761,7 +1761,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             if (elServices) elServices.textContent = _formatStatNumber(data.services);
             if (elSellers)  elSellers.textContent  = _formatStatNumber(data.sellers);
             if (elOrders)   elOrders.textContent   = _formatStatNumber(data.completedOrders);
-            if (elRating)   elRating.textContent   = (data.avgRating != null ? data.avgRating.toFixed(1) : '—') + ' ⭐';
+            if (elRating)   elRating.textContent   = (data.avgRating != null ? data.avgRating.toFixed(1) : '—');
         } catch (err) {
             console.error('[loadHomeStats]', err);
             window._homeStatsLoaded = false; // allow a retry on next visit
@@ -1793,7 +1793,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <div class="flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow" style="width:220px">
                   <div class="relative h-32 bg-gray-100">
                     ${s.image ? `<img src="${s.image}" class="w-full h-full object-cover" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-3xl"></i></div>`}
-                    <span class="absolute top-2 start-2 text-[10px] font-black px-2 py-1 rounded-lg ${isProduct ? 'bg-turquoise-500 text-white' : 'bg-navy-800 text-white'}">${isProduct ? '📦 منتج' : '🛠️ خدمة'}</span>
+                    <span class="absolute top-2 start-2 text-[10px] font-black px-2 py-1 rounded-lg ${isProduct ? 'bg-turquoise-500 text-white' : 'bg-navy-800 text-white'}">${isProduct ? '<i class=\'fa-solid fa-box\'></i> منتج' : '<i class=\'fa-solid fa-toolbox\'></i> خدمة'}</span>
                   </div>
                   <div class="p-3">
                     <p class="font-bold text-gray-900 text-sm truncate mb-1">${escapeHtml(s.title||'')}</p>
@@ -1877,6 +1877,14 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             _updateNavForGuest();
         }
 
+        // ⚠️ ADDED (found in audit): the admin "Maintenance mode" toggle
+        // (js/dashboard.js cfg_maintenance) saved PLATFORM.MAINTENANCE to
+        // Firestore but nothing ever read it back — a real admin control with
+        // zero actual effect on the site. Now enforced here, once we know
+        // both the platform config and the visitor's role.
+        try { await loadPlatformSettings(); } catch (e) {}
+        _enforceMaintenanceGate();
+
         // ── Hide loading screen ──
         const loadingScreen = document.getElementById('appLoadingScreen');
         if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
@@ -1884,6 +1892,27 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             setTimeout(() => loadingScreen.remove(), 600);
         }
     });
+
+    // Full-site maintenance gate — admins always pass through so they can
+    // still fix things; everyone else sees a blocking notice instead of the app.
+    function _enforceMaintenanceGate() {
+        const isAr   = AppState.language !== 'en';
+        const isAdmin = AppState.currentUser && AppState.currentUser.role === 'admin';
+        let gate = document.getElementById('maintenanceGate');
+        if (!PLATFORM.MAINTENANCE || isAdmin) {
+            if (gate) gate.remove();
+            return;
+        }
+        if (gate) return; // already showing
+        gate = document.createElement('div');
+        gate.id = 'maintenanceGate';
+        gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f2a4a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;';
+        gate.innerHTML = `
+          <i class="fa-solid fa-screwdriver-wrench" style="font-size:2.5rem;color:#2dd4bf;margin-bottom:1rem"></i>
+          <h1 style="font-size:1.5rem;font-weight:900;margin-bottom:.5rem">${isAr ? 'الموقع تحت الصيانة حالياً' : 'Site under maintenance'}</h1>
+          <p style="color:#c8d5e6;max-width:420px">${(PLATFORM.MAINTENANCE_MSG && PLATFORM.MAINTENANCE_MSG.trim()) || (isAr ? 'هنرجع قريب، شكراً لصبرك.' : "We'll be back shortly — thanks for your patience.")}</p>`;
+        document.body.appendChild(gate);
+    }
 
     function _updateNavForUser(user) {
         document.getElementById('guestButtons')?.classList.add('hidden');

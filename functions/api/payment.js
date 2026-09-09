@@ -217,9 +217,24 @@ function buildPendingPaymentDoc(target, auth, currency, method) {
 
 async function getPlatformConfig(env) {
     const doc = await fsGet(env, 'settings/platform').catch(() => null);
-    return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0 }, doc || {});
+    return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0, TIERS_ENABLED: false, TIERS: [] }, doc || {});
 }
+// ⚠️ FIXED (found in audit): the client's calcPlatformFee() (js/constants.js)
+// has supported commission Tiers for a while — but this server function,
+// which computes the REAL amount that gets charged and recorded, silently
+// ignored TIERS_ENABLED/TIERS and always used the flat FEE_PERCENT/FEE_FIXED.
+// Turning tiers on in the admin panel changed the price shown to the buyer
+// on the checkout preview but not what they were actually charged — a real
+// quote-vs-charge mismatch. Now mirrors the client's tier logic exactly.
 function calcFee(amount, cfg) {
+    if (cfg.TIERS_ENABLED && Array.isArray(cfg.TIERS) && cfg.TIERS.length) {
+        const tier = cfg.TIERS.find(t => amount >= (t.minAmount || 0) && amount <= (t.maxAmount != null ? t.maxAmount : Infinity));
+        if (tier) {
+            const pct   = (tier.feePercent || 0) * amount / 100;
+            const fixed = tier.feeFixed || 0;
+            return Number((pct + fixed).toFixed(2));
+        }
+    }
     let fee;
     if (cfg.FEE_TYPE === 'fixed') fee = cfg.FEE_FIXED || 0;
     else if (cfg.FEE_TYPE === 'both') fee = (cfg.FEE_PERCENT || 0) * amount / 100 + (cfg.FEE_FIXED || 0);
@@ -406,6 +421,19 @@ async function handleFawaterak(body, env, CORS, auth) {
     await fsCreate(env, 'pending_payments', buildPendingPaymentDoc(target, auth, 'EGP', 'fawaterak'), orderId);
 
     if (!env.FAWATERAK_API_KEY) {
+        // ⚠️ CRITICAL SAFETY GATE (found in audit): this used to fall into
+        // "demo mode" — marking the order paid and releasing it — on the sole
+        // condition that FAWATERAK_API_KEY was unset, with NO way to tell an
+        // intentional local test apart from a production deploy that simply
+        // forgot to set the env var. A missing key in production would have
+        // silently made every purchase on the site free while still creating
+        // real paid orders. Demo mode now also requires an explicit
+        // ALLOW_SIMULATED_PAYMENTS=true env var — so it stays available for
+        // local/staging testing but a bare missing key in production fails
+        // loudly instead of quietly giving away the store.
+        if (env.ALLOW_SIMULATED_PAYMENTS !== 'true') {
+            throw new Error('Payment gateway is not configured (FAWATERAK_API_KEY missing). Refusing to simulate a real charge.');
+        }
         const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'fawaterak' });
         return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`, simulated: true, orderId, orderIds: result.orderIds });
     }
@@ -460,6 +488,10 @@ async function handleKashier(body, env, CORS, auth) {
     await fsCreate(env, 'pending_payments', buildPendingPaymentDoc(target, auth, currency, 'kashier'), orderId);
 
     if (!env.KASHIER_API_KEY) {
+        // See the matching gate in handleFawaterak() above — same reasoning.
+        if (env.ALLOW_SIMULATED_PAYMENTS !== 'true') {
+            throw new Error('Payment gateway is not configured (KASHIER_API_KEY missing). Refusing to simulate a real charge.');
+        }
         const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'kashier' });
         return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`, simulated: true, orderId, orderIds: result.orderIds });
     }
@@ -658,10 +690,10 @@ async function handleAutoFlagStaleDeliveries(env, CORS) {
 // directly from the admin's browser via a Firestore batch — with NO check that
 // the escrow hadn't already been resolved (no double-payout guard, unlike
 // handleReleaseEscrow above), no transaction record, no affiliate commission,
-// and a fee computed client-side (which supports commission tiers) while the
-// server's calcFee() here does not — so a tiered dispute payout could differ
-// from what a normal order would have charged. Moved server-side so it goes
-// through the exact same guarded path as a normal escrow release.
+// and a fee computed client-side while the server's calcFee() didn't match it
+// (calcFee() is now tier-aware too, so this is no longer a divergence — see
+// the fix note above getPlatformConfig()/calcFee()). Moved server-side so it
+// goes through the exact same guarded path as a normal escrow release.
 async function handleResolveDispute(body, env, CORS, auth) {
     const { disputeId, orderId, resolution } = body;
     if (!disputeId || !orderId) return json(400, CORS, { error: 'disputeId و orderId مطلوبين' });

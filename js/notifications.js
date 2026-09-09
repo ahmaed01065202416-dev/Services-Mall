@@ -117,20 +117,16 @@
             } catch (_) {}
         },
 
-        // ── Send Notification (helper for other modules) ─────────────────────
-        async send(userId, type, title, message, extra = {}) {
-            if (!userId) return;
-            try {
-                await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
-                    userId, type, title, message,
-                    read: false,
-                    createdAt: serverTimestamp(),
-                    ...extra,
-                });
-            } catch (err) {
-                console.warn('[Notif] send error:', err.message);
-            }
-        },
+        // ⚠️ REMOVED (found in audit): a generic send(userId, type, ...) helper
+        // that was never called anywhere in the codebase (confirmed by search)
+        // — dead code. It also would have silently failed under the tightened
+        // notifications create rule (firestore.rules), since that rule now
+        // requires a specific orderId + type + sender/target relationship for
+        // every cross-user notification instead of trusting an arbitrary
+        // (userId, type) pair. If a genuine need for a generic cross-user
+        // notification helper comes up again, it should call a server
+        // endpoint (service-account write) rather than write to Firestore
+        // directly from the browser.
 
         // ── Browser Push Notification ─────────────────────────────────────────
         async requestPushPermission() {

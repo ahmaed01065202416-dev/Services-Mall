@@ -177,7 +177,7 @@
                   class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
-                ${s.featured ? '<span class="absolute top-3 start-3 bg-gradient-to-r from-navy-700 to-turquoise-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">⭐ مميز</span>' : ''}
+                ${s.featured ? '<span class="absolute top-3 start-3 bg-gradient-to-r from-navy-700 to-turquoise-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow"><i class="fa-solid fa-star"></i> مميز</span>' : ''}
                 ${(Number(s.deliveryDays) || 3) <= 1 ? '<span class="absolute top-3 end-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1"><i class="fa-solid fa-bolt"></i> سريع</span>' : ''}
                 ${s.recurring ? '<span class="absolute top-3 end-3 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1" style="' + ((Number(s.deliveryDays)||3)<=1 ? 'top:2.6rem' : '') + '"><i class="fa-solid fa-rotate"></i> اشتراك شهري</span>' : ''}
                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
@@ -438,12 +438,12 @@
             const wantsProduct = service ? service.listingType === 'product' : defaultType === 'product';
 
             const categories = [
-                { value: 'design',      label: isAr ? '🎨 تصميم'  : '🎨 Design'    },
-                { value: 'programming', label: isAr ? '💻 برمجة'   : '💻 Programming'},
-                { value: 'marketing',   label: isAr ? '📈 تسويق'   : '📈 Marketing'  },
-                { value: 'writing',     label: isAr ? '✍️ كتابة'   : '✍️ Writing'    },
-                { value: 'video',       label: isAr ? '🎬 فيديو'   : '🎬 Video'      },
-                { value: 'seo',         label: isAr ? '🔍 SEO'     : '🔍 SEO'        },
+                { value: 'design',      label: isAr ? 'تصميم'  : 'Design'    },
+                { value: 'programming', label: isAr ? 'برمجة'   : 'Programming'},
+                { value: 'marketing',   label: isAr ? 'تسويق'   : 'Marketing'  },
+                { value: 'writing',     label: isAr ? 'كتابة'   : 'Writing'    },
+                { value: 'video',       label: isAr ? 'فيديو'   : 'Video'      },
+                { value: 'seo',         label: isAr ? 'SEO'     : 'SEO'        },
                 { value: 'audio',       label: isAr ? '🎧 صوتيات'  : '🎧 Audio'      },
                 { value: 'data',        label: isAr ? '📊 بيانات'  : '📊 Data'       },
                 { value: 'other',       label: isAr ? 'أخرى'       : 'Other'          },
@@ -471,11 +471,11 @@
                     <div class="grid grid-cols-2 gap-3">
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-navy-700 has-[:checked]:bg-navy-50 border-gray-200">
                         <input type="radio" name="svcListingType" value="service" id="svcTypeService" onchange="ServicesManager.toggleListingType()" ${!wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-navy-700">
-                        <div><p class="font-bold text-gray-900 text-sm">${isAr?'🛠️ خدمة':'🛠️ Service'}</p><p class="text-xs text-gray-400">${isAr?'شغل مخصص، محتاج موافقتك':'Custom work, needs your approval'}</p></div>
+                        <div><p class="font-bold text-gray-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-toolbox"></i>${isAr?'خدمة':'Service'}</p><p class="text-xs text-gray-400">${isAr?'شغل مخصص، محتاج موافقتك':'Custom work, needs your approval'}</p></div>
                       </label>
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-turquoise-500 has-[:checked]:bg-turquoise-50 border-gray-200">
                         <input type="radio" name="svcListingType" value="product" id="svcTypeProduct" onchange="ServicesManager.toggleListingType()" ${wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-turquoise-600">
-                        <div><p class="font-bold text-gray-900 text-sm">${isAr?'📦 منتج جاهز':'📦 Ready Product'}</p><p class="text-xs text-gray-400">${isAr?'تسليم فوري تلقائي':'Instant automatic delivery'}</p></div>
+                        <div><p class="font-bold text-gray-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-box"></i>${isAr?'منتج جاهز':'Ready Product'}</p><p class="text-xs text-gray-400">${isAr?'تسليم فوري تلقائي':'Instant automatic delivery'}</p></div>
                       </label>
                     </div>
                   </div>

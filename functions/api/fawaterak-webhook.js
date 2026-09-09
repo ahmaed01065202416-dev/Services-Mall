@@ -37,12 +37,20 @@ export async function onRequest(context) {
                 console.error('[FawaterakWebhook] hash mismatch');
                 return new Response('Invalid signature', { status: 400 });
             }
+        } else if (env.ALLOW_SIMULATED_PAYMENTS === 'true') {
+            // No key configured yet = demo mode, and the operator has explicitly
+            // opted into it (same flag payment.js requires). We still process
+            // the webhook so the demo/dev flow works end-to-end.
+            console.warn('[FawaterakWebhook] FAWATERAK_API_KEY not set — signature NOT verified (ALLOW_SIMULATED_PAYMENTS=true, demo mode only)');
         } else {
-            // No key configured yet = demo mode. We still process the webhook
-            // (so the demo/dev flow works end-to-end) but this MUST have
-            // FAWATERAK_API_KEY set before going live with real payments,
-            // otherwise anyone could POST a fake "paid" event to this URL.
-            console.warn('[FawaterakWebhook] FAWATERAK_API_KEY not set — signature NOT verified (demo mode only)');
+            // ⚠️ CRITICAL FIX (found in audit): this branch used to fall through
+            // and finalize the payment anyway with zero verification whenever
+            // the key was simply missing — meaning ANYONE could POST a fake
+            // "paid" event straight to this URL for any pending order id and
+            // get it marked paid for free, with no key required at all. Now:
+            // without a key AND without the explicit demo-mode opt-in, refuse.
+            console.error('[FawaterakWebhook] FAWATERAK_API_KEY not set and ALLOW_SIMULATED_PAYMENTS not enabled — refusing unsigned webhook');
+            return new Response('Payment gateway not configured', { status: 400 });
         }
 
         // payLoad was set to { orderId } for a normal purchase, or

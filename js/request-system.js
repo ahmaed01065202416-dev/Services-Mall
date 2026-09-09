@@ -20,7 +20,7 @@
             navigateTo('login');
             return;
         }
-        if (!service || !service.id) { showToast('خطأ: بيانات الخدمة غير مكتملة', 'error'); return; }
+        if (!service || !service.id) { showToast(AppState.language === 'en' ? 'Error: incomplete service data' : 'خطأ: بيانات الخدمة غير مكتملة', 'error'); return; }
 
         // Prevent seller from requesting their own service
         if (AppState.currentUser.uid === service.sellerId) {
@@ -56,22 +56,21 @@
         if (!service) return;
 
         const user    = AppState.currentUser;
-        if (!user) { showToast('يرجى تسجيل الدخول أولاً', 'warning'); return; }
+        const isAr    = AppState.language !== 'en';
+        if (!user) { showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning'); return; }
 
         const details  = document.getElementById('requestDetails')?.value?.trim();
         const deadline = document.getElementById('requestDeadline')?.value?.trim();
         const budget   = document.getElementById('requestBudget')?.value?.trim();
 
         if (!details) {
-            showToast('يرجى كتابة تفاصيل الطلب', 'warning');
+            showToast(isAr ? 'يرجى كتابة تفاصيل الطلب' : 'Please write the request details', 'warning');
             document.getElementById('requestDetails')?.focus();
             return;
         }
 
         const btn = document.getElementById('submitRequestBtn');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...'; }
-
-        const isAr = AppState.language !== 'en';
+        if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري الإرسال...' : 'Sending...'}`; }
 
         try {
             showLoading(isAr ? 'جاري إنشاء الطلب...' : 'Creating request...');
@@ -88,7 +87,7 @@
                 sellerId:      service.sellerId  || '',
                 sellerName:    service.sellerName || '',
                 buyerId:       user.uid,
-                buyerName:     user.displayName || user.email || 'عميل',
+                buyerName:     user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),
                 buyerAvatar:   user.photoURL || '',
                 price:         service.price || 0,
                 deliveryDays:  service.deliveryDays || 3,
@@ -117,23 +116,18 @@
             // Chat/notification failures are now non-fatal, same as the
             // notification block already correctly does below.
             try {
-                // Send first system message in chat — the request details
-                const systemText = [
-                    isAr ? '📋 تفاصيل الطلب:' : '📋 Request Details:',
-                    details,
-                    deadline ? `\n⏰ ${isAr?'الميعاد:':'Deadline:'} ${deadline}` : '',
-                    budget   ? `\n💰 ${isAr?'الميزانية:':'Budget:'} ${budget}`   : '',
-                ].filter(Boolean).join('\n');
-
-                // Link the buyer to this order's chat node (RTDB) before sending
-                // the first message — required by database.rules.json.
+                // Send first message in chat — a structured request-brief card
+                // (not a plain-text emoji blob) so it renders professionally,
+                // consistent with the delivery-message card style.
                 if (window.rtdb) {
                     await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
                     await window.rtdb.ref(`chats/${orderId}/messages`).push({
                         senderId:   user.uid,
                         senderName: user.displayName || user.email || 'عميل',
-                        text:       systemText,
-                        type:       'text',
+                        type:       'request_brief',
+                        details,
+                        deadline:   deadline || '',
+                        budget:     budget || '',
                         readBy:     { [user.uid]: true },
                         createdAt:  firebase.database.ServerValue.TIMESTAMP,
                     });
@@ -147,7 +141,7 @@
                 await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
                     userId:    service.sellerId,
                     type:      'new_request',
-                    title:     isAr ? 'طلب خدمة جديد 🎉' : 'New Service Request 🎉',
+                    title:     isAr ? 'طلب خدمة جديد' : 'New Service Request',
                     body:      isAr
                         ? `${escapeHtml(user.displayName || 'عميل')} طلب خدمة "${escapeHtml(service.title || '')}"`
                         : `${escapeHtml(user.displayName || 'Client')} requested "${escapeHtml(service.title || '')}"`,
@@ -181,7 +175,7 @@
             console.error('[RequestSystem]', err);
             showToast(isAr ? 'حدث خطأ، حاول مرة أخرى' : 'Error, please try again', 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الطلب وبدء المحادثة'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${isAr ? 'إرسال الطلب وبدء المحادثة' : 'Send request & start chat'}`; }
         }
     }
 
@@ -192,11 +186,11 @@
     }
 
     async function generateBrief() {
-        if (!AppState.currentUser) { showToast('يرجى تسجيل الدخول أولاً', 'warning'); return; }
+        const isAr    = AppState.language !== 'en';
+        if (!AppState.currentUser) { showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning'); return; }
         const goal    = document.getElementById('briefGoal')?.value?.trim();
         const outcome = document.getElementById('briefOutcome')?.value?.trim();
         const notes   = document.getElementById('briefNotes')?.value?.trim();
-        const isAr    = AppState.language !== 'en';
 
         if (!goal && !outcome) {
             showToast(isAr ? 'جاوب على سؤال واحد على الأقل' : 'Answer at least one question', 'warning');
@@ -224,7 +218,7 @@
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-sparkles"></i> اكتب لي الطلب'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-sparkles"></i> ${isAr ? 'اكتب لي الطلب' : 'Write it for me'}`; }
         }
     }
 

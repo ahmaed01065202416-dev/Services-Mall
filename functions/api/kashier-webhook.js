@@ -36,30 +36,18 @@ export async function onRequest(context) {
     }
 
     try {
-        if (env.KASHIER_API_KEY) {
-            // TODO: real signature verification goes here once confirmed —
-            // see fawaterak-webhook.js for the hmacHex + timingSafeEqual pattern.
-            console.warn('[KashierWebhook] Signature verification NOT implemented yet — see header note. Do not use in production until this is filled in.');
-        } else {
-            console.warn('[KashierWebhook] KASHIER_API_KEY not set — demo mode only.');
-        }
-
-        // TODO: confirm the real field names Kashier sends for the merchant
-        // order id and payment id — these are placeholders.
-        const orderId   = data.merchantOrderId || data.orderId || null;
-        const paymentId = data.paymentId || data.transactionId || null;
-
-        if (!orderId) {
-            console.error('[KashierWebhook] no orderId in payload:', JSON.stringify(data));
-            return new Response('OK', { status: 200 });
-        }
-
-        const result = await finalizePendingPayment(orderId, env, { paymentId, method: 'kashier' });
-        console.log('[KashierWebhook] processed:', JSON.stringify(result));
+        // ⚠️ CRITICAL FIX (found in audit): this endpoint used to finalize
+        // ("mark paid") whatever pending order id was in the POST body no
+        // matter what — with or without KASHIER_API_KEY set — because no
+        // signature verification is implemented yet. That means anyone who
+        // could see/guess a pending order id could POST straight to this URL
+        // and get it marked paid for free. Since real signature verification
+        // isn't wired in (see header note), the only safe behavior until it
+        // is: refuse to finalize anything here at all.
+        console.error('[KashierWebhook] Blocked — signature verification not implemented yet (see file header). Refusing to finalize any payment through this endpoint until it is.');
+        return new Response('Not implemented', { status: 501 });
     } catch (err) {
         console.error('[KashierWebhook] Error:', err.message);
         return new Response('Server error', { status: 500 });
     }
-
-    return new Response('OK', { status: 200 });
 }

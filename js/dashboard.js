@@ -168,7 +168,7 @@
                 if (!reviewsSnap.empty) {
                     const avg = reviewsSnap.docs.reduce((s,d)=>s+(d.data().rating||0),0)/reviewsSnap.size;
                     const el2 = document.getElementById('sellerRating');
-                    if (el2) el2.textContent = avg.toFixed(1)+' ⭐';
+                    if (el2) el2.textContent = avg.toFixed(1);
                 }
                 const recent = ordersSnap.docs.slice(0,5).map(d=>({id:d.id,...d.data()}));
                 const c = document.getElementById('sellerRecentOrders');
@@ -374,7 +374,7 @@
                     <div class="flex items-center gap-1 flex-wrap">
                       <button title="${s.featured?'إلغاء التمييز':'تمييز'}" onclick="window._adminToggleFeatured('${s.id}',${!s.featured})"
                         class="text-xs px-2 py-1.5 ${s.featured?'bg-yellow-200 text-yellow-800':'bg-gray-200 text-gray-600'} rounded-lg font-bold hover:opacity-80 transition">
-                        ${s.featured?'⭐ مميزة':'☆ تمييز'}
+                        ${s.featured?'<i class=\'fa-solid fa-star\'></i> مميزة':'<i class=\'fa-regular fa-star\'></i> تمييز'}
                       </button>
                       <button title="${s.active===false?'تفعيل':'إيقاف'}" onclick="window._adminToggleActive('${s.id}',${s.active!==false})"
                         class="text-xs px-2 py-1.5 ${s.active===false?'bg-red-100 text-red-700':'bg-green-100 text-green-700'} rounded-lg font-bold hover:opacity-80 transition">
@@ -635,7 +635,7 @@
                   <div class="grid md:grid-cols-2 gap-4">
                     <!-- Top Sellers -->
                     <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                      <h3 class="font-black text-gray-900 mb-4">🏆 ${isAr?'أكثر البائعين إيراداً':'Top Sellers'}</h3>
+                      <h3 class="font-black text-gray-900 mb-4"><i class="fa-solid fa-trophy text-amber-500 me-1.5"></i>${isAr?'أكثر البائعين إيراداً':'Top Sellers'}</h3>
                       ${topSellers.length===0 ? `<p class="text-gray-400 text-center py-4">${isAr?'لا يوجد':'No data'}</p>` : topSellers.map((s,i)=>`
                       <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
                         <span class="w-6 h-6 rounded-full bg-navy-100 text-navy-700 text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
@@ -646,7 +646,7 @@
 
                     <!-- Top Services -->
                     <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                      <h3 class="font-black text-gray-900 mb-4">🔥 ${isAr?'أكثر الخدمات طلباً':'Top Services'}</h3>
+                      <h3 class="font-black text-gray-900 mb-4"><i class="fa-solid fa-fire text-orange-500 me-1.5"></i>${isAr?'أكثر الخدمات طلباً':'Top Services'}</h3>
                       ${topServices.length===0 ? `<p class="text-gray-400 text-center py-4">${isAr?'لا يوجد':'No data'}</p>` : topServices.map((s,i)=>`
                       <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
                         <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-black flex items-center justify-center flex-shrink-0">${i+1}</span>
@@ -705,7 +705,7 @@
                   <div class="flex items-start gap-3 p-4 bg-gray-50 rounded-xl" id="rev_${r.id}">
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 mb-1">
-                        <span class="text-yellow-500 text-sm">${'⭐'.repeat(r.rating||0)}</span>
+                        <span class="text-yellow-500 text-sm">${'<i class=\'fa-solid fa-star\'></i>'.repeat(r.rating||0)}</span>
                         <span class="text-xs font-bold text-gray-700">${escapeHtml(r.reviewerName||'—')}</span>
                         <span class="text-xs text-gray-400">→ ${escapeHtml(r.sellerName||'—')}</span>
                       </div>

@@ -38,7 +38,7 @@
             }
             const order = { id: snap.id, ...snap.data() };
             AppState.currentOrder = order;
-            _linkChatParticipant(orderId, order, AppState.currentUser.uid);
+            await _linkChatParticipant(orderId, order, AppState.currentUser.uid);
             _renderWorkspace(order);
             navigateTo('workspace');
             hideLoading();
@@ -134,13 +134,6 @@
 
                   <!-- Input area -->
                   <div class="border-t border-gray-200 p-3 bg-white flex-shrink-0">
-                    <!-- Quick emoji buttons -->
-                    <div class="flex gap-2 mb-2 overflow-x-auto pb-1" style="scrollbar-width:none">
-                      ${['👍','✅','🔄','📎','⏰','💡','🎉','❓'].map(e =>
-                        `<button onclick="OrderWorkspace.insertEmoji('${e}')"
-                          class="text-lg hover:scale-125 transition-transform flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">${e}</button>`
-                      ).join('')}
-                    </div>
                     <div class="flex gap-2 items-end">
                       <div class="flex-1">
                         <textarea id="chatInput" rows="1"
@@ -499,12 +492,37 @@
 
     // ── Link this user as buyer/seller on the RTDB chat node (once, idempotent) ─
     // Required by database.rules.json before any message read/write is allowed.
-    // Paid orders created server-side already have both set by the server.
-    function _linkChatParticipant(orderId, order, userId) {
+    // ⚠️ FIXED (root cause of the "set at /chats/.../buyerId failed:
+    // permission_denied" warning Ahmed hit): this write used to be
+    // fire-and-forget with its result never awaited, and openWorkspace()
+    // started the messages listener immediately after — before the RTDB
+    // write had actually landed. Two ways that lost the race in practice:
+    //  1) Right after a page load/refresh, the Realtime Database SDK's own
+    //     auth handshake can still be in flight a beat after
+    //     firebase.auth().currentUser is already populated — so the very
+    //     first RTDB write of the session raced ahead of it and was
+    //     evaluated as unauthenticated → denied.
+    //  2) Even once authenticated, the write and the listener subscription
+    //     were two independent async calls with no ordering guarantee.
+    // Now: returns a Promise, retries once after a short delay if the first
+    // attempt fails (covers case 1), and the caller awaits it before
+    // subscribing to messages (covers case 2).
+    async function _linkChatParticipant(orderId, order, userId) {
         if (!window.rtdb) return;
         const ref = window.rtdb.ref(`chats/${orderId}`);
-        if (order.buyerId === userId)  ref.child('buyerId').set(userId).catch(() => {});
-        if (order.sellerId === userId) ref.child('sellerId').set(userId).catch(() => {});
+        const jobs = [];
+        if (order.buyerId === userId)  jobs.push(['buyerId',  ref.child('buyerId')]);
+        if (order.sellerId === userId) jobs.push(['sellerId', ref.child('sellerId')]);
+        for (const [, node] of jobs) {
+            try {
+                await node.set(userId);
+            } catch (err) {
+                // Retry once — covers the auth-handshake race above.
+                await new Promise(r => setTimeout(r, 400));
+                try { await node.set(userId); }
+                catch (err2) { console.warn('[Chat] link participant failed twice:', err2.code || err2.message); }
+            }
+        }
     }
 
     // ── Real-time Chat Listener (Realtime Database) ───────────────────────────
@@ -549,7 +567,35 @@
         const isFile     = msg.type === 'file';
         const isImage    = msg.type === 'image';
         const isDelivery = msg.type === 'delivery';
+        const isBrief    = msg.type === 'request_brief';
         const isAr       = AppState.language !== 'en';
+
+        // ── Request brief card ────────────────────────────────────────────────
+        if (isBrief) {
+            return `
+            <div class="mx-2 my-3">
+              <div class="bg-navy-800 text-white rounded-2xl p-4 max-w-sm">
+                <div class="flex items-center gap-2 mb-2">
+                  <i class="fa-solid fa-file-lines text-turquoise-400"></i>
+                  <p class="font-black text-sm">${isAr ? 'تفاصيل الطلب' : 'Request Details'}</p>
+                </div>
+                <p class="text-sm leading-relaxed text-navy-100 whitespace-pre-wrap break-words mb-3">${_linkify(_escapeHtml(msg.details || ''))}</p>
+                <div class="flex flex-col gap-1.5 border-t border-white/10 pt-2">
+                  ${msg.deadline ? `
+                  <div class="flex items-center gap-2 text-xs text-navy-200">
+                    <i class="fa-regular fa-clock w-4 text-turquoise-400"></i>
+                    <span>${isAr?'الميعاد:':'Deadline:'} ${_escapeHtml(msg.deadline)}</span>
+                  </div>` : ''}
+                  ${msg.budget ? `
+                  <div class="flex items-center gap-2 text-xs text-navy-200">
+                    <i class="fa-solid fa-sack-dollar w-4 text-turquoise-400"></i>
+                    <span>${isAr?'الميزانية:':'Budget:'} ${_escapeHtml(msg.budget)}</span>
+                  </div>` : ''}
+                </div>
+                <p class="text-xs text-navy-300 mt-2">${formatTimeAgo(msg.createdAt)}</p>
+              </div>
+            </div>`;
+        }
 
         // ── Delivery message ─────────────────────────────────────────────────
         if (isDelivery) {
@@ -561,7 +607,7 @@
                     <i class="fa-solid fa-box-open text-green-600"></i>
                   </div>
                   <div>
-                    <p class="font-black text-green-800 text-sm">${isAr ? '📦 تم تسليم الخدمة' : '📦 Service Delivered'}</p>
+                    <p class="font-black text-green-800 text-sm">${isAr ? 'تم تسليم الخدمة' : 'Service Delivered'}</p>
                     <p class="text-xs text-green-500">${formatTimeAgo(msg.createdAt)}</p>
                   </div>
                 </div>
@@ -723,17 +769,6 @@
         }
     }
 
-    function insertEmoji(emoji) {
-        const input = document.getElementById('chatInput');
-        if (!input) return;
-        const pos   = input.selectionStart || 0;
-        const val   = input.value;
-        input.value = val.slice(0, pos) + emoji + val.slice(pos);
-        input.focus();
-        input.selectionStart = input.selectionEnd = pos + emoji.length;
-        input.dispatchEvent(new Event('input'));
-    }
-
     // ── Send file from chat input ─────────────────────────────────────────────
     async function sendFile(inputEl) {
         const files = Array.from(inputEl.files || []);
@@ -822,7 +857,7 @@
                 batch.set(notifRef, {
                     userId:    order.buyerId,
                     type:      'delivery',
-                    title:     isAr ? '📦 تم تسليم الخدمة!' : '📦 Service Delivered!',
+                    title:     isAr ? 'تم تسليم الخدمة!' : 'Service Delivered!',
                     message:   `"${order.serviceTitle || ''}" ${isAr ? 'تم تسليمها' : 'has been delivered'}`,
                     orderId:   _currentOrderId,
                     read:      false,
@@ -872,7 +907,7 @@
             await window.rtdb.ref(`chats/${orderId}/messages`).push({
                 senderId:   AppState.currentUser.uid,
                 senderName: AppState.currentUser.displayName || AppState.currentUser.email || 'Buyer',
-                text:       `🔄 ${isAr ? 'طلب مراجعة' : 'Revision Request'}: ${sanitizeInput(note)}`,
+                text:       `${isAr ? 'طلب مراجعة' : 'Revision Request'}: ${sanitizeInput(note)}`,
                 type:       'text',
                 createdAt:  firebase.database.ServerValue.TIMESTAMP,
             });
@@ -923,7 +958,7 @@
 
             await batch.commit();
             hideLoading();
-            showToast(isAr ? '⭐ شكراً على تقييمك!' : '⭐ Thank you for your review!', 'success');
+            showToast(isAr ? 'شكراً على تقييمك!' : 'Thank you for your review!', 'success');
             openWorkspace(orderId);
         } catch (err) {
             hideLoading();
@@ -1002,7 +1037,7 @@
                 <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-sm transition">
                   ${_fileDownloadCard(f)}
                 </div>
-                <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '📦' : ''}</p>
+                <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '<i class="fa-solid fa-box"></i>' : ''}</p>
               </div>`).join('');
         };
 
@@ -1091,7 +1126,7 @@
                 batch.set(notifRef, {
                     userId:    order.sellerId,
                     type:      'buyer_instructions',
-                    title:     isAr ? '📋 المشتري أرسل تعليماته!' : '📋 Buyer sent instructions!',
+                    title:     isAr ? 'المشتري أرسل تعليماته!' : 'Buyer sent instructions!',
                     message:   (AppState.currentUser.displayName || 'Buyer') + (isAr ? ' أرسل تعليمات لـ ' : ' sent instructions for ') + (order.serviceTitle || ''),
                     orderId,
                     read:      false,
@@ -1145,10 +1180,19 @@
     // ── Seller-defined stage tracker (separate from the automatic status
     //    timeline) — the seller describes their own work steps in plain
     //    words and marks progress; the buyer sees it as a read-only stepper.
-    const DEFAULT_STAGES = ['استلام الطلب', 'قيد التنفيذ', 'مراجعة العميل', 'التسليم النهائي'];
+    // ⚠️ FIXED (found in audit): this was a single hardcoded Arabic array
+    // used regardless of AppState.language — an English-mode buyer would see
+    // Arabic stage names ("استلام الطلب" etc.) in an otherwise English page.
+    // Only affects the DEFAULT (seller hasn't customized their stages yet);
+    // a seller's own custom stage names are stored as typed and intentionally
+    // left as-is (they can type in either language).
+    const DEFAULT_STAGES = {
+        ar: ['استلام الطلب', 'قيد التنفيذ', 'مراجعة العميل', 'التسليم النهائي'],
+        en: ['Order received', 'In progress', 'Customer review', 'Final delivery'],
+    };
 
     function _renderStageTracker(order, isSeller, isAr) {
-        const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES;
+        const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES[isAr ? 'ar' : 'en'];
         const current = Math.min(order.currentStageIndex || 0, stages.length - 1);
 
         if (isSeller) {
@@ -1232,7 +1276,7 @@
         try {
             const snap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
             const order = snap.data() || {};
-            const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES;
+            const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES[isAr ? 'ar' : 'en'];
 
             const batch = window.db.batch();
             batch.update(window.db.collection(COLLECTIONS.ORDERS).doc(orderId), {
@@ -1298,7 +1342,7 @@
     // ── Expose API ────────────────────────────────────────────────────────────
     window.OrderWorkspace = {
         openWorkspace, sendMessage, handleChatKeydown, sendFile,
-        insertEmoji, deliverService, requestRevision,
+        deliverService, requestRevision,
         setRating, submitReview, previewDeliveryFiles,
         handleDeliveryDrop, wsActivateTab,
         sendBuyerInstructions, previewBuyerFiles,
