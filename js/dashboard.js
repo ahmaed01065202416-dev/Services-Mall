@@ -679,7 +679,7 @@
                                 datasets: [{
                                     label: isAr ? 'الإيرادات' : 'Revenue',
                                     data: sortedMonths.map(([, v]) => v.revenue),
-                                    backgroundColor: '#1B2A4A',
+                                    backgroundColor: '#0F172A',
                                     borderRadius: 6,
                                 }],
                             },
@@ -1261,7 +1261,7 @@
                     labels: sorted.map(([m]) => m),
                     datasets: [
                         { label: isAr ? 'داخل' : 'In',  data: sorted.map(([,v]) => v.in),  backgroundColor: '#0D9488', borderRadius: 6 },
-                        { label: isAr ? 'خارج' : 'Out', data: sorted.map(([,v]) => v.out), backgroundColor: '#1B2A4A', borderRadius: 6 },
+                        { label: isAr ? 'خارج' : 'Out', data: sorted.map(([,v]) => v.out), backgroundColor: '#0F172A', borderRadius: 6 },
                     ],
                 },
                 options: {

@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>سياسة الاسترجاع والإلغاء — مول الخدمات</title>
 <meta name="robots" content="index, follow">
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/tailwind.css?v=v3"> <!-- ⚠️ was cdn.tailwindcss.com — see tailwind.config.js -->
 <style>
-  body{font-family:'IBM Plex Sans Arabic',sans-serif;background:#F3F6FB;color:#16213E}
-  h1,h2{font-family:'Amiri',serif}
+  body{font-family:'IBM Plex Sans Arabic',sans-serif;background:#F8FAFC;color:#0F172A}
+  h1,h2{font-weight:700}
 </style>
 </head>
 <body class="min-h-screen">
-  <header class="py-6 px-4" style="background:#0F1830">
+  <header class="py-6 px-4" style="background:#0B1220">
     <div class="max-w-3xl mx-auto flex items-center justify-between">
       <a href="/" class="text-white font-black text-lg">مول الخدمات</a>
       <a href="/" class="text-sm font-bold text-white/70 hover:text-white">← الرجوع للموقع</a>
@@ -70,5 +70,33 @@
       هذا المستند نموذج عام، ولا يُغني عن مراجعة قانونية متخصصة قبل الإطلاق الفعلي.
     </div>
   </main>
+<style>
+.ms-bottom-nav{display:none}
+@media (max-width:767px){
+  .ms-bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:999;
+    background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+    border-top:1px solid #E2E8F0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+    justify-content:space-around;align-items:center;
+  }
+  .ms-bottom-nav a{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    min-height:44px;justify-content:center;padding:4px 10px;flex:1;
+    color:#475569;text-decoration:none;font-size:11px;font-weight:600;
+  }
+  .ms-bottom-nav a i{font-size:18px}
+  .ms-bottom-nav a.active{color:#4F46E5}
+  .ms-bottom-nav-spacer{height:64px}
+}
+</style>
+<nav class="ms-bottom-nav">
+  <a href="/#home" data-ms-nav="home"><i class="fa-solid fa-store"></i><span>الرئيسية</span></a>
+  <a href="/#services" data-ms-nav="services"><i class="fa-solid fa-grid-2"></i><span>الخدمات</span></a>
+  <a href="/#orders" data-ms-nav="orders"><i class="fa-solid fa-shield-heart"></i><span>طلباتي</span></a>
+  <a href="/blog" data-ms-nav="blog"><i class="fa-solid fa-newspaper"></i><span>المدونة</span></a>
+  <a href="/#profile" data-ms-nav="account"><i class="fa-solid fa-user"></i><span>حسابي</span></a>
+</nav>
+<div class="ms-bottom-nav-spacer"></div>
+
 </body>
 </html>

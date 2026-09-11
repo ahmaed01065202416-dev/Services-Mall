@@ -13,13 +13,13 @@
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://mall-services.pages.dev/icons/icon-512.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Blog","name":"مدونة مول الخدمات","url":"https://mall-services.pages.dev/blog","description":"مقالات SEO يومية بالذكاء الاصطناعي","inLanguage":"ar","publisher":{"@type":"Organization","name":"مول الخدمات"}}</script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="icon" href="/icons/icon-192.png">
 <style>
-:root{--brand:#1B2A4A;--brand-light:#EEF2F8;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--bg:#f8fafc}
+:root{--brand:#0F172A;--brand-light:#EEF2FF;--text:#0F172A;--muted:#64748B;--border:#E2E8F0;--bg:#f8fafc}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;direction:rtl}
+body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;direction:rtl}
 .nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 20px}
 .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:18px;color:var(--brand)}
@@ -41,7 +41,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-
 
 /* Search */
 .search-wrap{position:relative;max-width:500px;margin:0 auto}
-.search-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;placeholder:rgba(255,255,255,.5);padding:14px 48px 14px 20px;border-radius:16px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.search-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;placeholder:rgba(255,255,255,.5);padding:14px 48px 14px 20px;border-radius:16px;font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:14px;outline:none;transition:all .2s}
 .search-input:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4)}
 .search-input::placeholder{color:rgba(255,255,255,.5)}
 .search-btn{position:absolute;left:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:16px}
@@ -49,7 +49,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-
 /* Categories */
 .cats-strip{display:flex;gap:8px;overflow-x:auto;padding:20px 0 8px;scrollbar-width:none;-ms-overflow-style:none}
 .cats-strip::-webkit-scrollbar{display:none}
-.cat-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:50px;border:2px solid #e5e7eb;background:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
+.cat-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:50px;border:2px solid #e5e7eb;background:#fff;font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
 .cat-btn:hover,.cat-btn.active{border-color:var(--brand);background:var(--brand);color:#fff}
 
 /* Grid */
@@ -136,7 +136,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-
     <!-- Load More -->
     <div style="text-align:center;margin-top:32px" id="load-more-wrap" style="display:none">
       <button id="load-more-btn" onclick="BlogEngine.loadMore()"
-        style="background:#fff;border:2px solid #e5e7eb;color:#374151;padding:12px 32px;border-radius:14px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s"
+        style="background:#fff;border:2px solid #e5e7eb;color:#374151;padding:12px 32px;border-radius:14px;font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s"
         onmouseover="this.style.borderColor='#1B2A4A';this.style.color='#1B2A4A'"
         onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#374151'">
         <i class="fa-solid fa-rotate-right" style="margin-left:8px"></i>تحميل المزيد
@@ -357,5 +357,33 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-
     }
   });
 </script>
+<style>
+.ms-bottom-nav{display:none}
+@media (max-width:767px){
+  .ms-bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:999;
+    background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+    border-top:1px solid #E2E8F0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+    justify-content:space-around;align-items:center;
+  }
+  .ms-bottom-nav a{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    min-height:44px;justify-content:center;padding:4px 10px;flex:1;
+    color:#475569;text-decoration:none;font-size:11px;font-weight:600;
+  }
+  .ms-bottom-nav a i{font-size:18px}
+  .ms-bottom-nav a.active{color:#4F46E5}
+  .ms-bottom-nav-spacer{height:64px}
+}
+</style>
+<nav class="ms-bottom-nav">
+  <a href="/#home" data-ms-nav="home"><i class="fa-solid fa-store"></i><span>الرئيسية</span></a>
+  <a href="/#services" data-ms-nav="services"><i class="fa-solid fa-grid-2"></i><span>الخدمات</span></a>
+  <a href="/#orders" data-ms-nav="orders"><i class="fa-solid fa-shield-heart"></i><span>طلباتي</span></a>
+  <a href="/blog" data-ms-nav="blog" class="active"><i class="fa-solid fa-newspaper"></i><span>المدونة</span></a>
+  <a href="/#profile" data-ms-nav="account"><i class="fa-solid fa-user"></i><span>حسابي</span></a>
+</nav>
+<div class="ms-bottom-nav-spacer"></div>
+
 </body>
 </html>

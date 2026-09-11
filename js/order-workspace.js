@@ -157,7 +157,7 @@
                         </label>
                         <!-- Send -->
                         <button onclick="OrderWorkspace.sendMessage()"
-                          class="w-10 h-10 bg-navy-600 text-white rounded-xl flex items-center justify-center hover:bg-navy-700 transition active:scale-95">
+                          class="w-10 h-10 bg-secondary text-white rounded-xl flex items-center justify-center hover:bg-secondary-600 transition active:scale-95">
                           <i class="fa-solid fa-paper-plane"></i>
                         </button>
                       </div>
@@ -492,36 +492,23 @@
 
     // ── Link this user as buyer/seller on the RTDB chat node (once, idempotent) ─
     // Required by database.rules.json before any message read/write is allowed.
-    // ⚠️ FIXED (root cause of the "set at /chats/.../buyerId failed:
-    // permission_denied" warning Ahmed hit): this write used to be
-    // fire-and-forget with its result never awaited, and openWorkspace()
-    // started the messages listener immediately after — before the RTDB
-    // write had actually landed. Two ways that lost the race in practice:
-    //  1) Right after a page load/refresh, the Realtime Database SDK's own
-    //     auth handshake can still be in flight a beat after
-    //     firebase.auth().currentUser is already populated — so the very
-    //     first RTDB write of the session raced ahead of it and was
-    //     evaluated as unauthenticated → denied.
-    //  2) Even once authenticated, the write and the listener subscription
-    //     were two independent async calls with no ordering guarantee.
-    // Now: returns a Promise, retries once after a short delay if the first
-    // attempt fails (covers case 1), and the caller awaits it before
-    // subscribing to messages (covers case 2).
+    // Retries with growing backoff to ride out the brief window right after
+    // login where the Realtime Database socket hasn't finished re-authing yet.
     async function _linkChatParticipant(orderId, order, userId) {
         if (!window.rtdb) return;
         const ref = window.rtdb.ref(`chats/${orderId}`);
         const jobs = [];
-        if (order.buyerId === userId)  jobs.push(['buyerId',  ref.child('buyerId')]);
-        if (order.sellerId === userId) jobs.push(['sellerId', ref.child('sellerId')]);
-        for (const [, node] of jobs) {
-            try {
-                await node.set(userId);
-            } catch (err) {
-                // Retry once — covers the auth-handshake race above.
-                await new Promise(r => setTimeout(r, 400));
-                try { await node.set(userId); }
-                catch (err2) { console.warn('[Chat] link participant failed twice:', err2.code || err2.message); }
+        if (order.buyerId === userId)  jobs.push(ref.child('buyerId'));
+        if (order.sellerId === userId) jobs.push(ref.child('sellerId'));
+        const delays = [0, 400, 1000, 2000, 3500];
+        for (const node of jobs) {
+            let ok = false, lastErr = null;
+            for (let i = 0; i < delays.length && !ok; i++) {
+                if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
+                try { await node.set(userId); ok = true; }
+                catch (err) { lastErr = err; }
             }
+            if (!ok) console.warn('[Chat] link participant failed after retries:', lastErr && (lastErr.code || lastErr.message));
         }
     }
 
@@ -1215,7 +1202,7 @@
                 </div>
                 <div class="flex gap-2">
                   <button onclick="OrderWorkspace.addStageField('${order.id}')" class="text-xs font-bold text-navy-700 hover:underline">+ ${isAr?'إضافة مرحلة':'Add stage'}</button>
-                  <button onclick="OrderWorkspace.saveCustomStages('${order.id}')" class="mr-auto text-xs font-bold bg-navy-800 text-white px-4 py-2 rounded-xl hover:bg-navy-900 transition">${isAr?'حفظ المراحل':'Save stages'}</button>
+                  <button onclick="OrderWorkspace.saveCustomStages('${order.id}')" class="mr-auto text-xs font-bold bg-secondary text-white px-4 py-2 rounded-xl hover:bg-secondary-600 transition">${isAr?'حفظ المراحل':'Save stages'}</button>
                 </div>
               </div>`;
         }

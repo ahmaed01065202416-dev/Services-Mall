@@ -17,13 +17,13 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"الرئيسية","item":"https://mall-services.pages.dev/"},{"@type":"ListItem","position":2,"name":"اتصل بنا","item":"https://mall-services.pages.dev/contact"}]}
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="icon" href="/icons/icon-192.png">
 <style>
-:root{--brand:#0284c7;--brand-dark:#0369a1;--brand-light:#e0f2fe;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--bg:#f8fafc;--radius:16px}
+:root{--brand:#4F46E5;--brand-dark:#4338CA;--brand-light:#EEF2FF;--text:#0F172A;--muted:#64748B;--border:#E2E8F0;--bg:#F8FAFC;--radius:12px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-height:1.8;-webkit-font-smoothing:antialiased}
+body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.8;-webkit-font-smoothing:antialiased}
 .nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 24px}
 .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:18px;color:var(--brand)}
@@ -67,12 +67,12 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);line-
 .contact-form-section h2{font-size:20px;font-weight:900;margin-bottom:20px}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text)}
-.form-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;transition:border .2s}
+.form-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:14px;outline:none;transition:border .2s}
 .form-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(2,132,199,.1)}
 textarea.form-input{resize:vertical;min-height:120px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:500px){.form-grid{grid-template-columns:1fr}}
-.submit-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:12px;font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .submit-btn:hover{background:var(--brand-dark);transform:translateY(-1px)}
 #formSuccess{display:none;background:#d1fae5;border-radius:12px;padding:16px;text-align:center;color:#065f46;font-weight:700;font-size:14px;margin-top:12px}
 
@@ -279,5 +279,33 @@ function submitForm() {
   document.getElementById('fmsg').value = '';
 }
 </script>
+<style>
+.ms-bottom-nav{display:none}
+@media (max-width:767px){
+  .ms-bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:999;
+    background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+    border-top:1px solid #E2E8F0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+    justify-content:space-around;align-items:center;
+  }
+  .ms-bottom-nav a{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    min-height:44px;justify-content:center;padding:4px 10px;flex:1;
+    color:#475569;text-decoration:none;font-size:11px;font-weight:600;
+  }
+  .ms-bottom-nav a i{font-size:18px}
+  .ms-bottom-nav a.active{color:#4F46E5}
+  .ms-bottom-nav-spacer{height:64px}
+}
+</style>
+<nav class="ms-bottom-nav">
+  <a href="/#home" data-ms-nav="home"><i class="fa-solid fa-store"></i><span>الرئيسية</span></a>
+  <a href="/#services" data-ms-nav="services"><i class="fa-solid fa-grid-2"></i><span>الخدمات</span></a>
+  <a href="/#orders" data-ms-nav="orders"><i class="fa-solid fa-shield-heart"></i><span>طلباتي</span></a>
+  <a href="/blog" data-ms-nav="blog"><i class="fa-solid fa-newspaper"></i><span>المدونة</span></a>
+  <a href="/#profile" data-ms-nav="account"><i class="fa-solid fa-user"></i><span>حسابي</span></a>
+</nav>
+<div class="ms-bottom-nav-spacer"></div>
+
 </body>
 </html>

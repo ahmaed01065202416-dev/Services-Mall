@@ -507,6 +507,10 @@ function navigateTo(page, data = null) {
     document.querySelectorAll('[data-nav]').forEach(el => {
         el.classList.toggle('active', el.dataset.nav === page);
     });
+    document.querySelectorAll('[data-mobile-nav]').forEach(el => {
+        el.classList.toggle('text-secondary', el.dataset.mobileNav === page);
+        el.classList.toggle('text-textsecondary', el.dataset.mobileNav !== page);
+    });
 
     // Page-specific init
     const pageKey = page.replace(/-([a-z])/g, (_, c) => c.toUpperCase());

@@ -352,7 +352,7 @@
                 <img id="profileAvatarPreview" src="${user.photoURL || avatarFallback}"
                   class="w-20 h-20 rounded-2xl object-cover"
                   onerror="this.src='${avatarFallback}'">
-                <label class="absolute bottom-0 end-0 w-7 h-7 bg-navy-600 text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-navy-700 transition">
+                <label class="absolute bottom-0 end-0 w-7 h-7 bg-secondary text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-secondary-600 transition">
                   <i class="fa-solid fa-pen text-xs"></i>
                   <input type="file" accept="image/*" class="hidden" id="avatarFileInput" onchange="AuthManager._uploadAvatar(this)">
                 </label>

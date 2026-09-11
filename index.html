@@ -6,7 +6,7 @@
   <meta name="description" content="مول الخدمات — منصتك الأولى للخدمات الرقمية الاحترافية في مصر. تصميم مواقع، برمجة، تسويق رقمي، كتابة محتوى وأكثر — مع ضمان استرداد كامل عبر نظام Escrow.">
   <meta name="google-site-verification" content="z2bKviBbmgwGNYsqFn_DVgWrGsdtutjAVzT99_iqexk" />
   <meta name="keywords" content="خدمات رقمية, فريلانسر مصر, تصميم مواقع, برمجة, تسويق رقمي, كتابة محتوى, SEO, مول الخدمات, mall services egypt, خدمات اون لاين">
-  <meta name="theme-color" content="#1B2A4A">
+  <meta name="theme-color" content="#0F172A">
   <!-- ⚠️ ADDED: there was no favicon link anywhere in the project — the
        browser tab showed a generic blank icon. Reuses the same seal glyph
        as the logo/hero, in the new navy/turquoise palette. -->
@@ -146,9 +146,10 @@
     html{scroll-behavior:smooth}
     body{
       font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;
-      background:linear-gradient(180deg,#F6F4EC 0%,#F1EFE4 100%);
+      background:#F8FAFC;
       min-height:100vh;
       -webkit-font-smoothing:antialiased;
+      color:#0F172A;
     }
 
     /* ── Page System ──────────────────────────────── */
@@ -159,78 +160,78 @@
     /* ── Typography ─────────────────────────────── */
     [lang=en] body,[lang=en] .en-only{font-family:'IBM Plex Sans',sans-serif}
     .gradient-text{
-      background:linear-gradient(135deg,#1B2A4A 0%,#14B8A6 100%);
+      background:linear-gradient(135deg,#0F172A 0%,#0D9488 100%);
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
     }
 
     /* ── Buttons ─────────────────────────────────── */
     .btn-primary{
-      background:linear-gradient(135deg,#1B2A4A 0%,#0F1830 100%);
-      color:#fff;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;box-shadow:0 4px 15px rgba(27,42,74,.3);
+      background:#4F46E5;
+      color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;
+      transition:all .2s ease;box-shadow:0 1px 3px rgba(15,23,42,.1);
       border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(27,42,74,.4)}
-    .btn-primary:active{transform:translateY(0)}
+    .btn-primary:hover{background:#4338CA;box-shadow:0 4px 12px rgba(79,70,229,.25)}
+    .btn-primary:active{transform:translateY(1px)}
     .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
     .btn-secondary{
-      background:#fff;color:#1B2A4A;padding:14px 28px;border-radius:16px;font-weight:700;
-      transition:all .3s ease;border:2px solid #1B2A4A;cursor:pointer;
+      background:#fff;color:#0F172A;padding:12px 24px;border-radius:8px;font-weight:600;
+      transition:all .2s ease;border:1px solid #CBD5E1;cursor:pointer;
       display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
-    .btn-secondary:hover{background:#1B2A4A;color:#fff;transform:translateY(-2px)}
+    .btn-secondary:hover{background:#F1F5F9;border-color:#94A3B8}
 
     /* ── Forms ───────────────────────────────────── */
     .form-input{
-      width:100%;padding:14px 18px;background:rgba(249,250,251,.8);
-      border:2px solid #e5e7eb;border-radius:14px;transition:all .3s ease;
-      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;color:#111827
+      width:100%;padding:12px 16px;background:#fff;
+      border:1px solid #CBD5E1;border-radius:8px;transition:all .2s ease;
+      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;color:#0F172A
     }
-    .form-input:focus{border-color:#1B2A4A;outline:none;box-shadow:0 0 0 4px rgba(27,42,74,.1);background:#fff}
-    .form-input::placeholder{color:#9ca3af}
+    .form-input:focus{border-color:#4F46E5;outline:none;box-shadow:0 0 0 3px rgba(79,70,229,.12);background:#fff}
+    .form-input::placeholder{color:#94A3B8}
 
     /* ── Cards ───────────────────────────────────── */
-    .card{transition:all .4s cubic-bezier(.4,0,.2,1)}
-    .card:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 20px 40px -12px rgba(0,0,0,.12)}
+    .card{transition:all .25s ease;border:1px solid #E2E8F0}
+    .card:hover{transform:translateY(-3px);box-shadow:0 10px 15px -3px rgba(15,23,42,.08),0 4px 6px -4px rgba(15,23,42,.04)}
 
     /* ── Glass ───────────────────────────────────── */
-    .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.3)}
+    .glass{background:rgba(248,250,252,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #E2E8F0}
 
     /* ── Modal ───────────────────────────────────── */
     .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
       backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .3s ease}
     .modal.active{display:flex;opacity:1}
-    .modal-content{background:#fff;border-radius:24px;max-width:600px;width:100%;max-height:90vh;
+    .modal-content{background:#fff;border-radius:16px;max-width:600px;width:100%;max-height:90vh;
       overflow-y:auto;transform:scale(.9) translateY(20px);transition:transform .3s ease}
     .modal.active .modal-content{transform:scale(1) translateY(0)}
 
     /* ── Toast ───────────────────────────────────── */
     .toast{
       position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
-      background:linear-gradient(135deg,#1f2937 0%,#111827 100%);color:#fff;
-      padding:16px 28px;border-radius:16px;z-index:100001;opacity:0;visibility:hidden;
-      transition:all .4s cubic-bezier(.4,0,.2,1);box-shadow:0 20px 40px rgba(0,0,0,.3);
+      background:#0F172A;color:#fff;
+      padding:14px 24px;border-radius:8px;z-index:100001;opacity:0;visibility:hidden;
+      transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 20px 25px -5px rgba(15,23,42,.15);
       display:flex;align-items:center;gap:12px;min-width:280px;max-width:90vw;font-weight:600
     }
     .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-    .toast.success{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
-    .toast.error{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
-    .toast.warning{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%)}
+    .toast.success{background:#0F766E}
+    .toast.error{background:#EF4444}
+    .toast.warning{background:#F59E0B}
 
-    /* ── Status Badges ───────────────────────────── */
-    .status-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;white-space:nowrap}
-    .status-pending{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
-    .status-in-progress{background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1e40af}
-    .status-delivered{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#065f46}
-    .status-completed{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-    .status-cancelled{background:linear-gradient(135deg,#fee2e2,#fecaca);color:#991b1b}
-    .status-review{background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#3730a3}
+    /* ── Status Badges (DESIGN.md state tokens) ──── */
+    .status-badge{padding:5px 12px;border-radius:9999px;font-size:12px;font-weight:600;display:inline-block;white-space:nowrap;border:1px solid transparent}
+    .status-pending{background:#FFFBEB;color:#B45309;border-color:#FDE68A}
+    .status-in-progress{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE}
+    .status-delivered{background:#ECFDF5;color:#0F766E;border-color:#A7F3D0}
+    .status-completed{background:#10B981;color:#fff}
+    .status-cancelled{background:#FEF2F2;color:#B91C1C;border-color:#FECACA}
+    .status-review{background:#EEF2FF;color:#3730A3;border-color:#C7D2FE}
 
     /* ── Chat Bubbles ────────────────────────────── */
-    .chat-bubble{max-width:75%;padding:12px 16px;border-radius:18px;position:relative;word-break:break-word;line-height:1.6}
-    .chat-bubble.sent{background:linear-gradient(135deg,#1B2A4A,#0F1830);color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(2,132,199,.25)}
-    .chat-bubble.received{background:#f3f4f6;color:#1f2937;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .chat-bubble{max-width:75%;padding:12px 16px;border-radius:14px;position:relative;word-break:break-word;line-height:1.6}
+    .chat-bubble.sent{background:#0F172A;color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(15,23,42,.2)}
+    .chat-bubble.received{background:#F1F5F9;color:#0F172A;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 
     /* ── Skeleton ────────────────────────────────── */
     .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton-loading 1.5s infinite;border-radius:8px}
@@ -239,17 +240,17 @@
     /* ── Scrollbar ───────────────────────────────── */
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
-    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#1B2A4A,#0F1830);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#0F172A,#0B1220);border-radius:10px}
 
     /* ── Tab System ──────────────────────────────── */
     .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
-    .tab-btn.active{color:#1B2A4A;border-bottom-color:#1B2A4A}
+    .tab-btn.active{color:#0F172A;border-bottom-color:#0F172A}
 
     /* ── Dropdown ────────────────────────────────── */
     .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
     .dropdown.active{display:block;animation:fadeIn .2s ease-out}
     .dropdown a,.dropdown button{display:block;width:100%;padding:12px 18px;text-align:right;color:#374151;text-decoration:none;transition:all .2s ease;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-size:14px}
-    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#1B2A4A}
+    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#0F172A}
 
     /* ── LTR overrides (English mode) ───────────────*/
     html[dir=ltr] .dropdown a,html[dir=ltr] .dropdown button{text-align:left}
@@ -261,7 +262,7 @@
     .chat-messages-area::-webkit-scrollbar{width:4px}
     .chat-messages-area::-webkit-scrollbar-track{background:transparent}
     .chat-messages-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
-    .chat-text-input:focus{outline:none;border-color:#1B2A4A;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
+    .chat-text-input:focus{outline:none;border-color:#0F172A;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
     .chat-send-btn:active{transform:scale(.92)}
     .chat-file-input{display:none !important}
     .emoji-quick{transition:transform .15s}
@@ -274,7 +275,7 @@
 
     /* ── Nav ─────────────────────────────────────── */
     .nav-link{position:relative;transition:all .3s ease}
-    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#1B2A4A,#14B8A6);border-radius:2px;transition:width .3s ease}
+    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#0F172A,#0D9488);border-radius:2px;transition:width .3s ease}
     html[dir=ltr] .nav-link::after{right:auto;left:0}
     .nav-link.active::after{width:100%}
 
@@ -306,7 +307,7 @@
     /* ── App Loading Screen ──────────────────────── */
     #appLoadingScreen{
       position:fixed;inset:0;z-index:99999;
-      background:linear-gradient(135deg,#1B2A4A 0%,#0F1830 100%);
+      background:linear-gradient(135deg,#0F172A 0%,#0B1220 100%);
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
       transition:opacity .5s ease;
     }
@@ -396,17 +397,17 @@
     <!-- Logo — new mark: the same "seal" glyph used for the escrow trust
          story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
-      <div class="w-9 h-9 bg-gradient-to-br from-navy-800 to-turquoise-500 rounded-xl flex items-center justify-center shadow-sm">
-        <svg class="w-5 h-5 text-white"><use href="#seal-icon"/></svg>
+      <div class="w-9 h-9 bg-navy-800 rounded-lg flex items-center justify-center shadow-sm">
+        <svg class="w-5 h-5 text-turquoise-500"><use href="#seal-icon"/></svg>
       </div>
-      <span class="font-black text-gray-900 text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
+      <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
 
     <!-- Desktop Nav Links -->
     <div class="hidden md:flex items-center gap-1">
-      <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
-      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
-      <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-bold text-gray-700 hover:text-navy-700 rounded-xl hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
+      <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
+      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
     </div>
 
     <!-- Right Controls -->
@@ -414,14 +415,14 @@
 
       <!-- Language Toggle -->
       <button id="langToggle" onclick="toggleLanguage()"
-        class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+        class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-textsecondary bg-surfacecanvas border border-borderline rounded-lg hover:bg-navy-50 transition">
         🇬🇧 English
       </button>
 
       <!-- Currency -->
       <div class="relative hidden sm:block">
         <button id="currencyToggle" onclick="toggleCurrencyMenu()"
-          class="flex items-center gap-1 px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+          class="flex items-center gap-1 px-3 py-2 text-xs font-mono font-semibold text-textsecondary bg-surfacecanvas border border-borderline rounded-lg hover:bg-navy-50 transition">
           EGP ج.م
         </button>
         <div id="currencyMenu" class="dropdown absolute top-full mt-1 end-0" style="min-width:150px">
@@ -435,13 +436,13 @@
       </div>
 
       <!-- Cart -->
-      <button onclick="navigateTo('cart')" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-navy-100 text-gray-700 hover:text-navy-700 transition">
+      <button onclick="navigateTo('cart')" class="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-navy-50 text-textsecondary hover:text-textprimary transition">
         <i class="fa-solid fa-cart-shopping"></i>
-        <span data-cart-count class="hidden absolute -top-1 -end-1 bg-turquoise-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
+        <span data-cart-count class="hidden absolute top-2 end-2 bg-secondary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
       </button>
 
       <!-- Notifications -->
-      <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative p-2.5 bg-gray-100 rounded-xl hover:bg-navy-100 text-gray-700 hover:text-navy-700 transition hidden">
+      <button id="notifBtn" onclick="toggleNotifDropdown()" class="relative w-11 h-11 flex items-center justify-center rounded-lg hover:bg-navy-50 text-textsecondary hover:text-textprimary transition hidden">
         <i class="fa-solid fa-bell"></i>
         <span data-notif-count class="hidden">0</span>
       </button>
@@ -453,10 +454,10 @@
       </div>
 
       <div id="userMenuWrap" class="relative hidden">
-        <button onclick="toggleUserMenu()" class="flex items-center gap-2 bg-navy-50 border border-navy-200 rounded-xl px-3 py-2 hover:bg-navy-100 transition">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-2 bg-navy-50 border border-borderline rounded-lg px-3 py-2 hover:bg-navy-100 transition">
           <img id="navAvatar" src="" class="w-7 h-7 rounded-full object-cover" alt="">
-          <span id="navName" class="text-sm font-bold text-gray-900 hidden sm:block max-w-24 truncate"></span>
-          <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+          <span id="navName" class="text-sm font-semibold text-textprimary hidden sm:block max-w-24 truncate"></span>
+          <i class="fa-solid fa-chevron-down text-xs text-textmuted"></i>
         </button>
         <div id="userDropdown" class="dropdown absolute top-full mt-1 end-0 z-50" style="min-width:200px">
           <button onclick="navigateTo('dashboard');toggleUserMenu()" data-i18n="nav.dashboard">لوحة التحكم</button>
@@ -523,14 +524,14 @@
           <input type="text" id="heroSearchInput" class="flex-1 min-w-0 bg-transparent border-0 outline-none px-4 py-3 text-navy-900 placeholder:text-navy-300 text-sm"
             placeholder="ابحث هنا... عن أي خدمة بتدور؟" data-i18n="home.hero.searchPlaceholder"
             onkeypress="if(event.key==='Enter'){event.preventDefault();doHeroSearch();}">
-          <button onclick="doHeroSearch()" class="bg-navy-800 hover:bg-navy-900 text-white font-bold px-7 py-3 rounded-full transition flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0">
+          <button onclick="doHeroSearch()" class="bg-secondary hover:bg-secondary-600 text-white font-bold px-7 py-3 rounded-full transition flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0">
             <span data-i18n="home.hero.searchBtn">بحث</span>
           </button>
         </div>
 
         <!-- Category pill chips — alternating navy/turquoise/outline -->
         <div class="flex flex-wrap gap-2 mt-5 justify-center md:justify-start">
-          <button onclick="filterByCategory('marketing')" data-i18n="home.hero.chip1" class="px-4 py-2 rounded-full text-sm font-bold bg-navy-800 text-white hover:bg-navy-900 transition">تسويق رقمي</button>
+          <button onclick="filterByCategory('marketing')" data-i18n="home.hero.chip1" class="px-4 py-2 rounded-full text-sm font-bold bg-secondary text-white hover:bg-secondary-600 transition">تسويق رقمي</button>
           <button onclick="filterByCategory('programming')" data-i18n="home.hero.chip2" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-500 text-white hover:bg-turquoise-600 transition">الأمن السيبراني</button>
           <button onclick="filterByCategory('seo')" data-i18n="home.hero.chip3" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">استشارات تقنية</button>
           <button onclick="filterByCategory('design')" data-i18n="home.hero.chip4" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">خدمات صحية</button>
@@ -802,7 +803,7 @@
   </section>
 
   <!-- ── Newsletter Section ─────────────────────────────────────────────── -->
-  <section class="py-16 px-4" style="background:linear-gradient(135deg,#16213E,#0F1830)">
+  <section class="py-16 px-4" style="background:linear-gradient(135deg,#131B2E,#0B1220)">
     <div class="max-w-2xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 border border-white/20">
         <i class="fa-solid fa-envelope-open-text text-yellow-300"></i>
@@ -850,7 +851,7 @@
   </section>
 
   <!-- ── Footer ───────────────────────────────────────────────────────────── -->
-  <footer style="background:#0F1830" class="py-10 px-4">
+  <footer style="background:#0B1220" class="py-10 px-4">
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="text-center md:text-right">
         <p class="text-white font-black">مول الخدمات</p>
@@ -941,7 +942,7 @@
           <i class="fa-solid fa-cart-shopping text-5xl text-gray-200 mb-4"></i>
           <p class="font-black text-gray-700 text-lg mb-1" data-i18n="cart.empty">سلتك فارغة</p>
           <p class="text-gray-400 text-sm mb-6" data-i18n="cart.empty_sub">أضف خدمات لبدء طلبك</p>
-          <button onclick="navigateTo('services')" class="bg-navy-800 text-white font-bold px-6 py-3 rounded-xl hover:bg-navy-900 transition">
+          <button onclick="navigateTo('services')" class="bg-secondary text-white font-bold px-6 py-3 rounded-xl hover:bg-secondary-600 transition">
             <span data-i18n="cart.continue">مواصلة التسوق</span>
           </button>
         </div>
@@ -953,7 +954,7 @@
           <h2 class="font-black text-gray-900 mb-4">ملخص الطلب</h2>
           <div id="cartSummary" class="space-y-2"></div>
           <button id="cartCheckoutBtn" onclick="PaymentSystem.openPaymentPage('cart')" disabled
-            class="w-full bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl hover:bg-navy-900 transition mt-5 flex items-center justify-center gap-2">
+            class="w-full bg-secondary disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl hover:bg-secondary-600 transition mt-5 flex items-center justify-center gap-2">
             <i class="fa-solid fa-lock"></i><span data-i18n="cart.checkout">إتمام الشراء</span>
           </button>
           <p class="text-xs text-gray-400 text-center mt-3 flex items-center justify-center gap-1">
@@ -1396,23 +1397,23 @@
 <div id="globalToast" class="toast"></div>
 
 <!-- Mobile Bottom Nav -->
-<nav class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-50 pb-safe">
-  <div class="flex items-center justify-around py-2">
-    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="home">
-      <i class="fa-solid fa-home text-lg"></i><span class="text-xs font-bold" data-i18n="nav.home">الرئيسية</span>
+<nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-borderline z-50 pb-safe shadow-[0_-2px_12px_rgba(15,23,42,0.06)]">
+  <div class="flex items-center justify-around py-1.5">
+    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="home">
+      <i class="fa-solid fa-store text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.home">الرئيسية</span>
     </button>
-    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="services">
-      <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-xs font-bold" data-i18n="nav.services">الخدمات</span>
+    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="services">
+      <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.services">الخدمات</span>
     </button>
-    <button onclick="navigateTo('cart')" class="relative flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="cart">
-      <i class="fa-solid fa-cart-shopping text-lg"></i><span class="text-xs font-bold" data-i18n="cart.short">السلة</span>
-      <span data-cart-count class="hidden absolute top-0 end-2 bg-turquoise-500 text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
+    <button onclick="navigateTo('cart')" class="relative flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="cart">
+      <i class="fa-solid fa-cart-shopping text-lg"></i><span class="text-[11px] font-semibold" data-i18n="cart.short">السلة</span>
+      <span data-cart-count class="hidden absolute top-0 end-2 bg-secondary text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
     </button>
-    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition" data-mobile-nav="orders">
-      <i class="fa-solid fa-receipt text-lg"></i><span class="text-xs font-bold" data-i18n="nav.orders">طلباتي</span>
+    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="orders">
+      <i class="fa-solid fa-shield-heart text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.orders">طلباتي</span>
     </button>
-    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1 px-4 text-gray-500 hover:text-navy-700 transition">
-      <i class="fa-solid fa-user text-lg"></i><span class="text-xs font-bold">حسابي</span>
+    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition">
+      <i class="fa-solid fa-user text-lg"></i><span class="text-[11px] font-semibold">حسابي</span>
     </button>
   </div>
 </nav>
@@ -1688,7 +1689,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <div class="flex items-center justify-between">
                   <span class="font-black text-navy-700" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
                   <button onclick="event.stopPropagation();RequestSystem.openRequestModal({id:'${s.id}',title:${JSON.stringify(s.title||'')},price:${s.price||0},image:${JSON.stringify(s.image||'')},sellerId:'${s.sellerId||''}',sellerName:${JSON.stringify(s.sellerName||'')},deliveryDays:${s.deliveryDays||3}})"
-                    class="bg-navy-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-navy-700 transition flex items-center gap-1">
+                    class="bg-secondary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-secondary-600 transition flex items-center gap-1">
                     <i class="fa-solid fa-paper-plane"></i>${isAr?'طلب':'Request'}
                   </button>
                 </div>
@@ -1788,7 +1789,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 const isProduct = s.listingType === 'product';
                 const actionBtn = isProduct
                     ? `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">أضف للسلة</button>`
-                    : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-navy-800 text-white text-xs font-bold py-2 rounded-xl hover:bg-navy-900 transition">اطلب الآن</button>`;
+                    : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-secondary text-white text-xs font-bold py-2 rounded-xl hover:bg-secondary-600 transition">اطلب الآن</button>`;
                 return `
                 <div class="flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow" style="width:220px">
                   <div class="relative h-32 bg-gray-100">

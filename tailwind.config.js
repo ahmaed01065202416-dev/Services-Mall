@@ -6,44 +6,72 @@
 module.exports = {
   content: [
     './index.html',
+    './about/**/*.html',
+    './contact/**/*.html',
     './blog/**/*.html',
     './js/**/*.js',
     './privacy.html',
     './terms.html',
     './refund-policy.html',
+    './privacy/**/*.html',
+    './terms/**/*.html',
   ],
   theme: {
     extend: {
       fontFamily: {
         sans:    ['IBM Plex Sans Arabic', 'IBM Plex Sans', 'sans-serif'],
-        display: ['Amiri', 'Fraunces', 'serif'],
-        mono:    ['IBM Plex Mono', 'monospace'],
+        display: ['IBM Plex Sans Arabic', 'IBM Plex Sans', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'IBM Plex Mono', 'monospace'],
       },
+      // ── Design System: "Corporate Modern / High-Trust Precision" ──
+      // Ported 1:1 from the Stitch design spec (fintech-grade slate-navy +
+      // indigo CTA + emerald/teal escrow trust accents). `navy` and
+      // `turquoise` are kept as the names already used everywhere across
+      // index.html/js/*.js so the whole app re-themes just by changing the
+      // hex values here — no need to touch every template.
       colors: {
-        // "برنس" — أخضر زمردي عميق: الثقة والمال المحجوز بأمان
-        brand: {
-          50: '#EAF5F0', 100: '#CFE9DD', 200: '#9ED0BB', 300: '#6BB699',
-          400: '#3D9C7B', 500: '#1F8564', 600: '#12734F', 700: '#0E5C40',
-          800: '#0B4732', 900: '#083527',
-        },
-        // "الختم" — ذهبي نحاسي: قيمة، أمانة، خاتم الضمان
-        accent: {
-          50: '#FBF3E4', 100: '#F5E3C0', 200: '#ECCB8C', 300: '#E1AF5C',
-          400: '#D3993E', 500: '#C08A2E', 600: '#A06F22', 700: '#7D561B',
-          800: '#5C3F14', 900: '#3E2A0D',
-        },
-        // "المحضر" — حبر أخضر داكن يكاد يكون أسود: خلفية القبو/الهيرو
-        ink: { 700: '#233B32', 800: '#1A2D26', 900: '#12201B' },
-        // Reference-image palette (home page hero/products) — navy + turquoise
+        // Slate-navy — structural chrome, dark headers, headline ink
         navy: {
-          50: '#EEF2F8', 100: '#DCE3F0', 200: '#B3C1DC', 300: '#8A9FC8',
-          400: '#4F6293', 500: '#2E4166', 600: '#223355', 700: '#1B2A4A',
-          800: '#16213E', 900: '#0F1830',
+          50: '#F1F5F9', 100: '#E2E8F0', 200: '#CBD5E1', 300: '#94A3B8',
+          400: '#64748B', 500: '#475569', 600: '#334155', 700: '#1E293B',
+          800: '#131B2E', 900: '#0B1220',
         },
+        // Escrow trust — teal/emerald (was turquoise)
         turquoise: {
-          50: '#E7FBF8', 100: '#C7F5EE', 200: '#93EBDE', 300: '#5CDBC9',
-          400: '#2DC7B4', 500: '#14B8A6', 600: '#0D9488', 700: '#0B7A70',
+          50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+          400: '#34D399', 500: '#10B981', 600: '#0D9488', 700: '#0F766E',
         },
+        // Primary conversion CTA — indigo
+        secondary: {
+          DEFAULT: '#4F46E5', 50: '#EEF2FF', 100: '#E0E7FF', 200: '#C7D2FE',
+          400: '#6366F1', 500: '#4F46E5', 600: '#4338CA', 700: '#3730A3',
+        },
+        accentblue: '#2563EB',
+        // Neutral text / surfaces per DESIGN.md
+        surfacecanvas: '#F8FAFC',
+        textprimary: '#0F172A',
+        textsecondary: '#475569',
+        textmuted: '#94A3B8',
+        borderline: '#E2E8F0',
+        borderstrong: '#CBD5E1',
+        // Status
+        warn: { DEFAULT: '#F59E0B', subtle: '#FFFBEB' },
+        danger: { DEFAULT: '#EF4444', subtle: '#FEF2F2' },
+        // legacy aliases kept so nothing referencing them breaks (unused elsewhere)
+        brand: {
+          50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+          400: '#34D399', 500: '#10B981', 600: '#0D9488', 700: '#0F766E',
+          800: '#115E59', 900: '#134E4A',
+        },
+        accent: {
+          50: '#EEF2FF', 100: '#E0E7FF', 200: '#C7D2FE', 300: '#A5B4FC',
+          400: '#818CF8', 500: '#4F46E5', 600: '#4338CA', 700: '#3730A3',
+          800: '#312E81', 900: '#1E1B4B',
+        },
+        ink: { 700: '#1E293B', 800: '#131B2E', 900: '#0B1220' },
+      },
+      borderRadius: {
+        sm: '0.375rem', DEFAULT: '0.5rem', md: '0.5rem', lg: '0.75rem', xl: '1rem', '2xl': '1rem',
       },
     },
   },

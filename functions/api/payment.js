@@ -127,7 +127,7 @@ export async function onRequest(context) {
             case 'releaseEscrow':  return await handleReleaseEscrow(body, env, CORS, auth);
             case 'resolveDispute': return await handleResolveDispute(body, env, CORS, auth);
             case 'requestWithdrawal': return await handleRequestWithdrawal(body, env, CORS, auth);
-            case 'checkKeys':      return handleCheckKeys(env, CORS);
+            case 'checkKeys':      return await handleCheckKeys(env, CORS);
             case 'autoFlagStaleDeliveries': {
                 // Cron-only (mirrors subscription.js chargeDue) — not in AUTH_REQUIRED
                 // because cron has no Firebase user, just the admin secret.
@@ -806,11 +806,32 @@ async function handleRequestWithdrawal(body, env, CORS, auth) {
 }
 
 // ── Check Which Keys Are Configured (no secrets returned) ────────────────────
-function handleCheckKeys(env, CORS) {
-    return json(200, CORS, {
+async function handleCheckKeys(env, CORS) {
+    const out = {
         fawaterak_configured: !!env.FAWATERAK_API_KEY,
         firebase_admin_configured: !!(env.FIREBASE_SERVICE_ACCOUNT && env.FIREBASE_PROJECT_ID),
-    });
+        firebase_project_id: env.FIREBASE_PROJECT_ID || null,
+    };
+    // Try to actually reach Firestore with the service account so a
+    // misconfigured/expired key or wrong project ID shows up here instead of
+    // as a confusing "order not found" on a real payment attempt.
+    if (out.firebase_admin_configured) {
+        try {
+            await getAccessToken(env);
+            out.firebase_auth_ok = true;
+            try {
+                await fsGet(env, 'settings/platform');
+                out.firestore_reachable = true;
+            } catch (e) {
+                out.firestore_reachable = false;
+                out.firestore_error = e.message;
+            }
+        } catch (e) {
+            out.firebase_auth_ok = false;
+            out.firebase_auth_error = e.message;
+        }
+    }
+    return json(200, CORS, out);
 }
 
 export { finalizePendingPayment, hmacHex, timingSafeEqual };
