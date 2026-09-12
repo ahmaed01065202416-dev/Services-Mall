@@ -12,7 +12,8 @@
     let _lastLoadedMessages = [];
     let _chatListener   = null;
     let _selectedRating = 0;
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB — images only (get compressed down)
+    const NON_IMAGE_FILE_LIMIT = 8 * 1024 * 1024; // 8 MB — matches uploadFile()'s real cap for non-images
 
     // ── Safe timestamp helper ─────────────────────────────────────────────────
     function _ts() {
@@ -41,6 +42,10 @@
             await _linkChatParticipant(orderId, order, AppState.currentUser.uid);
             _renderWorkspace(order);
             navigateTo('workspace');
+            // ⚠️ ADDED: encode the order id in the URL so a refresh (or a
+            // shared/bookmarked link) can deep-link straight back into this
+            // workspace instead of landing on a blank page — see handleHash().
+            try { history.replaceState({ page: 'workspace', orderId }, '', `#workspace-${orderId}`); } catch (_) {}
             hideLoading();
             _startChatListener(orderId);
         } catch (err) {
@@ -765,8 +770,11 @@
         const userId = AppState.currentUser.uid;
 
         for (const file of files) {
-            if (file.size > MAX_FILE_SIZE) {
-                showToast(isAr ? `الملف ${file.name} تجاوز الحد (50MB)` : `${file.name} exceeds limit (50MB)`, 'warning');
+            const isImgFile = file.type && file.type.startsWith('image/');
+            const limit = isImgFile ? MAX_FILE_SIZE : NON_IMAGE_FILE_LIMIT;
+            if (file.size > limit) {
+                const limitLabel = isImgFile ? '50MB' : '8MB';
+                showToast(isAr ? `الملف ${file.name} تجاوز الحد (${limitLabel})` : `${file.name} exceeds limit (${limitLabel})`, 'warning');
                 continue;
             }
             showLoading(isAr ? `جاري رفع ${file.name}...` : `Uploading ${file.name}...`);
@@ -784,7 +792,7 @@
             } catch (err) {
                 hideLoading();
                 console.error('[Chat] sendFile error:', err);
-                showToast((isAr ? 'فشل رفع ' : 'Failed to upload ') + file.name, 'error');
+                showToast(err && err.message ? err.message : ((isAr ? 'فشل رفع ' : 'Failed to upload ') + file.name), 'error');
             }
         }
         inputEl.value = '';
@@ -822,11 +830,19 @@
         try {
             const uploadedFiles = [];
             for (const file of files) {
-                if (file.size > MAX_FILE_SIZE) {
-                    showToast(`${file.name} > 50MB`, 'warning');
+                const isImgFile = file.type && file.type.startsWith('image/');
+                const limit = isImgFile ? MAX_FILE_SIZE : NON_IMAGE_FILE_LIMIT;
+                if (file.size > limit) {
+                    showToast(`${file.name} > ${isImgFile ? '50MB' : '8MB'}`, 'warning');
                     continue;
                 }
-                const url = await uploadFile(file, 'deliveries', `${_currentOrderId}_${Date.now()}`);
+                let url;
+                try {
+                    url = await uploadFile(file, 'deliveries', `${_currentOrderId}_${Date.now()}`);
+                } catch (fileErr) {
+                    showToast(fileErr && fileErr.message ? fileErr.message : `${isAr ? 'فشل رفع' : 'Failed to upload'} ${file.name}`, 'error');
+                    continue;
+                }
                 uploadedFiles.push({ name: file.name, url, size: file.size, type: file.type });
             }
 
@@ -964,7 +980,7 @@
             <i class="fa-solid fa-file text-navy-500 flex-shrink-0"></i>
             <span class="flex-1 truncate font-medium">${_escapeHtml(f.name)}</span>
             <span class="text-gray-400 text-xs flex-shrink-0">${_formatFileSize(f.size)}</span>
-            ${f.size > MAX_FILE_SIZE ? '<span class="text-red-500 text-xs font-bold">!</span>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
+            ${f.size > (f.type && f.type.startsWith('image/') ? MAX_FILE_SIZE : NON_IMAGE_FILE_LIMIT) ? '<span class="text-red-500 text-xs font-bold">!</span>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
           </div>`).join('');
     }
 
@@ -1087,12 +1103,18 @@
             // Upload files
             const uploadedFiles = [];
             for (const file of files) {
-                if (file.size > 50 * 1024 * 1024) {
+                const isImgFile = file.type && file.type.startsWith('image/');
+                const limit = isImgFile ? 50 * 1024 * 1024 : NON_IMAGE_FILE_LIMIT;
+                if (file.size > limit) {
                     showToast((isAr ? 'الملف كبير جداً: ' : 'File too large: ') + file.name, 'warning');
                     continue;
                 }
-                const url = await uploadFile(file, 'order_buyer_files', orderId + '_' + Date.now());
-                uploadedFiles.push({ name: file.name, url, size: file.size, type: file.type });
+                try {
+                    const url = await uploadFile(file, 'order_buyer_files', orderId + '_' + Date.now());
+                    uploadedFiles.push({ name: file.name, url, size: file.size, type: file.type });
+                } catch (fileErr) {
+                    showToast(fileErr && fileErr.message ? fileErr.message : ((isAr ? 'فشل رفع ' : 'Failed to upload ') + file.name), 'error');
+                }
             }
 
             const batch = window.db.batch();
@@ -1160,7 +1182,7 @@
               <i class="fa-solid fa-file text-navy-500 flex-shrink-0"></i>
               <span class="flex-1 truncate font-medium">${escapeHtml(f.name)}</span>
               <span class="text-gray-400 text-xs flex-shrink-0">${f.size > 1048576 ? (f.size/1048576).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB'}</span>
-              ${f.size > 50*1024*1024 ? '<i class="fa-solid fa-exclamation-triangle text-red-500 text-xs"></i>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
+              ${f.size > (f.type && f.type.startsWith('image/') ? 50*1024*1024 : NON_IMAGE_FILE_LIMIT) ? '<i class="fa-solid fa-exclamation-triangle text-red-500 text-xs"></i>' : '<i class="fa-solid fa-check text-green-500 text-xs"></i>'}
             </div>`).join('');
     }
 
@@ -1311,10 +1333,40 @@
         }
         showLoading();
         try {
+            const order = AppState.currentOrder || {};
             await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).update({
                 status: decision === 'accept' ? ORDER_STATUS.ACCEPTED : ORDER_STATUS.CANCELLED,
                 updatedAt: _ts(),
             });
+
+            // ⚠️ ADDED: tell the buyer explicitly it's time to pay — a
+            // notification doc + a chat message — instead of relying on them
+            // to notice the status changed next time they open the app.
+            if (decision === 'accept' && order.buyerId) {
+                try {
+                    await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
+                        userId:    order.buyerId,
+                        type:      'request_accepted',
+                        title:     isAr ? '✅ البائع وافق على طلبك!' : '✅ Seller accepted your request!',
+                        message:   isAr ? `ادفع الآن عشان البائع يبدأ تنفيذ "${order.serviceTitle||''}"` : `Pay now so the seller can start "${order.serviceTitle||''}"`,
+                        orderId,
+                        read:      false,
+                        createdAt: _ts(),
+                    });
+                } catch (_) { /* non-critical */ }
+                try {
+                    if (window.rtdb) {
+                        await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                            senderId:   AppState.currentUser.uid,
+                            senderName: AppState.currentUser.displayName || AppState.currentUser.email || 'Seller',
+                            type:       'text',
+                            text:       isAr ? '✅ وافقت على طلبك — تقدر تدفع دلوقتي عشان أبدأ الشغل.' : "✅ I accepted your request — you can pay now so I can start.",
+                            createdAt:  firebase.database.ServerValue.TIMESTAMP,
+                        });
+                    }
+                } catch (_) { /* non-critical */ }
+            }
+
             hideLoading();
             showToast(decision === 'accept'
                 ? (isAr ? 'تم قبول الطلب — العميل هيقدر يدفع دلوقتي' : 'Request accepted — the buyer can now pay')

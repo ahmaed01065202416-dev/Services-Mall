@@ -505,48 +505,82 @@
 
 <!-- ─── HOME ──────────────────────────────────────────────── -->
 <div id="page-home" class="page">
-  <!-- Hero — navy/turquoise reference layout: pill search + category chips + icon illustration -->
-  <section class="relative overflow-hidden py-16 md:py-24 px-4 border-b border-gray-100" style="background:linear-gradient(180deg,#F3F6FB 0%,#EAF0F8 100%)">
-    <div class="relative max-w-7xl mx-auto grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+  <!-- ══════════════════════════════════════════════════════════════════════
+       HERO — dual segmented search (خدمات مخصصة / منتجات جاهزة) + live stats
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="relative overflow-hidden rounded-3xl bg-white shadow-sm mt-6 mb-14 mx-auto max-w-7xl">
+    <div class="absolute -top-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-1/2 -left-20 w-80 h-80 bg-turquoise-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative px-6 py-14 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
 
-      <!-- Text + Search -->
+      <!-- Text + Dual Search -->
       <div class="text-center md:text-start">
+        <div class="inline-flex items-center gap-2 bg-turquoise-50 text-turquoise-700 px-4 py-1.5 rounded-full mb-5">
+          <i class="fa-solid fa-shield-halved text-sm"></i>
+          <span class="text-xs font-bold">حماية 100% لأموالك بنظام الضمان Escrow</span>
+        </div>
         <h1 class="font-sans font-black text-4xl md:text-5xl text-navy-900 mb-5 leading-tight" data-i18n="home.hero.title">
-          منصتك الأولى للخدمات الرقمية الاحترافية
+          سوق الخدمات الرقمية والمنتجات الجاهزة الموثوق
         </h1>
         <p class="text-lg text-navy-500 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed" data-i18n="home.hero.subtitle">
-          اطلب أفضل الخدمات من خبراء معتمدين — فلوسك محجوزة عندنا لحد ما توافق إنك استلمت
+          اطلب خدمات مخصصة من خبراء معتمدين، أو حمّل منتجات رقمية جاهزة فورًا — فلوسك محجوزة عندنا لحد ما توافق إنك استلمت
         </p>
 
-        <!-- Prominent pill search — reference layout -->
-        <div class="bg-white shadow-xl shadow-navy-900/10 rounded-full p-1.5 flex items-center gap-1 max-w-xl mx-auto md:mx-0">
-          <i class="fa-solid fa-magnifying-glass text-navy-300 ms-4 hidden sm:block"></i>
-          <input type="text" id="heroSearchInput" class="flex-1 min-w-0 bg-transparent border-0 outline-none px-4 py-3 text-navy-900 placeholder:text-navy-300 text-sm"
-            placeholder="ابحث هنا... عن أي خدمة بتدور؟" data-i18n="home.hero.searchPlaceholder"
-            onkeypress="if(event.key==='Enter'){event.preventDefault();doHeroSearch();}">
-          <button onclick="doHeroSearch()" class="bg-secondary hover:bg-secondary-600 text-white font-bold px-7 py-3 rounded-full transition flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0">
-            <span data-i18n="home.hero.searchBtn">بحث</span>
-          </button>
-        </div>
+        <!-- Segment: Services vs Products -->
+        <div class="bg-gray-50 p-1.5 rounded-2xl flex flex-col gap-2 max-w-xl mx-auto md:mx-0">
+          <div class="flex items-center gap-1 p-1 bg-white rounded-xl w-fit mx-auto md:mx-0" id="heroTabGroup">
+            <button type="button" id="heroTabServices" onclick="switchHeroSearch('services')"
+              class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-900 text-white text-sm font-bold transition">
+              <i class="fa-solid fa-handshake text-sm"></i><span>خدمات مخصصة</span>
+            </button>
+            <button type="button" id="heroTabProducts" onclick="switchHeroSearch('products')"
+              class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-gray-500 hover:text-navy-900 text-sm font-bold transition">
+              <i class="fa-solid fa-bolt text-sm"></i><span>منتجات جاهزة</span>
+            </button>
+          </div>
 
-        <!-- Category pill chips — alternating navy/turquoise/outline -->
-        <div class="flex flex-wrap gap-2 mt-5 justify-center md:justify-start">
-          <button onclick="filterByCategory('marketing')" data-i18n="home.hero.chip1" class="px-4 py-2 rounded-full text-sm font-bold bg-secondary text-white hover:bg-secondary-600 transition">تسويق رقمي</button>
-          <button onclick="filterByCategory('programming')" data-i18n="home.hero.chip2" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-500 text-white hover:bg-turquoise-600 transition">الأمن السيبراني</button>
-          <button onclick="filterByCategory('seo')" data-i18n="home.hero.chip3" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">استشارات تقنية</button>
-          <button onclick="filterByCategory('design')" data-i18n="home.hero.chip4" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-navy-700 border border-navy-100 hover:border-navy-300 transition">خدمات صحية</button>
-          <button onclick="filterByType('product')" class="px-4 py-2 rounded-full text-sm font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200 hover:border-turquoise-400 transition"><i class="fa-solid fa-box me-1.5"></i>تصفح المنتجات</button>
+          <div class="bg-white shadow-sm rounded-xl p-1.5 flex items-center gap-1">
+            <i class="fa-solid fa-magnifying-glass text-navy-300 ms-3 hidden sm:block"></i>
+            <input type="text" id="heroSearchInput" class="flex-1 min-w-0 bg-transparent border-0 outline-none px-3 py-3 text-navy-900 placeholder:text-navy-300 text-sm"
+              placeholder="ابحث عن برمجة متجر، تصميم هوية، قوالب Figma..." data-i18n="home.hero.searchPlaceholder"
+              onkeypress="if(event.key==='Enter'){event.preventDefault();doHeroSearch();}">
+            <button onclick="doHeroSearch()" class="bg-secondary hover:bg-secondary-600 text-white font-bold px-6 py-3 rounded-lg transition flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0">
+              <span data-i18n="home.hero.searchBtn">ابحث الآن</span>
+            </button>
+          </div>
+
+          <!-- Trending tag chips -->
+          <div class="flex flex-wrap items-center gap-2 pt-1 px-1 justify-center md:justify-start">
+            <span class="text-xs text-gray-400">الأكثر طلباً:</span>
+            <button onclick="filterByCategory('programming')" class="bg-white hover:bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-navy-600 transition">برمجة تطبيقات</button>
+            <button onclick="filterByCategory('design')" class="bg-white hover:bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-navy-600 transition">هويات بصرية</button>
+            <button onclick="filterByType('product')" class="bg-white hover:bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-navy-600 transition">منتجات جاهزة</button>
+            <button onclick="filterByCategory('marketing')" class="bg-white hover:bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-navy-600 transition">حملات إعلانية</button>
+          </div>
         </div>
 
         <button onclick="navigateTo('register')" class="inline-flex items-center gap-3 bg-turquoise-500 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-turquoise-600 transition mt-8">
           <i class="fa-solid fa-rocket"></i><span data-i18n="home.hero.sell">ابدأ البيع</span>
         </button>
+
+        <!-- Live stats — real counts, loaded by loadHomeStats() -->
+        <div class="grid grid-cols-3 gap-4 mt-10 pt-8 border-t border-gray-100 max-w-md mx-auto md:mx-0">
+          <div>
+            <p class="text-xl md:text-2xl font-black text-navy-900" id="statServices">—</p>
+            <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
+          </div>
+          <div>
+            <p class="text-xl md:text-2xl font-black text-turquoise-600" id="statOrders">—</p>
+            <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
+          </div>
+          <div>
+            <p class="text-xl md:text-2xl font-black text-secondary"><span id="statRating">—</span> <i class="fa-solid fa-star text-yellow-400 text-sm align-middle"></i></p>
+            <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
+          </div>
+        </div>
       </div>
 
-      <!-- ⚠️ REPLACED: the hand-drawn SVG cloud/monitor illustration read as
-           "AI-generated stock art" — swapped for a plain icon badge using the
-           same Font Awesome icon set as the rest of the site (Option 1 from
-           the mockups: one big shield icon + 3 small satellite badges). -->
+      <!-- Visual side panel -->
       <div class="relative hidden md:flex items-center justify-center">
         <div class="w-72 h-72 lg:w-80 lg:h-80 bg-turquoise-50 rounded-full flex items-center justify-center relative">
           <i class="fa-solid fa-shield-halved text-navy-900" style="font-size:88px"></i>
@@ -554,13 +588,12 @@
             <i class="fa-solid fa-code text-turquoise-600 text-xl"></i>
           </div>
           <div class="absolute bottom-4 start-2 w-14 h-14 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center">
-            <i class="fa-solid fa-cloud text-turquoise-600 text-xl"></i>
+            <i class="fa-solid fa-cloud-arrow-down text-turquoise-600 text-xl"></i>
           </div>
           <div class="absolute top-1/3 -start-6 w-12 h-12 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center">
             <i class="fa-solid fa-headset text-navy-800 text-lg"></i>
           </div>
         </div>
-        <!-- Floating escrow trust card — keeps the differentiator, new palette -->
         <div class="absolute -bottom-4 -start-6 bg-white rounded-2xl shadow-xl border border-navy-50 p-4 flex items-center gap-3 max-w-[230px]">
           <div class="w-11 h-11 bg-navy-50 rounded-xl flex items-center justify-center flex-shrink-0">
             <svg class="w-6 h-6 text-navy-700"><use href="#seal-icon"/></svg>
@@ -571,214 +604,158 @@
           </div>
         </div>
         <div class="absolute -top-5 -end-5 bg-white rounded-2xl shadow-xl border border-navy-50 px-4 py-3 flex items-center gap-2">
-          <i class="fa-solid fa-star text-turquoise-500 text-lg"></i>
-          <span class="font-black text-navy-900">4.9</span>
-          <span class="text-navy-400 text-xs">/5</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stats — real counts from Firestore, loaded by loadHomeStats() below.
-         Shows "—" (not a fake number) until the real count arrives, and can
-         go down as well as up since it's a live count, not a marketing figure. -->
-    <div class="relative max-w-5xl mx-auto mt-14 md:mt-16 pt-10 border-t border-navy-100/60 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-      <div>
-        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statServices">—</p>
-        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
-      </div>
-      <div>
-        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statSellers">—</p>
-        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.sellers">بائع محترف</p>
-      </div>
-      <div>
-        <p class="text-2xl md:text-3xl font-black text-navy-900" id="statOrders">—</p>
-        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.orders">طلب مكتمل</p>
-      </div>
-      <div>
-        <p class="text-2xl md:text-3xl font-black text-navy-900"><span id="statRating">—</span> <i class="fa-solid fa-star text-yellow-400 text-xl align-middle"></i></p>
-        <p class="text-navy-400 text-sm mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Why us — real photos instead of icon circles -->
-  <section class="py-16 px-4 bg-white">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="font-sans font-black text-3xl text-gray-900 text-center mb-3">لماذا مول الخدمات؟</h2>
-      <p class="text-gray-400 text-center mb-12 max-w-xl mx-auto">الأمان والاحترافية مش شعار — دي طريقة شغلنا في كل طلب</p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
-          <div class="relative h-44 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1583508915901-b5f84c1dcde1?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="نظام الضمان" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
-            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <svg class="w-5 h-5 text-navy-700"><use href="#seal-icon"/></svg>
-            </div>
-          </div>
-          <div class="p-5">
-            <h3 class="font-black text-gray-900 text-lg mb-2">نظام الضمان Escrow</h3>
-            <p class="text-gray-500 text-sm leading-relaxed">أموالك محمية حتى تستلم خدمتك كاملاً. لا نحول للبائع إلا بعد تأكيدك.</p>
-          </div>
-        </div>
-        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
-          <div class="relative h-44 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1612299273045-362a39972259?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="وسائل الدفع" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
-            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <i class="fa-solid fa-credit-card text-turquoise-600"></i>
-            </div>
-          </div>
-          <div class="p-5">
-            <h3 class="font-black text-gray-900 text-lg mb-2">10+ وسيلة دفع</h3>
-            <p class="text-gray-500 text-sm leading-relaxed">دفع آمن عبر فواتيرك — بطاقات ائتمان، فوري، ومحافظ إلكترونية، من صفحة واحدة.</p>
-          </div>
-        </div>
-        <div class="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow group">
-          <div class="relative h-44 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1620344527458-28900b32d695?w=600&q=80&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="ضمان الاسترداد" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
-            <div class="absolute bottom-3 start-3 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <i class="fa-solid fa-rotate-left text-navy-700"></i>
-            </div>
-          </div>
-          <div class="p-5">
-            <h3 class="font-black text-gray-900 text-lg mb-2">ضمان الاسترداد</h3>
-            <p class="text-gray-500 text-sm leading-relaxed">إذا لم تكن راضياً، فريق الدعم يحل النزاع ويعيد أموالك كاملاً.</p>
-          </div>
+          <i class="fa-solid fa-bolt text-turquoise-500 text-lg"></i>
+          <span class="font-black text-navy-900 text-sm">تسليم فوري</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Featured Services -->
-  <section class="py-16 px-4">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-3xl font-black text-gray-900" data-i18n="home.featured">خدمات مميزة</h2>
-        <button onclick="navigateTo('services')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all">
-          <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
-        </button>
+  <!-- ══════════════════════════════════════════════════════════════════════
+       VALUE PROPS — 4 trust cards
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
+        <div class="w-12 h-12 rounded-xl bg-turquoise-50 text-turquoise-600 flex items-center justify-center"><i class="fa-solid fa-shield-halved text-xl"></i></div>
+        <h3 class="font-black text-navy-900">حماية بنظام Escrow</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">نحتفظ بقيمة الطلب في خزينة ضمان آمنة، ولا يتم تحويل المستحقات للبائع إلا بعد استلامك الخدمة وموافقتك.</p>
       </div>
-      <div id="featuredServices" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <!-- Skeleton loading -->
-        ${Array(4).fill('<div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>').join('')}
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
+        <div class="w-12 h-12 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center"><i class="fa-solid fa-bolt text-xl"></i></div>
+        <h3 class="font-black text-navy-900">تحميل المنتجات فوري</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">القوالب والأكواد والأصول الرقمية الجاهزة تصبح متاحة للتحميل المباشر فور تأكيد الدفع.</p>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
+        <div class="w-12 h-12 rounded-xl bg-navy-50 text-navy-700 flex items-center justify-center"><i class="fa-solid fa-id-badge text-xl"></i></div>
+        <h3 class="font-black text-navy-900">بائعون حقيقيون</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">كل بائع بيسجل حساب موثّق ومربوط بتقييمات حقيقية من عملاء فعليين على المنصة.</p>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-wallet text-xl"></i></div>
+        <h3 class="font-black text-navy-900">وسائل دفع آمنة</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">ادفع عبر فواتيرك بالبطاقات البنكية، فودافون كاش، وباقي المحافظ الإلكترونية من صفحة واحدة.</p>
       </div>
     </div>
   </section>
 
-  <!-- ⚠️ ADDED: highlight tiles (icon-badge style from the reference design) —
-       the four big entry points: browse products, browse services, digital
-       downloads, and everything. Sits above the full category grid below. -->
-  <section class="py-14 px-4" style="background:linear-gradient(180deg,#F3F6FB 0%,#fff 100%)">
-    <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-5">
-      <button onclick="filterByCategory('programming')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-navy-50 flex items-center justify-center rotate-45">
-          <i class="fa-solid fa-code text-navy-800 text-2xl -rotate-45"></i>
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DUAL CATEGORY BROWSE — services categories | product categories
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+    <div class="text-center mb-8">
+      <span class="text-secondary text-sm font-bold">مسارات السوق المتكاملة</span>
+      <h2 class="font-sans font-black text-3xl text-gray-900 mt-1">استكشف حسب نوع احتياجك</h2>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Services categories -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-secondary"></span><h3 class="font-black text-navy-900">خدمات مخصصة حسب الطلب</h3></div>
+          <span class="text-xs font-bold bg-gray-50 text-gray-500 px-2.5 py-1 rounded-md">تنفيذ حسب الطلب</span>
         </div>
-        <p class="font-black text-gray-900 text-sm mb-1">برمجة وتطبيقات</p>
-        <p class="text-xs text-gray-400">أفضل وجهة لخدمات ومنتجات البرمجة</p>
-      </button>
-      <button onclick="filterByType('product')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-turquoise-50 flex items-center justify-center rotate-45">
-          <i class="fa-solid fa-box-open text-turquoise-600 text-2xl -rotate-45"></i>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <button onclick="filterByCategory('programming')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-code text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">برمجة ومواقع</span></button>
+          <button onclick="filterByCategory('design')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-palette text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">تصميم وهوية</span></button>
+          <button onclick="filterByCategory('marketing')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-bullhorn text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">تسويق وإعلانات</span></button>
+          <button onclick="filterByCategory('writing')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-pen-fancy text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">كتابة وترجمة</span></button>
+          <button onclick="filterByCategory('video')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-video text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">فيديو وأنيميشن</span></button>
+          <button onclick="filterByCategory('seo')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-magnifying-glass-chart text-secondary text-xl"></i><span class="text-sm font-bold text-navy-900">SEO واستشارات</span></button>
         </div>
-        <p class="font-black text-gray-900 text-sm mb-1">منتجات حصرية</p>
-        <p class="text-xs text-gray-400">تسليم فوري تلقائي بعد الدفع</p>
-      </button>
-      <button onclick="filterByType('service')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-navy-50 flex items-center justify-center rotate-45">
-          <i class="fa-solid fa-headset text-navy-800 text-2xl -rotate-45"></i>
+      </div>
+      <!-- Products categories -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-turquoise-500"></span><h3 class="font-black text-navy-900">منتجات جاهزة (تحميل فوري)</h3></div>
+          <span class="text-xs font-bold bg-turquoise-50 text-turquoise-700 px-2.5 py-1 rounded-md">تحميل بنقرة واحدة</span>
         </div>
-        <p class="font-black text-gray-900 text-sm mb-1">خدمات مباشرة</p>
-        <p class="text-xs text-gray-400">اطلب شغل مخصص من خبير معتمد</p>
-      </button>
-      <button onclick="filterByType('')" class="bg-white rounded-3xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-        <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-turquoise-50 flex items-center justify-center rotate-45">
-          <i class="fa-solid fa-grid-2 text-turquoise-600 text-2xl -rotate-45"></i>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <button onclick="filterByTypeAndCategory('product','programming')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-window-restore text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">قوالب SaaS و UI</span></button>
+          <button onclick="filterByTypeAndCategory('product','programming')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-terminal text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">سكريبتات برمجية</span></button>
+          <button onclick="filterByType('product')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-puzzle-piece text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">إضافات متاجر</span></button>
+          <button onclick="filterByTypeAndCategory('product','design')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-images text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">قوالب سوشيال ميديا</span></button>
+          <button onclick="filterByType('product')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-cube text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">ملفات 3D وموك أب</span></button>
+          <button onclick="filterByType('product')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-robot text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">أدوات وبوتات AI</span></button>
         </div>
-        <p class="font-black text-gray-900 text-sm mb-1">كل الإعلانات</p>
-        <p class="text-xs text-gray-400">تصفح كل حاجة في مكان واحد</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DIGITAL PRODUCTS SPOTLIGHT — real data
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <span class="inline-flex items-center gap-1.5 bg-turquoise-50 text-turquoise-700 text-xs font-bold px-3 py-1 rounded-full mb-2"><i class="fa-solid fa-bolt"></i> تسليم وتنزيل فوري تلقائي</span>
+        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900">المنتجات الرقمية الجاهزة الأكثر مبيعاً</h2>
+      </div>
+      <button onclick="filterByType('product')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm">
+        <span>عرض كل المنتجات</span><i class="fa-solid fa-arrow-left"></i>
       </button>
     </div>
-  </section>
-
-  <!-- ⚠️ ADDED: Trending Offers — horizontal scroll carousel, reference style -->
-  <section class="py-12 px-4 bg-white border-t border-gray-100">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="font-sans font-black text-2xl text-gray-900"><i class="fa-solid fa-fire text-orange-500 me-1.5"></i>العروض الرائجة</h2>
-        <button onclick="navigateTo('services')" class="text-navy-700 font-bold text-sm hover:gap-3 flex items-center gap-2 transition-all">
-          <span>عرض الكل</span><i class="fa-solid fa-arrow-left"></i>
-        </button>
-      </div>
-      <div id="trendingOffersRow" class="flex gap-4 overflow-x-auto pb-3" style="scrollbar-width:thin">
-        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
-        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
-        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
-        <div class="skeleton flex-shrink-0" style="width:220px;height:260px;border-radius:18px"></div>
-      </div>
+    <div id="homeProductsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      ${Array(4).fill('<div class="service-card"><div class="skeleton h-40 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>').join('')}
     </div>
   </section>
 
-  <!-- Categories -->
-  <section class="py-16 px-4 bg-white">
-    <div class="max-w-7xl mx-auto">
-      <h2 class="font-sans font-black text-3xl text-gray-900 text-center mb-10" data-i18n="home.categories">تصفح التصنيفات</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <button onclick="filterByCategory('design')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1613909207039-6b173b755cc1?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="تصميم" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-palette text-navy-700 text-sm"></i></div>
-            <span class="text-white font-black text-sm">تصميم</span>
+  <!-- ══════════════════════════════════════════════════════════════════════
+       CUSTOM SERVICES SPOTLIGHT — real data (reuses loadFeaturedServices)
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <span class="inline-flex items-center gap-1.5 bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full mb-2"><i class="fa-solid fa-gavel"></i> تنفيذ مخصص محمي بنظام Escrow</span>
+        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900" data-i18n="home.featured">خدمات احترافية حسب متطلبات مشروعك</h2>
+      </div>
+      <button onclick="navigateTo('services')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm">
+        <span>عرض كل الخدمات</span><i class="fa-solid fa-arrow-left"></i>
+      </button>
+    </div>
+    <div id="featuredServices" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${Array(3).fill('<div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>').join('')}
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       HOW IT WORKS — 2-column comparison (escrow flow vs instant delivery)
+       ══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+    <div class="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <span class="inline-block bg-turquoise-50 text-turquoise-700 text-xs font-bold px-3 py-1 rounded-full mb-3">الأمان والشفافية أولاً</span>
+        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900 mb-3">كيف يضمن مول الخدمات حقك كاملاً؟</h2>
+        <p class="text-gray-500 text-sm">مساران ماليان واضحان مصممان لحماية أموالك سواء طلبت عملاً مخصصاً أو اشتريت منتجاً رقمياً فورياً.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-gray-50 rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+            <div class="w-10 h-10 rounded-xl bg-secondary text-white flex items-center justify-center font-black">1</div>
+            <div><h3 class="font-black text-navy-900">الخدمات المخصصة (ضمان Escrow)</h3><p class="text-xs text-gray-400">للأعمال اللي محتاجة وقت تنفيذ وتطوير</p></div>
           </div>
-        </button>
-        <button onclick="filterByCategory('programming')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="برمجة" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-code text-turquoise-600 text-sm"></i></div>
-            <span class="text-white font-black text-sm">برمجة</span>
+          <div class="space-y-4">
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-secondary flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">1</span><div><p class="font-bold text-navy-900 text-sm">إيداع المبلغ في حساب الضمان</p><p class="text-xs text-gray-500 mt-0.5">تدفع بأمان وفلوسك تفضل محجوزة عندنا، مش عند البائع.</p></div></div>
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-secondary flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">2</span><div><p class="font-bold text-navy-900 text-sm">بدء التنفيذ والمتابعة اللحظية</p><p class="text-xs text-gray-500 mt-0.5">تابع التقدم أول بأول في مساحة عمل فيها شات وملفات موثّقة.</p></div></div>
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-secondary flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">3</span><div><p class="font-bold text-navy-900 text-sm">المعاينة والموافقة على الاستلام</p><p class="text-xs text-gray-500 mt-0.5">تراجع الشغل وتطلب تعديل لو محتاج، وبعد موافقتك بس تتحول الفلوس للبائع.</p></div></div>
           </div>
-        </button>
-        <button onclick="filterByCategory('marketing')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1606836606933-94d15b61617b?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="تسويق" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-chart-line text-navy-700 text-sm"></i></div>
-            <span class="text-white font-black text-sm">تسويق</span>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+            <div class="w-10 h-10 rounded-xl bg-turquoise-500 text-white flex items-center justify-center font-black">2</div>
+            <div><h3 class="font-black text-navy-900">المنتجات الرقمية (تسليم فوري)</h3><p class="text-xs text-gray-400">للقوالب والأكواد والملفات الجاهزة</p></div>
           </div>
-        </button>
-        <button onclick="filterByCategory('writing')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1546514714-df0ccc50d7bf?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="كتابة" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-pen-fancy text-turquoise-600 text-sm"></i></div>
-            <span class="text-white font-black text-sm">كتابة</span>
+          <div class="space-y-4">
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-turquoise-600 flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">1</span><div><p class="font-bold text-navy-900 text-sm">الدفع الإلكتروني الفوري</p><p class="text-xs text-gray-500 mt-0.5">سداد آمن خلال ثوانٍ عبر البطاقات، المحافظ الإلكترونية، أو فواتيرك.</p></div></div>
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-turquoise-600 flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">2</span><div><p class="font-bold text-navy-900 text-sm">رابط تنزيل مباشر فورًا</p><p class="text-xs text-gray-500 mt-0.5">فور تأكيد الدفع، رابط التحميل بيظهرلك على الشاشة على طول.</p></div></div>
+            <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-white shadow-sm text-turquoise-600 flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">3</span><div><p class="font-bold text-navy-900 text-sm">وصول دائم لملفاتك</p><p class="text-xs text-gray-500 mt-0.5">تلاقي كل مشترياتك محفوظة في حسابك، تقدر تنزلها تاني في أي وقت.</p></div></div>
           </div>
-        </button>
-        <button onclick="filterByCategory('video')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1664575197229-3bbebc281874?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="فيديو" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-video text-navy-700 text-sm"></i></div>
-            <span class="text-white font-black text-sm">فيديو</span>
-          </div>
-        </button>
-        <button onclick="filterByCategory('seo')" class="relative rounded-2xl overflow-hidden h-36 group text-start">
-          <img src="https://images.unsplash.com/photo-1682668938117-a45b79fb4476?w=400&q=75&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="SEO" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-3 start-3 flex items-center gap-2">
-            <div class="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center"><i class="fa-solid fa-magnifying-glass-chart text-turquoise-600 text-sm"></i></div>
-            <span class="text-white font-black text-sm">SEO</span>
-          </div>
-        </button>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ── Blog Teaser Section (Dynamic from Firestore) ─────────────────────── -->
-  <section class="py-16 px-4 bg-gray-50">
+  <section class="py-14 px-4 bg-gray-50 -mx-4">
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
@@ -792,9 +769,7 @@
           <span>عرض جميع المقالات</span><i class="fa-solid fa-arrow-left"></i>
         </a>
       </div>
-      <!-- Dynamic grid loaded by blog-engine -->
       <div id="home-blog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px">
-        <!-- Skeleton placeholders -->
         <div class="skeleton" style="border-radius:18px;height:280px"></div>
         <div class="skeleton" style="border-radius:18px;height:280px"></div>
         <div class="skeleton" style="border-radius:18px;height:280px"></div>
@@ -803,7 +778,7 @@
   </section>
 
   <!-- ── Newsletter Section ─────────────────────────────────────────────── -->
-  <section class="py-16 px-4" style="background:linear-gradient(135deg,#131B2E,#0B1220)">
+  <section class="py-16 px-4 -mx-4" style="background:linear-gradient(135deg,#131B2E,#0B1220)">
     <div class="max-w-2xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 border border-white/20">
         <i class="fa-solid fa-envelope-open-text text-yellow-300"></i>
@@ -826,42 +801,42 @@
     </div>
   </section>
 
-  <!-- ── Trust Badges ───────────────────────────────────────────────────── -->
-  <section class="py-10 px-4 bg-white border-t border-gray-100">
-    <div class="max-w-5xl mx-auto">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-navy-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-shield-halved text-navy-700 text-xl"></i></div>
-          <span class="text-sm font-bold text-gray-700">ضمان استرداد كامل</span>
-        </div>
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-turquoise-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-lock text-turquoise-600 text-xl"></i></div>
-          <span class="text-sm font-bold text-gray-700">دفع آمن 100%</span>
-        </div>
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-navy-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-headset text-navy-700 text-xl"></i></div>
-          <span class="text-sm font-bold text-gray-700">دعم 7/24</span>
-        </div>
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-12 h-12 bg-turquoise-50 rounded-xl flex items-center justify-center"><i class="fa-solid fa-star text-turquoise-600 text-xl"></i></div>
-          <span class="text-sm font-bold text-gray-700">تقييم 4.9/5</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ── Footer ───────────────────────────────────────────────────────────── -->
-  <footer style="background:#0B1220" class="py-10 px-4">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="text-center md:text-right">
-        <p class="text-white font-black">مول الخدمات</p>
-        <p class="text-navy-200/60 text-xs mt-1">© 2026 جميع الحقوق محفوظة</p>
+  <footer style="background:#0B1220" class="py-14 px-4 -mx-4">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
+        <div class="lg:col-span-2">
+          <p class="text-white font-black text-lg mb-3">مول الخدمات</p>
+          <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">المنصة الموثوقة للخدمات الرقمية والمنتجات الجاهزة، بنظام ضمان مالي (Escrow) يحمي حقوق البائع والمشتري في كل عملية.</p>
+          <div class="inline-flex items-center gap-2 bg-turquoise-500/10 text-turquoise-400 px-3 py-1.5 rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-shield-halved"></i> معاملات محمية بالكامل
+          </div>
+        </div>
+        <div>
+          <h4 class="text-white font-bold text-sm mb-3">روابط سريعة</h4>
+          <ul class="space-y-2 text-sm text-navy-200/70">
+            <li><a href="/" class="hover:text-white transition">الرئيسية</a></li>
+            <li><a href="/blog" class="hover:text-white transition">المدونة</a></li>
+            <li><a href="/about" class="hover:text-white transition">من نحن</a></li>
+            <li><a href="/contact" class="hover:text-white transition">تواصل معنا</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-white font-bold text-sm mb-3">الضمان والدعم</h4>
+          <ul class="space-y-2 text-sm text-navy-200/70">
+            <li><a href="/terms.html" target="_blank" class="hover:text-white transition">الشروط والأحكام</a></li>
+            <li><a href="/privacy.html" target="_blank" class="hover:text-white transition">سياسة الخصوصية</a></li>
+            <li><a href="/refund-policy.html" target="_blank" class="hover:text-white transition">سياسة الاسترجاع</a></li>
+            <li><a href="mailto:support@mall-services.com" class="hover:text-white transition">الدعم الفني</a></li>
+          </ul>
+        </div>
       </div>
-      <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-        <a href="/terms.html" target="_blank" class="text-navy-200/80 hover:text-white transition">الشروط والأحكام</a>
-        <a href="/privacy.html" target="_blank" class="text-navy-200/80 hover:text-white transition">سياسة الخصوصية</a>
-        <a href="/refund-policy.html" target="_blank" class="text-navy-200/80 hover:text-white transition">سياسة الاسترجاع</a>
-        <a href="mailto:support@mall-services.com" class="text-navy-200/80 hover:text-white transition">تواصل معنا</a>
+      <div class="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-navy-200/60 text-xs">© 2026 مول الخدمات. جميع الحقوق محفوظة</p>
+        <div class="flex items-center gap-4 text-xs text-navy-200/60">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-lock text-turquoise-400"></i> دفع آمن 100%</span>
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-star text-yellow-400"></i> تقييم 4.9/5</span>
+        </div>
       </div>
     </div>
   </footer>
@@ -1317,7 +1292,7 @@
       <!-- Header -->
       <div class="flex items-center justify-between mb-5">
         <div>
-          <h2 class="text-xl font-black text-gray-900">طلب الخدمة</h2>
+          <h2 id="requestModalTitle" class="text-xl font-black text-gray-900">طلب الخدمة</h2>
           <p id="requestServiceName" class="text-sm text-navy-600 font-bold mt-0.5"></p>
         </div>
         <button onclick="closeModal('requestServiceModal')"
@@ -1329,7 +1304,7 @@
       <!-- Info box -->
       <div class="bg-navy-50 border border-navy-200 rounded-2xl p-4 mb-5 flex gap-3">
         <i class="fa-solid fa-circle-info text-navy-600 text-lg flex-shrink-0 mt-0.5"></i>
-        <p class="text-sm text-navy-800 leading-relaxed">
+        <p id="requestModalInfo" class="text-sm text-navy-800 leading-relaxed">
           اكتب تفاصيل ما تحتاجه وسيصل طلبك مباشرةً لمقدم الخدمة، ثم تنطلق المحادثة بينكما فوراً.
         </p>
       </div>
@@ -1453,6 +1428,12 @@ if (!firebase.apps.length) {
 } else {
     console.warn('[Firebase] App already initialized — skipping duplicate init');
 }
+
+// Resolves once the FIRST auth state (logged in or not) is known — used to
+// safely deep-link into auth-dependent pages (like a shared order workspace
+// link) without racing Firebase's async session restore on a fresh load.
+let _resolveAuthReady;
+window._authReadyPromise = new Promise(res => { _resolveAuthReady = res; });
 
 const auth    = firebase.auth();
 const db      = firebase.firestore();
@@ -1630,33 +1611,60 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     });
 
     // ── Hash-based routing ────────────────────────────────────────────────────
+    // ⚠️ FIXED: a hard refresh while on the order workspace (#workspace) used
+    // to leave the user on a completely blank page. Why: navigateTo('workspace')
+    // just marks that page div active — the actual content only ever gets
+    // rendered by openWorkspace(orderId), which is called with an order id
+    // from a button click, never from routing. The bare "#workspace" hash
+    // carries no order id, so there was nothing to render.
+    // Now: openWorkspace() rewrites the URL to "#workspace-<orderId>" once a
+    // workspace is actually open, so refreshing (or sharing the link) can
+    // deep-link straight back into that same order once the user's auth
+    // state is known. A bare "#workspace" (no id — e.g. an old bookmark)
+    // goes home instead of showing a blank shell.
     function handleHash() {
-        const hash = window.location.hash.replace('#','') || 'home';
+        const raw = window.location.hash.replace('#','') || 'home';
+        const wsMatch = raw.match(/^workspace-(.+)$/);
+        if (wsMatch) {
+            const orderId = wsMatch[1];
+            (window._authReadyPromise || Promise.resolve()).then(() => {
+                if (AppState.currentUser && typeof openWorkspace === 'function') {
+                    openWorkspace(orderId);
+                } else {
+                    navigateTo('home');
+                }
+            });
+            return;
+        }
+        if (raw === 'workspace') { navigateTo('home'); return; }
         const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service'];
-        if (validPages.includes(hash)) navigateTo(hash);
+        navigateTo(validPages.includes(raw) ? raw : 'home');
     }
     window.addEventListener('popstate', handleHash);
 
     // ── Featured Services Loader ──────────────────────────────────────────────
     async function loadFeaturedServices() {
         try {
-            const snap = await db.collection(COLLECTIONS.SERVICES)
-                .where('active','==',true)
-                .where('featured','==',true)
-                .limit(8).get();
-
             const container = document.getElementById('featuredServices');
             if (!container) return;
 
-            if (snap.empty) {
-                // Load any active services
-                const allSnap = await db.collection(COLLECTIONS.SERVICES)
-                    .where('active','==',true).limit(8).get();
-                if (allSnap.empty) { container.innerHTML = `<p class="text-gray-400 col-span-4 text-center py-8">لا توجد خدمات بعد</p>`; return; }
-                _renderFeaturedCards(allSnap.docs, container);
-            } else {
-                _renderFeaturedCards(snap.docs, container);
+            const snap = await db.collection(COLLECTIONS.SERVICES)
+                .where('active','==',true)
+                .where('featured','==',true)
+                .limit(12).get();
+
+            // Filter out product listings client-side (no extra composite
+            // index needed) — this section is "custom services" only, real
+            // digital products get their own dedicated grid (loadHomeProducts).
+            let docs = snap.docs.filter(d => (d.data().listingType||'service') !== 'product');
+
+            if (docs.length === 0) {
+                const allSnap = await db.collection(COLLECTIONS.SERVICES).where('active','==',true).limit(20).get();
+                docs = allSnap.docs.filter(d => (d.data().listingType||'service') !== 'product');
             }
+
+            if (docs.length === 0) { container.innerHTML = `<p class="text-gray-400 col-span-3 text-center py-8">لا توجد خدمات بعد</p>`; return; }
+            _renderFeaturedCards(docs.slice(0,6), container);
         } catch (err) {
             console.warn('[Featured] Error:', err.message);
         }
@@ -1667,35 +1675,93 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         container.innerHTML = docs.map(doc => {
             const s = { id: doc.id, ...doc.data() };
             const stars = Math.round(s.rating || 5);
+            const isInstant = s.orderMode === 'instant';
+            const requestData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
             return `
-            <div class="service-card card cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
-              <div class="relative">
-                <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
-                  class="w-full h-48 object-cover"
-                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
-                ${s.featured ? '<span class="absolute top-3 start-3 bg-navy-600 text-white text-xs font-bold px-2 py-1 rounded-lg"><i class="fa-solid fa-star"></i> مميز</span>' : ''}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
+              <div class="relative aspect-video bg-gray-100">
+                <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
+                  class="w-full h-full object-cover" loading="lazy"
+                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'">
+                <span class="absolute top-3 start-3 bg-turquoise-50 text-turquoise-700 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <i class="fa-solid fa-shield text-[10px]"></i> ضمان مالي Escrow
+                </span>
               </div>
-              <div class="p-4">
-                <div class="flex items-center gap-2 mb-2">
-                  <img src="${s.sellerAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.sellerName||'U')}"
-                    class="w-6 h-6 rounded-full object-cover">
-                  <span class="text-xs text-gray-500 font-bold">${s.sellerName || '—'}</span>
-                </div>
-                <h3 class="font-black text-gray-900 text-sm mb-2 line-clamp-2 leading-snug">${s.title || '—'}</h3>
-                <div class="flex items-center gap-1 mb-3">
-                  ${Array.from({length:5},(_,i)=>`<i class="fa-solid fa-star text-xs ${i<stars?'text-yellow-400':'text-gray-200'}"></i>`).join('')}
-                  <span class="text-xs text-gray-400">(${s.reviewCount||0})</span>
-                </div>
+              <div class="p-4 flex flex-col gap-3 flex-1">
                 <div class="flex items-center justify-between">
-                  <span class="font-black text-navy-700" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
-                  <button onclick="event.stopPropagation();RequestSystem.openRequestModal({id:'${s.id}',title:${JSON.stringify(s.title||'')},price:${s.price||0},image:${JSON.stringify(s.image||'')},sellerId:'${s.sellerId||''}',sellerName:${JSON.stringify(s.sellerName||'')},deliveryDays:${s.deliveryDays||3}})"
-                    class="bg-secondary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-secondary-600 transition flex items-center gap-1">
-                    <i class="fa-solid fa-paper-plane"></i>${isAr?'طلب':'Request'}
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <img src="${s.sellerAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.sellerName||'U')}" class="w-8 h-8 rounded-full object-cover">
+                    <span class="text-xs font-bold text-gray-700">${escapeHtml(s.sellerName || '—')}</span>
+                  </div>
+                  <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                    <i class="fa-solid fa-star"></i><span class="text-gray-900">${stars.toFixed ? s.rating||5 : stars}</span><span class="text-gray-400 font-normal">(${s.reviewCount||0})</span>
+                  </div>
                 </div>
+                <h3 class="font-black text-gray-900 text-sm leading-snug line-clamp-2">${escapeHtml(s.title || '—')}</h3>
+                <div class="flex flex-wrap gap-2 text-[11px] text-gray-500">
+                  <span class="bg-gray-50 px-2 py-1 rounded-md flex items-center gap-1"><i class="fa-regular fa-clock text-gray-400"></i>تسليم ${s.deliveryDays||3} أيام</span>
+                  <span class="bg-gray-50 px-2 py-1 rounded-md flex items-center gap-1"><i class="fa-solid ${isInstant?'fa-lock':'fa-paper-plane'} text-gray-400"></i>${isInstant?'دفع مباشر':'طلب ثم موافقة'}</span>
+                </div>
+              </div>
+              <div class="p-4 bg-gray-50/70 flex items-center justify-between border-t border-gray-100">
+                <div>
+                  <p class="text-[11px] text-gray-400 leading-none mb-1">يبدأ من</p>
+                  <p class="font-black text-navy-900" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</p>
+                </div>
+                <button onclick="event.stopPropagation();${isInstant?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${requestData})"
+                  class="bg-secondary text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-secondary-600 transition flex items-center gap-1.5">
+                  <i class="fa-solid ${isInstant?'fa-lock':'fa-paper-plane'}"></i>${isInstant?(isAr?'اطلب وادفع':'Pay & Request'):(isAr?'اطلب الآن':'Request now')}
+                </button>
               </div>
             </div>`;
         }).join('');
+    }
+
+    // ⚠️ ADDED: real "digital products" grid for the homepage spotlight
+    // section — same data-loading pattern as loadFeaturedServices() but
+    // filtered to listingType === 'product', with a buy-now style card.
+    async function loadHomeProducts() {
+        try {
+            const container = document.getElementById('homeProductsGrid');
+            if (!container) return;
+            const snap = await db.collection(COLLECTIONS.SERVICES)
+                .where('active', '==', true)
+                .where('listingType', '==', 'product')
+                .limit(8).get();
+            if (snap.empty) { container.innerHTML = `<p class="text-gray-400 col-span-4 text-center py-8">لا توجد منتجات بعد</p>`; return; }
+            const isAr = AppState.language !== 'en';
+            container.innerHTML = snap.docs.map(doc => {
+                const s = { id: doc.id, ...doc.data() };
+                const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;');
+                return `
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
+                  <div class="relative aspect-video bg-gray-100">
+                    <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
+                      class="w-full h-full object-cover" loading="lazy"
+                      onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'">
+                    <span class="absolute top-3 start-3 bg-turquoise-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <i class="fa-solid fa-bolt text-[10px]"></i> تسليم فوري
+                    </span>
+                  </div>
+                  <div class="p-4 flex flex-col gap-2 flex-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-400 font-bold">${escapeHtml(s.sellerName||'—')}</span>
+                      <div class="flex items-center gap-1 text-amber-500 text-xs font-bold"><i class="fa-solid fa-star"></i><span class="text-gray-900">${s.rating||5}</span><span class="text-gray-400 font-normal">(${s.reviewCount||0})</span></div>
+                    </div>
+                    <h3 class="font-black text-gray-900 text-sm leading-snug line-clamp-2">${escapeHtml(s.title||'—')}</h3>
+                  </div>
+                  <div class="p-4 bg-gray-50/70 flex items-center justify-between border-t border-gray-100">
+                    <span class="font-black text-navy-900" data-price-egp="${s.price||0}">${formatCurrency(s.price||0)}</span>
+                    <button onclick="event.stopPropagation();RequestSystem.buyProductNow(${cartData})"
+                      class="bg-turquoise-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-turquoise-700 transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-cart-shopping"></i>${isAr?'شراء فوري':'Buy now'}
+                    </button>
+                  </div>
+                </div>`;
+            }).join('');
+        } catch (err) {
+            console.warn('[loadHomeProducts] Error:', err.message);
+        }
     }
 
     window.filterByCategory = function(cat) {
@@ -1716,15 +1782,52 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         }, 100);
     };
 
-    // Hero search bar (home page) — navigates to services and applies the
-    // typed query + selected category, same delayed-call pattern as filterByCategory.
-    window.doHeroSearch = function() {
-        const query = document.getElementById('heroSearchInput')?.value.trim() || '';
-        const cat   = document.getElementById('heroSearchCategory')?.value || '';
+    // ⚠️ ADDED: combined type+category filter, used by the homepage's dual
+    // category browse section (e.g. "قوالب SaaS و UI" = product + programming).
+    window.filterByTypeAndCategory = function(type, cat) {
+        AppState.filterType = type;
         AppState.filterCategory = cat;
         navigateTo('services');
         setTimeout(() => {
+            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
+            if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
+        }, 100);
+    };
+
+    // ⚠️ ADDED: toggle the hero's services/products segmented control —
+    // purely cosmetic (which tab looks active + placeholder text); the
+    // actual search still runs through doHeroSearch() below, now aware of
+    // which segment is selected.
+    window._heroSearchMode = 'services';
+    window.switchHeroSearch = function(mode) {
+        window._heroSearchMode = mode;
+        const tabServices = document.getElementById('heroTabServices');
+        const tabProducts = document.getElementById('heroTabProducts');
+        const input = document.getElementById('heroSearchInput');
+        const activeCls   = 'flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-900 text-white text-sm font-bold transition';
+        const inactiveCls = 'flex items-center gap-1.5 px-4 py-2 rounded-lg text-gray-500 hover:text-navy-900 text-sm font-bold transition';
+        if (!tabServices || !tabProducts) return;
+        if (mode === 'products') {
+            tabProducts.className = activeCls; tabServices.className = inactiveCls;
+            if (input) input.placeholder = 'ابحث عن قوالب Figma، سكريبتات Laravel، حزم تصميم جاهزة...';
+        } else {
+            tabServices.className = activeCls; tabProducts.className = inactiveCls;
+            if (input) input.placeholder = 'ابحث عن برمجة متجر، تصميم هوية، قوالب Figma...';
+        }
+    };
+
+    // Hero search bar (home page) — navigates to services and applies the
+    // typed query + selected category + selected services/products segment.
+    window.doHeroSearch = function() {
+        const query = document.getElementById('heroSearchInput')?.value.trim() || '';
+        const cat   = document.getElementById('heroSearchCategory')?.value || '';
+        const type  = window._heroSearchMode === 'products' ? 'product' : (window._heroSearchMode === 'services' ? 'service' : '');
+        AppState.filterCategory = cat;
+        AppState.filterType = type;
+        navigateTo('services');
+        setTimeout(() => {
             if (cat && typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
+            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
             if (query && typeof ServicesManager?.search === 'function') {
                 const input = document.getElementById('servicesSearch');
                 if (input) input.value = query;
@@ -1745,7 +1848,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         if (n == null) return '—';
         return '+' + n.toLocaleString('en-US');
     }
-    window.initHomePage = function() { loadHomeStats(); loadTrendingOffers(); };
+    window.initHomePage = function() { loadHomeStats(); loadFeaturedServices(); loadHomeProducts(); };
     window.loadHomeStats = async function() {
         if (window._homeStatsLoaded) return;
         window._homeStatsLoaded = true;
@@ -1815,7 +1918,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     auth.onAuthStateChanged(async (user) => {
         const isFirstRun = _authFirstRun;
         _authFirstRun = false;
-
+        if (isFirstRun && typeof _resolveAuthReady === 'function') _resolveAuthReady();
         if (user) {
             try {
                 // Ensure user doc exists

@@ -190,9 +190,9 @@
                     class="w-10 h-10 bg-turquoise-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-cart-plus text-white"></i>
                   </button>` : `
-                  <button onclick="event.stopPropagation();RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
-                    class="w-10 h-10 bg-navy-800 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
-                    <i class="fa-solid fa-paper-plane text-white"></i>
+                  <button onclick="event.stopPropagation();${s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                    class="w-10 h-10 ${s.orderMode==='instant'?'bg-secondary':'bg-navy-800'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
+                    <i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-white"></i>
                   </button>`}
                 </div>
               </div>
@@ -242,7 +242,7 @@
                     var uid = AppState.currentUser && AppState.currentUser.uid;
                     var isOwnService = uid && uid === s.sellerId;
                     var isAdm = AppState.currentUser && AppState.currentUser.role === 'admin';
-                    var editDataStr = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||'',listingType:s.listingType||'service',digitalDelivery:s.digitalDelivery||null,stockLimit:s.stockLimit ?? null,expiryDate:s.expiryDate||null}).replace(/"/g,'&quot;');
+                    var editDataStr = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||'',listingType:s.listingType||'service',orderMode:s.orderMode||'request_first',digitalDelivery:s.digitalDelivery||null,stockLimit:s.stockLimit ?? null,expiryDate:s.expiryDate||null}).replace(/"/g,'&quot;');
                     var serviceDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
                     var cartDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||''}).replace(/"/g,'&quot;');
                     var lang = AppState.language;
@@ -256,7 +256,7 @@
                     if (s.recurring) {
                       return '<button onclick="event.stopPropagation();SubscriptionSystem.subscribe(\'' + s.id + '\',' + serviceDataStr + ')" class="flex-1 bg-purple-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-purple-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-rotate text-xs\"></i>' + (lang !== 'en' ? 'اشترك شهرياً' : 'Subscribe monthly') + '</button>';
                     }
-                    return '<button onclick="event.stopPropagation();RequestSystem.openRequestModal(' + serviceDataStr + ')" class="flex-1 btn-primary py-2.5 text-sm"><i class=\"fa-solid fa-paper-plane me-1\"></i>' + (lang !== 'en' ? 'طلب الخدمة' : 'Request Service') + '</button>';
+                    return '<button onclick="event.stopPropagation();' + (s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal') + '(' + serviceDataStr + ')" class="flex-1 btn-primary py-2.5 text-sm"><i class=\"fa-solid ' + (s.orderMode==='instant'?'fa-lock':'fa-paper-plane') + ' me-1\"></i>' + (s.orderMode==='instant' ? (lang !== 'en' ? 'اطلب وادفع' : 'Pay & Request') : (lang !== 'en' ? 'طلب الخدمة' : 'Request Service')) + '</button>';
                   })()}
                 </div>
               </div>
@@ -352,15 +352,19 @@
                             ${s.listingType === 'product' ? `
                             <button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
-                              <i class="fa-solid fa-cart-plus"></i>${AppState.language !== 'en' ? 'Add to Cart' : 'أضف للسلة'}
+                              <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>
                             <button onclick="closeModal('serviceModal');RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
-                              <i class="fa-solid fa-bolt"></i>${AppState.language !== 'en' ? 'Buy Now' : 'اشترِ فورًا'}
+                              <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
+                            </button>` : s.orderMode === 'instant' ? `
+                            <button onclick="closeModal('serviceModal');RequestSystem.openInstantModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                              class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
+                              <i class="fa-solid fa-lock"></i>${AppState.language === 'en' ? 'Pay & Request' : 'اطلب وادفع الآن'}
                             </button>` : `
                             <button onclick="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
-                              <i class="fa-solid fa-paper-plane"></i>${AppState.language !== 'en' ? 'طلب الخدمة' : 'Request Service'}
+                              <i class="fa-solid fa-paper-plane"></i>${AppState.language === 'en' ? 'Request Service' : 'طلب الخدمة'}
                             </button>`}
                           </div>
                         </div>
@@ -509,6 +513,31 @@
 
                   <!-- Service-only fields -->
                   <div id="svcServiceFields" class="space-y-5">
+                    <!-- ⚠️ ADDED: orderMode — lets the seller choose, per service,
+                         between the two order flows: "request_first" (buyer sends
+                         a brief, seller must approve before payment opens) or
+                         "instant" (buyer pays and sends their brief together in
+                         one step — seller starts work as soon as payment lands,
+                         no approval gate). Only meaningful for listingType
+                         "service" — products are always instant by nature. -->
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'طريقة استقبال الطلبات':'How orders come in'}</label>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="flex items-start gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-navy-700 has-[:checked]:bg-navy-50 border-gray-200">
+                          <input type="radio" name="svcOrderMode" value="request_first" id="svcOrderModeRequest"
+                            ${service?.orderMode === 'instant' ? '' : 'checked'} class="w-4 h-4 mt-1 accent-navy-700">
+                          <div><p class="font-bold text-gray-900 text-sm">${isAr?'طلب ثم موافقتك':'Request, then your approval'}</p>
+                            <p class="text-xs text-gray-400">${isAr?'العميل يبعت التفاصيل، وبعد موافقتك تظهر له بوابة الدفع':'Buyer sends the brief; payment only opens after you accept'}</p></div>
+                        </label>
+                        <label class="flex items-start gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-turquoise-500 has-[:checked]:bg-turquoise-50 border-gray-200">
+                          <input type="radio" name="svcOrderMode" value="instant" id="svcOrderModeInstant"
+                            ${service?.orderMode === 'instant' ? 'checked' : ''} class="w-4 h-4 mt-1 accent-turquoise-600">
+                          <div><p class="font-bold text-gray-900 text-sm">${isAr?'دفع مباشر مع الطلب':'Pay + brief together'}</p>
+                            <p class="text-xs text-gray-400">${isAr?'العميل يدفع ويبعت التفاصيل مرة واحدة، وتبدأ التنفيذ فورًا':'Buyer pays and sends the brief in one step; you start right away'}</p></div>
+                        </label>
+                      </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                       <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'مدة التسليم (أيام)':'Delivery (days)'}</label>
@@ -614,6 +643,7 @@
             const category    = document.getElementById('svcCategory')?.value || 'other';
             const price       = parseFloat(document.getElementById('svcPrice')?.value) || 0;
             const listingType = document.getElementById('svcTypeProduct')?.checked ? 'product' : 'service';
+            const orderMode   = document.getElementById('svcOrderModeInstant')?.checked ? 'instant' : 'request_first';
             const deliveryDays= parseInt(document.getElementById('svcDelivery')?.value) || 3;
             const revisions   = parseInt(document.getElementById('svcRevisions')?.value) || 2;
             const recurring   = document.getElementById('svcRecurring')?.checked || false;
@@ -676,6 +706,8 @@
                     data.digitalDelivery = digitalDelivery;
                     data.stockLimit = stockLimit;   // null = unlimited
                     data.expiryDate = expiryDate;   // null = no expiry
+                } else {
+                    data.orderMode = orderMode;      // 'request_first' | 'instant'
                 }
 
                 if (editId) {

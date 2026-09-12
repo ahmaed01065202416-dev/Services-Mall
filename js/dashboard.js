@@ -107,18 +107,28 @@
             container.innerHTML = `
             <div>
               <!-- Header -->
-              <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 mb-6 border-b border-gray-100">
                 <div>
-                  <h1 class="text-2xl font-black text-gray-900">${isAr?'لوحة البائع':'Seller Panel'}</h1>
-                  <p class="text-gray-500 text-sm">${escapeHtml(user.displayName||'')}</p>
+                  <div class="flex items-center gap-3 mb-1 flex-wrap">
+                    <h1 class="text-2xl font-black text-gray-900">${isAr?'لوحة تحكم البائع':'Seller Dashboard'}</h1>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200">
+                      <span class="w-2 h-2 rounded-full bg-turquoise-500 animate-pulse"></span>${isAr?'حساب معتمد':'Verified account'}
+                    </span>
+                  </div>
+                  <p class="text-gray-500 text-sm">${isAr?`أهلاً بعودتك يا`:`Welcome back,`} <span class="font-bold text-gray-800">${escapeHtml(user.displayName?.split(' ')[0]||'')}</span></p>
                 </div>
-                <div class="flex gap-3 flex-wrap">
-                  <button onclick="DashboardManager.switchToBuyerView()" class="btn-secondary text-sm px-4 py-2.5 flex items-center gap-2">
-                    <i class="fa-solid fa-bag-shopping"></i>${isAr?'واجهة المشتري':'Buyer View'}
+                <div class="flex flex-wrap items-center gap-3">
+                  <button onclick="ServicesManager.openAddServiceForm('service')" class="flex items-center gap-2 px-4 py-2.5 bg-navy-700 hover:bg-navy-800 text-white rounded-xl font-bold text-sm transition">
+                    <i class="fa-solid fa-plus text-xs"></i><span>${isAr?'إضافة خدمة':'Add Service'}</span>
                   </button>
-                  <button onclick="navigateTo('wallet')" class="bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm px-4 py-2.5 flex items-center gap-2 hover:border-navy-400 transition">
-                    <i class="fa-solid fa-wallet text-amber-500"></i>
-                    <span class="font-black">${formatCurrency(wallet.balance||0)}</span>
+                  <button onclick="ServicesManager.openAddServiceForm('product')" class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition">
+                    <i class="fa-solid fa-box-archive text-amber-400 text-xs"></i><span>${isAr?'إضافة منتج رقمي':'Add Digital Product'}</span>
+                  </button>
+                  <button onclick="WalletManager.openWithdrawForm()" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm transition">
+                    <i class="fa-solid fa-money-bill-transfer text-turquoise-600 text-xs"></i><span>${isAr?'سحب الأرباح':'Withdraw earnings'}</span>
+                  </button>
+                  <button onclick="DashboardManager.switchToBuyerView()" class="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl transition">
+                    <i class="fa-solid fa-store text-gray-500"></i><span>${isAr?'واجهة المشتري':'Buyer View'}</span>
                   </button>
                 </div>
               </div>

@@ -9,28 +9,62 @@
 
     // Currently selected service for the pending request
     let _pendingService = null;
+    // When true, submitRequest() skips the seller-approval step: the order
+    // is created already ACCEPTED and payment starts immediately (System 2:
+    // "pay + brief together"). When false (default), it's the classic
+    // request → seller approves → buyer pays flow (System 1).
+    let _instantMode = false;
 
     /**
      * Open the request modal for a given service object
      * service = { id, title, price, image, sellerId, sellerName, deliveryDays }
      */
     function openRequestModal(service) {
+        _instantMode = false;
+        if (!_openModalCommon(service)) return;
+        const title = document.getElementById('requestModalTitle');
+        const info  = document.getElementById('requestModalInfo');
+        const btn   = document.getElementById('submitRequestBtn');
+        if (title) title.textContent = 'طلب الخدمة';
+        if (info)  info.textContent  = 'اكتب تفاصيل ما تحتاجه وسيصل طلبك مباشرةً لمقدم الخدمة، ثم تنطلق المحادثة بينكما فوراً. الدفع بيبقى متاح بس بعد ما يوافق على طلبك.';
+        if (btn)   btn.innerHTML     = '<i class="fa-solid fa-paper-plane"></i> إرسال الطلب وبدء المحادثة';
+        openModal('requestServiceModal');
+    }
+
+    /**
+     * Open the SAME modal but in "instant" mode — no approval wait: submitting
+     * creates the order already accepted and takes the buyer straight to
+     * payment, with their brief attached for the seller to see once paid.
+     */
+    function openInstantModal(service) {
+        _instantMode = true;
+        if (!_openModalCommon(service)) return;
+        const title = document.getElementById('requestModalTitle');
+        const info  = document.getElementById('requestModalInfo');
+        const btn   = document.getElementById('submitRequestBtn');
+        if (title) title.textContent = 'اطلب وادفع الآن';
+        if (info)  info.textContent  = 'اكتب تفاصيل طلبك، وهتنتقل على طول لصفحة الدفع — البائع هيبدأ الشغل فور ما يوصله الطلب والدفع مع بعض. فلوسك هتفضل محجوزة في الضمان لحد ما تستلم وتأكد.';
+        if (btn)   btn.innerHTML     = '<i class="fa-solid fa-lock"></i> إرسال الطلب والدفع الآن';
+        openModal('requestServiceModal');
+    }
+
+    // Shared setup for both modal modes — validates login, resets the form,
+    // fills in the service name, and stores the pending service.
+    function _openModalCommon(service) {
         if (!AppState.currentUser) {
             showToast(AppState.language === 'en' ? 'Please login first' : 'يرجى تسجيل الدخول أولاً', 'warning');
             navigateTo('login');
-            return;
+            return false;
         }
-        if (!service || !service.id) { showToast(AppState.language === 'en' ? 'Error: incomplete service data' : 'خطأ: بيانات الخدمة غير مكتملة', 'error'); return; }
+        if (!service || !service.id) { showToast(AppState.language === 'en' ? 'Error: incomplete service data' : 'خطأ: بيانات الخدمة غير مكتملة', 'error'); return false; }
 
-        // Prevent seller from requesting their own service
         if (AppState.currentUser.uid === service.sellerId) {
             showToast(AppState.language === 'en' ? 'This is your own service' : 'لا يمكنك طلب خدمتك الخاصة', 'warning');
-            return;
+            return false;
         }
 
         _pendingService = service;
 
-        // Reset form fields
         const details  = document.getElementById('requestDetails');
         const deadline = document.getElementById('requestDeadline');
         const budget   = document.getElementById('requestBudget');
@@ -38,14 +72,11 @@
         if (deadline) deadline.value = '';
         if (budget)   budget.value   = '';
 
-        // Set service name in modal header
         const nameEl = document.getElementById('requestServiceName');
         if (nameEl) nameEl.textContent = service.title || '';
 
-        // Close service detail modal if open
         closeModal('serviceModal');
-        // Open request modal
-        openModal('requestServiceModal');
+        return true;
     }
 
     /**
@@ -70,10 +101,11 @@
         }
 
         const btn = document.getElementById('submitRequestBtn');
-        if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري الإرسال...' : 'Sending...'}`; }
+        const instant = _instantMode;
+        if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? (instant ? 'جاري التجهيز...' : 'جاري الإرسال...') : 'Sending...'}`; }
 
         try {
-            showLoading(isAr ? 'جاري إنشاء الطلب...' : 'Creating request...');
+            showLoading(isAr ? (instant ? 'جاري إنشاء الطلب...' : 'جاري إنشاء الطلب...') : 'Creating request...');
 
             // Build order document
             const orderId = generateId('ord_');
@@ -91,17 +123,23 @@
                 buyerAvatar:   user.photoURL || '',
                 price:         service.price || 0,
                 deliveryDays:  service.deliveryDays || 3,
-                status:        ORDER_STATUS.PENDING,
-                // Request details (no payment)
+                // Instant mode (System 2 — "pay + brief together"): skip the
+                // approval wait, order goes straight to ACCEPTED so
+                // PaymentSystem.payForOrder() can take the buyer to payment
+                // immediately. Request-first mode (System 1) stays PENDING
+                // until the seller explicitly accepts.
+                status:        instant ? ORDER_STATUS.ACCEPTED : ORDER_STATUS.PENDING,
+                // Request details (brief) — kept either way so the seller has
+                // the buyer's brief once they open the order.
                 requestDetails: details,
                 requestDeadline: deadline || '',
                 requestBudget:   budget   || '',
-                paymentStatus:  'no_payment',   // Payment disabled
-                // Meta
+                orderMode:      instant ? 'instant' : 'request_first',
                 createdAt:     now,
                 updatedAt:     now,
                 lastMessageAt: now,
             };
+            if (!instant) orderData.paymentStatus = 'no_payment';
 
             // Write order to Firestore
             await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set(orderData);
@@ -140,11 +178,13 @@
             try {
                 await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
                     userId:    service.sellerId,
-                    type:      'new_request',
-                    title:     isAr ? 'طلب خدمة جديد' : 'New Service Request',
-                    body:      isAr
-                        ? `${escapeHtml(user.displayName || 'عميل')} طلب خدمة "${escapeHtml(service.title || '')}"`
-                        : `${escapeHtml(user.displayName || 'Client')} requested "${escapeHtml(service.title || '')}"`,
+                    type:      instant ? 'new_order' : 'new_request',
+                    title:     instant ? (isAr ? '💰 طلب جديد مدفوع!' : '💰 New paid order!') : (isAr ? 'طلب خدمة جديد' : 'New Service Request'),
+                    body:      instant
+                        ? (isAr ? `${escapeHtml(user.displayName || 'عميل')} دفع وطلب خدمة "${escapeHtml(service.title || '')}" — تقدر تبدأ التنفيذ`
+                                : `${escapeHtml(user.displayName || 'Client')} paid for "${escapeHtml(service.title || '')}" — you can start work`)
+                        : (isAr ? `${escapeHtml(user.displayName || 'عميل')} طلب خدمة "${escapeHtml(service.title || '')}"`
+                                : `${escapeHtml(user.displayName || 'Client')} requested "${escapeHtml(service.title || '')}"`),
                     orderId,
                     read:      false,
                     createdAt: now,
@@ -154,6 +194,16 @@
             hideLoading();
             closeModal('requestServiceModal');
             _pendingService = null;
+            _instantMode = false;
+
+            if (instant) {
+                showToast(isAr ? 'تم إنشاء الطلب — انتقل للدفع الآن' : 'Order created — proceeding to payment', 'success', 2500);
+                setTimeout(() => {
+                    if (window.PaymentSystem) window.PaymentSystem.payForOrder(orderId);
+                    else navigateTo('orders');
+                }, 400);
+                return;
+            }
 
             showToast(
                 isAr ? 'تم إرسال طلبك! جاري فتح المحادثة...' : 'Request sent! Opening chat...',
@@ -175,7 +225,12 @@
             console.error('[RequestSystem]', err);
             showToast(isAr ? 'حدث خطأ، حاول مرة أخرى' : 'Error, please try again', 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${isAr ? 'إرسال الطلب وبدء المحادثة' : 'Send request & start chat'}`; }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = instant
+                    ? '<i class="fa-solid fa-lock"></i> إرسال الطلب والدفع الآن'
+                    : `<i class="fa-solid fa-paper-plane"></i> ${isAr ? 'إرسال الطلب وبدء المحادثة' : 'Send request & start chat'}`;
+            }
         }
     }
 
@@ -300,7 +355,7 @@
     }
 
     // ── Expose ────────────────────────────────────────────────────────────────
-    window.RequestSystem = { openRequestModal, submitRequest, openBriefAssistant, generateBrief, buyProductNow };
+    window.RequestSystem = { openRequestModal, openInstantModal, submitRequest, openBriefAssistant, generateBrief, buyProductNow };
 
     console.log('✅ RequestSystem loaded — No-payment request flow');
 })();

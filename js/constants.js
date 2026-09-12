@@ -181,9 +181,37 @@ function saveToStorage() {
 }
 
 async function uploadFile(file, folder, filename) {
-    // ── Canvas Compression (bypasses Firebase Storage CORS entirely) ─────────
-    // Resizes image to max 900px, converts to JPEG @0.78 quality → base64 data URL
-    // Stored directly in Firestore — no external storage request, no CORS error.
+    // ── Non-image files (PDF, ZIP, DOCX, video...) ────────────────────────
+    // ⚠️ FIXED: this function used to force EVERY file — images and non-images
+    // alike — through `new Image()` to compress it as a JPEG. For any file
+    // that isn't a real image, the browser can't decode it as one, so
+    // `img.onerror` fired immediately with "Failed to load image" and the
+    // upload was rejected outright. That's exactly what broke sending PDFs/
+    // ZIPs/docs in chat (and product digital-delivery files, and delivery
+    // attachments) — never actually about images specifically.
+    // There's no object-storage bucket wired up here (see the note below —
+    // files are embedded as base64 straight into Firestore/RTDB on purpose,
+    // to avoid Firebase Storage CORS issues), so a real hard cap is needed
+    // for non-images since they can't be compressed the way photos are.
+    const isImage = !!(file.type && file.type.startsWith('image/'));
+    if (!isImage) {
+        const NON_IMAGE_LIMIT = 8 * 1024 * 1024; // 8MB — realistic ceiling for a base64-in-DB file
+        if (file.size > NON_IMAGE_LIMIT) {
+            throw new Error(AppState.language === 'en'
+                ? 'File too large — non-image files are limited to 8MB for now'
+                : 'الملف كبير جدًا — الحد الأقصى للملفات غير الصور حاليًا 8 ميجا');
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error(AppState.language === 'en' ? 'Failed to read file' : 'تعذرت قراءة الملف'));
+            reader.onload  = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ── Canvas Compression (images only) — bypasses Firebase Storage CORS
+    // entirely. Resizes image to max 900px, converts to JPEG @0.78 quality
+    // → base64 data URL, stored directly in Firestore/RTDB. ─────────────
     return new Promise((resolve, reject) => {
         const MAX_PX = 900;
         const QUALITY = 0.78;
