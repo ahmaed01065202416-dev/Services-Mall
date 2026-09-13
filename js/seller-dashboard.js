@@ -143,7 +143,7 @@
                 <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
                   ${this._metricCard('fa-coins','amber', isAr?'إجمالي الأرباح':'Total Earnings', formatCurrency(totalEarnings))}
                   ${this._metricCard('fa-lock','turquoise', isAr?'أموال في الضمان':'In Escrow', formatCurrency(inEscrowTotal))}
-                  ${this._metricCard('fa-wallet','navy', isAr?'رصيد متاح للسحب':'Available Balance', formatCurrency(availableBalance))}
+                  ${this._metricCard('fa-wallet','blue', isAr?'رصيد متاح للسحب':'Available Balance', formatCurrency(availableBalance))}
                   ${this._metricCard('fa-bag-shopping','slate', isAr?'إجمالي الطلبات':'Total Orders', orders.length)}
                   ${this._metricCard('fa-boxes-stacked','teal', isAr?'خدماتي والمنتجات':'Listings', services.length)}
                   ${this._metricCard('fa-star','purple', isAr?'التقييم والعملاء':'Rating', avgRating ? avgRating.toFixed(1) : '—')}
@@ -219,9 +219,9 @@
         },
 
         _metricCard(icon, color, label, value) {
-            const bar = { amber:'from-amber-500 to-orange-500', turquoise:'bg-turquoise-500', navy:'bg-navy-700', slate:'bg-gray-800', teal:'bg-teal-500', purple:'bg-purple-600' }[color] || 'bg-navy-700';
-            const iconBg = { amber:'bg-amber-50 text-amber-600', turquoise:'bg-turquoise-50 text-turquoise-600', navy:'bg-navy-50 text-navy-700', slate:'bg-gray-100 text-gray-800', teal:'bg-teal-50 text-teal-600', purple:'bg-purple-50 text-purple-600' }[color] || 'bg-navy-50 text-navy-700';
-            const valueColor = { turquoise:'text-turquoise-600', navy:'text-navy-700', purple:'text-purple-600' }[color] || 'text-gray-900';
+            const bar = { amber:'from-amber-500 to-orange-500', turquoise:'bg-turquoise-500', navy:'bg-navy-700', blue:'bg-accentblue', slate:'bg-gray-800', teal:'bg-teal-500', purple:'bg-purple-600' }[color] || 'bg-navy-700';
+            const iconBg = { amber:'bg-amber-50 text-amber-600', turquoise:'bg-turquoise-50 text-turquoise-600', navy:'bg-navy-50 text-navy-700', blue:'bg-blue-50 text-accentblue', slate:'bg-gray-100 text-gray-800', teal:'bg-teal-50 text-teal-600', purple:'bg-purple-50 text-purple-600' }[color] || 'bg-navy-50 text-navy-700';
+            const valueColor = { turquoise:'text-turquoise-600', navy:'text-navy-700', blue:'text-accentblue', purple:'text-purple-600' }[color] || 'text-gray-900';
             return `
             <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
               <div class="absolute top-0 right-0 left-0 h-1 ${bar.startsWith('bg-') ? bar : 'bg-gradient-to-r '+bar}"></div>
