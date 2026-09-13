@@ -1,0 +1,58 @@
+/* ══════════════════════════════════════════════════════════════
+   Dark Mode — html.dark scope
+   Overrides the semantic tokens used site-wide (surfacecanvas,
+   textprimary/secondary/muted, borderline, navy-*, white) so this
+   file covers index.html + every JS-rendered view without needing
+   a Tailwind rebuild or per-template dark: classes.
+   Toggle logic lives in index.html (#themeToggle).
+   ══════════════════════════════════════════════════════════════ */
+
+html.dark { color-scheme: dark; }
+
+html.dark body { background: #0B1220; color: #E2E8F0; }
+
+/* Surfaces */
+html.dark .bg-white          { background-color: #131B2E !important; }
+html.dark .bg-surfacecanvas  { background-color: #0B1220 !important; }
+html.dark .bg-navy-50        { background-color: #1E293B !important; }
+html.dark .bg-navy-100       { background-color: #1E293B !important; }
+html.dark .bg-gray-50        { background-color: #0F172A !important; }
+html.dark .bg-gray-100       { background-color: #1E293B !important; }
+
+/* Text */
+html.dark .text-textprimary  { color: #F1F5F9 !important; }
+html.dark .text-textsecondary{ color: #94A3B8 !important; }
+html.dark .text-textmuted    { color: #64748B !important; }
+html.dark .text-navy-900     { color: #F1F5F9 !important; }
+html.dark .text-navy-800     { color: #E2E8F0 !important; }
+html.dark .text-navy-700     { color: #CBD5E1 !important; }
+html.dark .text-gray-900     { color: #F1F5F9 !important; }
+html.dark .text-gray-800     { color: #E2E8F0 !important; }
+html.dark .text-gray-600,
+html.dark .text-gray-500     { color: #94A3B8 !important; }
+
+/* Borders */
+html.dark .border-borderline,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-navy-100,
+html.dark .border-navy-50    { border-color: #1E293B !important; }
+
+/* Nav / glass chrome */
+html.dark .glass { background: rgba(11,18,32,.92) !important; border-color: #1E293B !important; }
+html.dark .card  { border-color: #1E293B !important; }
+html.dark .card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,.4), 0 4px 6px -4px rgba(0,0,0,.3) !important; }
+
+/* Inputs */
+html.dark input, html.dark select, html.dark textarea {
+  background-color: #131B2E !important;
+  color: #E2E8F0 !important;
+  border-color: #1E293B !important;
+}
+html.dark input::placeholder { color: #64748B !important; }
+
+/* Theme toggle icon swap */
+#themeToggle .icon-sun  { display: none; }
+#themeToggle .icon-moon { display: inline; }
+html.dark #themeToggle .icon-sun  { display: inline; }
+html.dark #themeToggle .icon-moon { display: none; }

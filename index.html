@@ -11,7 +11,7 @@
   <!-- ⚠️ ADDED: there was no favicon link anywhere in the project — the
        browser tab showed a generic blank icon. Reuses the same seal glyph
        as the logo/hero, in the new navy/turquoise palette. -->
-  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta name="author" content="مول الخدمات">
   <meta name="language" content="Arabic">
@@ -140,6 +140,16 @@
          npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
   -->
   <link rel="stylesheet" href="/css/tailwind.css?v=v3">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=1">
+  <script>
+    /* Apply saved theme before paint to avoid a light-mode flash */
+    (function(){
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
 
   <style>
     /* ── Reset & Base ────────────────────────────── */
@@ -374,8 +384,8 @@
 
 <!-- ── App Loading Screen (shown until Firebase auth state resolves) ── -->
 <div id="appLoadingScreen">
-  <div style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px">
-    <svg style="width:60px;height:60px;color:#fff"><use href="#seal-icon"/></svg>
+  <div style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px;padding:16px">
+    <img src="/icons/logo-mark.png" alt="مول الخدمات" style="width:100%;height:100%;object-fit:contain">
   </div>
   <div class="spinner"></div>
   <p style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
@@ -398,8 +408,8 @@
     <!-- Logo — new mark: the same "seal" glyph used for the escrow trust
          story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
-      <div class="w-9 h-9 bg-navy-800 rounded-lg flex items-center justify-center shadow-sm">
-        <svg class="w-5 h-5 text-turquoise-500"><use href="#seal-icon"/></svg>
+      <div class="w-9 h-9 bg-navy-800 rounded-lg flex items-center justify-center shadow-sm p-1">
+        <img src="/icons/logo-mark.png" alt="مول الخدمات" class="w-full h-full object-contain">
       </div>
       <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
@@ -413,6 +423,13 @@
 
     <!-- Right Controls -->
     <div class="flex items-center gap-2">
+
+      <!-- Theme Toggle -->
+      <button id="themeToggle" onclick="toggleTheme()" title="الوضع الداكن / الفاتح"
+        class="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-navy-50 text-textsecondary hover:text-textprimary transition">
+        <i class="fa-solid fa-sun icon-sun"></i>
+        <i class="fa-solid fa-moon icon-moon"></i>
+      </button>
 
       <!-- Language Toggle -->
       <button id="langToggle" onclick="toggleLanguage()"

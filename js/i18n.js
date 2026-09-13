@@ -440,12 +440,18 @@
         if (menu) menu.classList.toggle('active');
     }
 
+    function toggleTheme() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+
     // ── Expose ────────────────────────────────────────────────────────────────
     window.I18n         = I18n;
     window.t            = (key, vars) => I18n.t(key, vars);
     window.setCurrency  = setCurrency;
     window.toggleLanguage = toggleLanguage;
     window.toggleCurrencyMenu = toggleCurrencyMenu;
+    window.toggleTheme = toggleTheme;
     window.detectUserLocation = detectUserLocation;
 
     // Init on DOM ready
