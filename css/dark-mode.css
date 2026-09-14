@@ -19,6 +19,28 @@ html.dark .bg-navy-100       { background-color: #1E293B !important; }
 html.dark .bg-gray-50        { background-color: #0F172A !important; }
 html.dark .bg-gray-100       { background-color: #1E293B !important; }
 
+/* Light accent-tint chips/badges/icon-circles (bg-*-50 / bg-*-100).
+   These keep their bright icon color but need a dark backing so any
+   navy-900/gray-900 text or icon nested inside them (see .text-navy-900
+   rule below) doesn't vanish against a still-light chip. */
+html.dark .bg-amber-50     { background-color: rgba(245,158,11,.15) !important; }
+html.dark .bg-amber-100    { background-color: rgba(245,158,11,.22) !important; }
+html.dark .bg-orange-50    { background-color: rgba(249,115,22,.15) !important; }
+html.dark .bg-orange-100   { background-color: rgba(249,115,22,.22) !important; }
+html.dark .bg-blue-50      { background-color: rgba(59,130,246,.15) !important; }
+html.dark .bg-blue-100     { background-color: rgba(59,130,246,.22) !important; }
+html.dark .bg-green-50     { background-color: rgba(34,197,94,.15) !important; }
+html.dark .bg-green-100    { background-color: rgba(34,197,94,.22) !important; }
+html.dark .bg-purple-50    { background-color: rgba(168,85,247,.15) !important; }
+html.dark .bg-purple-100   { background-color: rgba(168,85,247,.22) !important; }
+html.dark .bg-red-50       { background-color: rgba(239,68,68,.15) !important; }
+html.dark .bg-red-100      { background-color: rgba(239,68,68,.22) !important; }
+html.dark .bg-yellow-50    { background-color: rgba(234,179,8,.15) !important; }
+html.dark .bg-yellow-100   { background-color: rgba(234,179,8,.22) !important; }
+html.dark .bg-teal-50      { background-color: rgba(20,184,166,.15) !important; }
+html.dark .bg-turquoise-50 { background-color: rgba(16,185,129,.15) !important; }
+html.dark .bg-turquoise-100{ background-color: rgba(16,185,129,.22) !important; }
+
 /* Text */
 html.dark .text-textprimary  { color: #F1F5F9 !important; }
 html.dark .text-textsecondary{ color: #94A3B8 !important; }
@@ -51,7 +73,14 @@ html.dark input, html.dark select, html.dark textarea {
 }
 html.dark input::placeholder { color: #64748B !important; }
 
-/* Theme toggle icon swap */
+/* Nav active-link underline: the light-mode gradient starts at near-black
+   navy (#0F172A) which blends into the dark page background */
+html.dark .nav-link::after { background: linear-gradient(135deg,#5EEAD4,#0D9488) !important; }
+
+/* Hardcoded dark-navy (#0F172A) text/borders elsewhere that blend into the
+   now-dark page background */
+html.dark .gradient-text     { background: linear-gradient(135deg,#5EEAD4 0%,#0D9488 100%) !important; -webkit-background-clip: text !important; background-clip: text !important; }
+html.dark .tab-btn.active    { color: #5EEAD4 !important; border-bottom-color: #5EEAD4 !important; }
 #themeToggle .icon-sun  { display: none; }
 #themeToggle .icon-moon { display: inline; }
 html.dark #themeToggle .icon-sun  { display: inline; }
