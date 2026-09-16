@@ -55,7 +55,11 @@ async function fetchJSON(url, options) {
 //    (which still parses as valid JSON) silently fell through to "Empty
 //    Gemini response" — hiding the real reason. Now surfaces whatever error
 //    message Google actually returned.
-const GEMINI_MODEL = 'gemini-3.7-flash';
+// ⚠️ ADDED: gemini-3.7-flash has been hitting a well-documented, ongoing
+// Google-side capacity issue ("This model is currently experiencing high
+// demand") — not something our retries alone fix if Google's compute for
+// that specific model is tight. Fall through to sibling models instead.
+const GEMINI_MODELS = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 
 async function callGemini(topic, keywords, key) {
   if (!key) throw new Error('GEMINI_API_KEY missing');
@@ -78,8 +82,8 @@ async function callGemini(topic, keywords, key) {
 
 ابدأ مباشرة بالـ HTML بدون أي مقدمة نصية.`;
 
-  const requestGemini = () => fetchJSON(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
+  const requestGemini = (model) => fetchJSON(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -90,17 +94,20 @@ async function callGemini(topic, keywords, key) {
     }
   );
 
-  // ⚠️ ADDED: Gemini occasionally returns a clean "high demand / overloaded"
-  // error (transient capacity issue on Google's side, not our request) —
-  // retry a couple of times with a short backoff before giving up, instead
-  // of failing the whole article generation on the first hiccup.
+  // Gemini occasionally (or, right now, persistently — see note above)
+  // returns a clean "high demand / overloaded" error. Retry each model a
+  // couple of times with a short backoff, then fall through to the next
+  // model in GEMINI_MODELS before giving up entirely.
   let json;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    json = await requestGemini();
-    const msg = json?.error?.message || '';
-    const isOverloaded = /overloaded|high demand|UNAVAILABLE/i.test(msg) || json?.error?.code === 503;
-    if (!isOverloaded || attempt === 3) break;
-    await new Promise(r => setTimeout(r, attempt * 1500)); // 1.5s, then 3s
+  outer:
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      json = await requestGemini(model);
+      const msg = json?.error?.message || '';
+      const isOverloaded = /overloaded|high demand|UNAVAILABLE/i.test(msg) || json?.error?.code === 503;
+      if (!isOverloaded) break outer;      // real answer OR a different, non-capacity error
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+    }
   }
 
   if (json.error) throw new Error(`Gemini API error: ${json.error.message || JSON.stringify(json.error)}`);
