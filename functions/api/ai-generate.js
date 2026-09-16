@@ -78,7 +78,7 @@ async function callGemini(topic, keywords, key) {
 
 ابدأ مباشرة بالـ HTML بدون أي مقدمة نصية.`;
 
-  const json = await fetchJSON(
+  const requestGemini = () => fetchJSON(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
     {
       method: 'POST',
@@ -89,6 +89,19 @@ async function callGemini(topic, keywords, key) {
       }),
     }
   );
+
+  // ⚠️ ADDED: Gemini occasionally returns a clean "high demand / overloaded"
+  // error (transient capacity issue on Google's side, not our request) —
+  // retry a couple of times with a short backoff before giving up, instead
+  // of failing the whole article generation on the first hiccup.
+  let json;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    json = await requestGemini();
+    const msg = json?.error?.message || '';
+    const isOverloaded = /overloaded|high demand|UNAVAILABLE/i.test(msg) || json?.error?.code === 503;
+    if (!isOverloaded || attempt === 3) break;
+    await new Promise(r => setTimeout(r, attempt * 1500)); // 1.5s, then 3s
+  }
 
   if (json.error) throw new Error(`Gemini API error: ${json.error.message || JSON.stringify(json.error)}`);
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
