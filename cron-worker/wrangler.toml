@@ -9,7 +9,7 @@ crons = ["0 7 * * *"]
 # Set your deployed Pages URL here, or better: keep it out of git and run
 #   npx wrangler secret put SITE_URL
 [vars]
-SITE_URL = "https://your-site.pages.dev"
+SITE_URL = "https://mall-services.pages.dev"
 
 # ADMIN_SECRET must be set as a secret (matches the one on the Pages project):
 #   npx wrangler secret put ADMIN_SECRET

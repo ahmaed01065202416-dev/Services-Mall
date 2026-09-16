@@ -85,7 +85,7 @@ async function callGemini(topic, keywords, key) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.75, maxOutputTokens: 4096 },
+        generationConfig: { maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } },
       }),
     }
   );

@@ -1489,7 +1489,14 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script>
 // Load live platform settings BEFORE any page renders
 // PLATFORM object is defined in constants.js — this merges Firestore values into it
-(async () => { try { await loadPlatformSettings(); } catch(e) {} })();
+// ⚠️ FIXED (found in audit): this used to run immediately, before Firebase Auth
+// had resolved whether anyone was signed in — firestore.rules requires
+// isSignedIn() to read settings/platform, so `request.auth` was null every
+// time and the read was denied (logged as "Missing or insufficient
+// permissions"), silently falling back to hardcoded defaults on every load.
+// Now waits for _authReadyPromise (resolved by auth.js's onAuthStateChanged)
+// before attempting the read.
+(async () => { try { await window._authReadyPromise; await loadPlatformSettings(); } catch(e) {} })();
 </script>
 
 <!-- 3. i18n -->
@@ -2178,8 +2185,10 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         handleHash();
         if (!window.location.hash) navigateTo('home');
 
-        // Load featured services after short delay
-        setTimeout(loadFeaturedServices, 500);
+        // Load featured services, products, and stats after short delay
+        // (initHomePage was defined but never invoked — homeProductsGrid and
+        // the header stats stayed stuck on skeletons/"—" forever)
+        setTimeout(() => window.initHomePage(), 500);
 
         // Initial cart render
         renderCart();
