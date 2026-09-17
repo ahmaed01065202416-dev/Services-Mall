@@ -91,36 +91,33 @@ async function callGemini(topic, keywords, key) {
 
 ابدأ مباشرة بالـ HTML بدون أي مقدمة نصية.`;
 
-  const requestGemini = (model) => fetchJSON(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } },
-      }),
-    }
-  );
-
-  // Try every model/attempt combo until one returns real usable text.
-  // ⚠️ FIXED (found in audit): the previous version only advanced to the
-  // next model when it recognized a clean "overloaded" JSON error — but a
-  // Cloudflare-level timeout comes back as plain text ("error code: 524"),
-  // not JSON, so it never matched and the loop gave up after the very
-  // first failed attempt without ever trying the fallback models. Now ANY
-  // failure (timeout, error JSON, empty text) advances to the next
-  // attempt/model; only a real answer stops the loop early.
+  // Try each model once, falling through immediately on any failure
+  // (timeout, error JSON, empty text) until one returns real usable text.
+  // ⚠️ FIXED (found in audit, round 2): the previous version retried each
+  // model twice with a 20s timeout and a 1.5s gap — a worst case of
+  // ~2 minutes across 6 attempts. That's long enough to get the whole
+  // Cloudflare Function killed by the platform's own execution limit
+  // before our code could even return an error response (shows up as a
+  // bare, bodyless "500 Internal Server Error" — different from the clean
+  // JSON error we saw before). One attempt per model, 10s timeout each,
+  // no inter-model delay: worst case ~30s across all 3 models.
   let json, lastErrorMsg = 'Unknown error';
-  outer:
   for (const model of GEMINI_MODELS) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      json = await requestGemini(model);
-      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) break outer;                    // real answer — stop immediately
-      lastErrorMsg = json?.error?.message || (json?.raw ? `HTTP error — raw: ${json.raw.slice(0,200)}` : 'Empty response');
-      if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
-    }
+    json = await fetchJSON(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } },
+        }),
+      },
+      10000
+    );
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) break;                              // real answer — stop immediately
+    lastErrorMsg = json?.error?.message || (json?.raw ? `HTTP error — raw: ${json.raw.slice(0,200)}` : 'Empty response');
   }
 
   if (json.error) throw new Error(`Gemini API error: ${json.error.message || JSON.stringify(json.error)}`);
