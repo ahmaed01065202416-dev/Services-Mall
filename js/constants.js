@@ -284,7 +284,14 @@ function formatCurrency(amount, currencyCode) {
     const code = currencyCode || AppState.currency || 'EGP';
     const cur  = CURRENCIES[code] || CURRENCIES.EGP;
     const val  = (parseFloat(amount) || 0) * cur.rate;
-    const locale = AppState.language === 'en' ? 'en-US' : 'ar-EG';
+    // ⚠️ FIXED (found in audit): 'ar-EG' renders Eastern Arabic-Indic digits
+    // (٠١٢٣...), which visually scramble/reverse when mixed with RTL text,
+    // dashes, and a currency symbol right next to them (classic bidi
+    // rendering bug — this is what produced "٥٣٠,.." in a screenshot
+    // instead of a readable "1,050.00"). The '-u-nu-latn' extension keeps
+    // Arabic month/plural formatting rules but forces plain 0-9 digits,
+    // which is how Egyptian apps normally show money anyway.
+    const locale = AppState.language === 'en' ? 'en-US' : 'ar-EG-u-nu-latn';
     try {
         return new Intl.NumberFormat(locale, {
             minimumFractionDigits: 2,

@@ -25,7 +25,7 @@
  *    assets (JS/CSS/images) stay cache-first for speed, since a stale JS
  *    file for a few minutes matters much less than a stale whole page.
  */
-const LOCAL_CACHE = 'mall-local-v3.13';
+const LOCAL_CACHE = 'mall-local-v3.14';
 
 const LOCAL_ASSETS = [
   '/index.html',
@@ -96,30 +96,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 6. باقي الملفات المحلية (JS/CSS/صور): Cache-first → Network → Fallback
+  // 6. باقي الملفات المحلية (JS/CSS/صور): Network-first، مع رجوع للكاش لو
+  //    مفيش إنترنت فقط.
+  // ⚠️ FIXED (found in audit): this used to be cache-first — once a
+  // browser cached a JS/CSS file ONE time, it kept serving that exact copy
+  // forever, no matter how many times the site got redeployed, unless
+  // LOCAL_CACHE above was manually bumped. That's very likely why fixes
+  // during testing looked like they "didn't take" (old bugs reappearing,
+  // functions referenced in the current file reported as undefined) — the
+  // browser was quietly running stale cached code. Static assets now
+  // always try the network first too; only an offline visitor falls back
+  // to whatever was last cached.
   event.respondWith(
-    caches.match(req)
-      .then(cached => {
-        if (cached) return cached;
-
-        return fetch(req)
-          .then(response => {
-            if (response && response.status === 200 && response.type === 'basic') {
-              const clone = response.clone();
-              caches.open(LOCAL_CACHE).then(c => c.put(req, clone));
-            }
-            return response;
-          })
-          .catch(() => new Response('Resource unavailable offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: { 'Content-Type': 'text/plain' },
-          }));
+    fetch(req)
+      .then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(LOCAL_CACHE).then(c => c.put(req, clone));
+        }
+        return response;
       })
-      .catch(() => new Response('Service Worker Error', {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'text/plain' },
-      }))
+      .catch(() =>
+        caches.match(req).then(cached => cached || new Response('Resource unavailable offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' },
+        }))
+      )
   );
 });

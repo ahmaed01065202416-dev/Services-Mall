@@ -38,10 +38,19 @@ function excerpt(html) {
   return html.replace(/<[^>]*>/g,'').trim().slice(0,160) + '…';
 }
 
-async function fetchJSON(url, options) {
-  const res = await fetch(url, options);
-  const text = await res.text();
-  try { return JSON.parse(text); } catch (_) { return { raw: text }; }
+async function fetchJSON(url, options, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    const text = await res.text();
+    try { return JSON.parse(text); } catch (_) { return { raw: text }; }
+  } catch (err) {
+    if (err.name === 'AbortError') return { raw: `client-side timeout after ${timeoutMs}ms` };
+    return { raw: `fetch error: ${err.message}` };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ── Gemini API call ──────────────────────────────────────────────────────────
@@ -94,25 +103,29 @@ async function callGemini(topic, keywords, key) {
     }
   );
 
-  // Gemini occasionally (or, right now, persistently — see note above)
-  // returns a clean "high demand / overloaded" error. Retry each model a
-  // couple of times with a short backoff, then fall through to the next
-  // model in GEMINI_MODELS before giving up entirely.
-  let json;
+  // Try every model/attempt combo until one returns real usable text.
+  // ⚠️ FIXED (found in audit): the previous version only advanced to the
+  // next model when it recognized a clean "overloaded" JSON error — but a
+  // Cloudflare-level timeout comes back as plain text ("error code: 524"),
+  // not JSON, so it never matched and the loop gave up after the very
+  // first failed attempt without ever trying the fallback models. Now ANY
+  // failure (timeout, error JSON, empty text) advances to the next
+  // attempt/model; only a real answer stops the loop early.
+  let json, lastErrorMsg = 'Unknown error';
   outer:
   for (const model of GEMINI_MODELS) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       json = await requestGemini(model);
-      const msg = json?.error?.message || '';
-      const isOverloaded = /overloaded|high demand|UNAVAILABLE/i.test(msg) || json?.error?.code === 503;
-      if (!isOverloaded) break outer;      // real answer OR a different, non-capacity error
+      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) break outer;                    // real answer — stop immediately
+      lastErrorMsg = json?.error?.message || (json?.raw ? `HTTP error — raw: ${json.raw.slice(0,200)}` : 'Empty response');
       if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
     }
   }
 
   if (json.error) throw new Error(`Gemini API error: ${json.error.message || JSON.stringify(json.error)}`);
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('Empty Gemini response — raw: ' + JSON.stringify(json).slice(0, 300));
+  if (!text) throw new Error(`All Gemini models failed — last error: ${lastErrorMsg}`);
   return text;
 }
 

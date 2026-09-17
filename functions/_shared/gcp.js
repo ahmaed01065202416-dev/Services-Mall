@@ -6,7 +6,16 @@
  * orders, release escrow, and touch wallet balances.
  *
  * Requires these Cloudflare Pages env vars:
- *   FIREBASE_PROJECT_ID       — e.g. "mall-services-xxxxx"
+ *   FIREBASE_PROJECT_ID       — MUST be exactly "services-mall" (the real
+ *                                Firebase project ID from FIREBASE_CONFIG in
+ *                                index.html) — NOT "mall-services". The site's
+ *                                own domain (mall-services.pages.dev) has the
+ *                                words in the opposite order from the actual
+ *                                project ID, which is an easy env-var typo to
+ *                                make and causes every server-side Firestore
+ *                                lookup (orders, services, users…) to
+ *                                silently return "not found" while the exact
+ *                                same document loads fine client-side.
  *   FIREBASE_SERVICE_ACCOUNT  — the FULL JSON of a Firebase service account key
  *                                (Firebase Console → Project settings → Service
  *                                accounts → Generate new private key), pasted
