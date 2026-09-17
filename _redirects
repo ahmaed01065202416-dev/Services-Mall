@@ -37,6 +37,15 @@
 # the bottom of that file) — it just never used to be reached for these URLs.
 /blog/:slug /blog/index.html 200
 
+# Legacy standalone legal pages — superseded by the redesigned /terms and
+# /privacy folders below. Kept as 301s (not deleted) so old bookmarks/backlinks
+# and any URL already indexed by Google land on the current page instead of
+# a stale duplicate with an outdated design (was previously reachable and
+# linked from index.html's footer/signup-modal by mistake — now fixed to
+# point at /terms and /privacy directly, this redirect is the safety net).
+/terms.html /terms 301
+/privacy.html /privacy 301
+
 # Static pages
 /about /about/index.html 200
 /about/ /about/index.html 200
