@@ -13,7 +13,7 @@
     let _chatListener   = null;
     let _selectedRating = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB — images only (get compressed down)
-    const NON_IMAGE_FILE_LIMIT = 8 * 1024 * 1024; // 8 MB — matches uploadFile()'s real cap for non-images
+    const NON_IMAGE_FILE_LIMIT = 6 * 1024 * 1024; // 6 MB — matches uploadFile()'s real cap (RTDB's 10MB string limit after base64 inflation)
 
     // ── Safe timestamp helper ─────────────────────────────────────────────────
     function _ts() {
@@ -773,7 +773,7 @@
             const isImgFile = file.type && file.type.startsWith('image/');
             const limit = isImgFile ? MAX_FILE_SIZE : NON_IMAGE_FILE_LIMIT;
             if (file.size > limit) {
-                const limitLabel = isImgFile ? '50MB' : '8MB';
+                const limitLabel = isImgFile ? '50MB' : '6MB';
                 showToast(isAr ? `الملف ${file.name} تجاوز الحد (${limitLabel})` : `${file.name} exceeds limit (${limitLabel})`, 'warning');
                 continue;
             }
@@ -833,7 +833,7 @@
                 const isImgFile = file.type && file.type.startsWith('image/');
                 const limit = isImgFile ? MAX_FILE_SIZE : NON_IMAGE_FILE_LIMIT;
                 if (file.size > limit) {
-                    showToast(`${file.name} > ${isImgFile ? '50MB' : '8MB'}`, 'warning');
+                    showToast(`${file.name} > ${isImgFile ? '50MB' : '6MB'}`, 'warning');
                     continue;
                 }
                 let url;

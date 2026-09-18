@@ -193,13 +193,25 @@ async function uploadFile(file, folder, filename) {
     // files are embedded as base64 straight into Firestore/RTDB on purpose,
     // to avoid Firebase Storage CORS issues), so a real hard cap is needed
     // for non-images since they can't be compressed the way photos are.
+    //
+    // ⚠️ FIXED (2nd bug): the cap here used to be 8MB, which LOOKS safely
+    // under Firebase Realtime Database's documented 10MB max string-value
+    // size (https://firebase.google.com/docs/database/usage/limits) — but
+    // base64 encoding inflates a file's byte size by ~33% (4 chars for every
+    // 3 raw bytes). An 8MB file becomes a ~10.9MB base64 string, which is
+    // OVER the 10MB RTDB limit — the client-side check passed, then the
+    // actual chats/{orderId}/messages push() to Firebase silently failed
+    // with a write error. This is exactly what broke "upload a file in the
+    // buyer/seller chat" for anything close to the old limit. 6MB raw file
+    // → ~8MB base64 stays safely under the 10MB ceiling with margin to
+    // spare for the surrounding JSON (senderId/type/createdAt/etc).
     const isImage = !!(file.type && file.type.startsWith('image/'));
     if (!isImage) {
-        const NON_IMAGE_LIMIT = 8 * 1024 * 1024; // 8MB — realistic ceiling for a base64-in-DB file
+        const NON_IMAGE_LIMIT = 6 * 1024 * 1024; // 6MB raw → ~8MB base64, safely under Firebase RTDB's 10MB string limit
         if (file.size > NON_IMAGE_LIMIT) {
             throw new Error(AppState.language === 'en'
-                ? 'File too large — non-image files are limited to 8MB for now'
-                : 'الملف كبير جدًا — الحد الأقصى للملفات غير الصور حاليًا 8 ميجا');
+                ? 'File too large — non-image files are limited to 6MB for now'
+                : 'الملف كبير جدًا — الحد الأقصى للملفات غير الصور حاليًا 6 ميجا');
         }
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
