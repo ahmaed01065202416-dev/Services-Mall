@@ -546,7 +546,24 @@
             if (wasAtBottom) container.scrollTop = container.scrollHeight;
 
         }, err => {
-            if (err.code !== 'PERMISSION_DENIED') console.warn('[Chat] RTDB listener error:', err.code || err.message);
+            // ⚠️ FIXED (found in audit): this used to silently swallow
+            // PERMISSION_DENIED specifically — the chat would just sit on
+            // the empty "لا توجد رسائل بعد" placeholder forever with zero
+            // feedback anywhere (no toast, no console line), making a real
+            // access problem indistinguishable from "this order genuinely
+            // has no messages yet". Now it always logs AND tells the user
+            // something is actually wrong instead of pretending it's empty.
+            console.error('[Chat] RTDB listener error:', err.code || err.message, err);
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                const isAr = AppState.language !== 'en';
+                container.innerHTML = `
+                  <div class="text-center text-red-400 py-10 px-4">
+                    <i class="fa-solid fa-triangle-exclamation text-4xl mb-3 opacity-60"></i>
+                    <p class="font-bold">${isAr ? 'تعذّر تحميل المحادثة' : 'Could not load the conversation'}</p>
+                    <p class="text-xs mt-1 text-gray-400">${_escapeHtml(err.code || err.message || '')}</p>
+                  </div>`;
+            }
         });
 
         _chatListener = () => window.rtdb.ref(`chats/${orderId}/messages`).off('value', cb);
