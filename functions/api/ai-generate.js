@@ -93,14 +93,20 @@ async function callGemini(topic, keywords, key) {
 
   // Try each model once, falling through immediately on any failure
   // (timeout, error JSON, empty text) until one returns real usable text.
-  // ⚠️ FIXED (found in audit, round 2): the previous version retried each
-  // model twice with a 20s timeout and a 1.5s gap — a worst case of
-  // ~2 minutes across 6 attempts. That's long enough to get the whole
-  // Cloudflare Function killed by the platform's own execution limit
-  // before our code could even return an error response (shows up as a
-  // bare, bodyless "500 Internal Server Error" — different from the clean
-  // JSON error we saw before). One attempt per model, 10s timeout each,
-  // no inter-model delay: worst case ~30s across all 3 models.
+  // ⚠️ FIXED (found in audit, round 3): the 10s-per-model timeout below was
+  // based on an incorrect assumption that Cloudflare would kill the whole
+  // Function around ~30s. Cloudflare's real hard limit on a Pages Function
+  // request is 100 seconds (the standard Cloudflare edge/gateway timeout —
+  // not configurable outside Enterprise), and time spent waiting on fetch()
+  // does NOT count against the separate CPU-time billing limit at all. The
+  // 10s cutoff was simply too tight for a real 1500-2000 word / 4096-token
+  // article — production logs showed all 3 Gemini models hitting this exact
+  // same "client-side timeout after 10000ms" ceiling back-to-back, which is
+  // the signature of a genuinely-in-progress generation being cut off early,
+  // not a broken key or a dead endpoint (those fail in under a second).
+  // 22s × 3 models = 66s worst case, still well clear of the 100s limit even
+  // after the OpenAI fallback below (which fails near-instantly, not slowly,
+  // whenever OPENAI_API_KEY is simply unset — see callOpenAI).
   let json, lastErrorMsg = 'Unknown error';
   for (const model of GEMINI_MODELS) {
     json = await fetchJSON(
@@ -113,7 +119,7 @@ async function callGemini(topic, keywords, key) {
           generationConfig: { maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } },
         }),
       },
-      10000
+      22000
     );
     const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (text) break;                              // real answer — stop immediately
