@@ -522,65 +522,57 @@
         if (_chatListener) { _chatListener(); _chatListener = null; }
         if (!window.rtdb) return;
 
-        const ref = window.rtdb.ref(`chats/${orderId}/messages`).orderByChild('createdAt').limitToLast(100);
-        const cb = ref.on('value', snap => {
-            const container = document.getElementById('chatMessages');
-            if (!container) return;
+        const container = document.getElementById('chatMessages');
+        const isAr = AppState.language !== 'en';
+        _lastLoadedMessages = [];
+        let _gotAnyMessage = false;
+        let _emptyCheckTimer = null;
 
-            if (!snap.exists()) {
-                const isAr = AppState.language !== 'en';
-                container.innerHTML = `
-                  <div class="text-center text-gray-400 py-10">
-                    <i class="fa-solid fa-comments text-5xl mb-3 opacity-30"></i>
-                    <p class="font-bold">${isAr ? 'لا توجد رسائل بعد' : 'No messages yet'}</p>
-                    <p class="text-sm mt-1">${isAr ? 'ابدأ المحادثة مع الطرف الآخر' : 'Start the conversation'}</p>
-                  </div>`;
-                return;
+        const renderSafely = (m) => {
+            try { return _renderMessage(m, m.id); }
+            catch (renderErr) {
+                console.error('[Chat] Failed to render message', m.id, renderErr, m);
+                return `<div class="mx-2 my-2 text-xs text-red-400 bg-red-50 rounded-lg p-2">
+                    ${isAr ? 'تعذّر عرض رسالة واحدة' : 'One message failed to display'} (${_escapeHtml(m.id)})
+                </div>`;
             }
+        };
 
-            const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
-            const msgs = [];
-            snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
-            _lastLoadedMessages = msgs; // used by _loadFiles below, avoids a second read
-            // ⚠️ FIXED (found in audit, round N): _renderMessage() was called
-            // inside a single .map() with no per-item try/catch. If ANY one
-            // message in the list threw while rendering (a corrupt entry, an
-            // unexpected field shape, etc.), the WHOLE .map() call throws —
-            // and since container.innerHTML is only assigned AFTER map()
-            // finishes, the assignment never runs at all. The visible symptom
-            // was exactly this: the chat silently froze on whatever was last
-            // successfully rendered (often just the very first message),
-            // with every later message — including new ones you just sent —
-            // invisible, and no error shown anywhere because it's thrown
-            // inside a Firebase SDK callback that swallows it into a console
-            // warning easy to miss among the startup log lines. Now each
-            // message renders independently: one bad entry logs clearly
-            // (with its id) and shows a small error card in its place, while
-            // every other message still renders normally.
-            const isAr = AppState.language !== 'en';
-            container.innerHTML = msgs.map(m => {
-                try { return _renderMessage(m, m.id); }
-                catch (renderErr) {
-                    console.error('[Chat] Failed to render message', m.id, renderErr, m);
-                    return `<div class="mx-2 my-2 text-xs text-red-400 bg-red-50 rounded-lg p-2">
-                        ${isAr ? 'تعذّر عرض رسالة واحدة' : 'One message failed to display'} (${_escapeHtml(m.id)})
-                    </div>`;
-                }
-            }).join('');
+        // ⚠️ FIXED (found in audit, round N — the real one): .on('value') was
+        // the actual cause of "only 1 of 17 messages shows up, and stays that
+        // way for good". 'value' only fires once Firebase has a FULLY
+        // consistent snapshot of the ENTIRE query range — with 17 messages,
+        // several of them embedding full images as base64 (there's no object
+        // storage bucket here; see uploadFile()'s comments), that means the
+        // browser must finish downloading every embedded image before a
+        // single message is allowed to render. Combined with the repeated
+        // WebSocket reconnects we saw in the Network tab, that full-snapshot
+        // download kept getting interrupted before completing, so the 'value'
+        // callback for the real 17-message state may never fire at all —
+        // leaving the UI stuck on whatever the very first, smaller, quicker
+        // sync (the request_brief message alone) had already rendered.
+        // 'child_added' fires per-message as soon as THAT message is synced,
+        // independent of the others, so messages now appear progressively as
+        // they arrive instead of all-or-nothing, and one slow/heavy message
+        // (a large image) can no longer block the rest of the conversation
+        // from showing up.
+        const ref = window.rtdb.ref(`chats/${orderId}/messages`).orderByChild('createdAt').limitToLast(100);
+        const onAdded = snap => {
+            if (!container) return;
+            if (_emptyCheckTimer) { clearTimeout(_emptyCheckTimer); _emptyCheckTimer = null; }
+            if (!_gotAnyMessage) { _gotAnyMessage = true; container.innerHTML = ''; }
+            const msg = { id: snap.key, ...snap.val() };
+            _lastLoadedMessages.push(msg);
+            const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+            const wrap = document.createElement('div');
+            wrap.setAttribute('data-msg-id', msg.id);
+            wrap.innerHTML = renderSafely(msg);
+            container.appendChild(wrap);
             if (wasAtBottom) container.scrollTop = container.scrollHeight;
-
-        }, err => {
-            // ⚠️ FIXED (found in audit): this used to silently swallow
-            // PERMISSION_DENIED specifically — the chat would just sit on
-            // the empty "لا توجد رسائل بعد" placeholder forever with zero
-            // feedback anywhere (no toast, no console line), making a real
-            // access problem indistinguishable from "this order genuinely
-            // has no messages yet". Now it always logs AND tells the user
-            // something is actually wrong instead of pretending it's empty.
+        };
+        const onErr = err => {
             console.error('[Chat] RTDB listener error:', err.code || err.message, err);
-            const container = document.getElementById('chatMessages');
             if (container) {
-                const isAr = AppState.language !== 'en';
                 container.innerHTML = `
                   <div class="text-center text-red-400 py-10 px-4">
                     <i class="fa-solid fa-triangle-exclamation text-4xl mb-3 opacity-60"></i>
@@ -588,9 +580,24 @@
                     <p class="text-xs mt-1 text-gray-400">${_escapeHtml(err.code || err.message || '')}</p>
                   </div>`;
             }
-        });
+        };
+        ref.on('child_added', onAdded, onErr);
+        // Only 'child_added' fires when data streams in; if the chat is
+        // genuinely empty (a brand-new order with zero messages), nothing
+        // ever fires at all, so show the placeholder after a short grace
+        // window instead of leaving the panel blank forever.
+        _emptyCheckTimer = setTimeout(() => {
+            if (!_gotAnyMessage && container) {
+                container.innerHTML = `
+                  <div class="text-center text-gray-400 py-10">
+                    <i class="fa-solid fa-comments text-5xl mb-3 opacity-30"></i>
+                    <p class="font-bold">${isAr ? 'لا توجد رسائل بعد' : 'No messages yet'}</p>
+                    <p class="text-sm mt-1">${isAr ? 'ابدأ المحادثة مع الطرف الآخر' : 'Start the conversation'}</p>
+                  </div>`;
+            }
+        }, 4000);
 
-        _chatListener = () => window.rtdb.ref(`chats/${orderId}/messages`).off('value', cb);
+        _chatListener = () => window.rtdb.ref(`chats/${orderId}/messages`).off('child_added', onAdded);
     }
 
     // ── Render a single message ───────────────────────────────────────────────
