@@ -22,7 +22,7 @@
           ".indexOn": ["createdAt"],
 
           "$messageId": {
-            ".write": "auth != null && !data.exists() && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid) && newData.child('senderId').val() === auth.uid",
+            ".write": "auth != null && ((!data.exists() && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid) && newData.child('senderId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('senderId').val() === auth.uid))",
             ".validate": "newData.hasChildren(['senderId','senderName','type','createdAt'])",
 
             "readBy": {

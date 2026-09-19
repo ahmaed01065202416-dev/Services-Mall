@@ -354,8 +354,162 @@
         }
     }
 
+    // ── Product order form (buyer details + seller rules + platform terms) ──
+    // Replaces the old buyProductNow() direct-to-payment flow: now the buyer
+    // fills in shipping/contact details and must agree to the platform's
+    // terms + the seller's own rules (if the seller wrote any) before the
+    // order is created and payment opens. The actual order creation and
+    // payment handoff below reuse buyProductNow()'s logic (stock/expiry
+    // re-check against the live doc, ORDER_STATUS.ACCEPTED, straight to
+    // PaymentSystem.payForOrder) — only the extra buyer-info collection step
+    // in front of it is new.
+    let _pendingProduct = null;
+
+    function openProductOrderModal(service) {
+        const isAr = AppState.language !== 'en';
+        if (!AppState.currentUser) {
+            showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning');
+            navigateTo('login');
+            return;
+        }
+        if (!service || !service.id) { showToast(isAr ? 'خطأ: بيانات المنتج غير مكتملة' : 'Error: incomplete product data', 'error'); return; }
+        if (AppState.currentUser.uid === service.sellerId) {
+            showToast(isAr ? 'لا يمكنك شراء منتجك الخاص' : "You can't buy your own product", 'warning');
+            return;
+        }
+
+        _pendingProduct = service;
+
+        const nameEl = document.getElementById('productOrderName');
+        if (nameEl) nameEl.textContent = service.title || '';
+
+        const rulesBox  = document.getElementById('productSellerRulesBox');
+        const rulesText = document.getElementById('productSellerRulesText');
+        if (service.orderRules && service.orderRules.trim()) {
+            if (rulesText) rulesText.textContent = service.orderRules;
+            if (rulesBox)  rulesBox.classList.remove('hidden');
+        } else if (rulesBox) {
+            rulesBox.classList.add('hidden');
+        }
+
+        // Pre-fill name/phone from the user's profile if available, but
+        // always let them edit — the shipping name isn't always the account
+        // name (gifts, family orders, etc.).
+        const nameField  = document.getElementById('productBuyerName');
+        const phoneField = document.getElementById('productBuyerPhone');
+        const addrField  = document.getElementById('productBuyerAddress');
+        const notesField = document.getElementById('productBuyerNotes');
+        const agreeBox   = document.getElementById('productAgreeRules');
+        if (nameField)  nameField.value  = AppState.currentUser.displayName || '';
+        if (phoneField) phoneField.value = AppState.currentUser.phone || '';
+        if (addrField)  addrField.value  = '';
+        if (notesField) notesField.value = '';
+        if (agreeBox)   agreeBox.checked = false;
+
+        openModal('productOrderModal');
+    }
+
+    async function submitProductOrder() {
+        const service = _pendingProduct;
+        if (!service) return;
+        const isAr = AppState.language !== 'en';
+        const user = AppState.currentUser;
+        if (!user) { showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning'); return; }
+
+        const fullName = document.getElementById('productBuyerName')?.value?.trim();
+        const phone    = document.getElementById('productBuyerPhone')?.value?.trim();
+        const address  = document.getElementById('productBuyerAddress')?.value?.trim();
+        const notes    = sanitizeInput(document.getElementById('productBuyerNotes')?.value?.trim() || '', 500);
+        const agreed   = document.getElementById('productAgreeRules')?.checked;
+
+        if (!fullName)  { showToast(isAr ? 'اكتب الاسم بالكامل' : 'Enter your full name', 'warning'); document.getElementById('productBuyerName')?.focus(); return; }
+        if (!phone)     { showToast(isAr ? 'اكتب رقم الهاتف' : 'Enter your phone number', 'warning'); document.getElementById('productBuyerPhone')?.focus(); return; }
+        if (!address)   { showToast(isAr ? 'اكتب عنوان التوصيل بالكامل' : 'Enter your full delivery address', 'warning'); document.getElementById('productBuyerAddress')?.focus(); return; }
+        if (!agreed)    { showToast(isAr ? 'يجب الموافقة على شروط المنصة والبائع أولاً' : 'You must agree to the platform and seller terms first', 'warning'); return; }
+
+        const btn = document.getElementById('submitProductOrderBtn');
+        if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري تجهيز طلبك...' : 'Preparing your order...'}`; }
+
+        showLoading(isAr ? 'جاري إنشاء الطلب...' : 'Creating your order...');
+        try {
+            // Re-check stock/expiry against the LIVE doc, not the (possibly
+            // stale) card data — same protection buyProductNow() had.
+            const svcSnap = await window.db.collection(COLLECTIONS.SERVICES).doc(service.id).get();
+            const svcData = svcSnap.data();
+            if (!svcData) throw new Error(isAr ? 'المنتج لم يعد متاحًا' : 'This product is no longer available');
+            if (svcData.expiryDate && new Date(svcData.expiryDate) < new Date()) {
+                hideLoading();
+                showToast(isAr ? 'انتهى عرض هذا المنتج' : 'This product offer has expired', 'warning');
+                return;
+            }
+            if (svcData.stockLimit != null && svcData.stockLimit <= 0) {
+                hideLoading();
+                showToast(isAr ? 'نفدت الكمية المتاحة من هذا المنتج' : 'This product is out of stock', 'warning');
+                return;
+            }
+
+            const orderId = generateId('ord_');
+            const shippingInfo = { fullName: sanitizeInput(fullName, 120), phone: sanitizeInput(phone, 30), address: sanitizeInput(address, 500), notes };
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set({
+                id: orderId,
+                serviceId:     service.id,
+                serviceTitle:  service.title,
+                serviceImage:  service.image || '',
+                image:         service.image || '',
+                sellerId:      service.sellerId,
+                sellerName:    service.sellerName || '',
+                buyerId:       user.uid,
+                buyerName:     user.displayName || user.email || '',
+                buyerAvatar:   user.photoURL || '',
+                price:         service.price || 0,
+                deliveryDays:  service.deliveryDays || 0,
+                listingType:   'product',
+                status:        ORDER_STATUS.ACCEPTED,
+                shippingStatus: 'processing',
+                paymentStatus: 'no_payment',
+                shippingInfo,
+                sellerOrderRules: svcData.orderRules || '',
+                createdAt:     serverTimestamp(),
+                updatedAt:     serverTimestamp(),
+            });
+
+            // Post the buyer's shipping details as the first chat message —
+            // same "structured brief card" pattern as service requests, so
+            // the seller sees it immediately in the order workspace chat.
+            try {
+                if (window.rtdb) {
+                    await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
+                    await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                        senderId:   user.uid,
+                        senderName: user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),
+                        type:       'product_order_brief',
+                        fullName: shippingInfo.fullName, phone: shippingInfo.phone,
+                        address: shippingInfo.address, notes: shippingInfo.notes,
+                        readBy:     { [user.uid]: true },
+                        createdAt:  firebase.database.ServerValue.TIMESTAMP,
+                    });
+                }
+            } catch (chatErr) {
+                console.error('[RequestSystem] Product order chat message failed (order was still created):', chatErr);
+            }
+
+            hideLoading();
+            closeModal('productOrderModal');
+            if (window.PaymentSystem) {
+                await window.PaymentSystem.payForOrder(orderId);
+            } else {
+                navigateTo('orders');
+            }
+        } catch (err) {
+            hideLoading();
+            if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-lock"></i> ${isAr ? 'تأكيد الطلب والدفع' : 'Confirm order & pay'}`; }
+            console.error('[RequestSystem] submitProductOrder failed:', err);
+            showToast(err.message || (isAr ? 'حدث خطأ، حاول مرة أخرى' : 'Something went wrong, please try again'), 'error');
+        }
+    }
+
     // ── Expose ────────────────────────────────────────────────────────────────
-    window.RequestSystem = { openRequestModal, openInstantModal, submitRequest, openBriefAssistant, generateBrief, buyProductNow };
+    window.RequestSystem = { openRequestModal, openInstantModal, submitRequest, openBriefAssistant, generateBrief, buyProductNow, openProductOrderModal, submitProductOrder };
 
     console.log('✅ RequestSystem loaded — No-payment request flow');
 })();

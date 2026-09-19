@@ -242,7 +242,7 @@
                     var uid = AppState.currentUser && AppState.currentUser.uid;
                     var isOwnService = uid && uid === s.sellerId;
                     var isAdm = AppState.currentUser && AppState.currentUser.role === 'admin';
-                    var editDataStr = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||'',listingType:s.listingType||'service',orderMode:s.orderMode||'request_first',digitalDelivery:s.digitalDelivery||null,stockLimit:s.stockLimit ?? null,expiryDate:s.expiryDate||null}).replace(/"/g,'&quot;');
+                    var editDataStr = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||'',listingType:s.listingType||'service',orderMode:s.orderMode||'request_first',digitalDelivery:s.digitalDelivery||null,stockLimit:s.stockLimit ?? null,expiryDate:s.expiryDate||null,orderRules:s.orderRules||''}).replace(/"/g,'&quot;');
                     var serviceDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
                     var cartDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||''}).replace(/"/g,'&quot;');
                     var lang = AppState.language;
@@ -354,7 +354,7 @@
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>
-                            <button onclick="closeModal('serviceModal');RequestSystem.buyProductNow(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||''}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
@@ -562,6 +562,14 @@
 
                   <!-- Product-only field: what the buyer gets instantly on payment -->
                   <div id="svcProductFields" class="hidden space-y-3">
+                    <!-- ⚠️ ADDED: seller-defined rules/requirements shown to the
+                         buyer in the product order form before checkout (e.g.
+                         required size/color, shipping notes, custom conditions). -->
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'شروطك وملاحظاتك على الطلب (اختياري)':"Your order rules/notes (optional)"}</label>
+                      <textarea id="svcOrderRules" rows="3" class="form-input" maxlength="1000"
+                        placeholder="${isAr?'مثال: لازم تحدد المقاس واللون في الملاحظات، مفيش استرجاع بعد فتح المنتج...':'e.g. must specify size/color, no returns after opening...'}">${escapeHtml(service?.orderRules||'')}</textarea>
+                    </div>
                     <div class="bg-turquoise-50 border border-turquoise-200 rounded-2xl p-4">
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'رابط أو ملف التسليم الفوري':'Instant delivery link or file'} *</label>
                       <p class="text-xs text-gray-500 mb-3">${isAr?'ده اللي المشتري هيستلمه أوتوماتيك فور الدفع — رابط تحميل، أو ارفع الملف مباشرة.':"This is what the buyer receives automatically the moment they pay — a download link, or upload the file directly."}</p>
@@ -706,6 +714,7 @@
                     data.digitalDelivery = digitalDelivery;
                     data.stockLimit = stockLimit;   // null = unlimited
                     data.expiryDate = expiryDate;   // null = no expiry
+                    data.orderRules = sanitizeInput(document.getElementById('svcOrderRules')?.value?.trim() || '', 1000);
                 } else {
                     data.orderMode = orderMode;      // 'request_first' | 'instant'
                 }

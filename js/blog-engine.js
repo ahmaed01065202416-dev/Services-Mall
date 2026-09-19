@@ -9,6 +9,26 @@
   const BLOG_COL = 'blog_posts';
   const PAGE_SIZE = 9;
 
+  // ⚠️ FIXED (found in audit): blog/index.html is a lightweight standalone
+  // page with its own minimal Firebase setup — it does NOT load js/constants.js
+  // (where the global escapeHtml() normally lives), so every call to
+  // escapeHtml() below threw "escapeHtml is not defined" and renderPost()
+  // failed with "حدث خطأ في تحميل المقال" for every single article. Defining
+  // it locally here — inside this file's own IIFE — is safe even when this
+  // same file also runs on the main app's index.html (which DOES have the
+  // global one from constants.js): a local function declaration always wins
+  // over an outer/global one of the same name within its own scope, so this
+  // can't shadow or break the version used elsewhere in the app.
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   function _fmtDate(ts) {
     try {
@@ -300,10 +320,10 @@
               <i class="fa-solid fa-store" style="font-size:32px;color:#0F172A;margin-bottom:10px;display:block"></i>
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:6px">ابدأ على المنصة</p>
               <p style="font-size:12px;color:#6b7280;margin-bottom:14px">آلاف المحترفين في انتظارك</p>
-              <button onclick="navigateTo('services')"
-                style="width:100%;padding:10px;background:#0F172A;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">
+              <a href="/#services"
+                style="display:block;width:100%;padding:10px;background:#0F172A;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-sizing:border-box">
                 استعرض الخدمات
-              </button>
+              </a>
             </div>
 
           </aside>

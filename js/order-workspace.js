@@ -10,6 +10,12 @@
 
     let _currentOrderId = null;
     let _lastLoadedMessages = [];
+    let _messagesChangeSubscribers = [];
+    function _notifyMessagesChanged() { _messagesChangeSubscribers.forEach(fn => { try { fn(); } catch (_) {} }); }
+    function _onMessagesChange(fn) {
+        _messagesChangeSubscribers.push(fn);
+        return () => { _messagesChangeSubscribers = _messagesChangeSubscribers.filter(f => f !== fn); };
+    }
     let _chatListener   = null;
     let _selectedRating = 0;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB — images only (get compressed down)
@@ -119,9 +125,8 @@
                   <!-- Messages container -->
                   <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
                     <div class="text-center text-gray-400 py-10">
-                      <i class="fa-solid fa-comments text-5xl mb-3 opacity-30"></i>
-                      <p class="font-bold">${isAr ? 'لا توجد رسائل بعد' : 'No messages yet'}</p>
-                      <p class="text-sm mt-1">${isAr ? 'ابدأ المحادثة مع الطرف الآخر' : 'Start the conversation'}</p>
+                      <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 opacity-40"></i>
+                      <p class="text-sm">${isAr ? 'جاري تحميل المحادثة...' : 'Loading conversation...'}</p>
                     </div>
                   </div>
 
@@ -138,14 +143,15 @@
                   </div>
 
                   <!-- Input area -->
-                  <div class="border-t border-gray-200 p-3 bg-white flex-shrink-0">
+                  <div class="border-t border-gray-200 p-4 bg-white flex-shrink-0">
                     <div class="flex gap-2 items-end">
                       <div class="flex-1">
-                        <textarea id="chatInput" rows="1"
-                          class="form-input resize-none text-sm w-full"
+                        <textarea id="chatInput" rows="2"
+                          class="form-input resize-none text-base w-full rounded-2xl border-gray-300 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 px-4 py-3 leading-relaxed"
+                          style="min-height:52px;max-height:160px"
                           placeholder="${t('orders.send_msg')}"
                           onkeydown="OrderWorkspace.handleChatKeydown(event)"
-                          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
                       </div>
                       <div class="flex gap-2 flex-shrink-0">
                         <!-- Attach file -->
@@ -235,6 +241,7 @@
                    delivered → completed), not granular in-progress work.
                    Only relevant for services (products are instant). -->
               ${order.listingType !== 'product' && [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS].includes(order.status) ? _renderStageTracker(order, isSeller, isAr) : ''}
+              ${order.listingType === 'product' && ![ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED].includes(order.status) ? _renderShippingTracker(order, isSeller, isAr) : ''}
 
               <!-- ── SELLER: Accept/Reject a custom request (before any payment) ── -->
               ${isSeller && order.status === ORDER_STATUS.PENDING && order.paymentStatus === 'no_payment' ? `
@@ -525,6 +532,7 @@
         const container = document.getElementById('chatMessages');
         const isAr = AppState.language !== 'en';
         _lastLoadedMessages = [];
+        _messagesChangeSubscribers = [];
         let _gotAnyMessage = false;
         let _emptyCheckTimer = null;
 
@@ -563,6 +571,7 @@
             if (!_gotAnyMessage) { _gotAnyMessage = true; container.innerHTML = ''; }
             const msg = { id: snap.key, ...snap.val() };
             _lastLoadedMessages.push(msg);
+            _notifyMessagesChanged();
             const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
             const wrap = document.createElement('div');
             wrap.setAttribute('data-msg-id', msg.id);
@@ -608,7 +617,43 @@
         const isImage    = msg.type === 'image';
         const isDelivery = msg.type === 'delivery';
         const isBrief    = msg.type === 'request_brief';
+        const isProductBrief = msg.type === 'product_order_brief';
+        const isShippingUpdate = msg.type === 'shipping_update';
         const isAr       = AppState.language !== 'en';
+
+        // ── Shipping status update card ─────────────────────────────────────────
+        if (isShippingUpdate) {
+            const label = msg.shippingStatus === 'delivered'
+                ? (isAr ? 'تم تسليم الطلب' : 'Order delivered')
+                : (isAr ? 'تم شحن الطلب' : 'Order shipped');
+            const icon = msg.shippingStatus === 'delivered' ? 'fa-house-circle-check' : 'fa-truck';
+            return `
+            <div class="flex justify-center my-3">
+              <div class="bg-turquoise-50 border border-turquoise-200 rounded-full px-4 py-2 flex items-center gap-2 text-xs font-bold text-turquoise-700">
+                <i class="fa-solid ${icon}"></i>${label} · ${formatTimeAgo(msg.createdAt)}
+              </div>
+            </div>`;
+        }
+
+        // ── Product order brief card (shipping/contact details) ────────────────
+        if (isProductBrief) {
+            return `
+            <div class="mx-2 my-3">
+              <div class="bg-turquoise-800 text-white rounded-2xl p-4 max-w-sm">
+                <div class="flex items-center gap-2 mb-2">
+                  <i class="fa-solid fa-box text-turquoise-300"></i>
+                  <p class="font-black text-sm">${isAr ? 'بيانات طلب المنتج' : 'Product Order Details'}</p>
+                </div>
+                <div class="flex flex-col gap-1.5 text-xs text-turquoise-50">
+                  <div class="flex items-center gap-2"><i class="fa-solid fa-user w-4 text-turquoise-300"></i><span>${_escapeHtml(msg.fullName || '—')}</span></div>
+                  <div class="flex items-center gap-2" dir="ltr"><i class="fa-solid fa-phone w-4 text-turquoise-300"></i><span>${_escapeHtml(msg.phone || '—')}</span></div>
+                  <div class="flex items-start gap-2"><i class="fa-solid fa-location-dot w-4 text-turquoise-300 mt-0.5"></i><span class="whitespace-pre-wrap">${_escapeHtml(msg.address || '—')}</span></div>
+                  ${msg.notes ? `<div class="flex items-start gap-2 border-t border-white/10 pt-1.5 mt-1"><i class="fa-solid fa-note-sticky w-4 text-turquoise-300 mt-0.5"></i><span class="whitespace-pre-wrap">${_escapeHtml(msg.notes)}</span></div>` : ''}
+                </div>
+                <p class="text-xs text-turquoise-200 mt-2">${formatTimeAgo(msg.createdAt)}</p>
+              </div>
+            </div>`;
+        }
 
         // ── Request brief card ────────────────────────────────────────────────
         if (isBrief) {
@@ -665,10 +710,16 @@
         // ── File message ─────────────────────────────────────────────────────
         if (isFile) {
             return `
-            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1">
+            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1 group">
               <div>
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-1">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
-                <div class="max-w-xs">${_fileDownloadCard(msg.file)}</div>
+                <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
+                  <div class="max-w-xs">${_fileDownloadCard(msg.file)}</div>
+                  ${isMine ? `
+                  <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+                    class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
+                    title="${isAr ? 'حذف' : 'Delete'}"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                </div>
                 <p class="text-xs text-gray-400 mt-1 mx-1 ${isMine ? 'text-right' : 'text-left'}">${formatTimeAgo(msg.createdAt)}</p>
               </div>
             </div>`;
@@ -677,14 +728,20 @@
         // ── Image message ─────────────────────────────────────────────────────
         if (isImage) {
             return `
-            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1">
+            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1 group">
               <div>
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-1">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
-                <a href="${msg.file?.url}" target="_blank" rel="noopener">
-                  <img src="${msg.file?.url}" alt="${_escapeHtml(msg.file?.name || 'image')}"
-                    class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
-                    loading="lazy" style="max-height:200px;object-fit:cover">
-                </a>
+                <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
+                  <a href="${msg.file?.url}" target="_blank" rel="noopener">
+                    <img src="${msg.file?.url}" alt="${_escapeHtml(msg.file?.name || 'image')}"
+                      class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
+                      loading="lazy" style="max-height:200px;object-fit:cover">
+                  </a>
+                  ${isMine ? `
+                  <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+                    class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
+                    title="${isAr ? 'حذف' : 'Delete'}"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                </div>
                 <p class="text-xs text-gray-400 mt-1 mx-1 ${isMine ? 'text-right' : 'text-left'}">${formatTimeAgo(msg.createdAt)}</p>
               </div>
             </div>`;
@@ -692,11 +749,19 @@
 
         // ── Text message ──────────────────────────────────────────────────────
         return `
-        <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1">
+        <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1 group">
           <div class="max-w-xs lg:max-w-sm">
             ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-2">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
-            <div class="chat-bubble ${isMine ? 'sent' : 'received'}">
-              <p class="text-sm leading-relaxed whitespace-pre-wrap break-words">${_linkify(_escapeHtml(msg.text || ''))}</p>
+            <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
+              <div class="chat-bubble ${isMine ? 'sent' : 'received'}">
+                <p class="text-sm leading-relaxed whitespace-pre-wrap break-words">${_linkify(_escapeHtml(msg.text || ''))}</p>
+              </div>
+              ${isMine ? `
+              <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+                class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
+                title="${isAr ? 'حذف الرسالة' : 'Delete message'}">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>` : ''}
             </div>
             <p class="text-xs text-gray-400 mt-0.5 mx-2 ${isMine ? 'text-right' : 'text-left'}">
               ${formatTimeAgo(msg.createdAt)}
@@ -704,6 +769,24 @@
             </p>
           </div>
         </div>`;
+    }
+
+    // ── Delete a message (sender only — enforced server-side too) ────────────
+    function deleteMessage(msgId) {
+        if (!_currentOrderId || !window.rtdb) return;
+        const isAr = AppState.language !== 'en';
+        if (!confirm(isAr ? 'حذف هذه الرسالة نهائيًا؟' : 'Delete this message permanently?')) return;
+        window.rtdb.ref(`chats/${_currentOrderId}/messages/${msgId}`).remove()
+            .then(() => {
+                const el = document.querySelector(`[data-msg-id="${msgId}"]`);
+                if (el) el.remove();
+                _lastLoadedMessages = _lastLoadedMessages.filter(m => m.id !== msgId);
+                _notifyMessagesChanged();
+            })
+            .catch(err => {
+                console.error('[Chat] deleteMessage error:', err);
+                showToast(isAr ? 'تعذّر حذف الرسالة' : 'Could not delete the message', 'error');
+            });
     }
 
     // ── File download card ────────────────────────────────────────────────────
@@ -1064,12 +1147,42 @@
 
     // ── Load files tab (reads from the RTDB message list, filtered client-side —
     //    RTDB has no "where type in [...]" query like Firestore) ────────────────
-    function _loadFiles(orderId) {
-        const render = (msgs) => {
-            const container = document.getElementById('filesList');
-            const countEl   = document.getElementById('filesCount');
-            if (!container) return;
+    let _filesListenerCleanup = null;
 
+    function _renderFilesList(files, isAr) {
+        const container = document.getElementById('filesList');
+        const countEl   = document.getElementById('filesCount');
+        if (!container) return;
+        if (countEl) countEl.textContent = files.length + (isAr ? ' ملف' : ' files');
+        if (files.length === 0) {
+            container.innerHTML = `<p class="text-sm text-gray-400 text-center py-8">${isAr ? 'لا توجد ملفات بعد' : 'No files yet'}</p>`;
+            return;
+        }
+        container.innerHTML = [...files].reverse().map(f => `
+          <div class="group">
+            <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-sm transition">
+              ${_fileDownloadCard(f)}
+            </div>
+            <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '<i class="fa-solid fa-box"></i>' : ''}</p>
+          </div>`).join('');
+    }
+
+    function _loadFiles(orderId) {
+        // ⚠️ FIXED (found in audit): this used to do its own separate
+        // .once('value') read over the ENTIRE messages list, independent of
+        // the chat's own listener. That has the exact same problem the chat
+        // panel had — Firebase only resolves .once('value') once it has one
+        // FULLY consistent snapshot of everything (including every embedded
+        // base64 image), so on a flaky connection this could take just as
+        // long, or never resolve, leaving the Files tab permanently blank
+        // even though the chat panel itself had already loaded fine. Now the
+        // Files tab is driven from the exact same incremental message list
+        // the chat listener is already building (`_lastLoadedMessages`),
+        // updated live every time a new message streams in — no second,
+        // duplicate, all-or-nothing read at all.
+        if (_filesListenerCleanup) { _filesListenerCleanup(); _filesListenerCleanup = null; }
+        const isAr = AppState.language !== 'en';
+        const filesFromMsgs = (msgs) => {
             const files = [];
             msgs.forEach(d => {
                 if ((d.type === 'file' || d.type === 'image') && d.file) {
@@ -1079,28 +1192,10 @@
                     d.files.forEach(f => files.push({ ...f, sentBy: d.senderName, sentAt: d.createdAt, isDelivery: true }));
                 }
             });
-
-            if (countEl) countEl.textContent = files.length + (AppState.language !== 'en' ? ' ملف' : ' files');
-            if (files.length === 0) return;
-
-            container.innerHTML = files.reverse().map(f => `
-              <div class="group">
-                <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-sm transition">
-                  ${_fileDownloadCard(f)}
-                </div>
-                <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '<i class="fa-solid fa-box"></i>' : ''}</p>
-              </div>`).join('');
+            return files;
         };
-
-        if (_lastLoadedMessages.length) { render(_lastLoadedMessages); return; }
-        if (!window.rtdb) return;
-        window.rtdb.ref(`chats/${orderId}/messages`).once('value').then(snap => {
-            const msgs = [];
-            snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
-            render(msgs);
-        }).catch(err => {
-            if (err.code !== 'PERMISSION_DENIED') console.warn('[Files]', err.code || err.message);
-        });
+        _renderFilesList(filesFromMsgs(_lastLoadedMessages), isAr);
+        _filesListenerCleanup = _onMessagesChange(() => _renderFilesList(filesFromMsgs(_lastLoadedMessages), isAr));
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────
@@ -1247,6 +1342,138 @@
         ar: ['استلام الطلب', 'قيد التنفيذ', 'مراجعة العميل', 'التسليم النهائي'],
         en: ['Order received', 'In progress', 'Customer review', 'Final delivery'],
     };
+
+    // ── Shipping tracker (products only) ─────────────────────────────────────
+    // A simple 3-step tracker: processing → shipped → delivered. Unlike the
+    // multi-stage work tracker above (which is for custom services with an
+    // open-ended number of work stages), a physical/digital product order
+    // only ever has these three states, so the seller doesn't customize
+    // stage names — they just move it forward with one click at each step.
+    function _renderShippingTracker(order, isSeller, isAr) {
+        const status = order.shippingStatus || 'processing';
+        const steps = [
+            { key: 'placed',    label: isAr ? 'تم الطلب' : 'Order placed',   icon: 'fa-cart-shopping' },
+            { key: 'processing',label: isAr ? 'قيد التجهيز' : 'Processing',  icon: 'fa-box-open' },
+            { key: 'shipped',   label: isAr ? 'تم الشحن' : 'Shipped',        icon: 'fa-truck' },
+            { key: 'delivered', label: isAr ? 'تم التسليم' : 'Delivered',    icon: 'fa-house-circle-check' },
+        ];
+        const order_ = { placed: 0, processing: 1, shipped: 2, delivered: 3 };
+        const current = order_[status] ?? 1;
+
+        return `
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-truck-fast text-turquoise-600"></i>
+              ${isAr ? 'متابعة الشحن' : 'Shipping Tracker'}
+            </h3>
+            <div class="space-y-3 mb-4">
+              ${steps.map((s, i) => `
+                <div class="flex items-center gap-3">
+                  <div class="w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-black ${i <= current ? 'bg-turquoise-500 text-white' : 'bg-gray-100 text-gray-400'}">
+                    ${i < current ? '<i class="fa-solid fa-check"></i>' : `<i class="fa-solid ${s.icon}"></i>`}
+                  </div>
+                  <span class="text-sm ${i === current ? 'font-black text-turquoise-700' : i < current ? 'text-gray-400' : 'text-gray-400'}">${s.label}</span>
+                  ${i === current ? `<span class="text-xs text-turquoise-600 font-bold mr-auto">${isAr?'الحالة الآن':'Current'}</span>` : ''}
+                </div>`).join('')}
+            </div>
+            ${isSeller && status !== 'delivered' ? `
+            <div class="flex gap-2 border-t border-gray-100 pt-3">
+              ${status === 'processing' ? `
+              <button onclick="OrderWorkspace.markProductShipped('${order.id}')"
+                class="flex-1 text-sm font-bold bg-navy-700 text-white py-2.5 rounded-xl hover:bg-navy-800 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-truck"></i>${isAr ? 'تحديد كـ: تم الشحن' : 'Mark as shipped'}
+              </button>` : ''}
+              <button onclick="OrderWorkspace.markProductDelivered('${order.id}')"
+                class="flex-1 text-sm font-bold bg-turquoise-600 text-white py-2.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-house-circle-check"></i>${isAr ? 'تحديد كـ: تم التسليم' : 'Mark as delivered'}
+              </button>
+            </div>` : ''}
+          </div>`;
+    }
+
+    async function markProductShipped(orderId, orderDataOverride) {
+        const isAr = AppState.language !== 'en';
+        showLoading();
+        try {
+            const order = orderDataOverride || AppState.currentOrder;
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).update({
+                shippingStatus: 'shipped',
+                updatedAt: _ts(),
+            });
+            if (order?.buyerId) {
+                await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
+                    userId: order.buyerId, type: 'shipping',
+                    title: isAr ? 'تم شحن طلبك!' : 'Your order has shipped!',
+                    message: `"${order.serviceTitle || ''}" ${isAr ? 'في الطريق إليك' : 'is on its way'}`,
+                    orderId, read: false, createdAt: _ts(),
+                });
+            }
+            if (window.rtdb) {
+                await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                    senderId: AppState.currentUser.uid,
+                    senderName: AppState.currentUser.displayName || AppState.currentUser.email || 'Seller',
+                    type: 'shipping_update', shippingStatus: 'shipped',
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                });
+            }
+            hideLoading();
+            showToast(isAr ? '✅ تم تحديث حالة الشحن' : '✅ Shipping status updated', 'success');
+            // Only jump into the workspace view if this was called FROM the
+            // workspace itself (no override passed); the "Mark shipped"
+            // quick-action button on the orders list should just refresh
+            // that list in place, not yank the seller into a different page.
+            if (!orderDataOverride) openWorkspace(orderId);
+            return true;
+        } catch (err) {
+            hideLoading();
+            console.error('[Shipping] markProductShipped failed:', err);
+            showToast(isAr ? 'تعذّر تحديث حالة الشحن' : 'Could not update shipping status', 'error');
+            return false;
+        }
+    }
+
+    async function markProductDelivered(orderId, orderDataOverride) {
+        const isAr = AppState.language !== 'en';
+        showLoading();
+        try {
+            const order = orderDataOverride || AppState.currentOrder;
+            // Sets order.status to DELIVERED too — this reuses the existing
+            // buyer "تأكيد الاستلام" / EscrowManager.confirmDelivery button
+            // already built for services, instead of inventing a second,
+            // separate release-of-funds path just for products.
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).update({
+                shippingStatus: 'delivered',
+                status: ORDER_STATUS.DELIVERED,
+                deliveredAt: _ts(),
+                updatedAt: _ts(),
+            });
+            if (order?.buyerId) {
+                await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
+                    userId: order.buyerId, type: 'shipping',
+                    title: isAr ? 'تم تسليم طلبك!' : 'Your order was delivered!',
+                    message: `"${order.serviceTitle || ''}" ${isAr ? 'تم تسليمه — راجع الطلب وأكّد الاستلام' : 'has been delivered — please confirm receipt'}`,
+                    orderId, read: false, createdAt: _ts(),
+                });
+            }
+            if (window.rtdb) {
+                await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                    senderId: AppState.currentUser.uid,
+                    senderName: AppState.currentUser.displayName || AppState.currentUser.email || 'Seller',
+                    type: 'shipping_update', shippingStatus: 'delivered',
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                });
+            }
+            hideLoading();
+            showToast(isAr ? '✅ تم تحديث حالة الشحن' : '✅ Shipping status updated', 'success');
+            if (!orderDataOverride) openWorkspace(orderId);
+            return true;
+        } catch (err) {
+            hideLoading();
+            console.error('[Shipping] markProductDelivered failed:', err);
+            showToast(isAr ? 'تعذّر تحديث حالة الشحن' : 'Could not update shipping status', 'error');
+            return false;
+        }
+    }
 
     function _renderStageTracker(order, isSeller, isAr) {
         const stages = (order.customStages && order.customStages.length) ? order.customStages : DEFAULT_STAGES[isAr ? 'ar' : 'en'];
@@ -1428,13 +1655,14 @@
 
     // ── Expose API ────────────────────────────────────────────────────────────
     window.OrderWorkspace = {
-        openWorkspace, sendMessage, handleChatKeydown, sendFile,
+        openWorkspace, sendMessage, handleChatKeydown, sendFile, deleteMessage,
         deliverService, requestRevision,
         setRating, submitReview, previewDeliveryFiles,
         handleDeliveryDrop, wsActivateTab,
         sendBuyerInstructions, previewBuyerFiles,
         respondToRequest,
         addStageField, saveCustomStages, setOrderStage,
+        markProductShipped, markProductDelivered,
     };
     window.openWorkspace = openWorkspace;
     window.wsActivateTab = wsActivateTab;
