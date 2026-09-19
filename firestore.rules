@@ -271,8 +271,17 @@ service cloud.firestore {
     }
 
     // ── settings ──────────────────────────────────────────────────────────────
+    // ⚠️ FIXED (found in audit): read used to require isSignedIn(), but
+    // loadPlatformSettings() in constants.js runs at app start BEFORE
+    // Firebase Auth has resolved (even for a logged-in user auth.uid can
+    // still be null at that exact moment — a timing race, not a real
+    // permission problem), and guests browsing services before logging in
+    // also need the real commission % to see accurate pricing. This
+    // document only holds public config (fee %, feature toggles) — never
+    // secrets — so making it world-readable is safe; only admins can still
+    // write it.
     match /settings/{docId} {
-      allow read:  if isSignedIn();
+      allow read:  if true;
       allow write: if isAdmin();
     }
 

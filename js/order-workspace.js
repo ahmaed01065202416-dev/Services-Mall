@@ -542,7 +542,31 @@
             const msgs = [];
             snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
             _lastLoadedMessages = msgs; // used by _loadFiles below, avoids a second read
-            container.innerHTML = msgs.map(m => _renderMessage(m, m.id)).join('');
+            // ⚠️ FIXED (found in audit, round N): _renderMessage() was called
+            // inside a single .map() with no per-item try/catch. If ANY one
+            // message in the list threw while rendering (a corrupt entry, an
+            // unexpected field shape, etc.), the WHOLE .map() call throws —
+            // and since container.innerHTML is only assigned AFTER map()
+            // finishes, the assignment never runs at all. The visible symptom
+            // was exactly this: the chat silently froze on whatever was last
+            // successfully rendered (often just the very first message),
+            // with every later message — including new ones you just sent —
+            // invisible, and no error shown anywhere because it's thrown
+            // inside a Firebase SDK callback that swallows it into a console
+            // warning easy to miss among the startup log lines. Now each
+            // message renders independently: one bad entry logs clearly
+            // (with its id) and shows a small error card in its place, while
+            // every other message still renders normally.
+            const isAr = AppState.language !== 'en';
+            container.innerHTML = msgs.map(m => {
+                try { return _renderMessage(m, m.id); }
+                catch (renderErr) {
+                    console.error('[Chat] Failed to render message', m.id, renderErr, m);
+                    return `<div class="mx-2 my-2 text-xs text-red-400 bg-red-50 rounded-lg p-2">
+                        ${isAr ? 'تعذّر عرض رسالة واحدة' : 'One message failed to display'} (${_escapeHtml(m.id)})
+                    </div>`;
+                }
+            }).join('');
             if (wasAtBottom) container.scrollTop = container.scrollHeight;
 
         }, err => {
