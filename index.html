@@ -419,7 +419,8 @@
     <!-- Desktop Nav Links -->
     <div class="hidden md:flex items-center gap-1">
       <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
-      <button onclick="navigateTo('services')" data-nav="services" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="filterByType('service')" data-nav="services" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="filterByType('product')" data-nav="products" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition">المنتجات</button>
       <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
     </div>
 
@@ -500,7 +501,8 @@
   <div id="mobileMenu" class="hidden md:hidden border-t border-gray-100 px-4 pb-4 bg-white">
     <div class="grid grid-cols-2 gap-2 mt-3">
       <button onclick="navigateTo('home');toggleMobileMenu()"     class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-home text-navy-500"></i><span data-i18n="nav.home">الرئيسية</span></button>
-      <button onclick="navigateTo('services');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-grid-2 text-navy-500"></i><span data-i18n="nav.services">الخدمات</span></button>
+      <button onclick="filterByType('service');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-grid-2 text-navy-500"></i><span data-i18n="nav.services">الخدمات</span></button>
+      <button onclick="filterByType('product');toggleMobileMenu()" class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-box text-turquoise-500"></i><span>المنتجات</span></button>
       <button onclick="navigateTo('orders');toggleMobileMenu()"   class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-bag-shopping text-navy-500"></i><span data-i18n="nav.orders">طلباتي</span></button>
       <button onclick="toggleLanguage()"                           class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700"><i class="fa-solid fa-globe text-navy-500"></i><span id="mobileLanguageBtn">English</span></button>
     </div>
@@ -873,7 +875,7 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Header & Search -->
     <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
-      <h1 class="text-3xl font-black text-gray-900" data-i18n="services.title">الخدمات</h1>
+      <h1 id="servicesPageTitle" class="text-3xl font-black text-gray-900">الخدمات والمنتجات</h1>
       <div class="flex gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
           <i class="fa-solid fa-search absolute top-1/2 -translate-y-1/2 start-4 text-gray-400"></i>
@@ -898,16 +900,9 @@
       <button onclick="ServicesManager.filterType('product')" data-type="product" class="type-tab-btn px-5 py-2 rounded-xl text-sm font-bold transition bg-gray-100 text-gray-600"><i class="fa-solid fa-box me-1.5"></i>منتجات</button>
     </div>
 
-    <!-- Category Pills -->
-    <div class="flex gap-2 overflow-x-auto pb-2 mb-3">
-      <button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition" data-i18n="general.all">الكل</button>
-      <button onclick="ServicesManager.filterCategory('design')"      data-cat="design"      class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-palette me-1.5"></i>تصميم</button>
-      <button onclick="ServicesManager.filterCategory('programming')" data-cat="programming" class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-laptop-code me-1.5"></i>برمجة</button>
-      <button onclick="ServicesManager.filterCategory('marketing')"   data-cat="marketing"   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-chart-line me-1.5"></i>تسويق</button>
-      <button onclick="ServicesManager.filterCategory('writing')"     data-cat="writing"     class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-pen-nib me-1.5"></i>كتابة</button>
-      <button onclick="ServicesManager.filterCategory('video')"       data-cat="video"       class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-video me-1.5"></i>فيديو</button>
-      <button onclick="ServicesManager.filterCategory('seo')"         data-cat="seo"         class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition"><i class="fa-solid fa-magnifying-glass-chart me-1.5"></i>SEO</button>
-    </div>
+    <!-- Category Pills — populated dynamically by ServicesManager._renderCategoryPills()
+         based on the active services/products tab (see filterType() in services.js) -->
+    <div id="categoryPillsContainer" class="flex gap-2 overflow-x-auto pb-2 mb-3"></div>
 
     <!-- Express Delivery Hub — services delivered in 24h or less -->
     <div class="mb-6">
@@ -1418,6 +1413,11 @@
         <p id="productSellerRulesText" class="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap"></p>
       </div>
 
+      <!-- ⚠️ ADDED: structured fields (size/color/etc.) the seller enabled
+           for this product's category — rendered dynamically by
+           RequestSystem.openProductOrderModal() in request-system.js -->
+      <div id="productStructuredFields" class="space-y-4 mb-4"></div>
+
       <!-- Buyer details form -->
       <div class="space-y-4">
         <div>
@@ -1468,21 +1468,24 @@
 <!-- Mobile Bottom Nav -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-borderline z-50 pb-safe shadow-[0_-2px_12px_rgba(15,23,42,0.06)]">
   <div class="flex items-center justify-around py-1.5">
-    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="home">
-      <i class="fa-solid fa-store text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.home">الرئيسية</span>
+    <button onclick="navigateTo('home')"     class="flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="home">
+      <i class="fa-solid fa-store text-lg"></i><span class="text-[10px] font-semibold" data-i18n="nav.home">الرئيسية</span>
     </button>
-    <button onclick="navigateTo('services')" class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="services">
-      <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.services">الخدمات</span>
+    <button onclick="filterByType('service')" class="flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="services">
+      <i class="fa-solid fa-grid-2 text-lg"></i><span class="text-[10px] font-semibold" data-i18n="nav.services">الخدمات</span>
     </button>
-    <button onclick="navigateTo('cart')" class="relative flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="cart">
-      <i class="fa-solid fa-cart-shopping text-lg"></i><span class="text-[11px] font-semibold" data-i18n="cart.short">السلة</span>
+    <button onclick="filterByType('product')" class="flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="products">
+      <i class="fa-solid fa-box text-lg"></i><span class="text-[10px] font-semibold">المنتجات</span>
+    </button>
+    <button onclick="navigateTo('cart')" class="relative flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="cart">
+      <i class="fa-solid fa-cart-shopping text-lg"></i><span class="text-[10px] font-semibold" data-i18n="cart.short">السلة</span>
       <span data-cart-count class="hidden absolute top-0 end-2 bg-secondary text-white text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
     </button>
-    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="orders">
-      <i class="fa-solid fa-shield-heart text-lg"></i><span class="text-[11px] font-semibold" data-i18n="nav.orders">طلباتي</span>
+    <button onclick="navigateTo('orders')"   class="flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition" data-mobile-nav="orders">
+      <i class="fa-solid fa-shield-heart text-lg"></i><span class="text-[10px] font-semibold" data-i18n="nav.orders">طلباتي</span>
     </button>
-    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1.5 px-4 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition">
-      <i class="fa-solid fa-user text-lg"></i><span class="text-[11px] font-semibold">حسابي</span>
+    <button onclick="AppState.currentUser?navigateTo('dashboard'):navigateTo('login')" class="flex flex-col items-center gap-1 py-1.5 px-2.5 min-h-[44px] justify-center text-textsecondary hover:text-secondary transition">
+      <i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-semibold">حسابي</span>
     </button>
   </div>
 </nav>
@@ -1833,7 +1836,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             const isAr = AppState.language !== 'en';
             container.innerHTML = snap.docs.map(doc => {
                 const s = { id: doc.id, ...doc.data() };
-                const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||''}).replace(/"/g,'&quot;');
+                const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;');
                 return `
                 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
                   <div class="relative aspect-video bg-gray-100">

@@ -392,6 +392,24 @@
             rulesBox.classList.add('hidden');
         }
 
+        // ⚠️ ADDED: render the seller's enabled structured fields (size,
+        // color, warranty...) as real dropdowns/text inputs instead of
+        // leaving everything to the free-text notes box below.
+        const fieldsContainer = document.getElementById('productStructuredFields');
+        const fields = Array.isArray(service.structuredFields) ? service.structuredFields : [];
+        if (fieldsContainer) {
+            fieldsContainer.innerHTML = fields.map(f => `
+              <div>
+                <label class="block text-sm font-black text-gray-700 mb-2">${escapeHtml(f.label)} <span class="text-red-500">*</span></label>
+                ${f.type === 'select' && f.options?.length ? `
+                  <select class="form-input w-full text-sm" data-field-key="${escapeHtml(f.key)}" data-field-label="${escapeHtml(f.label)}">
+                    <option value="">${isAr ? '-- اختر --' : '-- Select --'}</option>
+                    ${f.options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}
+                  </select>`
+                : `<input type="text" class="form-input w-full text-sm" data-field-key="${escapeHtml(f.key)}" data-field-label="${escapeHtml(f.label)}" placeholder="${escapeHtml(f.label)}">`}
+              </div>`).join('');
+        }
+
         // Pre-fill name/phone from the user's profile if available, but
         // always let them edit — the shipping name isn't always the account
         // name (gifts, family orders, etc.).
@@ -421,6 +439,22 @@
         const address  = document.getElementById('productBuyerAddress')?.value?.trim();
         const notes    = sanitizeInput(document.getElementById('productBuyerNotes')?.value?.trim() || '', 500);
         const agreed   = document.getElementById('productAgreeRules')?.checked;
+
+        // ⚠️ ADDED: every structured field (size/color/etc.) the seller
+        // enabled for this product is required — an order with a picked
+        // color but no size (for example) is exactly the ambiguity this
+        // feature exists to prevent.
+        const fieldInputs = Array.from(document.querySelectorAll('#productStructuredFields [data-field-key]'));
+        const selectedFields = {};
+        for (const el of fieldInputs) {
+            const val = el.value?.trim();
+            if (!val) {
+                showToast(isAr ? `اختر "${el.dataset.fieldLabel}"` : `Choose "${el.dataset.fieldLabel}"`, 'warning');
+                el.focus();
+                return;
+            }
+            selectedFields[el.dataset.fieldKey] = { label: el.dataset.fieldLabel, value: sanitizeInput(val, 100) };
+        }
 
         if (!fullName)  { showToast(isAr ? 'اكتب الاسم بالكامل' : 'Enter your full name', 'warning'); document.getElementById('productBuyerName')?.focus(); return; }
         if (!phone)     { showToast(isAr ? 'اكتب رقم الهاتف' : 'Enter your phone number', 'warning'); document.getElementById('productBuyerPhone')?.focus(); return; }
@@ -468,6 +502,7 @@
                 shippingStatus: 'processing',
                 paymentStatus: 'no_payment',
                 shippingInfo,
+                selectedFields: selectedFields,
                 sellerOrderRules: svcData.orderRules || '',
                 createdAt:     serverTimestamp(),
                 updatedAt:     serverTimestamp(),
@@ -485,6 +520,7 @@
                         type:       'product_order_brief',
                         fullName: shippingInfo.fullName, phone: shippingInfo.phone,
                         address: shippingInfo.address, notes: shippingInfo.notes,
+                        selectedFields: Object.values(selectedFields).map(f => `${f.label}: ${f.value}`).join(' · '),
                         readBy:     { [user.uid]: true },
                         createdAt:  firebase.database.ServerValue.TIMESTAMP,
                     });

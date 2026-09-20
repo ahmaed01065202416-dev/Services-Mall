@@ -14,7 +14,83 @@
     let _expressOnly   = false;
     let _activeCat     = '';
     let _activeType    = ''; // '', 'service', or 'product'
+    let _pendingGalleryFiles = []; // new gallery photos chosen but not yet uploaded
+    let _keptExistingGallery = [];  // existing gallery URLs kept when editing (minus any removed)
     const PAGE_SIZE    = 12;
+
+    // ── Category taxonomies ─────────────────────────────────────────────────────
+    // ⚠️ ADDED: two separate lists — services (design/programming/marketing...)
+    // vs products (clothing/electronics/home...). Used by both the add-listing
+    // category dropdown (initAddServicePage/toggleListingType below) and the
+    // browse-page category pills (_renderCategoryPills), so both places stay
+    // in sync from one source instead of duplicating the list.
+    function _getServiceCategories() {
+        const isAr = AppState.language !== 'en';
+        return [
+            { value: 'design',      label: isAr ? 'تصميم'  : 'Design',      icon: 'fa-palette' },
+            { value: 'programming', label: isAr ? 'برمجة'   : 'Programming', icon: 'fa-laptop-code' },
+            { value: 'marketing',   label: isAr ? 'تسويق'   : 'Marketing',   icon: 'fa-chart-line' },
+            { value: 'writing',     label: isAr ? 'كتابة'   : 'Writing',     icon: 'fa-pen-nib' },
+            { value: 'video',       label: isAr ? 'فيديو'   : 'Video',       icon: 'fa-video' },
+            { value: 'seo',         label: isAr ? 'SEO'     : 'SEO',         icon: 'fa-magnifying-glass-chart' },
+            { value: 'audio',       label: isAr ? 'صوتيات'  : 'Audio',       icon: 'fa-headphones' },
+            { value: 'data',        label: isAr ? 'بيانات'  : 'Data',        icon: 'fa-chart-simple' },
+            { value: 'other',       label: isAr ? 'أخرى'    : 'Other',       icon: 'fa-ellipsis' },
+        ];
+    }
+    function _getProductCategories() {
+        const isAr = AppState.language !== 'en';
+        return [
+            { value: 'clothing',    label: isAr ? 'ملابس'          : 'Clothing',    icon: 'fa-shirt' },
+            { value: 'electronics', label: isAr ? 'إلكترونيات'      : 'Electronics', icon: 'fa-mobile-screen' },
+            { value: 'home',        label: isAr ? 'مستلزمات منزلية' : 'Home',        icon: 'fa-house' },
+            { value: 'beauty',      label: isAr ? 'مستحضرات تجميل'  : 'Beauty',      icon: 'fa-spa' },
+            { value: 'food',        label: isAr ? 'أطعمة ومشروبات'  : 'Food',        icon: 'fa-utensils' },
+            { value: 'accessories', label: isAr ? 'إكسسوارات'       : 'Accessories', icon: 'fa-bag-shopping' },
+            { value: 'digital',     label: isAr ? 'منتجات رقمية'    : 'Digital',     icon: 'fa-download' },
+            { value: 'other',       label: isAr ? 'أخرى'            : 'Other',       icon: 'fa-ellipsis' },
+        ];
+    }
+
+    // ── Suggested structured-field templates per product category ───────────────
+    // ⚠️ ADDED: the seller picks a category, sees a ready-made set of fields
+    // real buyers of that category actually need, and can turn each one on/off
+    // and edit its option list — instead of only a free-text "notes" box.
+    // These become real dropdowns/choices on the buyer's order form (see
+    // request-system.js submitProductOrder / openProductOrderModal), not just
+    // text the buyer has to type correctly on their own.
+    function _getFieldTemplates() {
+        const isAr = AppState.language !== 'en';
+        return {
+            clothing: [
+                { key: 'size',   label: isAr?'المقاس':'Size',   type: 'select', options: isAr?'S,M,L,XL,XXL':'S,M,L,XL,XXL', on: true },
+                { key: 'color',  label: isAr?'اللون':'Color',   type: 'select', options: isAr?'أسود,أبيض,أحمر,أزرق':'Black,White,Red,Blue', on: true },
+                { key: 'fabric', label: isAr?'خامة القماش':'Fabric', type: 'text', options: '', on: false },
+            ],
+            electronics: [
+                { key: 'warranty', label: isAr?'الضمان':'Warranty', type: 'select', options: isAr?'بدون ضمان,3 شهور,سنة':'No warranty,3 months,1 year', on: true },
+                { key: 'color',    label: isAr?'اللون/الموديل':'Color/Model', type: 'text', options: '', on: true },
+            ],
+            home: [
+                { key: 'size',   label: isAr?'المقاس/الأبعاد':'Size/Dimensions', type: 'text', options: '', on: true },
+                { key: 'color',  label: isAr?'اللون':'Color', type: 'text', options: '', on: false },
+            ],
+            beauty: [
+                { key: 'shade',  label: isAr?'الدرجة/اللون':'Shade', type: 'text', options: '', on: false },
+                { key: 'expiry', label: isAr?'تاريخ الصلاحية':'Expiry note', type: 'text', options: '', on: true },
+            ],
+            food: [
+                { key: 'weight', label: isAr?'الوزن/الكمية':'Weight/Quantity', type: 'select', options: isAr?'صغير,وسط,كبير':'Small,Medium,Large', on: true },
+                { key: 'expiry', label: isAr?'تاريخ الصلاحية':'Expiry date', type: 'text', options: '', on: true },
+            ],
+            accessories: [
+                { key: 'color', label: isAr?'اللون':'Color', type: 'text', options: '', on: true },
+                { key: 'size',  label: isAr?'المقاس':'Size', type: 'text', options: '', on: false },
+            ],
+            digital: [],
+            other: [],
+        };
+    }
 
     const ServicesManager = {
 
@@ -102,9 +178,29 @@
             this._applyFilters();
         },
 
+        // ⚠️ ADDED: rebuild the browse-page category pills to match whichever
+        // type tab is active — service categories for 'service', product
+        // categories for 'product'. For the combined "الكل" view there's no
+        // single sensible category list (the two taxonomies don't overlap),
+        // so it just shows the "الكل" pill with no per-category filter.
+        _renderCategoryPills(type) {
+            const container = document.getElementById('categoryPillsContainer');
+            if (!container) return;
+            const isAr = AppState.language !== 'en';
+            const allBtn = `<button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition">${isAr ? 'الكل' : 'All'}</button>`;
+            if (!type) { container.innerHTML = allBtn; return; }
+            const list = type === 'product' ? _getProductCategories() : _getServiceCategories();
+            container.innerHTML = allBtn + list.map(c => `
+                <button onclick="ServicesManager.filterCategory('${c.value}')" data-cat="${c.value}"
+                  class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">
+                  <i class="fa-solid ${c.icon} me-1.5"></i>${c.label}
+                </button>`).join('');
+        },
+
         // ⚠️ ADDED: خدمات (custom request flow) vs منتجات (instant buy) — '' = both
         filterType(type) {
             _activeType = type;
+            _activeCat  = '';
             document.querySelectorAll('.type-tab-btn').forEach(btn => {
                 const isActive = btn.dataset.type === type;
                 btn.classList.toggle('bg-navy-800', isActive);
@@ -112,6 +208,16 @@
                 btn.classList.toggle('bg-gray-100', !isActive);
                 btn.classList.toggle('text-gray-600', !isActive);
             });
+            this._renderCategoryPills(type);
+            const expressBox = document.getElementById('expressToggleBtn')?.closest('div');
+            if (expressBox) expressBox.classList.toggle('hidden', type === 'product');
+            const titleEl = document.getElementById('servicesPageTitle');
+            if (titleEl) {
+                const isAr = AppState.language !== 'en';
+                titleEl.textContent = type === 'product' ? (isAr ? 'المنتجات' : 'Products')
+                    : type === 'service' ? (isAr ? 'الخدمات' : 'Services')
+                    : (isAr ? 'الخدمات والمنتجات' : 'Services & Products');
+            }
             this._applyFilters();
         },
 
@@ -281,7 +387,7 @@
                     <div>
                       <!-- Cover image -->
                       <div class="relative">
-                        <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'}"
+                        <img id="serviceDetailMainImg" src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'}"
                           class="w-full h-72 object-cover"
                           onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
                         <button onclick="closeModal('serviceModal')"
@@ -289,6 +395,19 @@
                           <i class="fa-solid fa-xmark text-lg"></i>
                         </button>
                       </div>
+                      <!-- ⚠️ ADDED: gallery thumbnails — clicking one swaps the
+                           cover image above so buyers can browse extra angles
+                           before ordering (products only; see svcGalleryFiles
+                           in the add-listing form). -->
+                      ${Array.isArray(s.images) && s.images.length ? `
+                      <div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto">
+                        <img src="${s.image || ''}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
+                          class="w-16 h-16 object-cover rounded-lg border-2 border-navy-500 cursor-pointer flex-shrink-0">
+                        ${s.images.map(url => `
+                          <img src="${url}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
+                            class="w-16 h-16 object-cover rounded-lg border-2 border-transparent hover:border-navy-400 cursor-pointer flex-shrink-0">
+                        `).join('')}
+                      </div>` : ''}
 
                       <div class="p-6 space-y-5">
                         <!-- Title & Category -->
@@ -354,7 +473,7 @@
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>
-                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||''}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
@@ -441,17 +560,14 @@
             const isEdit = !!service;
             const wantsProduct = service ? service.listingType === 'product' : defaultType === 'product';
 
-            const categories = [
-                { value: 'design',      label: isAr ? 'تصميم'  : 'Design'    },
-                { value: 'programming', label: isAr ? 'برمجة'   : 'Programming'},
-                { value: 'marketing',   label: isAr ? 'تسويق'   : 'Marketing'  },
-                { value: 'writing',     label: isAr ? 'كتابة'   : 'Writing'    },
-                { value: 'video',       label: isAr ? 'فيديو'   : 'Video'      },
-                { value: 'seo',         label: isAr ? 'SEO'     : 'SEO'        },
-                { value: 'audio',       label: isAr ? '🎧 صوتيات'  : '🎧 Audio'      },
-                { value: 'data',        label: isAr ? '📊 بيانات'  : '📊 Data'       },
-                { value: 'other',       label: isAr ? 'أخرى'       : 'Other'          },
-            ];
+            // Reset per-form-open state (gallery photos, structured fields),
+            // then pre-load from the existing listing when editing.
+            _pendingGalleryFiles = [];
+            _keptExistingGallery = isEdit ? [...(service.images || [])] : [];
+            this._editingStructuredFields = isEdit ? (service.structuredFields || []) : [];
+
+            const categories = _getServiceCategories();
+            const productCategories = _getProductCategories();
 
             container.innerHTML = `
             <div class="max-w-2xl mx-auto">
@@ -500,8 +616,8 @@
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'التصنيف':'Category'} *</label>
-                      <select id="svcCategory" class="form-input">
-                        ${categories.map(c => `<option value="${c.value}" ${service?.category===c.value?'selected':''}>${c.label}</option>`).join('')}
+                      <select id="svcCategory" class="form-input" onchange="ServicesManager.refreshFieldTemplates()">
+                        ${(wantsProduct ? productCategories : categories).map(c => `<option value="${c.value}" ${service?.category===c.value?'selected':''}>${c.label}</option>`).join('')}
                       </select>
                     </div>
                     <div>
@@ -562,14 +678,34 @@
 
                   <!-- Product-only field: what the buyer gets instantly on payment -->
                   <div id="svcProductFields" class="hidden space-y-3">
-                    <!-- ⚠️ ADDED: seller-defined rules/requirements shown to the
-                         buyer in the product order form before checkout (e.g.
-                         required size/color, shipping notes, custom conditions). -->
+                    <!-- ⚠️ ADDED: category-based suggested field templates —
+                         picking "ملابس" suggests "المقاس/اللون" dropdowns the
+                         buyer actually has to choose from on checkout, instead
+                         of hoping they type the right thing in a notes box. -->
+                    <div id="svcFieldTemplatesContainer"></div>
+
                     <div>
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'شروطك وملاحظاتك على الطلب (اختياري)':"Your order rules/notes (optional)"}</label>
                       <textarea id="svcOrderRules" rows="3" class="form-input" maxlength="1000"
                         placeholder="${isAr?'مثال: لازم تحدد المقاس واللون في الملاحظات، مفيش استرجاع بعد فتح المنتج...':'e.g. must specify size/color, no returns after opening...'}">${escapeHtml(service?.orderRules||'')}</textarea>
                     </div>
+
+                    <!-- ⚠️ ADDED: extra gallery photos — the cover image above
+                         stays the single thumbnail used everywhere in the app
+                         (cards, cart, etc.); these are additional angles shown
+                         only inside the product's own detail view so buyers
+                         can actually browse photos before ordering. -->
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'صور إضافية للمنتج (اختياري، حتى 5 صور)':'Additional product photos (optional, up to 5)'}</label>
+                      <div class="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-navy-400 transition cursor-pointer" onclick="document.getElementById('svcGalleryFiles').click()">
+                        <i class="fa-solid fa-images text-2xl text-gray-300 mb-1"></i>
+                        <p class="text-xs text-gray-400">${isAr?'انقر لاختيار صور إضافية':'Click to add more photos'}</p>
+                        <input type="file" id="svcGalleryFiles" accept="image/*" multiple class="hidden" onchange="ServicesManager.onGalleryFilesChosen(this)">
+                      </div>
+                      <div id="svcGalleryPreview" class="grid grid-cols-5 gap-2 mt-3"></div>
+                      <input type="hidden" id="svcExistingGallery" value="${escapeHtml(JSON.stringify(service?.images||[]))}">
+                    </div>
+
                     <div class="bg-turquoise-50 border border-turquoise-200 rounded-2xl p-4">
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'رابط أو ملف التسليم الفوري':'Instant delivery link or file'} *</label>
                       <p class="text-xs text-gray-500 mb-3">${isAr?'ده اللي المشتري هيستلمه أوتوماتيك فور الدفع — رابط تحميل، أو ارفع الملف مباشرة.':"This is what the buyer receives automatically the moment they pay — a download link, or upload the file directly."}</p>
@@ -632,6 +768,7 @@
             </div>`;
 
             this.toggleListingType();
+            this._renderGalleryPreview();
         },
 
         // Shows/hides the service-only vs product-only field groups based on
@@ -640,6 +777,102 @@
             const isProduct = document.getElementById('svcTypeProduct')?.checked;
             document.getElementById('svcServiceFields')?.classList.toggle('hidden', !!isProduct);
             document.getElementById('svcProductFields')?.classList.toggle('hidden', !isProduct);
+            // ⚠️ ADDED: swap the category dropdown's options to match — a
+            // service listing shouldn't be stuck offering "ملابس/إلكترونيات"
+            // and a product listing shouldn't be stuck offering "برمجة/تصميم".
+            // Keeps the current selection if that same category value exists
+            // in the new list, otherwise falls back to the first option.
+            const catSelect = document.getElementById('svcCategory');
+            const list = isProduct ? _getProductCategories() : _getServiceCategories();
+            if (catSelect && list) {
+                const current = catSelect.value;
+                catSelect.innerHTML = list.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+                if (list.some(c => c.value === current)) catSelect.value = current;
+            }
+            if (isProduct) this.refreshFieldTemplates();
+        },
+
+        // ⚠️ ADDED: rebuilds the "suggested fields for this category" panel —
+        // called on load (product listings) and whenever the category select
+        // changes. Preserves the seller's on/off + edited options when
+        // editing an existing listing that already has structuredFields, so
+        // reopening the edit form doesn't reset their previous choices.
+        refreshFieldTemplates() {
+            const container = document.getElementById('svcFieldTemplatesContainer');
+            if (!container) return;
+            const cat = document.getElementById('svcCategory')?.value;
+            const templates = (_getFieldTemplates()[cat]) || [];
+            const isAr = AppState.language !== 'en';
+            if (templates.length === 0) { container.innerHTML = ''; return; }
+            const existing = this._editingStructuredFields || [];
+            container.innerHTML = `
+              <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                <p class="text-sm font-black text-blue-800 mb-3"><i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>${isAr?'حقول مقترحة لهذا التصنيف — فعّل اللي يناسبك وعدّل الخيارات لو حبيت':'Suggested fields for this category — turn on what fits and tweak the options if you like'}</p>
+                <div class="space-y-2.5">
+                  ${templates.map(f => {
+                      const ex = existing.find(e => e.key === f.key);
+                      const isOn = ex ? true : !!f.on;
+                      const opts = ex ? (ex.options||[]).join(', ') : f.options;
+                      return `
+                      <div class="bg-white rounded-xl p-3 border border-blue-100">
+                        <label class="flex items-center gap-2 cursor-pointer mb-1.5">
+                          <input type="checkbox" class="field-tpl-toggle w-4 h-4 accent-navy-700"
+                            data-key="${f.key}" data-label="${escapeHtml(f.label)}" data-type="${f.type}"
+                            ${isOn?'checked':''} onchange="this.closest('.bg-white').querySelector('.field-tpl-options-wrap')?.classList.toggle('hidden', !this.checked)">
+                          <span class="font-bold text-sm text-gray-800">${escapeHtml(f.label)}</span>
+                        </label>
+                        <div class="field-tpl-options-wrap ${isOn?'':'hidden'} ps-6">
+                          ${f.type === 'select'
+                            ? `<input type="text" class="form-input text-xs field-tpl-options" data-key="${f.key}" value="${escapeHtml(opts)}" placeholder="${isAr?'اكتب الخيارات مفصولة بفاصلة، مثلاً: S, M, L, XL':'Comma-separated options, e.g. S, M, L, XL'}">`
+                            : `<p class="text-xs text-gray-400">${isAr?'المشتري هيكتب القيمة دي بنفسه وقت الطلب':'The buyer will type this value themselves at checkout'}</p>`}
+                        </div>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </div>`;
+        },
+
+        // ⚠️ ADDED: gallery photo picker — up to 5 extra photos shown on the
+        // product's own detail view (separate from the single cover image
+        // used everywhere else — cards, cart, checkout — for backward
+        // compatibility with every other part of the app that expects one
+        // image per listing).
+        onGalleryFilesChosen(input) {
+            const isAr = AppState.language !== 'en';
+            const files = Array.from(input.files || []);
+            const totalAfter = _keptExistingGallery.length + _pendingGalleryFiles.length + files.length;
+            if (totalAfter > 5) {
+                showToast(isAr ? 'الحد الأقصى 5 صور في المعرض' : 'Maximum 5 gallery photos', 'warning');
+                input.value = '';
+                return;
+            }
+            _pendingGalleryFiles.push(...files);
+            input.value = ''; // allow re-selecting the same file again later
+            this._renderGalleryPreview();
+        },
+
+        removeGalleryImage(kind, index) {
+            if (kind === 'existing') _keptExistingGallery.splice(index, 1);
+            else _pendingGalleryFiles.splice(index, 1);
+            this._renderGalleryPreview();
+        },
+
+        _renderGalleryPreview() {
+            const container = document.getElementById('svcGalleryPreview');
+            if (!container) return;
+            const existingThumbs = _keptExistingGallery.map((url, i) => `
+              <div class="relative">
+                <img src="${url}" class="w-full h-16 object-cover rounded-lg border border-gray-200">
+                <button type="button" onclick="ServicesManager.removeGalleryImage('existing',${i})"
+                  class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
+              </div>`);
+            const newThumbs = _pendingGalleryFiles.map((file, i) => `
+              <div class="relative">
+                <img src="${URL.createObjectURL(file)}" class="w-full h-16 object-cover rounded-lg border border-turquoise-300">
+                <button type="button" onclick="ServicesManager.removeGalleryImage('new',${i})"
+                  class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
+              </div>`);
+            container.innerHTML = existingThumbs.concat(newThumbs).join('');
         },
 
         async saveService(editId = '') {
@@ -699,6 +932,17 @@
                     }
                 }
 
+                // ⚠️ ADDED: upload any newly-chosen gallery photos, then combine
+                // with whatever existing gallery URLs the seller kept (removed
+                // ones were already spliced out by removeGalleryImage()).
+                let galleryUrls = [..._keptExistingGallery];
+                if (listingType === 'product' && _pendingGalleryFiles.length) {
+                    for (let i = 0; i < _pendingGalleryFiles.length; i++) {
+                        const url = await uploadFile(_pendingGalleryFiles[i], 'services', `svc_${user.uid}_gallery_${Date.now()}_${i}`);
+                        galleryUrls.push(url);
+                    }
+                }
+
                 // Content fields — safe to overwrite on every save (create or edit)
                 const data = {
                     title, description, category, listingType,
@@ -715,6 +959,21 @@
                     data.stockLimit = stockLimit;   // null = unlimited
                     data.expiryDate = expiryDate;   // null = no expiry
                     data.orderRules = sanitizeInput(document.getElementById('svcOrderRules')?.value?.trim() || '', 1000);
+                    data.images = galleryUrls.slice(0, 5);
+                    // ⚠️ ADDED: read the enabled suggested-field toggles into a
+                    // structured list the buyer's order form can render as real
+                    // dropdowns/inputs (see request-system.js openProductOrderModal).
+                    data.structuredFields = Array.from(document.querySelectorAll('.field-tpl-toggle'))
+                        .filter(cb => cb.checked)
+                        .map(cb => {
+                            const key = cb.dataset.key, type = cb.dataset.type, label = cb.dataset.label;
+                            if (type === 'select') {
+                                const raw = document.querySelector(`.field-tpl-options[data-key="${key}"]`)?.value || '';
+                                const options = raw.split(',').map(s => s.trim()).filter(Boolean);
+                                return { key, label, type, options };
+                            }
+                            return { key, label, type, options: [] };
+                        });
                 } else {
                     data.orderMode = orderMode;      // 'request_first' | 'instant'
                 }
@@ -816,6 +1075,7 @@
         // ── Init services page ────────────────────────────────────────────────
         initServicesPage() {
             this.loadServices();
+            this._renderCategoryPills(_activeType);
             if (AppState.filterCategory) {
                 setTimeout(() => {
                     this.filterCategory(AppState.filterCategory);

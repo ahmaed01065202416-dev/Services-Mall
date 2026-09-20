@@ -294,5 +294,11 @@ service cloud.firestore {
     match /rate_limits/{id} {
       allow read, write: if false;
     }
+
+    // ── admin_actions (audit log — server-write only via admin-delete.js) ───
+    match /admin_actions/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
   }
 }

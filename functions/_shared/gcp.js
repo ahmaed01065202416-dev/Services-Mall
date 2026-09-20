@@ -62,7 +62,7 @@ async function getAccessToken(env) {
     const header = { alg: 'RS256', typ: 'JWT' };
     const claim = {
         iss: sa.client_email,
-        scope: 'https://www.googleapis.com/auth/datastore',
+        scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.database',
         aud: 'https://oauth2.googleapis.com/token',
         iat: now,
         exp: now + 3600,
@@ -185,6 +185,15 @@ async function fsSet(env, path, data, merge) {
     return out;
 }
 
+async function fsDelete(env, path) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${fsBase(env)}/${path}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (resp.status === 404) return true; // already gone — treat as success
+    const out = await resp.json().catch(() => ({}));
+    if (out.error) throw new Error(`Firestore DELETE ${path}: ${out.error.message}`);
+    return true;
+}
+
 // ── Atomic multi-write commit (used for escrow release: increment wallet +
 //    flip order/escrow status in one all-or-nothing call) ────────────────────
 async function fsCommit(env, writes) {
@@ -248,8 +257,43 @@ async function fsCount(env, structuredQuery) {
     return row ? Number(row.result.aggregateFields.count.integerValue || 0) : 0;
 }
 
+// ── Realtime Database REST helpers (Admin-SDK style, bypasses RTDB rules) ────
+// RTDB security rules have no concept of "admin" at all (see
+// database.rules.json — every rule only checks "is this the buyer/seller of
+// THIS specific chat", there's no isAdmin() equivalent, and RTDB rules can't
+// even read Firestore to check a user's role the way firestore.rules does).
+// So there is no safe way for an admin to delete chat data straight from the
+// browser with their own ID token — it would need a rule hole big enough for
+// ANY signed-in user to fit through. Going through the server with the
+// service account's own OAuth token (scoped above to include
+// firebase.database) bypasses RTDB rules entirely, the same way fsGet/fsSet
+// above bypass Firestore rules — so the ONLY gate that matters is the
+// X-Admin-Token / ADMIN_UIDS check the calling Function does before ever
+// reaching these helpers.
+function rtdbBase(env) {
+    // FIREBASE_DATABASE_URL can be set explicitly to override this if the
+    // project's Realtime Database ever lives at a non-default URL (a second
+    // database instance, or a region-specific *.firebasedatabase.app host).
+    // Falls back to the standard "<project-id>-default-rtdb.firebaseio.com"
+    // pattern, which is what this project's actual database uses today.
+    return env.FIREBASE_DATABASE_URL || `https://${env.FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`;
+}
+async function rtdbGet(env, path) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${rtdbBase(env)}/${path}.json`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) throw new Error(`RTDB GET ${path} failed: ${resp.status}`);
+    return await resp.json();
+}
+async function rtdbDelete(env, path) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${rtdbBase(env)}/${path}.json`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) throw new Error(`RTDB DELETE ${path} failed: ${resp.status}`);
+    return true;
+}
+
 export {
     getAccessToken, verifyIdToken,
-    fsGet, fsCreate, fsSet, fsCommit, fsQuery, fsCount,
+    fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount,
     writeIncrement, writeUpdate, writeCreate,
+    rtdbGet, rtdbDelete,
 };

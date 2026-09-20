@@ -35,6 +35,19 @@
             return;
         }
         _currentOrderId = orderId;
+        // ⚠️ FIXED (found in audit): this reset used to live inside
+        // _startChatListener(), which runs AFTER _renderWorkspace() (which
+        // calls _loadFiles(), which subscribes to message-list updates via
+        // _onMessagesChange() so the Files tab can refresh live). That order
+        // meant _startChatListener() was wiping out the Files tab's
+        // subscription the moment it ran — so a file sent in chat WOULD
+        // stream in via child_added, but the Files tab had already lost its
+        // listener and never found out. Resetting here, before anything else
+        // in this function runs, guarantees a clean slate for this order
+        // without erasing a subscription registered later in the same
+        // workspace-open sequence.
+        _lastLoadedMessages = [];
+        _messagesChangeSubscribers = [];
         showLoading(AppState.language === 'en' ? 'Loading workspace...' : 'جاري تحميل مساحة العمل...');
         try {
             const snap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
@@ -97,6 +110,19 @@
               <span class="status-badge ${getStatusClass(order.status)} flex-shrink-0">
                 ${getStatusText(order.status)}
               </span>
+              ${isAdmin ? `
+              <div class="flex gap-1.5 flex-shrink-0 border-s border-gray-200 ps-3">
+                <button onclick="window.AdminActions.deleteOrderOrChat('${orderId}','chat').then(ok=>ok&&navigateTo('orders'))"
+                  title="${isAr?'حذف الشات فقط (أدمن)':'Delete chat only (admin)'}"
+                  class="w-9 h-9 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center hover:bg-amber-100 transition">
+                  <i class="fa-solid fa-comment-slash"></i>
+                </button>
+                <button onclick="window.AdminActions.deleteOrderOrChat('${orderId}','order').then(ok=>ok&&navigateTo('orders'))"
+                  title="${isAr?'حذف الطلب نهائيًا (أدمن)':'Delete order permanently (admin)'}"
+                  class="w-9 h-9 bg-red-50 text-red-700 rounded-xl flex items-center justify-center hover:bg-red-100 transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>` : ''}
             </div>
           </div>
 
@@ -531,8 +557,8 @@
 
         const container = document.getElementById('chatMessages');
         const isAr = AppState.language !== 'en';
-        _lastLoadedMessages = [];
-        _messagesChangeSubscribers = [];
+        // (message list + subscribers are reset once in openWorkspace(),
+        // before _loadFiles() has a chance to subscribe — see the note there)
         let _gotAnyMessage = false;
         let _emptyCheckTimer = null;
 
@@ -648,6 +674,7 @@
                   <div class="flex items-center gap-2"><i class="fa-solid fa-user w-4 text-turquoise-300"></i><span>${_escapeHtml(msg.fullName || '—')}</span></div>
                   <div class="flex items-center gap-2" dir="ltr"><i class="fa-solid fa-phone w-4 text-turquoise-300"></i><span>${_escapeHtml(msg.phone || '—')}</span></div>
                   <div class="flex items-start gap-2"><i class="fa-solid fa-location-dot w-4 text-turquoise-300 mt-0.5"></i><span class="whitespace-pre-wrap">${_escapeHtml(msg.address || '—')}</span></div>
+                  ${msg.selectedFields ? `<div class="flex items-start gap-2 border-t border-white/10 pt-1.5 mt-1"><i class="fa-solid fa-tag w-4 text-turquoise-300 mt-0.5"></i><span>${_escapeHtml(msg.selectedFields)}</span></div>` : ''}
                   ${msg.notes ? `<div class="flex items-start gap-2 border-t border-white/10 pt-1.5 mt-1"><i class="fa-solid fa-note-sticky w-4 text-turquoise-300 mt-0.5"></i><span class="whitespace-pre-wrap">${_escapeHtml(msg.notes)}</span></div>` : ''}
                 </div>
                 <p class="text-xs text-turquoise-200 mt-2">${formatTimeAgo(msg.createdAt)}</p>

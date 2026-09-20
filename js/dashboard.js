@@ -245,6 +245,43 @@
     // ══════════════════════════════════════════════════════════════════════════
     // ADMIN TAB RENDERER — كل تاب بتحكم كامل
     // ══════════════════════════════════════════════════════════════════════════
+    // ⚠️ ADDED: admin-only hard delete for an order and/or its chat, callable
+    // from anywhere (the admin orders list below, or the order workspace
+    // itself) — not nested inside adminTab('orders') so it's available even
+    // if that tab was never opened this session. Realtime Database's own
+    // security rules have no "admin" concept at all (see database.rules.json
+    // — every rule only checks "is this the buyer/seller of THIS chat"), so
+    // this can't be done safely with a plain client-side RTDB call — it goes
+    // through functions/api/admin-delete.js, which verifies a real Firebase
+    // ID token server-side before using service-account credentials to
+    // bypass both Firestore's and RTDB's rules at once.
+    async function adminDeleteOrderOrChat(orderId, type) {
+        const isAr = AppState.language !== 'en';
+        const label = type === 'chat'
+            ? (isAr ? 'حذف كل رسائل هذا الطلب نهائيًا؟ لا يمكن التراجع.' : 'Permanently delete all messages for this order? This cannot be undone.')
+            : (isAr ? 'حذف الطلب بالكامل نهائيًا (والشات معه)؟ لا يمكن التراجع.' : 'Permanently delete this order (and its chat)? This cannot be undone.');
+        if (!confirm(label)) return false;
+        showLoading();
+        try {
+            const idToken = await firebase.auth().currentUser.getIdToken();
+            const resp = await fetch('/api/admin-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ orderId, type }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+            hideLoading();
+            showToast(isAr ? '✅ تم الحذف' : '✅ Deleted', 'success');
+            return true;
+        } catch (e) {
+            hideLoading();
+            showToast(e.message || (isAr ? 'تعذّر الحذف' : 'Delete failed'), 'error');
+            return false;
+        }
+    }
+    window.AdminActions = { deleteOrderOrChat: adminDeleteOrderOrChat };
+
     async function adminTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`adminTab_${tab}`)?.classList.add('active');
@@ -274,6 +311,8 @@
                     <div class="flex gap-1">
                       <button title="${isAr?'إتمام قسري':'Force Complete'}" onclick="window._adminForceStatus('${o.id}','completed')" class="w-7 h-7 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center hover:bg-green-200 transition"><i class="fa-solid fa-check"></i></button>
                       <button title="${isAr?'إلغاء قسري':'Force Cancel'}" onclick="window._adminForceStatus('${o.id}','cancelled')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg text-xs flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-xmark"></i></button>
+                      <button title="${isAr?'حذف الشات فقط':'Delete chat only'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','chat').then(ok=>ok&&adminTab('orders'))" class="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg text-xs flex items-center justify-center hover:bg-amber-200 transition"><i class="fa-solid fa-comment-slash"></i></button>
+                      <button title="${isAr?'حذف الطلب نهائيًا':'Delete order permanently'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','order').then(ok=>ok&&adminTab('orders'))" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg text-xs flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                   </div>`).join('')}
                 </div>`}`;
