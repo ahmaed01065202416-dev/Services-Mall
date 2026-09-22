@@ -236,8 +236,12 @@
         },
 
         _applyFilters() {
-            let list = !_activeCat ? [..._allServices] : _allServices.filter(s => s.category === _activeCat);
-            if (_activeType) list = list.filter(s => (s.listingType || 'service') === _activeType);
+            // ⚠️ FIXED: trim() guards against a category value that has stray
+            // whitespace (e.g. saved as "clothing " from an older/manual entry)
+            // — that alone was enough to make a listing invisible under its
+            // own category pill even though it displays fine under "الكل".
+            let list = !_activeCat ? [..._allServices] : _allServices.filter(s => (s.category||'').trim() === _activeCat);
+            if (_activeType) list = list.filter(s => ((s.listingType||'service').trim()) === _activeType);
             if (_expressOnly) list = list.filter(s => (Number(s.deliveryDays) || 3) <= 1);
             _filtered = list;
             this._renderServiceCards(_filtered);
@@ -256,6 +260,14 @@
         },
 
         // ── Render Cards ──────────────────────────────────────────────────────
+        // ⚠️ FIXED: this used to build every card in one big .map() with no
+        // error isolation — if a single listing had a malformed field (bad
+        // JSON in a legacy record, etc.) and its card template threw, the
+        // WHOLE grid silently failed to re-render on the next tab/category
+        // click, so the page looked "stuck" showing the previous tab's items
+        // even though the click was registered (title + active pill DID
+        // update — only the grid didn't). Each card is now built in its own
+        // try/catch so one bad listing can't block the rest.
         _renderServiceCards(services) {
             const grid  = document.getElementById('servicesGrid');
             const empty = document.getElementById('servicesEmpty');
@@ -269,7 +281,12 @@
             if (empty) empty.classList.add('hidden');
 
             const isAr = AppState.language !== 'en';
-            grid.innerHTML = services.map(s => this._serviceCard(s, isAr)).join('');
+            const cards = [];
+            services.forEach(s => {
+                try { cards.push(this._serviceCard(s, isAr)); }
+                catch (e) { console.warn('[Services] Skipped a broken listing card:', s.id, e.message); }
+            });
+            grid.innerHTML = cards.join('');
         },
 
         _serviceCard(s, isAr) {
@@ -1073,7 +1090,15 @@
         },
 
         // ── Init services page ────────────────────────────────────────────────
+        // ⚠️ FIXED: _activeType/_activeCat are module-level state that used to
+        // survive across page navigations — leaving the services page while on
+        // "منتجات" and coming back later would silently keep filtering by
+        // product even though the tab bar visually shows "الكل". Reset both
+        // on every fresh visit unless the caller explicitly passed a filter
+        // via AppState.filterType/filterCategory (handled right below).
         initServicesPage() {
+            _activeType = '';
+            _activeCat  = '';
             this.loadServices();
             this._renderCategoryPills(_activeType);
             if (AppState.filterCategory) {

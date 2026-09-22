@@ -1,7 +1,7 @@
 {
-  "name": "Mall Services — منصة الخدمات",
+  "name": "Mall Services — مول الخدمات والمنتجات",
   "short_name": "مول الخدمات",
-  "description": "منصتك الأولى للخدمات الرقمية الاحترافية",
+  "description": "منصتك الأولى للمنتجات والخدمات الرقمية",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
