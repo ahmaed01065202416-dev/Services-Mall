@@ -410,6 +410,47 @@
               </div>
               ` : ''}
 
+              <!-- ── Instant digital delivery content (auto-delivered products) ──
+                   ⚠️ ADDED: order.digitalDelivery (the link/file the seller attached
+                   to the listing) was being saved on the order by
+                   functions/api/payment.js at auto-delivery time, but nothing in
+                   this workspace ever rendered it — the buyer had no way to see
+                   the link/file they paid for. Buyer sees the actual content;
+                   seller sees a read-only confirmation of what was sent. -->
+              ${order.digitalDelivery ? `
+              <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-box-open text-green-600"></i>
+                  </div>
+                  <div>
+                    <p class="font-black text-green-800 text-sm">${isAr ? 'محتوى التسليم الفوري' : 'Instant delivery content'}</p>
+                    <p class="text-xs text-green-600">${isAr ? 'اتبعت تلقائيًا فور الدفع' : 'Sent automatically upon payment'}</p>
+                  </div>
+                </div>
+                ${isBuyer ? `
+                  ${order.digitalDelivery.type === 'link' ? `
+                    <a href="${_escapeHtml(order.digitalDelivery.value || '')}" target="_blank" rel="noopener"
+                      class="flex items-center gap-3 p-3 bg-white border border-green-200 rounded-xl hover:border-green-400 hover:shadow-md transition break-all">
+                      <i class="fa-solid fa-link text-green-600 flex-shrink-0"></i>
+                      <span class="text-sm font-bold text-navy-700 flex-1">${_escapeHtml(order.digitalDelivery.value || '')}</span>
+                      <i class="fa-solid fa-arrow-up-right-from-square text-gray-300 flex-shrink-0"></i>
+                    </a>
+                  ` : `
+                    <a href="${_escapeHtml(order.digitalDelivery.value || '')}" target="_blank" rel="noopener" download
+                      class="flex items-center gap-3 p-3 bg-white border border-green-200 rounded-xl hover:border-green-400 hover:shadow-md transition">
+                      <i class="fa-solid fa-file-arrow-down text-green-600 text-xl flex-shrink-0"></i>
+                      <span class="text-sm font-bold text-gray-900 flex-1">${isAr ? 'تحميل الملف' : 'Download file'}</span>
+                      <i class="fa-solid fa-download text-gray-300 flex-shrink-0"></i>
+                    </a>
+                  `}
+                  ${order.digitalDelivery.notes ? `<p class="text-gray-700 text-sm mt-3 bg-white rounded-xl p-3 border border-green-100 whitespace-pre-wrap">${_escapeHtml(order.digitalDelivery.notes)}</p>` : ''}
+                ` : `
+                  <p class="text-sm text-green-700">${isAr ? 'تم إرسال رابط/ملف التسليم للعميل تلقائيًا.' : "The delivery link/file was sent to the buyer automatically."}</p>
+                `}
+              </div>
+              ` : ''}
+
               <!-- ── BUYER: Accept/Revise/Dispute ─────────────────────── -->
               ${isBuyer && order.status === ORDER_STATUS.DELIVERED ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">

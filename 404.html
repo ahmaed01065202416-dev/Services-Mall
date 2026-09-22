@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>الصفحة غير موجودة — مول الخدمات</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-900:#0B1220; --navy-800:#131B2E; --navy-700:#1E293B; --navy-500:#475569;
+    --navy-300:#94A3B8; --navy-100:#E2E8F0; --navy-50:#F1F5F9;
+    --turq-600:#0D9488; --turq-500:#10B981; --turq-50:#ECFDF5;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:inherit}
+  body{
+    margin:0; min-height:100%; font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;
+    background:var(--navy-900); color:#fff;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  @media (prefers-color-scheme: light){
+    body:not([data-theme="dark"]){ background:var(--navy-50); color:var(--navy-900); }
+  }
+  .card{ max-width:480px; width:100%; text-align:center; }
+  .code{
+    font-family:'JetBrains Mono','IBM Plex Mono',monospace; font-weight:900;
+    font-size:96px; line-height:1; letter-spacing:-2px;
+    background:linear-gradient(135deg, var(--turq-500), var(--turq-600));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    margin:0 0 8px;
+  }
+  h1{ font-size:22px; font-weight:900; margin:0 0 10px; }
+  p{ font-size:15px; color:var(--navy-300); line-height:1.7; margin:0 0 28px; }
+  @media (prefers-color-scheme: light){ body:not([data-theme="dark"]) p{ color:var(--navy-500); } }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  a.btn{
+    display:inline-flex; align-items:center; gap:8px; text-decoration:none;
+    font-weight:700; font-size:14px; padding:12px 22px; border-radius:12px;
+    transition:transform .15s ease, opacity .15s ease;
+  }
+  a.btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:var(--turq-600); color:#fff; }
+  .btn-primary:hover{ opacity:.9; }
+  .btn-secondary{ background:rgba(255,255,255,.08); color:#fff; border:1px solid rgba(255,255,255,.15); }
+  @media (prefers-color-scheme: light){
+    body:not([data-theme="dark"]) .btn-secondary{ background:#fff; color:var(--navy-800); border-color:var(--navy-100); }
+  }
+  .btn-secondary:hover{ background:rgba(255,255,255,.14); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <p class="code">404</p>
+    <h1>الصفحة غير موجودة</h1>
+    <p>الرابط اللي جيت منه غير صحيح أو الصفحة اتشالت. تقدر ترجع للرئيسية أو تتصفح الخدمات والمنتجات.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        الرئيسية
+      </a>
+      <a class="btn btn-secondary" href="/#services">تصفّح الخدمات والمنتجات</a>
+    </div>
+  </div>
+</body>
+</html>

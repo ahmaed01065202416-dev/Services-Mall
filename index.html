@@ -259,6 +259,15 @@
     .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
     .tab-btn.active{color:#0F172A;border-bottom-color:#0F172A}
 
+    /* ── Admin: Super Admin pill tabs & stat cards ── */
+    .admin-pill-tab{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap;color:#475569;background:#fff;border:1px solid transparent;transition:all .15s ease}
+    .admin-pill-tab:hover{background:#f1f5f9;color:#0f172a}
+    .admin-pill-tab.active{background:#0f172a;color:#fff;box-shadow:0 1px 4px rgba(15,23,42,.15)}
+    .admin-pill-tab .pill-count{background:#f1f5f9;color:#0f172a;font-size:10px;font-weight:800;padding:1px 7px;border-radius:9999px;margin-inline-start:2px}
+    .admin-pill-tab.active .pill-count{background:#fff;color:#0f172a}
+    .stat-card-glow{transition:all .22s cubic-bezier(.4,0,.2,1)}
+    .stat-card-glow:hover{transform:translateY(-2px);box-shadow:0 12px 24px -10px rgba(15,23,42,.08)}
+
     /* ── Dropdown ────────────────────────────────── */
     .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
     .dropdown.active{display:block;animation:fadeIn .2s ease-out}

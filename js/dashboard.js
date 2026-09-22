@@ -122,7 +122,7 @@
                     <i class="fa-solid fa-plus text-xs"></i><span>${isAr?'إضافة خدمة':'Add Service'}</span>
                   </button>
                   <button onclick="ServicesManager.openAddServiceForm('product')" class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition">
-                    <i class="fa-solid fa-box-archive text-amber-400 text-xs"></i><span>${isAr?'إضافة منتج رقمي':'Add Digital Product'}</span>
+                    <i class="fa-solid fa-box-archive text-amber-400 text-xs"></i><span>${isAr?'إضافة منتج':'Add Product'}</span>
                   </button>
                   <button onclick="WalletManager.openWithdrawForm()" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm transition">
                     <i class="fa-solid fa-money-bill-transfer text-turquoise-600 text-xs"></i><span>${isAr?'سحب الأرباح':'Withdraw earnings'}</span>
@@ -222,22 +222,97 @@
             }
         },
 
+        // ⚠️ REWRITTEN as part of the "Super Admin" visual redesign — now pulls
+        // escrow + disputes too (not just users/services/orders) so the KPI
+        // row and the escrow compliance bar above the tabs show real numbers
+        // instead of the static mock values from the design reference.
         async _loadAdminStats() {
+            const isAr = AppState.language !== 'en';
+            const row  = document.getElementById('adminStatsRow');
+            const bar  = document.getElementById('adminEscrowBar');
+            if (!row) return;
             try {
-                const [usersSnap, servicesSnap, ordersSnap] = await Promise.all([
+                const [usersSnap, servicesSnap, ordersSnap, escrowSnap, disputesOpenSnap] = await Promise.all([
                     window.db.collection(COLLECTIONS.USERS).get(),
                     window.db.collection(COLLECTIONS.SERVICES).get(),
                     window.db.collection(COLLECTIONS.ORDERS).get(),
+                    window.db.collection(COLLECTIONS.ESCROW).get(),
+                    window.db.collection(COLLECTIONS.DISPUTES).where('status','==','open').get(),
                 ]);
-                const totalRevenue = ordersSnap.docs.reduce((s,d)=>s+(d.data().price||0),0);
-                const isAr = AppState.language !== 'en';
-                const row = document.getElementById('adminStatsRow');
-                if (!row) return;
+
+                const orders       = ordersSnap.docs.map(d => d.data());
+                const totalRevenue = orders.reduce((s,o) => s + (o.price || 0), 0);
+                const activeCount    = orders.filter(o => [ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.DELIVERED].includes(o.status)).length;
+                const pendingCount   = orders.filter(o => o.status === ORDER_STATUS.PENDING).length;
+
+                const users    = usersSnap.docs.map(d => d.data());
+                const sellers  = users.filter(u => u.role === 'seller').length;
+                const buyers   = users.filter(u => u.role === 'buyer' || !u.role).length;
+
+                const services      = servicesSnap.docs.map(d => d.data());
+                const productsCount = services.filter(s => s.listingType === 'product').length;
+                const servicesCount = services.length - productsCount;
+
+                const escrowHeld = escrowSnap.docs.reduce((s,d) => {
+                    const e = d.data();
+                    return (e.status === 'held' || e.status === 'frozen') ? s + (e.amount || 0) : s;
+                }, 0);
+                const openDisputes = disputesOpenSnap.size;
+
                 row.innerHTML = `
-                  <div class="bg-gradient-to-br from-navy-500 to-navy-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${usersSnap.size}</p><p class="text-navy-200 text-sm mt-1">${isAr?'مستخدم':'Users'}</p></div>
-                  <div class="bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${servicesSnap.size}</p><p class="text-teal-200 text-sm mt-1">${isAr?'خدمة':'Services'}</p></div>
-                  <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${ordersSnap.size}</p><p class="text-amber-200 text-sm mt-1">${isAr?'طلب':'Orders'}</p></div>
-                  <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-5 text-white text-center"><p class="text-3xl font-black">${formatCurrency(calcPlatformFee(totalRevenue))}</p><p class="text-purple-200 text-sm mt-1">${isAr?'إيرادات المنصة':'Platform Revenue'}</p></div>`;
+                  <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-purple-600 to-indigo-600"></div>
+                    <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'إيرادات المنصة المحققة':'Platform Revenue'}</p>
+                    <p class="text-2xl font-black text-purple-700">${formatCurrency(calcPlatformFee(totalRevenue))}</p>
+                    <p class="text-[11px] text-gray-400 mt-2">${isAr?'من إجمالي':'of'} ${formatCurrency(totalRevenue)}</p>
+                  </div>
+                  <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 left-0 h-1 bg-amber-500"></div>
+                    <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'إجمالي الطلبات':'Total Orders'}</p>
+                    <p class="text-2xl font-black text-gray-900">${ordersSnap.size}</p>
+                    <p class="text-[11px] mt-2"><span class="text-emerald-600 font-bold">${activeCount} ${isAr?'قيد التنفيذ':'active'}</span> · <span class="text-amber-600 font-bold">${pendingCount} ${isAr?'بانتظار الدفع':'pending'}</span></p>
+                  </div>
+                  <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 left-0 h-1 bg-teal-500"></div>
+                    <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'سوق الخدمات والمنتجات':'Marketplace'}</p>
+                    <p class="text-2xl font-black text-teal-700">${servicesSnap.size}</p>
+                    <p class="text-[11px] text-gray-400 mt-2">${servicesCount} ${isAr?'خدمة':'services'} · ${productsCount} ${isAr?'منتج فوري':'instant products'}</p>
+                  </div>
+                  <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 left-0 h-1 bg-navy-900"></div>
+                    <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'قاعدة المستخدمين':'Users'}</p>
+                    <p class="text-2xl font-black text-gray-900">${usersSnap.size}</p>
+                    <p class="text-[11px] text-gray-400 mt-2">${isAr?'بائعين':'sellers'}: ${sellers} · ${isAr?'مشترين':'buyers'}: ${buyers}</p>
+                  </div>
+                  <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 left-0 h-1 ${openDisputes>0?'bg-red-500':'bg-emerald-500'}"></div>
+                    <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'مؤشر النزاعات':'Disputes'}</p>
+                    <p class="text-2xl font-black ${openDisputes>0?'text-red-600':'text-emerald-600'}">${openDisputes}</p>
+                    <p class="text-[11px] text-gray-400 mt-2">${isAr?'نزاع مفتوح':'open dispute(s)'}</p>
+                  </div>`;
+
+                if (bar) {
+                    bar.innerHTML = `
+                      <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                          <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-bold text-gray-900 text-sm">${isAr?'نظام الضمان المالي (Escrow)':'Financial Escrow System'}</h3>
+                            <span class="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">${isAr?'نشط':'Active'}</span>
+                          </div>
+                          <p class="text-xs text-gray-600 mt-1">${isAr
+                            ? `إجمالي أموال المعاملات قيد التنفيذ (<strong class="text-gray-900">${formatCurrency(escrowHeld)}</strong>) محجوزة في الحساب الوسيط، وتُحرر للبائعين فور استلام المشترين أو حل أي نزاع.`
+                            : `Funds currently in escrow (<strong class="text-gray-900">${formatCurrency(escrowHeld)}</strong>) are held safely and released once the buyer confirms or a dispute is resolved.`}</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-3 shrink-0">
+                        <button onclick="adminTab('disputes')" class="px-4 py-2 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+                          <i class="fa-solid fa-scale-balanced"></i><span>${isAr?'مراجعة النزاعات':'Review disputes'}</span>
+                        </button>
+                      </div>`;
+                }
             } catch(e) { console.warn('[Admin Stats]',e.message); }
         },
     };
@@ -295,26 +370,45 @@
             if (tab === 'orders') {
                 const ordersSnap = await window.db.collection(COLLECTIONS.ORDERS).orderBy('createdAt','desc').limit(100).get();
                 const orders = ordersSnap.docs.map(d=>({id:d.id,...d.data()}));
+                const _iconFor = o => o.listingType === 'product'
+                    ? { icon: 'fa-box-open', bg: 'bg-teal-100', color: 'text-teal-700' }
+                    : { icon: 'fa-layer-group', bg: 'bg-orange-100', color: 'text-orange-700' };
                 container.innerHTML = `
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="font-black text-gray-900">${isAr?`الطلبات (${orders.length})`:`Orders (${orders.length})`}</h3>
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h3 class="font-black text-gray-900 flex items-center gap-2">${isAr?'إدارة الطلبات والمعاملات':'Orders & transactions'}
+                    <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-200">${isAr?`${orders.length} طلب`:`${orders.length} orders`}</span>
+                  </h3>
                 </div>
                 ${orders.length===0 ? `<p class="text-gray-400 text-center py-8">${t('orders.empty')}</p>` : `
-                <div class="space-y-2">${orders.map(o=>`
-                  <div class="flex flex-wrap items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-                    <div class="flex-1 min-w-0 cursor-pointer" onclick="openWorkspace('${o.id}')">
-                      <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p>
-                      <p class="text-xs text-gray-400">${escapeHtml(o.buyerName||'—')} → ${escapeHtml(o.sellerName||'—')} · ${formatDateAr(o.createdAt)}</p>
+                <div class="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">${orders.map(o=>{
+                  const ic = _iconFor(o);
+                  const commission = calcPlatformFee(o.price||0);
+                  return `
+                  <div class="p-4 hover:bg-gray-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer" onclick="openWorkspace('${o.id}')">
+                      <div class="w-11 h-11 rounded-xl ${ic.bg} ${ic.color} flex items-center justify-center shrink-0"><i class="fa-solid ${ic.icon} text-lg"></i></div>
+                      <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</span>
+                          <span class="text-[11px] font-mono font-bold text-gray-400">#${(o.id||'').substr(-8).toUpperCase()}</span>
+                          <span class="status-badge ${getStatusClass(o.status)} text-[11px]">${getStatusText(o.status)}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-0.5">${escapeHtml(o.buyerName||'—')} ← ${escapeHtml(o.sellerName||'—')} · ${formatDateAr(o.createdAt)}</p>
+                      </div>
                     </div>
-                    <span class="font-black text-navy-700 text-sm">${formatCurrency(o.price||0)}</span>
-                    <span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span>
-                    <div class="flex gap-1">
-                      <button title="${isAr?'إتمام قسري':'Force Complete'}" onclick="window._adminForceStatus('${o.id}','completed')" class="w-7 h-7 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center hover:bg-green-200 transition"><i class="fa-solid fa-check"></i></button>
-                      <button title="${isAr?'إلغاء قسري':'Force Cancel'}" onclick="window._adminForceStatus('${o.id}','cancelled')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg text-xs flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-xmark"></i></button>
-                      <button title="${isAr?'حذف الشات فقط':'Delete chat only'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','chat').then(ok=>ok&&adminTab('orders'))" class="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg text-xs flex items-center justify-center hover:bg-amber-200 transition"><i class="fa-solid fa-comment-slash"></i></button>
-                      <button title="${isAr?'حذف الطلب نهائيًا':'Delete order permanently'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','order').then(ok=>ok&&adminTab('orders'))" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg text-xs flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                      <div class="text-right">
+                        <p class="font-black text-gray-900 text-sm">${formatCurrency(o.price||0)}</p>
+                        <p class="text-[11px] text-teal-700 font-semibold">${isAr?'عمولة':'fee'}: ${formatCurrency(commission)}</p>
+                      </div>
+                      <div class="flex gap-1.5">
+                        <button title="${isAr?'إتمام قسري':'Force Complete'}" onclick="window._adminForceStatus('${o.id}','completed')" class="w-8 h-8 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs flex items-center justify-center hover:bg-emerald-600 hover:text-white transition"><i class="fa-solid fa-check"></i></button>
+                        <button title="${isAr?'إلغاء قسري':'Force Cancel'}" onclick="window._adminForceStatus('${o.id}','cancelled')" class="w-8 h-8 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs flex items-center justify-center hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                        <button title="${isAr?'حذف الشات فقط':'Delete chat only'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','chat').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs flex items-center justify-center hover:bg-amber-600 hover:text-white transition"><i class="fa-solid fa-comment-slash"></i></button>
+                        <button title="${isAr?'حذف الطلب نهائيًا':'Delete order permanently'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','order').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs flex items-center justify-center hover:bg-rose-600 hover:text-white transition"><i class="fa-solid fa-trash-can"></i></button>
+                      </div>
                     </div>
-                  </div>`).join('')}
+                  </div>`;}).join('')}
                 </div>`}`;
 
                 window._adminForceStatus = async (orderId, status) => {
@@ -336,6 +430,7 @@
                 const open = openSnap.docs.map(d=>({id:d.id,...d.data()}));
                 const all  = allSnap.docs.map(d=>({id:d.id,...d.data()}));
                 container.innerHTML = `
+                <h3 class="font-black text-gray-900 flex items-center gap-2 mb-4"><i class="fa-solid fa-shield-halved text-emerald-600"></i>${isAr?'النزاعات وضمان الأموال':'Disputes & escrow safety'}</h3>
                 ${open.length===0
                   ? `<div class="text-center py-6 mb-6 bg-green-50 rounded-2xl border border-green-200"><p class="text-green-700 font-bold">✅ ${isAr?'لا توجد نزاعات مفتوحة':'No open disputes'}</p></div>`
                   : `<div class="space-y-4 mb-8">${open.map(d=>`
@@ -1469,28 +1564,58 @@
             container.innerHTML = `<div class="text-center py-20"><i class="fa-solid fa-lock text-gray-300 text-5xl mb-4"></i><h3 class="text-xl font-black text-gray-500">${isAr?'غير مصرح لك':'Access Denied'}</h3></div>`;
             return;
         }
+        // ⚠️ REDESIGNED (Super Admin visual language): dark hero header +
+        // KPI cards + escrow compliance bar + pill-style tab nav, adapted
+        // from the approved admin mockup into this SPA's existing chrome.
+        // adminTab_* ids and the adminTab(...) onclick calls are unchanged
+        // on purpose — every tab's content function (orders/disputes/users/
+        // ...) keeps working exactly as before, only the shell around it
+        // is restyled.
         container.innerHTML = `
         <div>
-          <div class="mb-8"><h1 class="text-3xl font-black text-gray-900">👑 ${isAr?'لوحة الإدارة':'Admin Panel'}</h1><p class="text-gray-500 mt-1">${isAr?'تحكم كامل في المنصة':'Full platform control'}</p></div>
-          <div id="adminStatsRow" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            ${[1,2,3,4].map(()=>`<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="h-8 bg-gray-100 rounded mb-2"></div><div class="h-4 bg-gray-50 rounded"></div></div>`).join('')}
-          </div>
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="flex overflow-x-auto border-b border-gray-100 p-2 gap-1">
-              <button onclick="adminTab('orders')"     class="tab-btn active" id="adminTab_orders"><i class="fa-solid fa-bag-shopping me-1"></i>${isAr?'الطلبات':'Orders'}</button>
-              <button onclick="adminTab('disputes')"   class="tab-btn" id="adminTab_disputes"><i class="fa-solid fa-flag me-1"></i>${isAr?'النزاعات':'Disputes'}</button>
-              <button onclick="adminTab('users')"      class="tab-btn" id="adminTab_users"><i class="fa-solid fa-users me-1"></i>${isAr?'المستخدمون':'Users'}</button>
-              <button onclick="adminTab('services')"   class="tab-btn" id="adminTab_services"><i class="fa-solid fa-layer-group me-1"></i>${isAr?'الخدمات':'Services'}</button>
-              <button onclick="adminTab('withdraw')"   class="tab-btn" id="adminTab_withdraw"><i class="fa-solid fa-money-bill-transfer me-1"></i>${isAr?'السحوبات':'Withdrawals'}</button>
-              <button onclick="adminTab('coupons')"    class="tab-btn" id="adminTab_coupons"><i class="fa-solid fa-ticket me-1"></i>${isAr?'الكوبونات':'Coupons'}</button>
-              <button onclick="adminTab('categories')" class="tab-btn" id="adminTab_categories"><i class="fa-solid fa-tags me-1"></i>${isAr?'الفئات':'Categories'}</button>
-              <button onclick="adminTab('analytics')"  class="tab-btn" id="adminTab_analytics"><i class="fa-solid fa-chart-line me-1"></i>${isAr?'التحليلات':'Analytics'}</button>
-              <button onclick="adminTab('reviews')"    class="tab-btn" id="adminTab_reviews"><i class="fa-solid fa-star me-1"></i>${isAr?'التقييمات':'Reviews'}</button>
-              <button onclick="adminTab('reports')"    class="tab-btn" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation me-1"></i>${isAr?'البلاغات':'Reports'}</button>
-              <button onclick="adminTab('broadcast')"  class="tab-btn" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane me-1"></i>${isAr?'الإشعارات':'Broadcast'}</button>
-              <button onclick="adminTab('payments')"   class="tab-btn" id="adminTab_payments"><i class="fa-solid fa-credit-card me-1"></i>${isAr?'المدفوعات':'Payments'}</button>
-              <button onclick="adminTab('settings')"   class="tab-btn" id="adminTab_settings"><i class="fa-solid fa-sliders me-1"></i>${isAr?'الإعدادات':'Settings'}</button>
+          <div class="bg-gradient-to-br from-navy-900 via-slate-900 to-navy-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl mb-6 relative overflow-hidden">
+            <div class="absolute -top-16 -left-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-3 mb-1.5">
+                  <h1 class="text-2xl font-black flex items-center gap-2">👑 ${isAr?'لوحة الإدارة والتحكم الشاملة':'Super Admin Dashboard'}</h1>
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>${isAr?'نظام الضمان Escrow نشط':'Escrow system active'}
+                  </span>
+                </div>
+                <p class="text-slate-400 text-sm">${isAr?'تحكم كامل في الطلبات، النزاعات، المستخدمين والمحتوى':'Full control over orders, disputes, users and content'}</p>
+              </div>
+              <button onclick="AdminAI.generateOne()" id="admin-gen-btn"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles text-teal-300"></i><span>${isAr?'توليد مقال AI الآن':'Generate AI article'}</span>
+              </button>
             </div>
+          </div>
+
+          <div id="adminStatsRow" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            ${[1,2,3,4,5].map(()=>`<div class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"><div class="h-4 bg-gray-100 rounded mb-3 w-2/3"></div><div class="h-7 bg-gray-100 rounded mb-2 w-1/2"></div><div class="h-3 bg-gray-50 rounded w-3/4"></div></div>`).join('')}
+          </div>
+
+          <div id="adminEscrowBar" class="bg-gradient-to-r from-emerald-500/5 via-white to-teal-500/5 border border-emerald-200 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+            <div class="h-5 bg-gray-100 rounded w-2/3 animate-pulse"></div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <nav class="flex overflow-x-auto p-2 gap-1.5 border-b border-gray-100">
+              <button onclick="adminTab('orders')"     class="tab-btn admin-pill-tab active" id="adminTab_orders"><i class="fa-solid fa-bag-shopping"></i>${isAr?'الطلبات':'Orders'}</button>
+              <button onclick="adminTab('disputes')"   class="tab-btn admin-pill-tab" id="adminTab_disputes"><i class="fa-solid fa-flag text-red-500"></i>${isAr?'النزاعات':'Disputes'}</button>
+              <button onclick="adminTab('users')"      class="tab-btn admin-pill-tab" id="adminTab_users"><i class="fa-solid fa-users"></i>${isAr?'المستخدمون':'Users'}</button>
+              <button onclick="adminTab('services')"   class="tab-btn admin-pill-tab" id="adminTab_services"><i class="fa-solid fa-layer-group"></i>${isAr?'الخدمات والمنتجات':'Services'}</button>
+              <button onclick="adminTab('withdraw')"   class="tab-btn admin-pill-tab" id="adminTab_withdraw"><i class="fa-solid fa-money-bill-transfer text-amber-500"></i>${isAr?'السحوبات':'Withdrawals'}</button>
+              <button onclick="adminTab('coupons')"    class="tab-btn admin-pill-tab" id="adminTab_coupons"><i class="fa-solid fa-ticket"></i>${isAr?'الكوبونات':'Coupons'}</button>
+              <button onclick="adminTab('categories')" class="tab-btn admin-pill-tab" id="adminTab_categories"><i class="fa-solid fa-tags"></i>${isAr?'الفئات':'Categories'}</button>
+              <button onclick="adminTab('analytics')"  class="tab-btn admin-pill-tab" id="adminTab_analytics"><i class="fa-solid fa-chart-line"></i>${isAr?'التحليلات':'Analytics'}</button>
+              <button onclick="adminTab('reviews')"    class="tab-btn admin-pill-tab" id="adminTab_reviews"><i class="fa-solid fa-star text-amber-400"></i>${isAr?'التقييمات':'Reviews'}</button>
+              <button onclick="adminTab('reports')"    class="tab-btn admin-pill-tab" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation"></i>${isAr?'البلاغات':'Reports'}</button>
+              <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
+              <button onclick="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
+              <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
+            </nav>
             <div class="p-5" id="adminTabContent"></div>
           </div>
         </div>`;
