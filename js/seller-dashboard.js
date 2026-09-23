@@ -86,17 +86,19 @@
             const isAr = AppState.language !== 'en';
 
             try {
-                const [servicesSnap, ordersSnap, reviewsSnap, walletDoc] = await Promise.all([
+                const [servicesSnap, ordersSnap, reviewsSnap, walletDoc, userDoc] = await Promise.all([
                     window.db.collection(COLLECTIONS.SERVICES).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.ORDERS).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.REVIEWS).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.WALLET).doc(user.uid).get().catch(()=>null),
+                    window.db.collection(COLLECTIONS.USERS).doc(user.uid).get().catch(()=>null),
                 ]);
 
                 const services = servicesSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 const orders   = ordersSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 const reviews  = reviewsSnap.docs.map(d => d.data());
                 const wallet   = (walletDoc && walletDoc.exists) ? walletDoc.data() : { balance: 0 };
+                const profile  = (userDoc && userDoc.exists) ? userDoc.data() : {};
 
                 const completedOrders = orders.filter(o => o.status === ORDER_STATUS.COMPLETED);
                 const inEscrowOrders  = orders.filter(o => o.escrowHeld && ![ORDER_STATUS.COMPLETED, ORDER_STATUS.REFUNDED, ORDER_STATUS.CANCELLED].includes(o.status));
@@ -208,6 +210,7 @@
                   <!-- Left: Wallet + Chart + Tip + Level (4 cols) -->
                   <div class="lg:col-span-4 flex flex-col gap-6">
                     ${this._walletCard(availableBalance, inEscrowTotal, isAr)}
+                    ${this._payoutInfoCard(profile, isAr)}
                     ${this._weeklyChartCard(completedOrders, isAr)}
                     ${this._sellerTipCard(services, isAr)}
                     ${this._levelCard(completedOrders.length, avgRating, isAr)}
@@ -265,6 +268,53 @@
                 </button>
               </div>
             </div>`;
+        },
+
+        // ⚠️ ADDED: persistent payout details, saved once on the seller's
+        // profile instead of retyped on every single withdrawal request —
+        // so it's already on file whenever a payout needs to go out, and
+        // WalletManager.openWithdrawForm() below pre-fills from it.
+        _payoutInfoCard(profile, isAr) {
+            const method  = profile.payoutMethod  || '';
+            const account = profile.payoutAccount || '';
+            const hasInfo = !!account;
+            return `
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 rounded-lg bg-navy-50 text-navy-700 flex items-center justify-center text-sm"><i class="fa-solid fa-id-card"></i></div>
+                <h3 class="text-sm font-bold text-gray-900">${isAr?'بيانات الدفع المحفوظة':'Saved payout details'}</h3>
+              </div>
+              <p class="text-xs text-gray-400 mb-3">${isAr?'احفظ بياناتك مرة واحدة عشان تكون جاهزة عند أي تحويل أرباح، من غير ما تكتبها كل مرة.':"Save this once so it's on file for every payout — no need to retype it each time."}</p>
+              <div class="space-y-2.5">
+                <select id="sdPayoutMethod" class="form-input text-sm">
+                  <option value="bank" ${method==='bank'?'selected':''}>${isAr?'تحويل بنكي':'Bank Transfer'}</option>
+                  <option value="vodafone" ${method==='vodafone'?'selected':''}>${isAr?'فودافون كاش':'Vodafone Cash'}</option>
+                  <option value="instapay" ${method==='instapay'?'selected':''}>InstaPay</option>
+                </select>
+                <input type="text" id="sdPayoutAccount" class="form-input text-sm" dir="ltr" value="${escapeHtml(account)}" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}">
+                <button onclick="SellerDash.savePayoutInfo()" class="w-full py-2 bg-navy-700 hover:bg-navy-800 text-white rounded-xl text-xs font-bold transition">
+                  ${isAr?'حفظ البيانات':'Save details'}
+                </button>
+              </div>
+              ${!hasInfo ? `<p class="text-[11px] text-amber-600 mt-2 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i>${isAr?'مفيش بيانات محفوظة لسه':'No details saved yet'}</p>` : ''}
+            </div>`;
+        },
+        async savePayoutInfo() {
+            const isAr = AppState.language !== 'en';
+            const user = AppState.currentUser;
+            const method  = document.getElementById('sdPayoutMethod')?.value;
+            const account = document.getElementById('sdPayoutAccount')?.value?.trim();
+            if (!account) { showToast(isAr?'اكتب رقم الحساب أو المحفظة':'Enter the account or wallet number','warning'); return; }
+            try {
+                await window.db.collection(COLLECTIONS.USERS).doc(user.uid).update({
+                    payoutMethod:  method,
+                    payoutAccount: sanitizeInput(account, 100),
+                    updatedAt:     serverTimestamp(),
+                });
+                showToast(isAr?'تم حفظ بيانات الدفع':'Payout details saved','success');
+            } catch (e) {
+                showToast(isAr?'تعذر الحفظ':'Could not save', 'error');
+            }
         },
 
         _weeklyChartCard(completedOrders, isAr) {

@@ -430,6 +430,7 @@
       <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
       <button onclick="filterByType('service')" data-nav="services" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
       <button onclick="filterByType('product')" data-nav="products" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition">المنتجات</button>
+      <button onclick="navigateTo('digital-products')" data-nav="digital-products" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition"><i class="fa-solid fa-download me-1 text-turquoise-500"></i>منتجات رقمية</button>
       <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
     </div>
 
@@ -926,6 +927,35 @@
     <div id="servicesEmpty" class="hidden text-center py-20">
       <i class="fa-solid fa-search text-gray-300 text-5xl mb-4"></i>
       <p class="text-gray-400 font-bold text-xl">لا توجد خدمات</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DIGITAL PRODUCTS (isolated page — never mixed with regular products) ─── -->
+<!-- ⚠️ ADDED: category='digital' listings used to appear in the regular
+     products grid too; now this is their only home, reached via its own
+     nav link/route (initDigitalProductsPage in services.js). -->
+<div id="page-digital-products" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-black text-gray-900 flex items-center gap-3">
+          <i class="fa-solid fa-download text-turquoise-600"></i>
+          <span>المنتجات الرقمية</span>
+        </h1>
+        <p class="text-gray-400 text-sm mt-1">ملفات، أكواد، اشتراكات وقوالب جاهزة — تسليم فوري تلقائي فور الدفع</p>
+      </div>
+      <div class="relative flex-1 max-w-sm">
+        <i class="fa-solid fa-search absolute top-1/2 -translate-y-1/2 start-4 text-gray-400"></i>
+        <input type="text" id="digitalProductsSearch" class="form-input ps-11 pe-4"
+          placeholder="ابحث عن منتج رقمي..." oninput="searchDigitalProducts(this.value)">
+      </div>
+    </div>
+
+    <div id="digitalProductsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    <div id="digitalProductsEmpty" class="hidden text-center py-20">
+      <i class="fa-solid fa-download text-gray-300 text-5xl mb-4"></i>
+      <p class="text-gray-400 font-bold text-xl">لا توجد منتجات رقمية حاليًا</p>
     </div>
   </div>
 </div>
@@ -1427,20 +1457,32 @@
            RequestSystem.openProductOrderModal() in request-system.js -->
       <div id="productStructuredFields" class="space-y-4 mb-4"></div>
 
+      <!-- ⚠️ ADDED: shown only for category==='digital' products — no shipping
+           needed, delivery is automatic right after payment. -->
+      <div id="productDigitalNotice" class="hidden bg-turquoise-50 border border-turquoise-200 rounded-2xl p-4 mb-5">
+        <p class="text-sm font-black text-turquoise-800 flex items-center gap-2"><i class="fa-solid fa-bolt"></i>منتج رقمي — تسليم فوري تلقائي</p>
+        <p class="text-xs text-turquoise-700 mt-1">هتستلم رابط/ملف المنتج تلقائيًا في صفحة الطلب فور إتمام الدفع — مفيش شحن ومفيش عنوان مطلوب.</p>
+      </div>
+
       <!-- Buyer details form -->
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-black text-gray-700 mb-2">الاسم بالكامل <span class="text-red-500">*</span></label>
-          <input type="text" id="productBuyerName" class="form-input w-full text-sm" placeholder="الاسم اللي هيتكتب على الشحنة">
-        </div>
-        <div>
-          <label class="block text-sm font-black text-gray-700 mb-2">رقم الهاتف <span class="text-red-500">*</span></label>
-          <input type="tel" id="productBuyerPhone" class="form-input w-full text-sm" dir="ltr" placeholder="01xxxxxxxxx">
-        </div>
-        <div>
-          <label class="block text-sm font-black text-gray-700 mb-2">عنوان التوصيل بالكامل <span class="text-red-500">*</span></label>
-          <textarea id="productBuyerAddress" rows="2" class="form-input w-full text-sm resize-none"
-            placeholder="المحافظة، المدينة، الشارع، رقم العمارة/الشقة، أقرب علامة مميزة"></textarea>
+        <!-- ⚠️ CHANGED: shipping fields now wrapped so they can be hidden
+             entirely for digital products (no address/phone needed) — see
+             RequestSystem.openProductOrderModal(). -->
+        <div id="productShippingFields" class="space-y-4">
+          <div>
+            <label class="block text-sm font-black text-gray-700 mb-2">الاسم بالكامل <span class="text-red-500">*</span></label>
+            <input type="text" id="productBuyerName" class="form-input w-full text-sm" placeholder="الاسم اللي هيتكتب على الشحنة">
+          </div>
+          <div>
+            <label class="block text-sm font-black text-gray-700 mb-2">رقم الهاتف <span class="text-red-500">*</span></label>
+            <input type="tel" id="productBuyerPhone" class="form-input w-full text-sm" dir="ltr" placeholder="01xxxxxxxxx">
+          </div>
+          <div>
+            <label class="block text-sm font-black text-gray-700 mb-2">عنوان التوصيل بالكامل <span class="text-red-500">*</span></label>
+            <textarea id="productBuyerAddress" rows="2" class="form-input w-full text-sm resize-none"
+              placeholder="المحافظة، المدينة، الشارع، رقم العمارة/الشقة، أقرب علامة مميزة"></textarea>
+          </div>
         </div>
         <div>
           <label class="block text-sm font-black text-gray-700 mb-2">ملاحظات إضافية (اختياري)</label>

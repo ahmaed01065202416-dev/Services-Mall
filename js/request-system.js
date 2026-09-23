@@ -100,6 +100,18 @@
             return;
         }
 
+        // ⚠️ ADDED: same off-platform contact/payment scan used on listings and
+        // the order chat — a buyer's request brief is free text too and was
+        // never checked before this.
+        {
+            const leakKind = window.scanForContactLeak(details);
+            if (leakKind) {
+                window.flagSuspiciousContent({ userId: user.uid, source: 'request_brief', serviceId: service.id }, details, leakKind);
+                showToast(window.contactLeakWarning(isAr), 'error');
+                return;
+            }
+        }
+
         const btn = document.getElementById('submitRequestBtn');
         const instant = _instantMode;
         if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? (instant ? 'جاري التجهيز...' : 'جاري الإرسال...') : 'Sending...'}`; }
@@ -379,9 +391,16 @@
         }
 
         _pendingProduct = service;
+        const isDigital = service.category === 'digital';
 
         const nameEl = document.getElementById('productOrderName');
         if (nameEl) nameEl.textContent = service.title || '';
+
+        // ⚠️ ADDED: digital products need no shipping address/phone at all —
+        // delivery is automatic right after payment (see saveService's
+        // category-based digitalDelivery requirement in services.js).
+        document.getElementById('productShippingFields')?.classList.toggle('hidden', isDigital);
+        document.getElementById('productDigitalNotice')?.classList.toggle('hidden', !isDigital);
 
         const rulesBox  = document.getElementById('productSellerRulesBox');
         const rulesText = document.getElementById('productSellerRulesText');
@@ -434,9 +453,12 @@
         const user = AppState.currentUser;
         if (!user) { showToast(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please login first', 'warning'); return; }
 
-        const fullName = document.getElementById('productBuyerName')?.value?.trim();
-        const phone    = document.getElementById('productBuyerPhone')?.value?.trim();
-        const address  = document.getElementById('productBuyerAddress')?.value?.trim();
+        // ⚠️ ADDED: digital products skip shipping entirely — no name/phone/
+        // address needed, delivery is automatic on payment.
+        const isDigital = service.category === 'digital';
+        const fullName = isDigital ? '' : document.getElementById('productBuyerName')?.value?.trim();
+        const phone    = isDigital ? '' : document.getElementById('productBuyerPhone')?.value?.trim();
+        const address  = isDigital ? '' : document.getElementById('productBuyerAddress')?.value?.trim();
         const notes    = sanitizeInput(document.getElementById('productBuyerNotes')?.value?.trim() || '', 500);
         const agreed   = document.getElementById('productAgreeRules')?.checked;
 
@@ -456,10 +478,23 @@
             selectedFields[el.dataset.fieldKey] = { label: el.dataset.fieldLabel, value: sanitizeInput(val, 100) };
         }
 
-        if (!fullName)  { showToast(isAr ? 'اكتب الاسم بالكامل' : 'Enter your full name', 'warning'); document.getElementById('productBuyerName')?.focus(); return; }
-        if (!phone)     { showToast(isAr ? 'اكتب رقم الهاتف' : 'Enter your phone number', 'warning'); document.getElementById('productBuyerPhone')?.focus(); return; }
-        if (!address)   { showToast(isAr ? 'اكتب عنوان التوصيل بالكامل' : 'Enter your full delivery address', 'warning'); document.getElementById('productBuyerAddress')?.focus(); return; }
+        if (!isDigital) {
+            if (!fullName)  { showToast(isAr ? 'اكتب الاسم بالكامل' : 'Enter your full name', 'warning'); document.getElementById('productBuyerName')?.focus(); return; }
+            if (!phone)     { showToast(isAr ? 'اكتب رقم الهاتف' : 'Enter your phone number', 'warning'); document.getElementById('productBuyerPhone')?.focus(); return; }
+            if (!address)   { showToast(isAr ? 'اكتب عنوان التوصيل بالكامل' : 'Enter your full delivery address', 'warning'); document.getElementById('productBuyerAddress')?.focus(); return; }
+        }
         if (!agreed)    { showToast(isAr ? 'يجب الموافقة على شروط المنصة والبائع أولاً' : 'You must agree to the platform and seller terms first', 'warning'); return; }
+
+        // ⚠️ ADDED: scan the free-text notes only — NOT phone/address, which
+        // are legitimately required here for physical shipping.
+        {
+            const leakKind = window.scanForContactLeak(notes);
+            if (leakKind) {
+                window.flagSuspiciousContent({ userId: user.uid, source: 'product_order_notes', serviceId: service.id }, notes, leakKind);
+                showToast(window.contactLeakWarning(isAr), 'error');
+                return;
+            }
+        }
 
         const btn = document.getElementById('submitProductOrderBtn');
         if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isAr ? 'جاري تجهيز طلبك...' : 'Preparing your order...'}`; }
@@ -483,8 +518,11 @@
             }
 
             const orderId = generateId('ord_');
-            const shippingInfo = { fullName: sanitizeInput(fullName, 120), phone: sanitizeInput(phone, 30), address: sanitizeInput(address, 500), notes };
-            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set({
+            // ⚠️ CHANGED: shippingInfo/shippingStatus only apply to physical
+            // (non-digital) products now — a digital order has nothing to
+            // ship, so it skips both and relies purely on the automatic
+            // digitalDelivery flow (functions/api/payment.js) after payment.
+            const orderDoc = {
                 id: orderId,
                 serviceId:     service.id,
                 serviceTitle:  service.title,
@@ -498,35 +536,46 @@
                 price:         service.price || 0,
                 deliveryDays:  service.deliveryDays || 0,
                 listingType:   'product',
+                category:      svcData.category || service.category || '',
                 status:        ORDER_STATUS.ACCEPTED,
-                shippingStatus: 'processing',
                 paymentStatus: 'no_payment',
-                shippingInfo,
                 selectedFields: selectedFields,
                 sellerOrderRules: svcData.orderRules || '',
                 createdAt:     serverTimestamp(),
                 updatedAt:     serverTimestamp(),
-            });
+            };
+            if (!isDigital) {
+                orderDoc.shippingInfo   = { fullName: sanitizeInput(fullName, 120), phone: sanitizeInput(phone, 30), address: sanitizeInput(address, 500), notes };
+                orderDoc.shippingStatus = 'processing';
+            } else if (notes) {
+                orderDoc.buyerNotes = notes;
+            }
+            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set(orderDoc);
 
             // Post the buyer's shipping details as the first chat message —
             // same "structured brief card" pattern as service requests, so
             // the seller sees it immediately in the order workspace chat.
-            try {
-                if (window.rtdb) {
-                    await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
-                    await window.rtdb.ref(`chats/${orderId}/messages`).push({
-                        senderId:   user.uid,
-                        senderName: user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),
-                        type:       'product_order_brief',
-                        fullName: shippingInfo.fullName, phone: shippingInfo.phone,
-                        address: shippingInfo.address, notes: shippingInfo.notes,
-                        selectedFields: Object.values(selectedFields).map(f => `${f.label}: ${f.value}`).join(' · '),
-                        readBy:     { [user.uid]: true },
-                        createdAt:  firebase.database.ServerValue.TIMESTAMP,
-                    });
+            // ⚠️ CHANGED: skipped for digital orders — there's no shipping
+            // info to show, and the buyer already sees their instant
+            // delivery content via the dedicated card in the order page.
+            if (!isDigital) {
+                try {
+                    if (window.rtdb) {
+                        await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
+                        await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                            senderId:   user.uid,
+                            senderName: user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),
+                            type:       'product_order_brief',
+                            fullName: orderDoc.shippingInfo.fullName, phone: orderDoc.shippingInfo.phone,
+                            address: orderDoc.shippingInfo.address, notes: orderDoc.shippingInfo.notes,
+                            selectedFields: Object.values(selectedFields).map(f => `${f.label}: ${f.value}`).join(' · '),
+                            readBy:     { [user.uid]: true },
+                            createdAt:  firebase.database.ServerValue.TIMESTAMP,
+                        });
+                    }
+                } catch (chatErr) {
+                    console.error('[RequestSystem] Product order chat message failed (order was still created):', chatErr);
                 }
-            } catch (chatErr) {
-                console.error('[RequestSystem] Product order chat message failed (order was still created):', chatErr);
             }
 
             hideLoading();

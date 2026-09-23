@@ -24,6 +24,7 @@ const COLLECTIONS = {
     PAYMENTS:      'payments',
     REPORTS:       'reports',
     CATEGORIES:    'categories',
+    CATEGORY_REQUESTS: 'category_requests', // ⚠️ ADDED: seller-suggested new categories awaiting admin review
     ESCROW:        'escrow',
     DISPUTES:      'disputes',
     WITHDRAWALS:   'withdrawals',
@@ -464,6 +465,57 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
+// ── Off-platform contact/payment leak scanner ─────────────────────────────────
+// ⚠️ ADDED: this used to live ONLY inside the order chat (order-workspace.js),
+// which meant a seller/buyer could still dodge escrow entirely by putting a
+// phone number, WhatsApp/Telegram handle, or "pay me directly" text right
+// inside a service LISTING (title/description/order rules/delivery notes) or
+// inside a REQUEST brief — none of which ever passed through the chat filter.
+// Shared here so every free-text field the seller or buyer publishes/sends
+// (listing fields, custom-service requests, product order notes, chat) runs
+// through the exact same rule set instead of three different copies drifting
+// out of sync. Client-side heuristic only — a deterrent + admin signal, not a
+// hard security boundary.
+const CONTACT_LEAK_PATTERNS = [
+    { re: /(\+?\d[\s.-]?){9,}/g,                              kind: 'phone' },
+    { re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,   kind: 'email' },
+    { re: /(واتساب|whatsapp|واتس\s*اب|تيليجرام|telegram|انستقرام|instagram|سناب\s*شات|snapchat|تيك\s*توك|tiktok)/gi, kind: 'external_contact' },
+    { re: /(انستاباي|instapay|فودافون\s*كاش|vodafone\s*cash|تحويل\s*بنكي|رقم\s*المحفظة|برا\s*المنصة|خارج\s*المنصة|بره\s*الموقع|من\s*غير\s*الموقع|كاش\s*مباشر|ادفعلي\s*كاش)/gi, kind: 'external_payment' },
+];
+function scanForContactLeak(text) {
+    if (!text) return null;
+    for (const p of CONTACT_LEAK_PATTERNS) {
+        p.re.lastIndex = 0;
+        if (p.re.test(text)) return p.kind;
+    }
+    return null;
+}
+// Scans several fields of a single record (e.g. a listing about to be
+// published, or a request about to be submitted) in one go. Returns the kind
+// of the FIRST leak found, or null if all fields are clean.
+function scanFieldsForContactLeak(fields) {
+    for (const text of fields) {
+        const kind = scanForContactLeak(text);
+        if (kind) return kind;
+    }
+    return null;
+}
+async function flagSuspiciousContent(context, text, kind) {
+    try {
+        await window.db.collection('fraud_flags').add({
+            ...context,
+            kind,
+            textSample: String(text || '').slice(0, 200),
+            createdAt: serverTimestamp(),
+        });
+    } catch (_) { /* non-critical, never block the UI on this */ }
+}
+function contactLeakWarning(isAr) {
+    return isAr
+        ? '🚫 مينفعش تحط رقم تليفون أو إيميل أو تتفقوا على تواصل/دفع برا المنصة — ده بيلغي ضمان الاسترجاع بتاعك ومنعنا نشره'
+        : "🚫 Phone numbers, emails, or arranging off-platform contact/payment aren't allowed — this voids your protection and we can't publish it";
+}
+
 // ── Image Preview ─────────────────────────────────────────────────────────────
 function previewImage(input, previewId = 'serviceImagePreview') {
     const file = input.files[0];
@@ -585,6 +637,7 @@ Object.assign(window, {
     updateCartCount, getStatusText, getStatusClass,
     openModal, closeModal, showToast, showLoading, hideLoading,
     secureApiCall, sanitizeInput, escapeHtml, previewImage,
+    scanForContactLeak, scanFieldsForContactLeak, flagSuspiciousContent, contactLeakWarning,
     calcPlatformFee, addToCart, removeFromCart, clearCart, getCartTotals,
     navigateTo,
 });

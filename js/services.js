@@ -16,6 +16,7 @@
     let _activeType    = ''; // '', 'service', or 'product'
     let _pendingGalleryFiles = []; // new gallery photos chosen but not yet uploaded
     let _keptExistingGallery = [];  // existing gallery URLs kept when editing (minus any removed)
+    let _digitalProducts = []; // ⚠️ ADDED: cache for the dedicated Digital Products page
     const PAGE_SIZE    = 12;
 
     // ── Category taxonomies ─────────────────────────────────────────────────────
@@ -93,6 +94,37 @@
     }
 
     const ServicesManager = {
+
+        // ⚠️ ADDED: dedicated "Digital Products" page — isolated from the
+        // regular services/products browse page entirely. category==='digital'
+        // listings no longer appear there at all (see _applyFilters below);
+        // this is now their only home. Runs its own lightweight query rather
+        // than reusing loadServices()'s cache, since the digital page can be
+        // opened directly without ever visiting the regular page first.
+        async initDigitalProductsPage() {
+            const grid  = document.getElementById('digitalProductsGrid');
+            const empty = document.getElementById('digitalProductsEmpty');
+            if (!grid) return;
+            grid.innerHTML = `<div class="col-span-full text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
+            try {
+                const snap = await window.db.collection(COLLECTIONS.SERVICES)
+                    .where('active', '==', true).limit(200).get();
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .filter(s => s.listingType === 'product' && (s.category||'').trim() === 'digital');
+                _digitalProducts = items;
+                this._renderServiceCards(items, 'digitalProductsGrid', 'digitalProductsEmpty');
+            } catch (err) {
+                console.warn('[Services] Digital products load error:', err.message);
+                grid.innerHTML = '';
+                if (empty) empty.classList.remove('hidden');
+            }
+        },
+        searchDigitalProducts(query) {
+            const q = (query || '').trim().toLowerCase();
+            const list = !q ? _digitalProducts : _digitalProducts.filter(s =>
+                (s.title||'').toLowerCase().includes(q) || (s.description||'').toLowerCase().includes(q));
+            this._renderServiceCards(list, 'digitalProductsGrid', 'digitalProductsEmpty');
+        },
 
         // ── Load All Services ─────────────────────────────────────────────────
         async loadServices(reset = true) {
@@ -189,7 +221,9 @@
             const isAr = AppState.language !== 'en';
             const allBtn = `<button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition">${isAr ? 'الكل' : 'All'}</button>`;
             if (!type) { container.innerHTML = allBtn; return; }
-            const list = type === 'product' ? _getProductCategories() : _getServiceCategories();
+            const list = type === 'product'
+                ? _getProductCategories().filter(c => c.value !== 'digital') // ⚠️ isolated to its own page — see initDigitalProductsPage
+                : _getServiceCategories();
             container.innerHTML = allBtn + list.map(c => `
                 <button onclick="ServicesManager.filterCategory('${c.value}')" data-cat="${c.value}"
                   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">
@@ -240,7 +274,11 @@
             // whitespace (e.g. saved as "clothing " from an older/manual entry)
             // — that alone was enough to make a listing invisible under its
             // own category pill even though it displays fine under "الكل".
-            let list = !_activeCat ? [..._allServices] : _allServices.filter(s => (s.category||'').trim() === _activeCat);
+            // ⚠️ ADDED: category==='digital' listings are now isolated to their
+            // own dedicated page (initDigitalProductsPage) and never show up
+            // here, on the regular services/products browse page, at all.
+            let list = _allServices.filter(s => (s.category||'').trim() !== 'digital');
+            if (_activeCat) list = list.filter(s => (s.category||'').trim() === _activeCat);
             if (_activeType) list = list.filter(s => ((s.listingType||'service').trim()) === _activeType);
             if (_expressOnly) list = list.filter(s => (Number(s.deliveryDays) || 3) <= 1);
             _filtered = list;
@@ -268,9 +306,9 @@
         // even though the click was registered (title + active pill DID
         // update — only the grid didn't). Each card is now built in its own
         // try/catch so one bad listing can't block the rest.
-        _renderServiceCards(services) {
-            const grid  = document.getElementById('servicesGrid');
-            const empty = document.getElementById('servicesEmpty');
+        _renderServiceCards(services, gridId = 'servicesGrid', emptyId = 'servicesEmpty') {
+            const grid  = document.getElementById(gridId);
+            const empty = document.getElementById(emptyId);
             if (!grid) return;
 
             if (!services || services.length === 0) {
@@ -490,7 +528,7 @@
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>
-                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other'}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
@@ -633,7 +671,7 @@
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'التصنيف':'Category'} *</label>
-                      <select id="svcCategory" class="form-input" onchange="ServicesManager.refreshFieldTemplates()">
+                      <select id="svcCategory" class="form-input" onchange="ServicesManager.onCategoryChange()">
                         ${(wantsProduct ? productCategories : categories).map(c => `<option value="${c.value}" ${service?.category===c.value?'selected':''}>${c.label}</option>`).join('')}
                       </select>
                     </div>
@@ -642,6 +680,17 @@
                       <input type="number" id="svcPrice" class="form-input" min="5" max="100000" step="0.5"
                         value="${service?.price||''}" placeholder="150">
                     </div>
+                  </div>
+
+                  <!-- ⚠️ ADDED: when the seller picks "أخرى" because nothing
+                       else fits, let them name what they actually needed —
+                       goes to admin as a category request instead of just
+                       silently landing in "Other" forever. -->
+                  <div id="svcCategorySuggestBox" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                    <label class="block text-sm font-bold text-blue-800 mb-2"><i class="fa-solid fa-lightbulb me-1.5"></i>${isAr?'مفيش تصنيف مناسب؟ اقترح واحد جديد (اختياري)':"No category fits? Suggest a new one (optional)"}</label>
+                    <input type="text" id="svcCategorySuggestion" class="form-input" maxlength="60"
+                      placeholder="${isAr?'مثال: أثاث منزلي، ألعاب أطفال...':'e.g. Home furniture, Kids toys...'}">
+                    <p class="text-xs text-blue-600 mt-1.5">${isAr?'هنراجعها ولو مناسبة هنضيفها كتصنيف رسمي.':"We'll review it and add it as an official category if it fits."}</p>
                   </div>
 
                   <!-- Service-only fields -->
@@ -701,6 +750,19 @@
                          of hoping they type the right thing in a notes box. -->
                     <div id="svcFieldTemplatesContainer"></div>
 
+                    <!-- ⚠️ ADDED: generic custom fields — works for ANY product
+                         category, not just the ones with built-in templates
+                         (clothing/electronics/home/beauty/food). The seller
+                         can add as many arbitrary attributes as they need. -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+                      <div class="flex items-center justify-between mb-2.5">
+                        <p class="text-sm font-black text-gray-700"><i class="fa-solid fa-sliders me-1.5"></i>${isAr?'خصائص مخصصة إضافية (اختياري)':'Extra custom attributes (optional)'}</p>
+                        <button type="button" onclick="ServicesManager.addCustomField()" class="text-xs font-bold text-navy-700 hover:underline flex items-center gap-1"><i class="fa-solid fa-plus"></i>${isAr?'أضف خاصية':'Add attribute'}</button>
+                      </div>
+                      <p class="text-xs text-gray-400 mb-2">${isAr?'مثال: الوزن، الحجم، النكهة، الطراز — أي حاجة تخص منتجك مهما كان نوعه.':'e.g. weight, size, flavor, model — anything specific to your product, whatever its category.'}</p>
+                      <div id="svcCustomFieldsContainer" class="space-y-2"></div>
+                    </div>
+
                     <div>
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'شروطك وملاحظاتك على الطلب (اختياري)':"Your order rules/notes (optional)"}</label>
                       <textarea id="svcOrderRules" rows="3" class="form-input" maxlength="1000"
@@ -723,9 +785,18 @@
                       <input type="hidden" id="svcExistingGallery" value="${escapeHtml(JSON.stringify(service?.images||[]))}">
                     </div>
 
-                    <div class="bg-turquoise-50 border border-turquoise-200 rounded-2xl p-4">
+                    <!-- ⚠️ CHANGED: this used to be shown+required for EVERY
+                         product regardless of category — a t-shirt seller had
+                         to supply an "instant delivery link" that made no
+                         sense, while buyers of it were later STILL asked for
+                         a shipping address at checkout (both flows fired at
+                         once). Now it only applies to category === 'digital';
+                         other categories are physical goods shipped to the
+                         buyer's address (collected at checkout instead), and
+                         see the notice box below rather than this section. -->
+                    <div id="svcDeliverySection" class="bg-turquoise-50 border border-turquoise-200 rounded-2xl p-4 hidden">
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'رابط أو ملف التسليم الفوري':'Instant delivery link or file'} *</label>
-                      <p class="text-xs text-gray-500 mb-3">${isAr?'ده اللي المشتري هيستلمه أوتوماتيك فور الدفع — رابط تحميل، أو ارفع الملف مباشرة.':"This is what the buyer receives automatically the moment they pay — a download link, or upload the file directly."}</p>
+                      <p class="text-xs text-gray-500 mb-3">${isAr?'ده اللي المشتري هيستلمه أوتوماتيك فور الدفع — رابط تحميل، أو ارفع الملف مباشرة. مفيش شحن أو عنوان في المنتجات الرقمية.':"This is what the buyer receives automatically the moment they pay — a download link, or upload the file directly. No shipping/address for digital products."}</p>
                       <input type="text" id="svcDeliveryLink" class="form-input mb-3" dir="ltr"
                         value="${service?.digitalDelivery?.type==='link' ? escapeHtml(service.digitalDelivery.value||'') : ''}"
                         placeholder="https://...">
@@ -741,6 +812,11 @@
                           placeholder="${isAr?'مثال: كود التفعيل، تعليمات التركيب...':'e.g. activation code, install instructions...'}">${escapeHtml(service?.digitalDelivery?.notes||'')}</textarea>
                       </div>
                     </div>
+                    <div id="svcShippingNotice" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 hidden">
+                      <p class="text-sm font-bold text-amber-800 flex items-center gap-2"><i class="fa-solid fa-truck"></i>${isAr?'ده منتج فعلي هيتشحن':'This is a physical, shipped product'}</p>
+                      <p class="text-xs text-amber-700 mt-1">${isAr?'العميل هيدخل عنوانه ورقم تليفونه وقت الطلب علشان توصله المنتج — مش محتاج تحط رابط تسليم هنا.':"The buyer will enter their delivery address and phone at checkout so you can ship it to them — no delivery link needed here."}</p>
+                    </div>
+
 
                     <!-- ⚠️ ADDED: optional availability limits — a stock count, an
                          expiry date, or both. Either one left empty/zero means
@@ -786,6 +862,22 @@
 
             this.toggleListingType();
             this._renderGalleryPreview();
+            this._restoreCustomFields();
+        },
+
+        // ⚠️ ADDED: when editing a listing, any saved structuredField whose
+        // key isn't one of the current category's built-in template keys is
+        // a custom attribute the seller added — restore it as an editable row
+        // instead of silently dropping it on save.
+        _restoreCustomFields() {
+            const container = document.getElementById('svcCustomFieldsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const existing = this._editingStructuredFields || [];
+            const cat = document.getElementById('svcCategory')?.value;
+            const templateKeys = new Set((_getFieldTemplates()[cat] || []).map(f => f.key));
+            existing.filter(f => !templateKeys.has(f.key))
+                .forEach(f => this.addCustomField(f.label, (f.options||[]).join(', ')));
         },
 
         // Shows/hides the service-only vs product-only field groups based on
@@ -807,6 +899,24 @@
                 if (list.some(c => c.value === current)) catSelect.value = current;
             }
             if (isProduct) this.refreshFieldTemplates();
+            this._toggleDeliverySection();
+            document.getElementById('svcCategorySuggestBox')?.classList.toggle('hidden', document.getElementById('svcCategory')?.value !== 'other');
+        },
+
+        // ⚠️ ADDED: category change handler — swaps the suggested-fields panel
+        // AND flips between "instant delivery link" (digital) vs "physical
+        // shipping notice" (every other product category).
+        onCategoryChange() {
+            this.refreshFieldTemplates();
+            this._toggleDeliverySection();
+            const box = document.getElementById('svcCategorySuggestBox');
+            if (box) box.classList.toggle('hidden', document.getElementById('svcCategory')?.value !== 'other');
+        },
+        _toggleDeliverySection() {
+            const isProduct = document.getElementById('svcTypeProduct')?.checked;
+            const isDigital = document.getElementById('svcCategory')?.value === 'digital';
+            document.getElementById('svcDeliverySection')?.classList.toggle('hidden', !(isProduct && isDigital));
+            document.getElementById('svcShippingNotice')?.classList.toggle('hidden', !(isProduct && !isDigital));
         },
 
         // ⚠️ ADDED: rebuilds the "suggested fields for this category" panel —
@@ -814,6 +924,28 @@
         // changes. Preserves the seller's on/off + edited options when
         // editing an existing listing that already has structuredFields, so
         // reopening the edit form doesn't reset their previous choices.
+        // ⚠️ ADDED: generic custom attribute rows — usable for any category,
+        // unlike the fixed per-category templates above. Each row is a
+        // label + optional comma-separated options (blank = buyer types
+        // free text at checkout, same as the template fields' "text" type).
+        _customFieldSeq: 0,
+        addCustomField(label = '', options = '') {
+            const container = document.getElementById('svcCustomFieldsContainer');
+            if (!container) return;
+            const isAr = AppState.language !== 'en';
+            const id = `custom_${Date.now()}_${this._customFieldSeq++}`;
+            const row = document.createElement('div');
+            row.className = 'custom-field-row bg-white rounded-xl p-3 border border-gray-200 flex gap-2 items-start';
+            row.dataset.key = id;
+            row.innerHTML = `
+              <div class="flex-1 space-y-1.5">
+                <input type="text" class="form-input text-xs custom-field-label" value="${escapeHtml(label)}" placeholder="${isAr?'اسم الخاصية، مثال: الوزن':'Attribute name, e.g. Weight'}">
+                <input type="text" class="form-input text-xs custom-field-options" value="${escapeHtml(options)}" placeholder="${isAr?'خيارات مفصولة بفاصلة (اختياري) — سيبها فاضية لو المشتري هيكتب بنفسه':'Comma-separated options (optional) — leave blank for free text'}">
+              </div>
+              <button type="button" onclick="this.closest('.custom-field-row').remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition mt-0.5"><i class="fa-solid fa-trash text-xs"></i></button>`;
+            container.appendChild(row);
+        },
+
         refreshFieldTemplates() {
             const container = document.getElementById('svcFieldTemplatesContainer');
             if (!container) return;
@@ -916,10 +1048,13 @@
             if (!description){ showToast(AppState.language==='en'?'Enter a description':'أدخل الوصف', 'warning'); return; }
             if (price < 5)  { showToast(AppState.language==='en'?'Min price is 5 EGP':'الحد الأدنى للسعر 5 ج.م', 'warning'); return; }
 
-            // ⚠️ ADDED: products must have SOMETHING to instantly deliver — a
-            // link or an uploaded file — or a buyer would pay and get nothing.
+            // ⚠️ CHANGED: only digital-category products require an instant
+            // delivery link/file now. Other product categories are physical
+            // goods shipped to the buyer's address collected at checkout
+            // (see request-system.js submitProductOrder) — they don't need
+            // this at all, and were never using it correctly before.
             let digitalDelivery = null;
-            if (listingType === 'product') {
+            if (listingType === 'product' && category === 'digital') {
                 const link       = document.getElementById('svcDeliveryLink')?.value?.trim();
                 const deliveryFile = document.getElementById('svcDeliveryFile')?.files[0];
                 const existingFile = document.getElementById('svcDeliveryExisting')?.value?.trim();
@@ -931,6 +1066,22 @@
                 digitalDelivery = link
                     ? { type: 'link', value: link, notes }
                     : { type: 'file', value: existingFile || '', notes }; // value filled in after upload below if a new file was chosen
+            }
+
+            // ⚠️ ADDED: block publishing a listing that leaks a phone number,
+            // email, or off-platform contact/payment mention — this used to
+            // only be checked inside the order chat, so a seller could just
+            // put their WhatsApp number straight in the listing description
+            // and never touch the chat filter at all. See constants.js.
+            {
+                const orderRulesText = document.getElementById('svcOrderRules')?.value?.trim() || '';
+                const deliveryNotesText = document.getElementById('svcDeliveryNotes')?.value?.trim() || '';
+                const leakKind = window.scanFieldsForContactLeak([title, description, orderRulesText, deliveryNotesText]);
+                if (leakKind) {
+                    window.flagSuspiciousContent({ userId: user.uid, source: 'listing', listingId: editId || null }, `${title} | ${description}`, leakKind);
+                    showToast(window.contactLeakWarning(AppState.language !== 'en'), 'error');
+                    return;
+                }
             }
 
             showLoading(AppState.language==='en'?'Publishing...':'جاري النشر...');
@@ -991,6 +1142,21 @@
                             }
                             return { key, label, type, options: [] };
                         });
+                    // ⚠️ ADDED: generic custom attribute rows — same shape as
+                    // the template-based fields above, so the checkout form
+                    // (request-system.js) renders them identically either way.
+                    Array.from(document.querySelectorAll('.custom-field-row')).forEach(row => {
+                        const label = row.querySelector('.custom-field-label')?.value?.trim();
+                        if (!label) return;
+                        const rawOpts = row.querySelector('.custom-field-options')?.value?.trim() || '';
+                        const options = rawOpts.split(',').map(s => s.trim()).filter(Boolean);
+                        data.structuredFields.push({
+                            key: row.dataset.key,
+                            label: sanitizeInput(label, 60),
+                            type: options.length ? 'select' : 'text',
+                            options,
+                        });
+                    });
                 } else {
                     data.orderMode = orderMode;      // 'request_first' | 'instant'
                 }
@@ -1013,6 +1179,24 @@
                     data.views         = 0;           // ← SellerDash reads this field
                     data.createdAt     = serverTimestamp();
                     await window.db.collection(COLLECTIONS.SERVICES).add(data);
+                }
+
+                // ⚠️ ADDED: category-suggestion → admin review queue. Doesn't
+                // block or delay publishing the listing itself (it still goes
+                // live under "Other" immediately) — this just flags that the
+                // seller thinks a dedicated category is missing.
+                const categorySuggestion = category === 'other' ? document.getElementById('svcCategorySuggestion')?.value?.trim() : '';
+                if (categorySuggestion) {
+                    try {
+                        await window.db.collection(COLLECTIONS.CATEGORY_REQUESTS).add({
+                            name: sanitizeInput(categorySuggestion, 60),
+                            listingType,
+                            requestedBy: user.uid,
+                            requestedByName: user.displayName || user.email || '',
+                            status: 'pending',
+                            createdAt: serverTimestamp(),
+                        });
+                    } catch (_) { /* non-critical — never blocks publishing */ }
                 }
 
                 hideLoading();
@@ -1161,6 +1345,8 @@
     // Override initServicesPage
     window.initServicesPage    = () => ServicesManager.initServicesPage();
     window.initAddServicePage  = () => ServicesManager.initAddServicePage();
+    window.initDigitalProductsPage = () => ServicesManager.initDigitalProductsPage(); // ⚠️ ADDED
+    window.searchDigitalProducts   = (q) => ServicesManager.searchDigitalProducts(q); // ⚠️ ADDED
 
     console.log('✅ ServicesManager v3.0 loaded');
 })();

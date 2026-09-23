@@ -467,7 +467,9 @@
                 <div class="space-y-2">${users.map(u=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" id="urow_${u.id}">
                     <img src="${u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
-                    <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p></div>
+                    <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p>
+                      ${u.role==='seller' && u.payoutAccount ? `<p class="text-[11px] text-teal-700 font-bold mt-0.5"><i class="fa-solid fa-id-card me-1"></i>${u.payoutMethod==='vodafone'?(isAr?'فودافون كاش':'Vodafone Cash'):u.payoutMethod==='instapay'?'InstaPay':(isAr?'تحويل بنكي':'Bank')}: ${escapeHtml(u.payoutAccount)}</p>` : ''}
+                    </div>
                     <select onchange="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
                       <option value="buyer"  ${u.role==='buyer' ?'selected':''}>buyer</option>
                       <option value="seller" ${u.role==='seller'?'selected':''}>seller</option>
@@ -663,9 +665,35 @@
 
             // ── CATEGORIES ────────────────────────────────────────────────────
             } else if (tab === 'categories') {
-                const catsSnap = await window.db.collection(COLLECTIONS.CATEGORIES).orderBy('order','asc').get();
+                const [catsSnap, reqSnap] = await Promise.all([
+                    window.db.collection(COLLECTIONS.CATEGORIES).orderBy('order','asc').get(),
+                    window.db.collection(COLLECTIONS.CATEGORY_REQUESTS).where('status','==','pending').get(),
+                ]);
                 const cats = catsSnap.docs.map(d=>({id:d.id,...d.data()}));
+                const catRequests = reqSnap.docs.map(d=>({id:d.id,...d.data()}));
                 container.innerHTML = `
+                <!-- ⚠️ ADDED: seller-suggested categories awaiting review — see
+                     ServicesManager.saveService() in services.js, which writes
+                     here whenever a seller picks "Other" and names what they
+                     actually needed. Approving copies it into the real
+                     categories list below (a further code change is still
+                     needed to add it to the live add-listing dropdown itself
+                     — this queue is the review/triage step, not auto-deploy). -->
+                ${catRequests.length > 0 ? `
+                <div class="mb-6">
+                  <h3 class="font-black text-gray-900 mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-amber-500"></i>${isAr?`تصنيفات مقترحة من البائعين (${catRequests.length})`:`Seller-suggested categories (${catRequests.length})`}</h3>
+                  <div class="space-y-2">
+                    ${catRequests.map(r => `
+                    <div class="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                      <div class="flex-1 min-w-0">
+                        <p class="font-bold text-gray-900">${escapeHtml(r.name)} <span class="text-xs font-normal text-gray-500">(${r.listingType==='product'?(isAr?'منتج':'product'):(isAr?'خدمة':'service')})</span></p>
+                        <p class="text-xs text-gray-400">${isAr?'اقترحها':'suggested by'} ${escapeHtml(r.requestedByName||'—')} · ${formatDateAr(r.createdAt)}</p>
+                      </div>
+                      <button onclick="window._adminApproveCategoryRequest('${r.id}','${escapeHtml(r.name).replace(/'/g,"\\'")}')" class="text-xs px-3 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'✓ موافقة وإضافة':'✓ Approve & add'}</button>
+                      <button onclick="window._adminRejectCategoryRequest('${r.id}')" class="text-xs px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition">${isAr?'رفض':'Dismiss'}</button>
+                    </div>`).join('')}
+                  </div>
+                </div>` : ''}
                 <div class="flex items-center justify-between mb-6">
                   <h3 class="font-black text-gray-900">${isAr?`الفئات (${cats.length})`:`Categories (${cats.length})`}</h3>
                   <button onclick="window._adminAddCategory()" class="btn-primary text-sm px-4 py-2"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة فئة':'Add Category'}</button>
@@ -718,6 +746,21 @@
                 window._adminDeleteCategory = async (id) => {
                     if (!confirm(isAr?'حذف الفئة؟':'Delete category?')) return;
                     try { await window.db.collection(COLLECTIONS.CATEGORIES).doc(id).delete(); showToast(isAr?'✅ تم الحذف':'✅ Deleted','success'); adminTab('categories'); }
+                    catch(e) { showToast(e.message,'error'); }
+                };
+                window._adminApproveCategoryRequest = async (reqId, name) => {
+                    try {
+                        await window.db.collection(COLLECTIONS.CATEGORIES).add({
+                            name_ar: name, name_en: name, icon: '📦', order: cats.length,
+                            createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+                        });
+                        await window.db.collection(COLLECTIONS.CATEGORY_REQUESTS).doc(reqId).update({ status: 'approved', reviewedAt: serverTimestamp() });
+                        showToast(isAr?'✅ اتضافت — محتاجة تتضاف كمان في نموذج نشر الإعلان (تحديث كود)':'✅ Added — still needs adding to the add-listing form (code update)', 'success');
+                        adminTab('categories');
+                    } catch(e) { showToast(e.message,'error'); }
+                };
+                window._adminRejectCategoryRequest = async (reqId) => {
+                    try { await window.db.collection(COLLECTIONS.CATEGORY_REQUESTS).doc(reqId).update({ status: 'rejected', reviewedAt: serverTimestamp() }); showToast(isAr?'تم الرفض':'Dismissed','success'); adminTab('categories'); }
                     catch(e) { showToast(e.message,'error'); }
                 };
 
@@ -1416,9 +1459,17 @@
             });
         },
 
-        openWithdrawForm() {
+        async openWithdrawForm() {
             const isAr = AppState.language !== 'en', wallet = AppState.wallet||{}, balance = wallet.balance||0;
             if (balance < PLATFORM.MIN_WITHDRAWAL) { showToast(`${isAr?'الحد الأدنى':'Min'}: ${formatCurrency(PLATFORM.MIN_WITHDRAWAL)}`,'warning'); return; }
+            // ⚠️ ADDED: pre-fill from the seller's saved payout details
+            // (SellerDash.savePayoutInfo) instead of always starting blank.
+            let savedMethod = 'bank', savedAccount = '';
+            try {
+                const profSnap = await window.db.collection(COLLECTIONS.USERS).doc(AppState.currentUser.uid).get();
+                const prof = profSnap.data() || {};
+                if (prof.payoutAccount) { savedMethod = prof.payoutMethod || 'bank'; savedAccount = prof.payoutAccount; }
+            } catch (_) { /* non-critical — falls back to a blank form */ }
             document.getElementById('withdrawModal')?.remove();
             const modal = document.createElement('div');
             modal.id = 'withdrawModal';
@@ -1437,9 +1488,9 @@
                        they submit, instead of finding out later. -->
                   <div id="withdrawPreview" class="bg-gray-50 rounded-xl p-3 text-sm ${PLATFORM.WITHDRAWAL_FEE_PERCENT ? '' : 'hidden'}"></div>
                   <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'طريقة الاستلام (داخل مصر فقط حاليًا)':'Payout Method (Egypt only for now)'}</label>
-                    <select id="withdrawMethod" class="form-input"><option value="bank">${isAr?'تحويل بنكي':'Bank Transfer'}</option><option value="vodafone">${isAr?'فودافون كاش':'Vodafone Cash'}</option><option value="instapay">InstaPay</option></select></div>
+                    <select id="withdrawMethod" class="form-input"><option value="bank" ${savedMethod==='bank'?'selected':''}>${isAr?'تحويل بنكي':'Bank Transfer'}</option><option value="vodafone" ${savedMethod==='vodafone'?'selected':''}>${isAr?'فودافون كاش':'Vodafone Cash'}</option><option value="instapay" ${savedMethod==='instapay'?'selected':''}>InstaPay</option></select></div>
                   <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'تفاصيل الحساب':'Account Details'}</label>
-                    <input type="text" id="withdrawAccount" class="form-input" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}" dir="ltr"></div>
+                    <input type="text" id="withdrawAccount" class="form-input" value="${escapeHtml(savedAccount)}" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}" dir="ltr"></div>
                 </div>
                 <div class="flex gap-3 mt-6">
                   <button onclick="document.getElementById('withdrawModal').remove()" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>

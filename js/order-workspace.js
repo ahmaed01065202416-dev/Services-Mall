@@ -259,6 +259,44 @@
                 </div>
               </div>
 
+              <!-- ⚠️ ADDED: the buyer's brief (custom service requests) and the
+                   buyer's shipping details (product orders) used to live ONLY
+                   as a one-off card inside the scrollable chat — if that chat
+                   got long, was cleared, or just scrolled past, the seller had
+                   no other way to see what was ordered. This mirrors that same
+                   info permanently in the sidebar so it never "disappears". -->
+              ${order.listingType === 'product' && order.shippingInfo ? `
+              <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <i class="fa-solid fa-box text-turquoise-600"></i>
+                  ${isAr ? 'بيانات الشحن والطلب' : 'Shipping & order details'}
+                </h3>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-start gap-2"><i class="fa-solid fa-user w-4 text-gray-400 mt-0.5"></i><span class="font-bold text-gray-800">${escapeHtml(order.shippingInfo.fullName || '—')}</span></div>
+                  <div class="flex items-start gap-2" dir="ltr"><i class="fa-solid fa-phone w-4 text-gray-400 mt-0.5"></i><span class="font-bold text-gray-800">${escapeHtml(order.shippingInfo.phone || '—')}</span></div>
+                  <div class="flex items-start gap-2"><i class="fa-solid fa-location-dot w-4 text-gray-400 mt-0.5"></i><span class="text-gray-700 whitespace-pre-wrap">${escapeHtml(order.shippingInfo.address || '—')}</span></div>
+                  ${order.selectedFields && Object.keys(order.selectedFields).length ? `
+                  <div class="border-t border-gray-100 pt-2 mt-2 flex flex-wrap gap-1.5">
+                    ${Object.values(order.selectedFields).map(f => `<span class="bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full">${escapeHtml(f.label)}: ${escapeHtml(f.value)}</span>`).join('')}
+                  </div>` : ''}
+                  ${order.shippingInfo.notes ? `<div class="border-t border-gray-100 pt-2 mt-2 flex items-start gap-2"><i class="fa-solid fa-note-sticky w-4 text-gray-400 mt-0.5"></i><span class="text-gray-600 whitespace-pre-wrap">${escapeHtml(order.shippingInfo.notes)}</span></div>` : ''}
+                </div>
+              </div>
+              ` : ''}
+              ${order.listingType !== 'product' && order.requestDetails ? `
+              <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <i class="fa-solid fa-file-lines text-navy-600"></i>
+                  ${isAr ? 'تفاصيل الطلب المرسلة' : 'Submitted request details'}
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap break-words mb-2">${_linkify(escapeHtml(order.requestDetails))}</p>
+                <div class="flex flex-col gap-1 text-xs text-gray-500 border-t border-gray-100 pt-2">
+                  ${order.requestDeadline ? `<span><i class="fa-regular fa-clock w-4"></i> ${isAr?'الميعاد:':'Deadline:'} ${escapeHtml(order.requestDeadline)}</span>` : ''}
+                  ${order.requestBudget ? `<span><i class="fa-solid fa-sack-dollar w-4"></i> ${isAr?'الميزانية:':'Budget:'} ${escapeHtml(order.requestBudget)}</span>` : ''}
+                </div>
+              </div>
+              ` : ''}
+
               <!-- ⚠️ ADDED: seller-defined stage tracker — separate from the
                    automatic status timeline below. Lets the seller describe
                    exactly what step of THEIR work the order is at, in their
@@ -267,7 +305,7 @@
                    delivered → completed), not granular in-progress work.
                    Only relevant for services (products are instant). -->
               ${order.listingType !== 'product' && [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS].includes(order.status) ? _renderStageTracker(order, isSeller, isAr) : ''}
-              ${order.listingType === 'product' && ![ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED].includes(order.status) ? _renderShippingTracker(order, isSeller, isAr) : ''}
+              ${order.listingType === 'product' && order.shippingInfo && ![ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED].includes(order.status) ? _renderShippingTracker(order, isSeller, isAr) : ''}
 
               <!-- ── SELLER: Accept/Reject a custom request (before any payment) ── -->
               ${isSeller && order.status === ORDER_STATUS.PENDING && order.paymentStatus === 'no_payment' ? `
@@ -493,6 +531,26 @@
                     ? (isAr ? `لو معملتش حاجة خلال ${AUTO_DISPUTE_DAYS} أيام من تاريخ التسليم، هيتفتح نزاع تلقائي وهتراجعه إدارة الموقع — الفلوس مش هتتحول تلقائي للبائع. لو استلمت فعلاً، أكّد الاستلام دلوقتي أسرع للبائع.` : `If you take no action within ${AUTO_DISPUTE_DAYS} days of delivery, a dispute opens automatically for admin review — the amount does NOT auto-release to the seller. If you already received it, confirm now to pay the seller faster.`)
                     : (isAr ? `لو العميل معملش حاجة خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم، هيتفتح نزاع تلقائي وتراجعه الإدارة (مش تحويل مباشر للفلوس). لو العميل مش بيرد أو رافض بدون سبب، تقدر تفتح نزاع بنفسك دلوقتي بدل ما تستنى.` : `If the buyer takes no action within ${AUTO_DISPUTE_DAYS} days, a dispute opens automatically for admin review (not a direct payout). If they're unresponsive or refusing without reason, you can open a dispute yourself now instead of waiting.`)}
                 </p>
+              </div>
+              ` : ''}
+
+              <!-- ── Persistent dispute access while order is active but NOT
+                   yet at "delivered" ─────────────────────────────────────
+                   ⚠️ ADDED: the only "Open Dispute" button used to appear
+                   after the seller marked the order DELIVERED — so if a
+                   buyer paid and the seller went silent / never shipped /
+                   sent something wrong WHILE the order was still
+                   PAYMENT_HELD, IN_PROGRESS or REVISION, there was no way
+                   to raise it at all until that point. Now both sides can
+                   open a dispute any time money is actually held in escrow,
+                   not just after delivery. -->
+              ${[ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.REVISION].includes(order.status) ? `
+              <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                <p class="text-xs text-gray-500">${isAr ? 'في مشكلة في الطلب؟ متستناش لحد التسليم.' : "Having a problem with this order? You don't have to wait until delivery."}</p>
+                <button onclick="EscrowManager.openDispute('${orderId}')"
+                  class="shrink-0 px-3.5 py-2 text-xs font-bold border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-flag"></i>${isAr ? 'فتح نزاع' : 'Open Dispute'}
+                </button>
               </div>
               ` : ''}
 
@@ -889,32 +947,12 @@
 
     // ── Send text message ─────────────────────────────────────────────────────
     // ── Anti-fraud chat filter ────────────────────────────────────────────────
-    // Client-side heuristic only (this app has no server relay for RTDB chat
-    // messages, so this is a deterrent + admin signal, NOT a hard security
-    // boundary — a determined user could bypass client JS. It still stops the
-    // vast majority of casual "let's deal outside the platform" attempts and
-    // gives admins a flagged trail to review.)
-    const _CONTACT_PATTERNS = [
-        { re: /(\+?\d[\s.-]?){9,}/g,                          kind: 'phone' },
-        { re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, kind: 'email' },
-        { re: /(واتساب|whatsapp|واتس اب|تيليجرام|telegram|انستقرام|instagram)/gi, kind: 'external_contact' },
-        { re: /(انستاباي|instapay|فودافون\s*كاش|vodafone\s*cash|تحويل\s*بنكي|رقم\s*المحفظة|برا\s*المنصة|خارج\s*المنصة|بره\s*الموقع)/gi, kind: 'external_payment' },
-    ];
-    function _scanForContactLeak(text) {
-        for (const p of _CONTACT_PATTERNS) {
-            p.re.lastIndex = 0;
-            if (p.re.test(text)) return p.kind;
-        }
-        return null;
-    }
+    // ⚠️ CHANGED: now uses the SHARED scanner (js/constants.js) instead of its
+    // own local copy, so the chat, listings, and requests all enforce the
+    // exact same off-platform contact/payment rules — see constants.js for
+    // the full rationale.
     async function _flagSuspiciousMessage(orderId, text, kind) {
-        try {
-            await window.db.collection('fraud_flags').add({
-                orderId, userId: AppState.currentUser.uid, kind,
-                textSample: String(text).slice(0, 200),
-                createdAt: _ts(),
-            });
-        } catch (_) { /* non-critical, never block the UI on this */ }
+        window.flagSuspiciousContent({ orderId, userId: AppState.currentUser.uid, source: 'chat' }, text, kind);
     }
 
     async function sendMessage() {
@@ -923,12 +961,10 @@
         if (!text || !_currentOrderId || !AppState.currentUser) return;
 
         const isAr = AppState.language !== 'en';
-        const leakKind = _scanForContactLeak(text);
+        const leakKind = window.scanForContactLeak(text);
         if (leakKind) {
             _flagSuspiciousMessage(_currentOrderId, text, leakKind);
-            showToast(isAr
-                ? '🚫 مينفعش تتبادل أرقام تليفون أو إيميلات أو تتفقوا على الدفع برا المنصة — ده بيلغي ضمان الاسترجاع بتاعك'
-                : '🚫 Sharing phone numbers/emails or arranging off-platform payment isn\'t allowed — this voids your buyer protection', 'error');
+            showToast(window.contactLeakWarning(isAr), 'error');
             return;
         }
 
