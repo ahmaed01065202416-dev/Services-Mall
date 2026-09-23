@@ -242,6 +242,14 @@
                 btn.classList.toggle('bg-gray-100', !isActive);
                 btn.classList.toggle('text-gray-600', !isActive);
             });
+            // ⚠️ FIXED: the top nav's "الخدمات"/"المنتجات" underline only
+            // ever reflected which link was clicked to REACH this page, not
+            // which type is actually selected here — clicking the "منتجات"
+            // pill directly on the page (already on it, no navigation
+            // happening) left the top nav stuck showing "الخدمات". Now this
+            // one function call (the single place every type change goes
+            // through) always keeps them in sync too.
+            if (typeof window._syncTypeNavHighlight === 'function') window._syncTypeNavHighlight(type);
             this._renderCategoryPills(type);
             const expressBox = document.getElementById('expressToggleBtn')?.closest('div');
             if (expressBox) expressBox.classList.toggle('hidden', type === 'product');

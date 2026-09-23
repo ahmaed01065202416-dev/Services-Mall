@@ -24,15 +24,33 @@
     // ── Build {serviceId, quantity} list sent to the server ───────────────────
     // The server looks up the REAL price for each serviceId itself — nothing
     // here is trusted for billing, it's only used to render the page.
+    // ⚠️ FIXED: this used to only special-case context==='service' — for
+    // context==='order' (paying an already-accepted request/product order)
+    // it fell through to AppState.cart, which has NOTHING to do with the
+    // order being paid. Normally _buildPaymentPayload short-circuits with
+    // {existingOrderId} before this ever runs for 'order', but if that state
+    // was ever lost (stale page, browser back/forward), this used to build
+    // the payload from whatever was sitting in the cart instead — sending a
+    // wrong/unrelated serviceId to the server and failing with a confusing
+    // "service not found" error instead of a clear one.
     function _buildItemsPayload(context) {
-        const cart = context === 'service' ? [AppState.currentPaymentService] : (AppState.cart || []);
+        const cart = (context === 'service' || context === 'order') ? [AppState.currentPaymentService] : (AppState.cart || []);
         return cart.filter(Boolean).map(item => ({ serviceId: item.id, quantity: item.quantity || 1 }));
     }
 
     // Either {items:[...]} for a normal cart/service checkout, or
     // {existingOrderId} when paying a request the seller already accepted.
+    // ⚠️ ADDED: fail clearly client-side if 'order' context lost its
+    // existingOrderId (e.g. stale page after navigating away and back)
+    // instead of silently falling through to a broken items payload.
     function _buildPaymentPayload(context) {
-        if (context === 'order' && PaymentState.existingOrderId) {
+        if (context === 'order') {
+            if (!PaymentState.existingOrderId) {
+                const isAr = AppState.language !== 'en';
+                throw new Error(isAr
+                    ? 'صفحة الدفع دي قديمة — ارجع لطلباتك واضغط "ادفع الآن" تاني'
+                    : 'This payment page is stale — go back to your orders and click "Pay Now" again');
+            }
             return { existingOrderId: PaymentState.existingOrderId };
         }
         return { items: _buildItemsPayload(context) };
@@ -92,7 +110,10 @@
     // ── Render Payment Page ───────────────────────────────────────────────────
     function _renderPaymentPage(subtotal, fees, total, context) {
         const isAr  = AppState.language !== 'en';
-        const items = context === 'service' ? [AppState.currentPaymentService] : (AppState.cart || []);
+        // ⚠️ FIXED: same bug as _buildItemsPayload above — 'order' context
+        // was displaying AppState.cart instead of the actual order/service
+        // being paid for.
+        const items = (context === 'service' || context === 'order') ? [AppState.currentPaymentService] : (AppState.cart || []);
         const page  = document.getElementById('page-payment');
         if (!page) return;
 
@@ -102,7 +123,7 @@
 
             <!-- Header -->
             <div class="flex items-center gap-4 mb-8">
-              <button onclick="navigateTo('${context === 'service' ? 'services' : 'cart'}')"
+              <button onclick="navigateTo('${context === 'service' ? 'services' : context === 'order' ? 'orders' : 'cart'}')"
                 class="w-10 h-10 bg-white rounded-xl shadow flex items-center justify-center text-gray-600 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-arrow-${isAr ? 'right' : 'left'}"></i>
               </button>
@@ -262,7 +283,21 @@
             });
             const data = await resp.json();
             hideLoading();
-            if (!resp.ok || !data.redirectUrl) throw new Error(data.error || (isAr ? 'تعذر إنشاء الفاتورة' : 'Could not create invoice'));
+            if (!resp.ok || !data.redirectUrl) {
+                // ⚠️ ADDED: if the server rejected a cart item because that
+                // service no longer exists (deleted/edited-away listing),
+                // the buyer would otherwise be stuck retrying the exact same
+                // broken checkout forever. Clear the cart so the next
+                // attempt starts clean instead of repeating the same error.
+                const errMsg = data && data.error || '';
+                if (PaymentState.context === 'cart' && /الخدمة غير موجودة/.test(errMsg)) {
+                    clearCart();
+                    throw new Error(isAr
+                        ? 'أحد المنتجات في سلتك لم يعد متاحًا — تم تفريغ السلة، جرّب تختار من جديد'
+                        : "An item in your cart is no longer available — your cart was cleared, please choose again");
+                }
+                throw new Error(errMsg || (isAr ? 'تعذر إنشاء الفاتورة' : 'Could not create invoice'));
+            }
             PaymentState.orderId = data.orderId;
             if (data.simulated) {
                 clearCart();

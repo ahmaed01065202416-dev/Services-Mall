@@ -1927,14 +1927,31 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         }, 100);
     };
 
-    // ⚠️ ADDED: jump straight to the "منتجات" tab on the services page —
-    // mirrors filterByCategory's pattern.
+    // ⚠️ FIXED: "الخدمات" and "المنتجات" both navigate to the SAME page
+    // ('services') — navigateTo()'s [data-nav] highlighter only ever matches
+    // data-nav="services" (the actual page id), so it always underlined
+    // "الخدمات" in the top nav even while the "منتجات" pill below was the
+    // one actually selected. Now the nav underline is corrected right after
+    // navigation to match whichever type was really requested.
     window.filterByType = function(type) {
         AppState.filterType = type;
         navigateTo('services');
+        _syncTypeNavHighlight(type);
         setTimeout(() => {
             if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
         }, 100);
+    };
+
+    window._syncTypeNavHighlight = function(type) {
+        // '' (الكل) → neither "الخدمات" nor "المنتجات" is specifically active
+        const navKey = type === 'product' ? 'products' : type === 'service' ? 'services' : null;
+        document.querySelectorAll('[data-nav="services"], [data-nav="products"]').forEach(el => {
+            el.classList.toggle('active', navKey !== null && el.dataset.nav === navKey);
+        });
+        document.querySelectorAll('[data-mobile-nav="services"], [data-mobile-nav="products"]').forEach(el => {
+            el.classList.toggle('text-secondary', navKey !== null && el.dataset.mobileNav === navKey);
+            el.classList.toggle('text-textsecondary', navKey === null || el.dataset.mobileNav !== navKey);
+        });
     };
 
     // ⚠️ ADDED: combined type+category filter, used by the homepage's dual
@@ -1943,6 +1960,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         AppState.filterType = type;
         AppState.filterCategory = cat;
         navigateTo('services');
+        _syncTypeNavHighlight(type);
         setTimeout(() => {
             if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
             if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
