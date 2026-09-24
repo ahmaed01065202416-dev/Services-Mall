@@ -1197,6 +1197,19 @@
                     <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'ملاحظة للبائعين':'Note for sellers'}</label><input type="text" id="cfg_wd_note" class="form-input w-full" value="${cfg.WITHDRAWAL_NOTE??''}"></div>
                   </div>
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-rotate-left text-amber-500"></i>${isAr?'مرتجعات المنتجات':'Product Returns'}</h3>
+                    <p class="text-xs text-gray-400 mb-4">${isAr?'تحكم في إتاحة طلب استرجاع المنتجات الفعلية وعدد الأيام المسموح بها بعد التسليم':'Control whether buyers can request a product return, and the allowed window after delivery'}</p>
+                    <label class="flex items-center gap-3 cursor-pointer mb-4">
+                      <div class="relative"><input type="checkbox" id="cfg_returns_enabled" ${cfg.RETURNS_ENABLED!==false?'checked':''} class="sr-only peer" onchange="document.getElementById('returnsWindowRow').classList.toggle('hidden',!this.checked)">
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></div>
+                      <span class="text-sm font-bold text-gray-700">${isAr?'تفعيل طلبات الاسترجاع':'Enable return requests'}</span>
+                    </label>
+                    <div id="returnsWindowRow" class="${cfg.RETURNS_ENABLED===false?'hidden':''}">
+                      <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'مدة الاسترجاع (أيام بعد التسليم — 0 = بدون حد)':'Return window (days after delivery — 0 = unlimited)'}</label>
+                      <input type="number" id="cfg_returns_window" min="0" step="1" class="form-input w-full" value="${cfg.RETURN_WINDOW_DAYS ?? 14}">
+                    </div>
+                  </div>
+                  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'معلومات المنصة':'Platform Info'}</h3>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                       <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'الاسم عربي':'Name AR'}</label><input type="text" id="cfg_name_ar" class="form-input w-full" value="${cfg.NAME??'مول الخدمات'}"></div>
@@ -1302,6 +1315,8 @@
                             MIN_WITHDRAWAL:  parseFloat(document.getElementById('cfg_min_wd').value)||100,
                             MAX_WITHDRAWAL:  parseFloat(document.getElementById('cfg_max_wd').value)||50000,
                             WITHDRAWAL_NOTE: document.getElementById('cfg_wd_note').value.trim(),
+                            RETURNS_ENABLED:    document.getElementById('cfg_returns_enabled')?.checked ?? true,
+                            RETURN_WINDOW_DAYS: (() => { const v = parseInt(document.getElementById('cfg_returns_window')?.value, 10); return Number.isFinite(v) && v >= 0 ? v : 14; })(),
                             AFFILIATE_ENABLED: document.getElementById('cfg_affiliate_enabled')?.checked || false,
                             AFFILIATE_COMMISSION_PERCENT: parseFloat(document.getElementById('cfg_affiliate_pct')?.value) || 0,
                             NAME:            document.getElementById('cfg_name_ar').value.trim()||'مول الخدمات',

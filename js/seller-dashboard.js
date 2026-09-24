@@ -27,6 +27,7 @@
                 ['services', 'fa-layer-group', isAr ? 'خدماتي' : 'My Services'],
                 ['products', 'fa-box-open', isAr ? 'المنتجات الرقمية' : 'Digital Products'],
                 ['orders', 'fa-cart-shopping', isAr ? 'إدارة الطلبات' : 'Order Management'],
+                ['returns', 'fa-rotate-left', isAr ? 'المرتجعات' : 'Returns'],
                 ['analytics', 'fa-chart-line', isAr ? 'الإحصائيات والتحليلات' : 'Analytics'],
                 ['escrow', 'fa-shield-halved', isAr ? 'سجل الضمان' : 'Escrow Log'],
             ];
@@ -71,6 +72,7 @@
             else if (name === 'services')  await this.renderServices(container);
             else if (name === 'products')  await this.renderProducts(container);
             else if (name === 'orders')    await this.renderOrdersTab(container);
+            else if (name === 'returns')   await this.renderReturns(container);
             else if (name === 'analytics') await this.renderAnalytics(container);
             else if (name === 'escrow')    await this.renderEscrowLedger(container);
             // Back-compat: some older links may still call 'my-services'/'activity'
@@ -687,6 +689,96 @@
                 hideLoading();
                 showToast(e.message, 'error');
             }
+        },
+
+        // ══════════════════════════════════════════════════════════════════════
+        // TAB: Returns — طلبات استرجاع المنتجات (buyer → seller approve/reject)
+        // ⚠️ ADDED: reads/writes go through js/returns.js's ReturnsManager, which
+        // is the only place that touches the `returns` collection and the
+        // existing dispute/admin-refund flow — this tab is presentation only.
+        // ══════════════════════════════════════════════════════════════════════
+        async renderReturns(container, filter) {
+            const user = AppState.currentUser;
+            const isAr = AppState.language !== 'en';
+            filter = filter || this._returnsFilter || 'pending';
+            this._returnsFilter = filter;
+
+            if (!window.ReturnsManager) {
+                container.innerHTML = `<p class="text-red-500 text-center py-8">ReturnsManager ${isAr ? 'غير محمّل' : 'not loaded'}</p>`;
+                return;
+            }
+
+            try {
+                const all = await window.ReturnsManager.loadSellerReturns(user.uid);
+
+                const groups = {
+                    all:      all,
+                    pending:  all.filter(r => r.status === 'pending'),
+                    approved: all.filter(r => r.status === 'approved'),
+                    rejected: all.filter(r => r.status === 'rejected'),
+                };
+                const shown = groups[filter] || groups.pending;
+
+                const filters = [
+                    ['pending',  isAr ? `قيد المراجعة (${groups.pending.length})`  : `Pending (${groups.pending.length})`],
+                    ['approved', isAr ? `تمت الموافقة (${groups.approved.length})` : `Approved (${groups.approved.length})`],
+                    ['rejected', isAr ? `مرفوضة (${groups.rejected.length})`       : `Rejected (${groups.rejected.length})`],
+                    ['all',      isAr ? `الكل (${all.length})`                     : `All (${all.length})`],
+                ];
+
+                container.innerHTML = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                  <div>
+                    <h3 class="font-black text-gray-900 text-lg">${isAr ? 'طلبات استرجاع المنتجات' : 'Product return requests'}</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">${isAr ? 'راجع طلبات العملاء ووافق أو ارفض — الاسترداد الفعلي بيتم من خلال الإدارة بعد موافقتك.' : "Review buyer requests and approve or reject — the actual refund is completed by admin after you approve."}</p>
+                  </div>
+                  <div class="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold overflow-x-auto">
+                    ${filters.map(([key,label]) => `<button onclick="SellerDash.renderReturns(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${filter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
+                  </div>
+                </div>
+                ${shown.length === 0
+                  ? `<div class="text-center py-16 bg-white rounded-2xl border border-gray-100"><i class="fa-solid fa-rotate-left text-gray-200 text-5xl mb-4"></i><p class="text-gray-400">${isAr?'لا توجد طلبات استرجاع في هذا التصنيف':'No return requests in this category'}</p></div>`
+                  : `<div class="space-y-4">${shown.map(r => this._returnCard(r, isAr)).join('')}</div>`
+                }`;
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
+            }
+        },
+
+        _returnCard(r, isAr) {
+            const badge = window.ReturnsManager.statusBadge(r.status, isAr);
+            const reasonLabel = window.ReturnsManager.reasonLabel(r.reasonCode, isAr);
+            return `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <img src="${r.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <span class="text-xs font-mono font-bold text-gray-400">#${(r.orderId||'').slice(-8).toUpperCase()}</span>
+                      ${badge}
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900 truncate">${escapeHtml(r.serviceTitle||'—')}</h4>
+                    <p class="text-xs text-gray-500 mt-1">${isAr?'العميل:':'Buyer:'} <strong class="text-gray-700">${escapeHtml(r.buyerName||'—')}</strong> · ${formatDateAr(r.createdAt)}</p>
+                  </div>
+                </div>
+                <div class="text-base font-black text-gray-900 flex-shrink-0">${formatCurrency(r.price||0)}</div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-3 mb-3 text-sm">
+                <p class="text-gray-800"><strong>${isAr?'السبب:':'Reason:'}</strong> ${escapeHtml(reasonLabel)}</p>
+                ${r.description ? `<p class="text-gray-600 mt-1 whitespace-pre-wrap">${escapeHtml(r.description)}</p>` : ''}
+                ${r.photo ? `<img src="${r.photo}" class="mt-2 rounded-lg border border-gray-200 max-h-32 object-cover">` : ''}
+              </div>
+              ${r.status === 'rejected' && r.sellerNote ? `<p class="text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-3"><strong>${isAr?'ردك:':'Your note:'}</strong> ${escapeHtml(r.sellerNote)}</p>` : ''}
+              ${r.status === 'approved' ? `<p class="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 mb-3">${r.needsManualRefund ? (isAr?'بانتظار استرداد يدوي من الإدارة (تم تحصيل المبلغ في محفظتك بالفعل).':'Awaiting a manual admin refund (funds were already released to your wallet).') : (isAr?'تم تحويل الطلب لمراجعة الإدارة لإتمام الاسترداد.':'Sent for admin review to complete the refund.')}</p>` : ''}
+              <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="openWorkspace('${r.orderId}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'عرض الطلب':'View order'}</button>
+                ${r.status === 'pending' ? `
+                <button onclick="ReturnsManager.approveReturn('${r.id}')" class="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-check"></i> ${isAr?'موافقة':'Approve'}</button>
+                <button onclick="ReturnsManager.rejectReturn('${r.id}')" class="px-3.5 py-1.5 border-2 border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-xmark"></i> ${isAr?'رفض':'Reject'}</button>
+                ` : ''}
+              </div>
+            </div>`;
         },
 
         // ══════════════════════════════════════════════════════════════════════

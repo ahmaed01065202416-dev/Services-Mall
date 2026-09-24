@@ -60,6 +60,7 @@
             AppState.currentOrder = order;
             await _linkChatParticipant(orderId, order, AppState.currentUser.uid);
             _renderWorkspace(order);
+            _loadReturnCard(order);
             navigateTo('workspace');
             // ⚠️ ADDED: encode the order id in the URL so a refresh (or a
             // shared/bookmarked link) can deep-link straight back into this
@@ -307,6 +308,12 @@
               ${order.listingType !== 'product' && [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS].includes(order.status) ? _renderStageTracker(order, isSeller, isAr) : ''}
               ${order.listingType === 'product' && order.shippingInfo && ![ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED].includes(order.status) ? _renderShippingTracker(order, isSeller, isAr) : ''}
 
+              <!-- ── Product return request card — filled in async by
+                   _loadReturnCard() (js/order-workspace.js) using
+                   ReturnsManager (js/returns.js) once it knows whether a
+                   return already exists for this order. ────────────────── -->
+              <div id="returnCardSlot"></div>
+
               <!-- ── SELLER: Accept/Reject a custom request (before any payment) ── -->
               ${isSeller && order.status === ORDER_STATUS.PENDING && order.paymentStatus === 'no_payment' ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -490,6 +497,13 @@
               ` : ''}
 
               <!-- ── BUYER: Accept/Revise/Dispute ─────────────────────── -->
+              <!-- ⚠️ ADDED: wrapped with id="deliveryDecisionBlock" so
+                   _loadReturnCard() (below) can hide it while a product
+                   return request is pending/approved for this order —
+                   prevents the buyer confirming receipt (which releases
+                   funds) or opening a redundant normal dispute at the same
+                   time as an open return request. -->
+              <div id="deliveryDecisionBlock">
               ${isBuyer && order.status === ORDER_STATUS.DELIVERED ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
@@ -512,6 +526,7 @@
                 </div>
               </div>
               ` : ''}
+              </div>
 
               <!-- ── Auto-dispute notice — visible to both parties while DELIVERED ──
                    ⚠️ CHANGED (per Ahmed's feedback): originally this window ended in
@@ -1122,6 +1137,7 @@
             const snap = await window.db.collection(COLLECTIONS.ORDERS).doc(_currentOrderId).get();
             AppState.currentOrder = { id: snap.id, ...snap.data() };
             _renderWorkspace(AppState.currentOrder);
+            _loadReturnCard(AppState.currentOrder);
             _startChatListener(_currentOrderId);
         } catch (err) {
             hideLoading();
@@ -1410,6 +1426,7 @@
             if (snap.exists) {
                 AppState.currentOrder = { id: snap.id, ...snap.data() };
                 _renderWorkspace(AppState.currentOrder);
+                _loadReturnCard(AppState.currentOrder);
                 _startChatListener(orderId);
             }
         } catch(err) {
@@ -1754,6 +1771,41 @@
         } catch (err) {
             hideLoading();
             showToast(t('general.error') + ': ' + err.message, 'error');
+        }
+    }
+
+    // ── Product return card (async, filled in after the main render) ───────────
+    // ⚠️ ADDED: fills #returnCardSlot (see _renderWorkspace) with the buyer's
+    // "request a return" entry point or the existing return's status, and
+    // hides #deliveryDecisionBlock (Confirm/Revise/Dispute) while a return
+    // request is open so the two flows can't be used against each other on
+    // the same order at once. No-op for non-product orders.
+    async function _loadReturnCard(order) {
+        if (!order || order.listingType !== 'product' || !order.shippingInfo) return; // digital products can't be "returned"
+        if (!window.ReturnsManager) return;
+        const slot = document.getElementById('returnCardSlot');
+        if (!slot) return;
+
+        const isAr     = AppState.language !== 'en';
+        const userId   = AppState.currentUser?.uid;
+        const isBuyer  = order.buyerId  === userId;
+        const isSeller = order.sellerId === userId;
+
+        try {
+            const activeReturn = await window.ReturnsManager.getReturnForOrder(order.id);
+            // Bail out silently if the workspace has since navigated away from
+            // this order (slot no longer belongs to the order we fetched for).
+            if (!document.getElementById('returnCardSlot') || _currentOrderId !== order.id) return;
+
+            slot.innerHTML = window.ReturnsManager.renderWorkspaceCard(order, activeReturn, isBuyer, isSeller, isAr);
+
+            const decisionBlock = document.getElementById('deliveryDecisionBlock');
+            if (decisionBlock) {
+                const openReturn = activeReturn && ['pending', 'approved'].includes(activeReturn.status) && order.status === ORDER_STATUS.DELIVERED;
+                decisionBlock.style.display = openReturn ? 'none' : '';
+            }
+        } catch (err) {
+            console.warn('[Workspace] _loadReturnCard failed:', err.message);
         }
     }
 

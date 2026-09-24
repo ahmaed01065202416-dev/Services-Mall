@@ -31,6 +31,7 @@ const COLLECTIONS = {
     COUPONS:       'coupons',
     SUBSCRIPTIONS: 'subscriptions',
     DELIVERIES:    'deliveries',
+    RETURNS:       'returns', // ⚠️ ADDED: product-return requests (buyer → seller → admin refund)
 };
 
 // ── Platform Config (defaults — overridden by Firestore settings/platform) ────
@@ -58,6 +59,9 @@ const PLATFORM = {
     // Payout cadence shown to sellers so they know when to expect money —
     // wording only, does not restrict when a withdrawal request can be made.
     PAYOUT_SCHEDULE_NOTE: 'الأرباح بتتحول كل 15 يوم من تاريخ آخر سحب (ممكن يوم أو يومين فرق حسب المعالجة).',
+    // ── Product Returns ─────────────────────────────────────────────────
+    RETURNS_ENABLED:     true, // master on/off switch for the whole feature
+    RETURN_WINDOW_DAYS:  14,   // days after delivery a buyer may request a return
     // ── Platform Info ─────────────────────────────────────────────────
     CURRENCY:         'ج.م',
     CURRENCY_CODE:    'EGP',
@@ -116,6 +120,24 @@ const ORDER_STATUS = {
     DISPUTED:       'disputed',
     CANCELLED:      'cancelled',
     REFUNDED:       'refunded',
+};
+
+// ── Product Return Requests ────────────────────────────────────────────────────
+// ⚠️ ADDED: "returns" feature — buyer requests to return a physical PRODUCT
+// order (listingType === 'product'). Kept as its own collection instead of new
+// fields on `orders`, because firestore.rules' orders-update rule already
+// blocks a buyer/seller from writing to an order while its status stays
+// 'delivered' unchanged (see firestore.rules match /orders — the branch that
+// requires resource.data.status to be in ['payment_held','in_progress',
+// 'revision'] whenever the new status is 'delivered'). A separate collection
+// needs no changes to that guard at all. See js/returns.js.
+// Its on/off switch and window length live in PLATFORM (RETURNS_ENABLED,
+// RETURN_WINDOW_DAYS above), editable from the admin Settings tab — NOT
+// hardcoded here, so admins control this without a code change.
+const RETURN_STATUS = {
+    PENDING:  'pending',   // buyer submitted, awaiting seller's decision
+    APPROVED: 'approved',  // seller approved — escalated to the existing admin dispute/refund flow
+    REJECTED: 'rejected',  // seller declined the return
 };
 
 // ── Payment Methods ───────────────────────────────────────────────────────────
@@ -632,6 +654,7 @@ window._feeLabel = function() {
 // ── Expose to Global Scope ───────────────────────────────────────────────────
 Object.assign(window, {
     COLLECTIONS, PLATFORM, CURRENCIES, ORDER_STATUS, PAYMENT_METHODS, AUTO_DISPUTE_DAYS,
+    RETURN_STATUS,
     serverTimestamp, increment, saveToStorage, uploadFile,
     generateId, formatDateAr, formatTimeAgo, formatCurrency, convertCurrency,
     updateCartCount, getStatusText, getStatusClass,

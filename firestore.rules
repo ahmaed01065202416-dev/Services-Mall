@@ -204,10 +204,17 @@ service cloud.firestore {
           (request.resource.data.type == 'buyer_instructions' &&
            request.auth.uid == _order(request.resource.data.orderId).buyerId &&
            request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
-          (request.resource.data.type == 'dispute' &&
+          ((request.resource.data.type == 'dispute' || request.resource.data.type == 'return_manual_refund') &&
            request.resource.data.userId == 'ADMIN' &&
            (request.auth.uid == _order(request.resource.data.orderId).buyerId ||
-            request.auth.uid == _order(request.resource.data.orderId).sellerId))
+            request.auth.uid == _order(request.resource.data.orderId).sellerId)) ||
+          // ── Product returns (js/returns.js) ─────────────────────────────
+          (request.resource.data.type == 'return_requested' &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          ((request.resource.data.type == 'return_approved' || request.resource.data.type == 'return_rejected') &&
+           request.auth.uid == _order(request.resource.data.orderId).sellerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).buyerId)
         )
       );
       allow update: if isOwner(resource.data.userId) || isAdmin();
@@ -242,6 +249,31 @@ service cloud.firestore {
                        (request.resource.data.buyerId == request.auth.uid ||
                         request.resource.data.sellerId == request.auth.uid);
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── returns (product-return requests: buyer → seller → admin refund) ───────
+    // Mirrors the /disputes pattern above: buyer creates, only the seller on
+    // that order (or admin) can move it forward, and only while it's still
+    // 'pending' (a decided return can't be flipped back by the seller).
+    match /returns/{returnId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if isSignedIn() &&
+                       request.resource.data.buyerId  == request.auth.uid &&
+                       request.resource.data.status   == 'pending' &&
+                       request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt']);
+      allow update: if isAdmin() || (
+                       isSignedIn() &&
+                       request.auth.uid == resource.data.sellerId &&
+                       resource.data.status == 'pending' &&
+                       request.resource.data.status in ['approved','rejected'] &&
+                       request.resource.data.orderId  == resource.data.orderId &&
+                       request.resource.data.buyerId  == resource.data.buyerId &&
+                       request.resource.data.sellerId == resource.data.sellerId
+                     );
       allow delete: if isAdmin();
     }
 
