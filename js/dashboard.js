@@ -444,6 +444,7 @@
                         <span class="text-xs bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full flex-shrink-0">${isAr?'مفتوح':'Open'}</span>
                       </div>
                       <div class="flex gap-2 flex-wrap">
+                        <button onclick="window._adminViewDisputeDetail('${d.id}')" class="text-sm px-4 py-2 bg-navy-800 text-white rounded-xl font-bold hover:bg-navy-900 transition"><i class="fa-solid fa-magnifying-glass"></i> ${isAr?'عرض كل التفاصيل':'View full details'}</button>
                         <button onclick="EscrowManager.resolveDispute('${d.id}','refund_buyer','${d.orderId}')" class="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
                         <button onclick="EscrowManager.resolveDispute('${d.id}','pay_seller','${d.orderId}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                       </div>
@@ -453,8 +454,99 @@
                   <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                     <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800">#${(d.orderId||'').substr(-8).toUpperCase()}</p><p class="text-xs text-gray-400">${escapeHtml(d.reason||'—')}</p></div>
                     <span class="text-xs font-bold px-2 py-1 rounded-lg ${d.status==='open'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${d.status==='open'?(isAr?'مفتوح':'Open'):(isAr?'محلول':'Resolved')}</span>
+                    <button onclick="window._adminViewDisputeDetail('${d.id}')" title="${isAr?'عرض التفاصيل':'View details'}" class="w-8 h-8 bg-navy-100 text-navy-700 rounded-lg flex items-center justify-center hover:bg-navy-200 transition flex-shrink-0"><i class="fa-solid fa-magnifying-glass text-xs"></i></button>
                   </div>`).join('')}
                 </div>`;
+
+                // ── Full dispute detail modal (order + both parties + full chat) ────
+                // ⚠️ ADDED: goes through /api/admin-dispute-detail (server, service
+                // account) because the chat transcript lives in Realtime Database,
+                // whose rules have no admin concept at all (see that endpoint's own
+                // comments) — this is the ONLY safe way for an admin to read it.
+                window._adminViewDisputeDetail = async (disputeId) => {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
+                    overlay.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 text-center text-gray-400"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><p>${isAr?'جاري تحميل كل بيانات النزاع...':'Loading full dispute data...'}</p></div>`;
+                    document.body.appendChild(overlay);
+                    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+                    try {
+                        const idToken = await firebase.auth().currentUser.getIdToken();
+                        const resp = await fetch(`/api/admin-dispute-detail?disputeId=${encodeURIComponent(disputeId)}`, {
+                            headers: { 'Authorization': `Bearer ${idToken}` },
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+
+                        const { dispute: dp, order: o, escrow: es, returnRequest: rr, buyer, seller, messages } = data;
+                        const personCard = (label, p) => p ? `
+                          <div class="bg-gray-50 rounded-2xl p-4">
+                            <p class="text-xs font-bold text-gray-400 mb-2">${label}</p>
+                            <p class="font-black text-gray-900">${escapeHtml(p.name||'—')}</p>
+                            <p class="text-xs text-gray-500 mt-1">${escapeHtml(p.email||'—')}</p>
+                            <p class="text-xs text-gray-500" dir="ltr">📞 ${escapeHtml(p.phone||'—')}</p>
+                            <p class="text-xs text-gray-500 mt-1">${isAr?'وسيلة الاستلام':'Payout'}: ${escapeHtml(p.payoutMethod||'—')} — <span dir="ltr">${escapeHtml(p.payoutAccount||'—')}</span></p>
+                          </div>` : `<div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-400">${label}: ${isAr?'غير متاح':'not available'}</div>`;
+
+                        const msgLine = (m) => {
+                            const who = m.senderId === o?.buyerId ? (isAr?'المشتري':'Buyer') : m.senderId === o?.sellerId ? (isAr?'البائع':'Seller') : (m.senderName||'—');
+                            const when = m.createdAt ? new Date(m.createdAt).toLocaleString(isAr?'ar-EG':'en-GB') : '';
+                            let body;
+                            if (m.type === 'image')      body = `<a href="${m.file?.url}" target="_blank" rel="noopener" class="text-blue-600 underline">${isAr?'📷 صورة مرفقة':'📷 Image attachment'}</a>`;
+                            else if (m.type === 'file')  body = `<a href="${m.file?.url}" target="_blank" rel="noopener" class="text-blue-600 underline">📎 ${escapeHtml(m.file?.name||(isAr?'ملف مرفق':'File attachment'))}</a>`;
+                            else if (m.type === 'delivery') body = `<span class="font-bold text-green-700">${isAr?'تسليم:':'Delivery:'}</span> ${escapeHtml(m.note||'—')}${m.files?.length ? ` (${m.files.length} ${isAr?'ملف':'file(s)'})` : ''}`;
+                            else if (m.type === 'request_brief') body = `<span class="font-bold">${isAr?'تفاصيل الطلب:':'Request brief:'}</span> ${escapeHtml(m.details||'—')}`;
+                            else if (m.type === 'product_order_brief') body = `<span class="font-bold">${isAr?'بيانات الشحن:':'Shipping info:'}</span> ${escapeHtml(m.fullName||'')} — ${escapeHtml(m.phone||'')} — ${escapeHtml(m.address||'')}`;
+                            else if (m.type === 'shipping_update') body = `<span class="italic text-gray-500">${isAr?'تحديث شحن:':'Shipping update:'} ${escapeHtml(m.shippingStatus||'')}</span>`;
+                            else body = escapeHtml(m.text||'—');
+                            return `<div class="p-2.5 border-b border-gray-100 text-sm"><span class="font-bold text-navy-700">${who}</span> <span class="text-gray-300">·</span> <span class="text-xs text-gray-400">${when}</span><div class="mt-0.5">${body}</div></div>`;
+                        };
+
+                        overlay.querySelector('div').outerHTML = `
+                        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
+                          <div class="flex items-start justify-between mb-4">
+                            <h3 class="text-xl font-black text-gray-900">${isAr?'تفاصيل النزاع الكاملة':'Full dispute details'} — #${(dp.orderId||'').slice(-8).toUpperCase()}</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+                          </div>
+
+                          <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+                            <p class="text-xs font-bold text-red-500 mb-1">${isAr?'سبب النزاع':'Dispute reason'} ${dp.raisedByRole ? `(${dp.raisedByRole==='seller'?(isAr?'رفعه البائع':'raised by seller'):dp.raisedByRole==='system'?(isAr?'تلقائي':'automatic'):(isAr?'رفعه المشتري':'raised by buyer')})` : ''}</p>
+                            <p class="text-sm text-gray-800">${escapeHtml(dp.description || dp.reason || '—')}</p>
+                          </div>
+
+                          ${rr ? `
+                          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+                            <p class="text-xs font-bold text-amber-600 mb-1">${isAr?'طلب استرجاع منتج مرتبط':'Linked product return request'}</p>
+                            <p class="text-sm text-gray-800">${escapeHtml(window.ReturnsManager ? window.ReturnsManager.reasonLabel(rr.reasonCode, isAr) : rr.reasonCode)}: ${escapeHtml(rr.description||'')}</p>
+                            ${rr.photo ? `<img src="${rr.photo}" class="mt-2 rounded-xl max-h-40 border border-amber-200">` : ''}
+                          </div>` : ''}
+
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                            ${personCard(isAr?'👤 المشتري':'👤 Buyer', buyer)}
+                            ${personCard(isAr?'🧑‍💼 البائع':'🧑‍💼 Seller', seller)}
+                          </div>
+
+                          <div class="bg-gray-50 rounded-2xl p-4 mb-4 text-sm space-y-1">
+                            <p class="font-bold text-gray-900">${escapeHtml(o?.serviceTitle||'—')}</p>
+                            <p class="text-gray-500 text-xs">${isAr?'السعر':'Price'}: ${formatCurrency(o?.price||0)} · ${isAr?'حالة الطلب':'Order status'}: ${getStatusText(o?.status)} · ${isAr?'حالة الضمان':'Escrow'}: ${escapeHtml(es?.status||'—')}</p>
+                            <p class="text-gray-400 text-xs">${isAr?'تاريخ الطلب':'Order date'}: ${formatDateAr(o?.createdAt)}</p>
+                          </div>
+
+                          <h4 class="font-black text-gray-800 text-sm mb-2">${isAr?`المحادثة الكاملة (${messages.length} رسالة)`:`Full conversation (${messages.length} messages)`}</h4>
+                          <div class="border border-gray-100 rounded-2xl mb-5 max-h-64 overflow-y-auto">
+                            ${messages.length ? messages.map(msgLine).join('') : `<p class="text-center text-gray-400 text-sm py-6">${isAr?'لا توجد رسائل':'No messages'}</p>`}
+                          </div>
+
+                          ${dp.status === 'open' ? `
+                          <div class="flex gap-3">
+                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_buyer','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
+                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','pay_seller','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
+                          </div>` : `<p class="text-center text-xs text-gray-400">${isAr?'تم الفصل في هذا النزاع بالفعل':'This dispute was already resolved'}</p>`}
+                        </div>`;
+                    } catch (e) {
+                        overlay.querySelector('div').innerHTML = `<p class="text-red-500 py-6">${escapeHtml(e.message||(isAr?'تعذّر تحميل بيانات النزاع':'Could not load dispute data'))}</p><button onclick="this.closest('.fixed').remove()" class="btn-secondary px-6 py-2 mt-2">${isAr?'إغلاق':'Close'}</button>`;
+                    }
+                };
 
             // ── USERS ─────────────────────────────────────────────────────────
             } else if (tab === 'users') {
@@ -468,7 +560,6 @@
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" id="urow_${u.id}">
                     <img src="${u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p>
-                      ${u.role==='seller' && u.payoutAccount ? `<p class="text-[11px] text-teal-700 font-bold mt-0.5"><i class="fa-solid fa-id-card me-1"></i>${u.payoutMethod==='vodafone'?(isAr?'فودافون كاش':'Vodafone Cash'):u.payoutMethod==='instapay'?'InstaPay':(isAr?'تحويل بنكي':'Bank')}: ${escapeHtml(u.payoutAccount)}</p>` : ''}
                     </div>
                     <select onchange="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
                       <option value="buyer"  ${u.role==='buyer' ?'selected':''}>buyer</option>
@@ -476,6 +567,12 @@
                       <option value="admin"  ${u.role==='admin' ?'selected':''}>admin</option>
                     </select>
                     <button title="${isAr?'عرض المحفظة':'View Wallet'}" onclick="window._adminViewWallet('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center hover:bg-amber-200 transition"><i class="fa-solid fa-wallet text-xs"></i></button>
+                    <!-- ⚠️ CHANGED (privacy audit): payoutMethod/payoutAccount
+                         moved out of this bulk-read list (see firestore.rules
+                         — they're no longer on the doc this query reads) into
+                         users/{uid}/private/contact, fetched only on demand
+                         here so it's never pulled for every user at once. -->
+                    <button title="${isAr?'بيانات التواصل والدفع':'Contact & payout info'}" onclick="window._adminViewContactInfo('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center hover:bg-teal-200 transition"><i class="fa-solid fa-id-card text-xs"></i></button>
                     <span class="text-xs text-gray-400 hidden md:block">${formatDateAr(u.createdAt)}</span>
                   </div>`).join('')}
                 </div>`;
@@ -499,6 +596,22 @@
                         if (isNaN(numBal) || numBal < 0) { showToast(isAr?'رقم غير صالح':'Invalid number','error'); return; }
                         await window.db.collection(COLLECTIONS.WALLET).doc(uid).set({ balance: numBal, currency:'EGP', updatedAt: serverTimestamp() }, {merge:true});
                         showToast(isAr?`✅ تم تحديث رصيد ${name} لـ ${formatCurrency(numBal)}`:`✅ Updated ${name}'s balance to ${formatCurrency(numBal)}`,'success');
+                    } catch(e) { showToast(e.message,'error'); }
+                };
+
+                // ⚠️ ADDED (privacy audit): admin-only, on-demand read of the
+                // private subcollection — isAdmin() is explicitly allowed in
+                // its firestore.rules alongside the account owner.
+                window._adminViewContactInfo = async (uid, name) => {
+                    try {
+                        const snap = await window.db.collection(COLLECTIONS.USERS).doc(uid).collection('private').doc('contact').get();
+                        const d = snap.data() || {};
+                        alert(
+                          (isAr ? `بيانات "${name}"` : `"${name}"'s info`) + '\n\n' +
+                          (isAr ? 'الهاتف: ' : 'Phone: ') + (d.phone || (isAr?'—':'—')) + '\n' +
+                          (isAr ? 'وسيلة الاستلام: ' : 'Payout method: ') + (d.payoutMethod || '—') + '\n' +
+                          (isAr ? 'رقم الحساب: ' : 'Payout account: ') + (d.payoutAccount || '—')
+                        );
                     } catch(e) { showToast(e.message,'error'); }
                 };
 
@@ -933,6 +1046,7 @@
                       <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${r.reporterName||'—'} · ${formatDateAr(r.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-1 flex-shrink-0">
+                      ${r.orderId ? `<button onclick="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
                       ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${r.id}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
                       <button onclick="window._adminDeleteReport('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
@@ -1210,6 +1324,12 @@
                     </div>
                   </div>
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-teal-600"></i>${isAr?'خصوصية بيانات المستخدمين':'User data privacy'}</h3>
+                    <p class="text-xs text-gray-400 mb-4">${isAr?'رقم الهاتف ووسيلة استلام الأرباح بقوا مخزّنين في مكان خاص محدود الوصول (المالك والأدمن بس) بدل الملف العام. الحسابات الجديدة بتتخزن صح من الأول — الزرار ده لترحيل الحسابات القديمة (لو موجودة) مرة واحدة بس. آمن تضغطه أكتر من مرة.':"Phone numbers and payout details now live in a restricted, owner+admin-only place instead of the public profile. New accounts are stored correctly automatically — this button migrates any older accounts (if any) once. Safe to click more than once."}</p>
+                    <button onclick="window._adminRunPrivacyMigration()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"><i class="fa-solid fa-lock"></i> ${isAr?'ترحيل بيانات الحسابات القديمة':'Migrate older accounts\' data'}</button>
+                    <div id="privacyMigrationResult" class="text-xs text-gray-500 mt-3"></div>
+                  </div>
+                  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'معلومات المنصة':'Platform Info'}</h3>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                       <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'الاسم عربي':'Name AR'}</label><input type="text" id="cfg_name_ar" class="form-input w-full" value="${cfg.NAME??'مول الخدمات'}"></div>
@@ -1333,6 +1453,33 @@
                         btn.innerHTML = `<i class="fa-solid fa-check"></i> ${isAr?'تم الحفظ':'Saved'}`;
                         setTimeout(()=>{ btn.disabled=false; btn.innerHTML=`<i class="fa-solid fa-floppy-disk"></i> ${isAr?'حفظ الإعدادات':'Save Settings'}`; }, 3000);
                     } catch(e) { btn.disabled=false; btn.innerHTML=`<i class="fa-solid fa-floppy-disk"></i> ${isAr?'حفظ':'Save'}`; showToast(e.message,'error'); }
+                };
+
+                // ⚠️ ADDED (privacy audit): one-time migration trigger — moves
+                // any pre-existing phone/payoutMethod/payoutAccount off the
+                // publicly-readable main /users doc into the private
+                // subcollection (functions/api/admin-migrate-private-fields.js).
+                window._adminRunPrivacyMigration = async () => {
+                    if (!confirm(isAr ? 'هيتم مسح رقم الهاتف وبيانات الدفع من الملف العام لكل الحسابات القديمة ونقلها لمكان خاص. متأكد؟' : 'This will move phone/payout data off the public profile for all older accounts into a restricted location. Continue?')) return;
+                    const resultEl = document.getElementById('privacyMigrationResult');
+                    if (resultEl) resultEl.textContent = isAr ? 'جاري الترحيل...' : 'Migrating...';
+                    try {
+                        const idToken = await firebase.auth().currentUser.getIdToken();
+                        const resp = await fetch('/api/admin-migrate-private-fields', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${idToken}` },
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+                        const msg = isAr
+                          ? `تم الفحص: ${data.scanned} · تم الترحيل: ${data.migrated} · متخطّى (أصلًا محدّث): ${data.skipped}${data.errors?.length ? ` · أخطاء: ${data.errors.length}` : ''}`
+                          : `Scanned: ${data.scanned} · Migrated: ${data.migrated} · Already up to date: ${data.skipped}${data.errors?.length ? ` · Errors: ${data.errors.length}` : ''}`;
+                        if (resultEl) resultEl.innerHTML = `<span class="text-teal-700 font-bold">✅ ${msg}</span>`;
+                        showToast(isAr ? '✅ اكتمل الترحيل' : '✅ Migration complete', 'success');
+                    } catch (e) {
+                        if (resultEl) resultEl.innerHTML = `<span class="text-red-600">${escapeHtml(e.message)}</span>`;
+                        showToast(e.message, 'error');
+                    }
                 };
             }
         } catch(err) {
@@ -1477,13 +1624,14 @@
         async openWithdrawForm() {
             const isAr = AppState.language !== 'en', wallet = AppState.wallet||{}, balance = wallet.balance||0;
             if (balance < PLATFORM.MIN_WITHDRAWAL) { showToast(`${isAr?'الحد الأدنى':'Min'}: ${formatCurrency(PLATFORM.MIN_WITHDRAWAL)}`,'warning'); return; }
-            // ⚠️ ADDED: pre-fill from the seller's saved payout details
-            // (SellerDash.savePayoutInfo) instead of always starting blank.
+            // ⚠️ CHANGED (privacy audit): payoutMethod/payoutAccount now live
+            // in users/{uid}/private/contact, not the main /users doc.
             let savedMethod = 'bank', savedAccount = '';
             try {
-                const profSnap = await window.db.collection(COLLECTIONS.USERS).doc(AppState.currentUser.uid).get();
-                const prof = profSnap.data() || {};
-                if (prof.payoutAccount) { savedMethod = prof.payoutMethod || 'bank'; savedAccount = prof.payoutAccount; }
+                const privSnap = await window.db.collection(COLLECTIONS.USERS).doc(AppState.currentUser.uid).collection('private').doc('contact').get();
+                const priv = privSnap.data() || {};
+                if (priv.payoutAccount) { savedMethod = priv.payoutMethod || 'bank'; savedAccount = priv.payoutAccount; }
+                else if (AppState.currentUser.payoutAccount) { savedMethod = AppState.currentUser.payoutMethod || 'bank'; savedAccount = AppState.currentUser.payoutAccount; }
             } catch (_) { /* non-critical — falls back to a blank form */ }
             document.getElementById('withdrawModal')?.remove();
             const modal = document.createElement('div');
@@ -1575,6 +1723,11 @@
                 const snap = await window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId).get();
                 const req  = snap.data();
                 if (!req) throw new Error(isAr?'الطلب غير موجود':'Request not found');
+                // ⚠️ ADDED (audit — defense in depth): refuse to re-process a
+                // request that isn't still pending, so a double-click (or two
+                // admins acting on the same request) can't send a second
+                // "your money arrived" notification for one payout.
+                if (req.status !== 'pending') { hideLoading(); showToast(isAr?'تم التعامل مع هذا الطلب بالفعل':'This request was already processed','warning'); return; }
 
                 const paidAt = new Date();
                 const dateStr = paidAt.toLocaleDateString(isAr?'ar-EG':'en-GB', { year:'numeric', month:'long', day:'numeric' });
@@ -1599,10 +1752,20 @@
         },
 
         async rejectWithdrawal(reqId) {
+            const isAr = AppState.language !== 'en';
             showLoading();
             try {
                 const snap = await window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId).get();
                 const req  = snap.data();
+                if (!req) throw new Error(isAr?'الطلب غير موجود':'Request not found');
+                // ⚠️ ADDED (audit — defense in depth): this credits the wallet
+                // back by req.amount, undoing the debit made when the request
+                // was created (functions/api/payment.js handleRequestWithdrawal).
+                // Only ever safe to do once, for a request that is still
+                // 'pending' — refusing anything else stops a request from
+                // being rejected twice (crediting the balance back twice for
+                // one real debit) or rejected after already being marked paid.
+                if (req.status !== 'pending') { hideLoading(); showToast(isAr?'تم التعامل مع هذا الطلب بالفعل':'This request was already processed','warning'); return; }
                 await window.db.collection(COLLECTIONS.WALLET).doc(req.userId).update({ balance:increment(req.amount), updatedAt:serverTimestamp() });
                 await window.db.collection(COLLECTIONS.WITHDRAWALS).doc(reqId).update({ status:'rejected', processedAt:serverTimestamp() });
                 hideLoading(); showToast(AppState.language==='en'?'Rejected':'تم الرفض','info');

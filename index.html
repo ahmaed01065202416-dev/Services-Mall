@@ -2105,12 +2105,32 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 const snap    = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
                 const profile = snap.data() || {};
 
+                // ⚠️ ADDED (privacy audit): phone/payout now live in a
+                // private subcollection instead of the (any-signed-in-user
+                // readable) main doc — see firestore.rules and js/auth.js.
+                // Reading it here, once, for the CURRENTLY LOGGED-IN user
+                // only (never for anyone else) and merging it into
+                // AppState.currentUser keeps every existing place that reads
+                // AppState.currentUser.phone/.payoutMethod/.payoutAccount
+                // working unchanged. Falls back to the legacy fields on the
+                // main doc for accounts created before this change and not
+                // yet migrated (see functions/api/admin-migrate-private-
+                // fields.js) — non-critical, so a missing subdoc (brand-new
+                // account, doc not created yet) never blocks login.
+                let priv = {};
+                try {
+                    const privSnap = await db.collection(COLLECTIONS.USERS).doc(user.uid).collection('private').doc('contact').get();
+                    priv = privSnap.data() || {};
+                } catch (e) { /* non-critical */ }
+
                 AppState.currentUser = {
                     uid:           user.uid,
                     email:         user.email,
                     displayName:   profile.name   || user.displayName || (user.email||'').split('@')[0],
                     photoURL:      profile.avatar  || user.photoURL   || '',
-                    phone:         profile.phone   || user.phoneNumber || '',
+                    phone:         priv.phone         || profile.phone         || user.phoneNumber || '',
+                    payoutMethod:  priv.payoutMethod  || profile.payoutMethod  || '',
+                    payoutAccount: priv.payoutAccount || profile.payoutAccount || '',
                     role:          profile.role    || 'buyer',
                     acceptedTerms: profile.acceptedTerms || false,
                 };

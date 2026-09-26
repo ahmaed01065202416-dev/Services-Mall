@@ -8,12 +8,12 @@
 
         "buyerId": {
           ".read": "auth != null",
-          ".write": "auth != null && newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid)",
+          ".write": false,
           ".validate": "newData.isString()"
         },
         "sellerId": {
           ".read": "auth != null",
-          ".write": "auth != null && newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid)",
+          ".write": false,
           ".validate": "newData.isString()"
         },
 

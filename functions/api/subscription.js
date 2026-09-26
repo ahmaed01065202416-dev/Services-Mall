@@ -82,6 +82,12 @@ async function handleSubscribe(body, env, CORS, auth) {
 
     const base = env.FAWATERAK_BASE_URL || 'https://app.fawaterk.com';
     const user = await fsGet(env, `users/${auth.uid}`).catch(() => ({}));
+    // ⚠️ CHANGED (privacy audit): phone now lives in users/{uid}/private/contact,
+    // not on the main doc — see firestore.rules and js/auth.js. Falls back to
+    // user.phone for any account not yet migrated (functions/api/admin-migrate-
+    // private-fields.js).
+    const priv = await fsGet(env, `users/${auth.uid}/private/contact`).catch(() => ({}));
+    const phone = priv.phone || user.phone || '';
     const nameParts = String(user.name || 'Buyer N/A').trim().split(' ');
 
     // First charge — a normal hosted invoice. We ALSO record this pending
@@ -96,7 +102,7 @@ async function handleSubscribe(body, env, CORS, auth) {
 
     const resp = await apiPost(`${base}/api/v2/createInvoiceLink`, {
         cartTotal: amount, currency: 'EGP',
-        customer: { first_name: nameParts[0] || 'Buyer', last_name: nameParts.slice(1).join(' ') || 'N/A', email: user.email || '', phone: user.phone || '' },
+        customer: { first_name: nameParts[0] || 'Buyer', last_name: nameParts.slice(1).join(' ') || 'N/A', email: user.email || '', phone },
         cartItems: [{ name: `اشتراك شهري: ${svc.title || ''}`, price: amount, quantity: 1 }],
         payLoad: { subscriptionId: subId },
         redirectionUrls: {

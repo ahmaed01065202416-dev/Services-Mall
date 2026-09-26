@@ -278,7 +278,12 @@
                 body: JSON.stringify({
                     action: 'fawaterakPay',
                     ..._buildPaymentPayload(PaymentState.context),
-                    customerData: { name: user.displayName || 'Buyer', email: user.email || '', phone: user.phoneNumber || '' },
+                    // ⚠️ FIXED (found while auditing the phone-privacy change):
+                    // AppState.currentUser stores this as `.phone`, never
+                    // `.phoneNumber` (that property only exists on the raw
+                    // Firebase Auth user object) — so this was always sending
+                    // a blank phone to the payment gateway.
+                    customerData: { name: user.displayName || 'Buyer', email: user.email || '', phone: user.phone || '' },
                 })
             });
             const data = await resp.json();

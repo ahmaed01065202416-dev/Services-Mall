@@ -88,19 +88,23 @@
             const isAr = AppState.language !== 'en';
 
             try {
-                const [servicesSnap, ordersSnap, reviewsSnap, walletDoc, userDoc] = await Promise.all([
+                const [servicesSnap, ordersSnap, reviewsSnap, walletDoc, userDoc, privDoc] = await Promise.all([
                     window.db.collection(COLLECTIONS.SERVICES).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.ORDERS).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.REVIEWS).where('sellerId','==',user.uid).get(),
                     window.db.collection(COLLECTIONS.WALLET).doc(user.uid).get().catch(()=>null),
                     window.db.collection(COLLECTIONS.USERS).doc(user.uid).get().catch(()=>null),
+                    // ⚠️ ADDED (privacy audit): payoutMethod/payoutAccount now
+                    // live here, not on the main user doc — see firestore.rules.
+                    window.db.collection(COLLECTIONS.USERS).doc(user.uid).collection('private').doc('contact').get().catch(()=>null),
                 ]);
 
                 const services = servicesSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 const orders   = ordersSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 const reviews  = reviewsSnap.docs.map(d => d.data());
                 const wallet   = (walletDoc && walletDoc.exists) ? walletDoc.data() : { balance: 0 };
-                const profile  = (userDoc && userDoc.exists) ? userDoc.data() : {};
+                const priv     = (privDoc && privDoc.exists) ? privDoc.data() : {};
+                const profile  = { ...((userDoc && userDoc.exists) ? userDoc.data() : {}), ...priv };
 
                 const completedOrders = orders.filter(o => o.status === ORDER_STATUS.COMPLETED);
                 const inEscrowOrders  = orders.filter(o => o.escrowHeld && ![ORDER_STATUS.COMPLETED, ORDER_STATUS.REFUNDED, ORDER_STATUS.CANCELLED].includes(o.status));
@@ -308,11 +312,20 @@
             const account = document.getElementById('sdPayoutAccount')?.value?.trim();
             if (!account) { showToast(isAr?'اكتب رقم الحساب أو المحفظة':'Enter the account or wallet number','warning'); return; }
             try {
-                await window.db.collection(COLLECTIONS.USERS).doc(user.uid).update({
-                    payoutMethod:  method,
-                    payoutAccount: sanitizeInput(account, 100),
-                    updatedAt:     serverTimestamp(),
-                });
+                // ⚠️ CHANGED (privacy audit): payoutMethod/payoutAccount now
+                // live in users/{uid}/private/contact (see firestore.rules)
+                // instead of the main /users doc, which is readable by any
+                // signed-in user. set(...,{merge:true}) since an account
+                // that never saved payout info before has no subdoc yet.
+                await window.db.collection(COLLECTIONS.USERS).doc(user.uid)
+                    .collection('private').doc('contact')
+                    .set({
+                        payoutMethod:  method,
+                        payoutAccount: sanitizeInput(account, 100),
+                        updatedAt:     serverTimestamp(),
+                    }, { merge: true });
+                AppState.currentUser.payoutMethod  = method;
+                AppState.currentUser.payoutAccount = account;
                 showToast(isAr?'تم حفظ بيانات الدفع':'Payout details saved','success');
             } catch (e) {
                 showToast(isAr?'تعذر الحفظ':'Could not save', 'error');

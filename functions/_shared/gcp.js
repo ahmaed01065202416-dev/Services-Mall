@@ -290,10 +290,23 @@ async function rtdbDelete(env, path) {
     if (!resp.ok) throw new Error(`RTDB DELETE ${path} failed: ${resp.status}`);
     return true;
 }
+// PATCH does a shallow merge at `path` — sibling keys already there (e.g.
+// chats/{orderId}/messages when only writing .../buyerId and .../sellerId)
+// are left untouched, unlike PUT which would replace the whole node.
+async function rtdbUpdate(env, path, data) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${rtdbBase(env)}/${path}.json`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!resp.ok) throw new Error(`RTDB PATCH ${path} failed: ${resp.status}`);
+    return await resp.json().catch(() => true);
+}
 
 export {
     getAccessToken, verifyIdToken,
     fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount,
     writeIncrement, writeUpdate, writeCreate,
-    rtdbGet, rtdbDelete,
+    rtdbGet, rtdbDelete, rtdbUpdate,
 };

@@ -189,13 +189,38 @@ async function resolveExistingOrder(orderId, auth, env) {
     const total = Number((price + fees).toFixed(2));
     if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
 
+    // ⚠️ SECURITY FIX (audit finding — critical): this used to trust
+    // `order.sellerId` (a field written by the BUYER's own client when the
+    // order document was first created — firestore.rules' orders `create`
+    // rule never cross-checks sellerId against the service doc). A buyer
+    // could hand-craft an order write with `serviceId` pointing at a real,
+    // expensive service but `sellerId` set to an account THEY control, then
+    // pay through this endpoint — the escrow (and the eventual payout) would
+    // go to the attacker's wallet instead of the real service owner's,
+    // because svc.sellerId was never consulted here (resolveOrderItems(),
+    // used by the cart/items checkout path, already did this correctly —
+    // only this "existing order" / custom-request path had the gap).
+    // Now sellerId always comes from the service document itself, which is
+    // the one thing on this path a buyer can never write to (see
+    // firestore.rules match /services — only the seller who owns it, or an
+    // admin, can ever change sellerId, and in practice sellerId is never
+    // even in the update rule's editable-fields allow-list, so it's
+    // permanently fixed at creation). If the order's own sellerId disagrees
+    // with the service's real owner, something is already wrong (tampering,
+    // or the service changed hands) — the safe move is to refuse the
+    // payment outright rather than silently paying whoever the order
+    // happened to name.
+    if (order.sellerId && order.sellerId !== svc.sellerId) {
+        throw new Error('تعارض في بيانات الطلب — تواصل مع الدعم الفني');
+    }
+
     return {
         mode: 'existing_order', orderId,
         item: {
             serviceId: order.serviceId, title: svc.title || order.serviceTitle || '',
             image: (svc.images && svc.images[0]) || svc.image || order.image || '',
             price, deliveryDays: svc.deliveryDays || order.deliveryDays || 3,
-            sellerId: order.sellerId || '', sellerName: order.sellerName || '',
+            sellerId: svc.sellerId || '', sellerName: svc.sellerName || order.sellerName || '',
         },
         subtotal: price, fees, total,
     };

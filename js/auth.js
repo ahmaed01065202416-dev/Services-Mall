@@ -28,6 +28,11 @@
     }
 
     // ── Create user doc if not exists ─────────────────────────────────────────
+    // ⚠️ CHANGED (privacy audit): phone now goes to the private subcollection
+    // (see firestore.rules) instead of the main, publicly-readable-by-any-
+    // signed-in-user document. Uses a batch so both writes succeed or fail
+    // together — a half-written account (main doc but no private doc, or
+    // vice versa) would otherwise be possible if the second write failed.
     async function _ensureUserDoc(user) {
         if (!user) return;
         try {
@@ -35,10 +40,10 @@
             const snap = await ref.get();
             if (!snap.exists) {
                 const referredBy = _getPendingReferrer(user.uid);
-                await ref.set({
+                const batch = window.db.batch();
+                batch.set(ref, {
                     name:          user.displayName || '',
                     email:         user.email       || '',
-                    phone:         user.phoneNumber || '',
                     avatar:        user.photoURL    || '',
                     role:          'buyer',
                     verified:      false,
@@ -47,9 +52,14 @@
                     createdAt:     serverTimestamp(),
                     updatedAt:     serverTimestamp(),
                 });
-                await window.db.collection(COLLECTIONS.WALLET).doc(user.uid).set({
+                batch.set(ref.collection('private').doc('contact'), {
+                    phone: user.phoneNumber || '', payoutMethod: '', payoutAccount: '',
+                    updatedAt: serverTimestamp(),
+                });
+                batch.set(window.db.collection(COLLECTIONS.WALLET).doc(user.uid), {
                     balance: 0, currency: 'EGP', createdAt: serverTimestamp(),
                 });
+                await batch.commit();
             } else {
                 await ref.update({ updatedAt: serverTimestamp() });
             }
@@ -182,16 +192,24 @@
                 const cred = await window.auth.createUserWithEmailAndPassword(email, password);
                 await cred.user.updateProfile({ displayName: name });
                 const referredBy = _getPendingReferrer(cred.user.uid);
-                await window.db.collection(COLLECTIONS.USERS).doc(cred.user.uid).set({
-                    name, email, phone, role,
+                // ⚠️ CHANGED (privacy audit): phone → private subcollection,
+                // same reasoning as _ensureUserDoc() above.
+                const userRef = window.db.collection(COLLECTIONS.USERS).doc(cred.user.uid);
+                const batch = window.db.batch();
+                batch.set(userRef, {
+                    name, email, role,
                     avatar: '', verified: false, acceptedTerms: true,
                     emailVerified: false,
                     ...(referredBy ? { referredBy } : {}),
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                 });
-                await window.db.collection(COLLECTIONS.WALLET).doc(cred.user.uid).set({
+                batch.set(userRef.collection('private').doc('contact'), {
+                    phone, payoutMethod: '', payoutAccount: '', updatedAt: serverTimestamp(),
+                });
+                batch.set(window.db.collection(COLLECTIONS.WALLET).doc(cred.user.uid), {
                     balance: 0, currency: 'EGP', createdAt: serverTimestamp(),
                 });
+                await batch.commit();
 
                 // Send a real verification email — required before the account
                 // can pay or sell (enforced server-side in functions/api/payment.js).
@@ -270,14 +288,22 @@
             try {
                 const updates = { updatedAt: serverTimestamp() };
                 if (data.name)   updates.name   = sanitizeInput(data.name);
-                if (data.phone)  updates.phone  = data.phone;
                 if (data.avatar) updates.avatar = data.avatar;
                 await window.db.collection(COLLECTIONS.USERS).doc(user.uid).update(updates);
+                // ⚠️ CHANGED (privacy audit): phone → private subcollection.
+                // set(..., {merge:true}) instead of update() since a very old
+                // account might not have this subdoc yet at all.
+                if (data.phone) {
+                    await window.db.collection(COLLECTIONS.USERS).doc(user.uid)
+                        .collection('private').doc('contact')
+                        .set({ phone: data.phone, updatedAt: serverTimestamp() }, { merge: true });
+                }
                 if (data.name)   await user.updateProfile({ displayName: data.name });
                 if (data.avatar) await user.updateProfile({ photoURL: data.avatar });
                 if (AppState.currentUser) {
                     if (data.name)   AppState.currentUser.displayName = data.name;
                     if (data.avatar) AppState.currentUser.photoURL    = data.avatar;
+                    if (data.phone)  AppState.currentUser.phone       = data.phone;
                 }
                 hideLoading();
                 showToast(isAr ? 'تم التحديث' : 'Profile updated', 'success');

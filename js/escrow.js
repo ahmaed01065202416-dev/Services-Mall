@@ -55,8 +55,8 @@
         // ── Open Dispute (Buyer or Seller) ────────────────────────────────────
         async openDispute(orderId) {
             const isAr = AppState.language !== 'en';
-            const reason = await _showDisputeDialog(orderId);
-            if (!reason) return;
+            const input = await _showDisputeDialog(orderId);
+            if (!input) return;
 
             showLoading(isAr ? 'جاري إرسال النزاع...' : 'Submitting dispute...');
             try {
@@ -107,7 +107,9 @@
                     raisedBy:     uid,
                     raisedByName,
                     raisedByRole,
-                    reason,
+                    reason:       input.combined,
+                    reasonCode:   input.reasonCode,
+                    description:  input.description,
                     status:     'open',
                     adminNotes: '',
                     resolution: null,
@@ -264,15 +266,35 @@
 
     function _showDisputeDialog(orderId) {
         const isAr = AppState.language !== 'en';
+        // ⚠️ CHANGED: this used to be a single free-text box. Per Ahmed's
+        // request: a real form — a structured reason (so both the other
+        // party and admin instantly know the category of problem) plus a
+        // free-text description of what actually happened between them.
+        const REASONS = [
+            { code: 'not_delivered',  ar: 'لم يتم تسليم العمل في الموعد',        en: "Work wasn't delivered on time" },
+            { code: 'quality_issue',  ar: 'جودة العمل ضعيفة أو غير مطابقة',      en: 'Poor quality / not as advertised' },
+            { code: 'not_as_agreed',  ar: 'العمل غير مطابق لما تم الاتفاق عليه', en: "Doesn't match what was agreed" },
+            { code: 'no_response',    ar: 'الطرف الآخر لا يرد',                  en: 'The other party stopped responding' },
+            { code: 'payment_issue',  ar: 'مشكلة متعلقة بالدفع أو المبلغ',       en: 'A payment/amount issue' },
+            { code: 'other',          ar: 'سبب آخر',                            en: 'Other' },
+        ];
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
             overlay.innerHTML = `
-              <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
+              <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-black text-gray-900 mb-2">${isAr ? 'فتح نزاع' : 'Open Dispute'}</h3>
-                <p class="text-gray-500 text-sm mb-4">${isAr ? 'سيتم تجميد الأموال وإعلام الأدمن' : 'Funds will be frozen and admin will be notified'}</p>
-                <textarea id="disputeReason" rows="4" class="form-input mb-4"
+                <p class="text-gray-500 text-sm mb-4">${isAr ? 'هيتم تجميد الأموال وإرسال كل بيانات الطلب والمحادثة للإدارة للفصل فيه' : "Funds will be frozen and the order's full details and conversation sent to the admin to review"}</p>
+
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'سبب النزاع' : 'Reason for the dispute'}</label>
+                <select id="disputeReasonCode" class="form-input mb-3 w-full">
+                  ${REASONS.map(r => `<option value="${r.code}">${isAr ? r.ar : r.en}</option>`).join('')}
+                </select>
+
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'وضّح المشكلة بينك وبين الطرف الآخر' : 'Describe the problem between you and the other party'}</label>
+                <textarea id="disputeReason" rows="4" class="form-input mb-4 w-full"
                   placeholder="${isAr ? 'اشرح سبب النزاع بالتفصيل...' : 'Explain the dispute reason in detail...'}"></textarea>
+
                 <div class="flex gap-3">
                   <button id="dlg_cancel" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
                   <button id="dlg_submit" class="btn-primary flex-1 py-3 bg-red-600">${isAr ? 'إرسال النزاع' : 'Submit Dispute'}</button>
@@ -280,9 +302,26 @@
               </div>`;
             document.body.appendChild(overlay);
             overlay.querySelector('#dlg_submit').onclick = () => {
-                const reason = overlay.querySelector('#disputeReason').value.trim();
+                const reasonCode = overlay.querySelector('#disputeReasonCode').value;
+                const reasonObj  = REASONS.find(r => r.code === reasonCode) || REASONS[REASONS.length - 1];
+                const description = overlay.querySelector('#disputeReason').value.trim();
+                if (!description) {
+                    overlay.querySelector('#disputeReason').classList.add('border-red-400');
+                    showToast(isAr ? 'من فضلك اشرح المشكلة' : 'Please describe the problem', 'warning');
+                    return;
+                }
                 overlay.remove();
-                resolve(reason || '—');
+                resolve({
+                    reasonCode,
+                    reasonLabel: isAr ? reasonObj.ar : reasonObj.en,
+                    description,
+                    // Combined single-line summary — kept so every existing
+                    // place that just prints `dispute.reason` as plain text
+                    // (dashboard.js's history list, notifications...) still
+                    // reads sensibly without needing to know about the new
+                    // separate reasonCode/description fields.
+                    combined: `${reasonObj.ar} — ${description}`,
+                });
             };
             overlay.querySelector('#dlg_cancel').onclick = () => { overlay.remove(); resolve(null); };
         });

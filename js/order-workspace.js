@@ -496,6 +496,18 @@
               </div>
               ` : ''}
 
+              <!-- ── Report the other party ──────────────────────────────── -->
+              <!-- ⚠️ ADDED: separate from "فتح نزاع" — a dispute is about
+                   money on THIS order and freezes the escrow; a report just
+                   flags the other person's behavior to the admin (scam
+                   attempt, harassment, fake service...) and doesn't touch
+                   funds. Available to both sides at any order stage. -->
+              <div class="text-center">
+                <button onclick="OrderWorkspace.reportOtherParty('${orderId}')" class="text-xs text-gray-400 hover:text-red-500 transition inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-flag"></i>${isAr ? `الإبلاغ عن ${isBuyer ? 'البائع' : 'المشتري'}` : `Report the ${isBuyer ? 'seller' : 'buyer'}`}
+                </button>
+              </div>
+
               <!-- ── BUYER: Accept/Revise/Dispute ─────────────────────── -->
               <!-- ⚠️ ADDED: wrapped with id="deliveryDecisionBlock" so
                    _loadReturnCard() (below) can hide it while a product
@@ -646,22 +658,37 @@
     // Required by database.rules.json before any message read/write is allowed.
     // Retries with growing backoff to ride out the brief window right after
     // login where the Realtime Database socket hasn't finished re-authing yet.
+    // ⚠️ CHANGED (security audit): this used to write buyerId/sellerId
+    // directly to Realtime Database from the browser. database.rules.json
+    // could only check "is the value being written equal to my own uid" —
+    // it had no way to also confirm this uid is genuinely this order's real
+    // buyer/seller (RTDB rules can't read Firestore), so anyone who knew an
+    // orderId could claim an unclaimed chat slot as themselves. Now this
+    // calls functions/api/link-chat-participant.js, which checks the real
+    // order in Firestore first and writes with the service account — the
+    // client `.write` for these two fields is now simply `false`. The retry
+    // loop is kept for the same reason it existed before: transient network
+    // hiccups right as the workspace opens shouldn't silently leave a chat
+    // unlinked.
     async function _linkChatParticipant(orderId, order, userId) {
-        if (!window.rtdb) return;
-        const ref = window.rtdb.ref(`chats/${orderId}`);
-        const jobs = [];
-        if (order.buyerId === userId)  jobs.push(ref.child('buyerId'));
-        if (order.sellerId === userId) jobs.push(ref.child('sellerId'));
+        if (order.buyerId !== userId && order.sellerId !== userId) return;
         const delays = [0, 400, 1000, 2000, 3500];
-        for (const node of jobs) {
-            let ok = false, lastErr = null;
-            for (let i = 0; i < delays.length && !ok; i++) {
-                if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
-                try { await node.set(userId); ok = true; }
-                catch (err) { lastErr = err; }
-            }
-            if (!ok) console.warn('[Chat] link participant failed after retries:', lastErr && (lastErr.code || lastErr.message));
+        let lastErr = null;
+        for (let i = 0; i < delays.length; i++) {
+            if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
+            try {
+                const idToken = await window.auth.currentUser.getIdToken();
+                const resp = await fetch('/api/link-chat-participant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ orderId }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+                return;
+            } catch (err) { lastErr = err; }
         }
+        console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message);
     }
 
     // ── Real-time Chat Listener (Realtime Database) ───────────────────────────
@@ -1170,6 +1197,115 @@
         } catch (err) {
             hideLoading();
             showToast(t('general.error'), 'error');
+        }
+    }
+
+    // ── Report the other party (misconduct, not a financial dispute) ──────────
+    // ⚠️ ADDED: feeds the ALREADY-EXISTING admin "البلاغات" (Reports) tab in
+    // js/dashboard.js — that tab, its firestore.rules (`match /reports`,
+    // field `reportedBy`), and its resolve/delete actions were already built,
+    // but nothing in the app ever actually wrote a report there. This is the
+    // missing "create" side, using the exact same field names so it needs no
+    // changes to the admin tab at all. Independent of /disputes — a report
+    // doesn't touch the order's status or escrow.
+    function _showReportDialog(otherPartyLabel, isAr) {
+        const REASONS = [
+            { code: 'scam',          ar: 'محاولة نصب أو احتيال',              en: 'Scam / fraud attempt' },
+            { code: 'harassment',    ar: 'إساءة أو تحرش',                     en: 'Harassment / abuse' },
+            { code: 'fake_listing',  ar: 'خدمة أو منتج غير حقيقي',            en: 'Fake service/product' },
+            { code: 'off_platform',  ar: 'طلب الدفع أو التواصل خارج المنصة',  en: 'Asked to pay/communicate off-platform' },
+            { code: 'inappropriate', ar: 'محتوى غير لائق',                    en: 'Inappropriate content' },
+            { code: 'other',         ar: 'سبب آخر',                          en: 'Other' },
+        ];
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
+            overlay.innerHTML = `
+              <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
+                <h3 class="text-xl font-black text-gray-900 mb-1">${isAr ? `الإبلاغ عن ${otherPartyLabel}` : `Report the ${otherPartyLabel}`}</h3>
+                <p class="text-gray-500 text-sm mb-4">${isAr ? 'هيتم إرسال البلاغ للإدارة للمراجعة. البلاغ لا يوقف الطلب أو يجمّد أي أموال.' : "This goes to the admin for review. Reporting doesn't stop the order or freeze any funds."}</p>
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'سبب البلاغ' : 'Reason'}</label>
+                <select id="repReasonCode" class="form-input mb-3 w-full">
+                  ${REASONS.map(r => `<option value="${r.code}">${isAr ? r.ar : r.en}</option>`).join('')}
+                </select>
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'تفاصيل' : 'Details'}</label>
+                <textarea id="repDescription" rows="4" class="form-input mb-4 w-full" placeholder="${isAr ? 'اشرح المشكلة...' : 'Describe what happened...'}"></textarea>
+                <div class="flex gap-3">
+                  <button id="dlg_cancel" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
+                  <button id="dlg_submit" class="btn-primary flex-1 py-3 bg-red-600">${isAr ? 'إرسال البلاغ' : 'Submit report'}</button>
+                </div>
+              </div>`;
+            document.body.appendChild(overlay);
+            overlay.querySelector('#dlg_submit').onclick = () => {
+                const reasonCode = overlay.querySelector('#repReasonCode').value;
+                const reasonObj  = REASONS.find(r => r.code === reasonCode);
+                const description = overlay.querySelector('#repDescription').value.trim();
+                if (!description) {
+                    overlay.querySelector('#repDescription').classList.add('border-red-400');
+                    showToast(isAr ? 'من فضلك اكتب تفاصيل البلاغ' : 'Please describe the issue', 'warning');
+                    return;
+                }
+                overlay.remove();
+                resolve({ reasonCode, reasonLabel: isAr ? reasonObj.ar : reasonObj.en, description });
+            };
+            overlay.querySelector('#dlg_cancel').onclick = () => { overlay.remove(); resolve(null); };
+        });
+    }
+
+    async function reportOtherParty(orderId) {
+        const isAr = AppState.language !== 'en';
+        const user = AppState.currentUser;
+        if (!user) return;
+
+        showLoading(isAr ? 'جاري التحميل...' : 'Loading...');
+        let order;
+        try {
+            const snap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
+            if (!snap.exists) { hideLoading(); return; }
+            order = { id: snap.id, ...snap.data() };
+        } catch (e) { hideLoading(); showToast(t('general.error'), 'error'); return; }
+
+        const isBuyer = order.buyerId === user.uid;
+        const isSeller = order.sellerId === user.uid;
+        if (!isBuyer && !isSeller) { hideLoading(); return; }
+        hideLoading();
+
+        const otherPartyLabel = isBuyer ? (isAr ? 'البائع' : 'seller') : (isAr ? 'المشتري' : 'buyer');
+        const input = await _showReportDialog(otherPartyLabel, isAr);
+        if (!input) return;
+
+        showLoading(isAr ? 'جاري إرسال البلاغ...' : 'Submitting report...');
+        try {
+            const reportedUserId   = isBuyer ? order.sellerId : order.buyerId;
+            const reportedUserName = isBuyer ? order.sellerName : order.buyerName;
+            const reportedRole     = isBuyer ? 'seller' : 'buyer';
+            const batch = window.db.batch();
+            // ⚠️ Uses the SAME `reports` collection + field names the admin
+            // panel's pre-existing "البلاغات" tab already reads/resolves
+            // (js/dashboard.js — window._adminResolveReport /
+            // _adminDeleteReport, both keyed on `reportedBy`/`type`/
+            // `targetId`/`targetName`/`reason`) rather than a new schema, so
+            // this shows up there directly with no extra wiring.
+            const reportRef = window.db.collection(COLLECTIONS.REPORTS).doc();
+            batch.set(reportRef, {
+                type: reportedRole, // who is being reported: 'buyer' or 'seller'
+                targetId: reportedUserId || '', targetName: reportedUserName || '',
+                reason: `${input.reasonLabel}: ${input.description}`,
+                reportedBy: user.uid, reporterName: user.displayName || user.email || '',
+                orderId, status: 'new', createdAt: _ts(),
+            });
+            batch.set(window.db.collection(COLLECTIONS.NOTIFICATIONS).doc(), {
+                userId: 'ADMIN', type: 'user_report',
+                title: isAr ? '🚩 بلاغ جديد' : '🚩 New user report',
+                message: `${isAr ? 'بلاغ على الطلب' : 'Report on order'} #${orderId.substr(-8)} — ${input.reasonLabel}`,
+                orderId, read: false, createdAt: _ts(),
+            });
+            await batch.commit();
+            hideLoading();
+            showToast(isAr ? '✅ تم إرسال البلاغ للإدارة' : '✅ Report sent to the admin', 'success');
+        } catch (err) {
+            hideLoading();
+            showToast((isAr ? 'تعذّر إرسال البلاغ: ' : 'Could not submit: ') + err.message, 'error');
         }
     }
 
@@ -1812,7 +1948,7 @@
     // ── Expose API ────────────────────────────────────────────────────────────
     window.OrderWorkspace = {
         openWorkspace, sendMessage, handleChatKeydown, sendFile, deleteMessage,
-        deliverService, requestRevision,
+        deliverService, requestRevision, reportOtherParty,
         setRating, submitReview, previewDeliveryFiles,
         handleDeliveryDrop, wsActivateTab,
         sendBuyerInstructions, previewBuyerFiles,
