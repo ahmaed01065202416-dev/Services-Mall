@@ -1,17 +1,15 @@
 # 🚀 إعداد نظام المحتوى التلقائي
 
-## الخطوة 1: أضف مفاتيح API على Cloudflare Pages
+## الخطوة 1: أضف مفاتيح API على Netlify
 
-Cloudflare dashboard → مشروع الـ Pages بتاعك → Settings → Environment Variables:
+على Netlify → Site Settings → Environment Variables:
 
 | المتغير | الحصول عليه | الأهمية |
 |---------|-------------|----------|
 | `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com/app/apikey) — مجاني | **ضروري** |
 | `UNSPLASH_ACCESS_KEY` | [unsplash.com/developers](https://unsplash.com/developers) — مجاني | موصى به |
 | `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com) | بديل Gemini |
-| `FIREBASE_PROJECT_ID` | من Firebase Console | للحفظ التلقائي |
-| `FIREBASE_SERVICE_ACCOUNT` | Firebase Console → Service accounts | **ضروري** (راجع `.env.example`) |
-| `ADMIN_SECRET` أو `ADMIN_UIDS` | تحدده انت | يحمي زرار توليد المقال من أي حد |
+| `FIREBASE_PROJECT_ID` | `services-mall` | للحفظ التلقائي |
 
 ## الخطوة 2: اجعل حسابك Admin
 
@@ -26,19 +24,15 @@ Cloudflare dashboard → مشروع الـ Pages بتاعك → Settings → Env
 1. ادخل لوحة التحكم من القائمة
 2. اضغط "توليد مقال AI الآن"
 3. انتظر 20-40 ثانية
-4. ⚠️ المقال بيتحفظ كـ **مسودة (Draft)** مش بينشر تلقائي — لازم تراجعه وتضغط
-   "نشر" بجانبه في جدول المقالات بلوحة التحكم قبل ما يظهر للزوار أو يتفهرس
-   في جوجل. ده متعمد (مراجعة بشرية قبل النشر لحماية الـ SEO).
+4. المقال ينشر تلقائياً في المدونة!
 
-## الجدول التلقائي (cron-worker)
+## الجدول التلقائي
 
-بعد إضافة `GEMINI_API_KEY` ونشر الـ Worker المنفصل في `cron-worker/`:
-- كل يوم الساعة **9 صباحاً** (القاهرة) يتولّد مقالان تلقائياً **كمسودة** —
-  لسه محتاجين مراجعتك ونشرهم يدوياً من لوحة التحكم.
-- نفس الجدول بيحدّث نقاط جودة البائعين (Quality Score) ويحصّل الاشتراكات
-  الشهرية المستحقة تلقائياً (راجع `cron-worker/index.js`).
-- Sitemap يتحدّث تلقائياً للمقالات المنشورة فقط.
-- Google يُبلَّغ بالمحتوى الجديد بعد النشر.
+بعد إضافة `GEMINI_API_KEY`:
+- كل يوم الساعة **9 صباحاً** (القاهرة) يُنشر مقالان تلقائياً
+- المقالات تظهر في `/blog` و على الصفحة الرئيسية
+- Sitemap يُحدَّث تلقائياً
+- Google يُبلَّغ بالمحتوى الجديد
 
 ## الخطوة 4: ربط Google Analytics
 
@@ -46,6 +40,6 @@ Cloudflare dashboard → مشروع الـ Pages بتاعك → Settings → Env
 
 ## الخطوة 5: AdSense
 
-بعد تجميع 20-30 مقال منشور فعلياً (مش مسودة):
+بعد تجميع 20-30 مقال:
 1. قدّم على adsense.google.com
 2. بعد الموافقة استبدل `.ad-slot` في `/blog/index.html` بكود AdSense

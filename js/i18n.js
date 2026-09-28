@@ -25,21 +25,15 @@
             'nav.admin':          'الإدارة',
 
             // Home
-            'home.hero.title':    'منصتك الأولى للمنتجات والخدمات الرقمية',
-            'home.hero.subtitle': 'اطلب خدمات مخصصة من خبراء معتمدين، أو احصل على منتجات رقمية جاهزة فورًا — بأمان تام وضمان استرداد',
-            'home.hero.cta':      'استعرض الخدمات والمنتجات',
+            'home.hero.title':    'منصتك الأولى للخدمات الرقمية الاحترافية',
+            'home.hero.subtitle': 'اطلب أفضل الخدمات من خبراء معتمدين بأمان تام وضمان استرداد',
+            'home.hero.cta':      'استعرض الخدمات',
             'home.hero.sell':     'ابدأ البيع',
-            'home.hero.searchPlaceholder': 'ابحث هنا... عن خدمة أو منتج بتدور عليه؟',
-            'home.hero.searchBtn':         'بحث',
-            'home.hero.chip1': 'تسويق رقمي',
-            'home.hero.chip2': 'الأمن السيبراني',
-            'home.hero.chip3': 'استشارات تقنية',
-            'home.hero.chip4': 'خدمات صحية',
-            'home.stats.services':'إعلان نشط',
+            'home.stats.services':'خدمة نشطة',
             'home.stats.sellers': 'بائع محترف',
             'home.stats.orders':  'طلب مكتمل',
             'home.stats.rating':  'تقييم المستخدمين',
-            'home.featured':      'خدمات ومنتجات مميزة',
+            'home.featured':      'خدمات مميزة',
             'home.categories':    'تصفح التصنيفات',
 
             // Services
@@ -63,7 +57,6 @@
             'cart.checkout':      'إتمام الشراء',
             'cart.remove':        'حذف',
             'cart.continue':      'مواصلة التسوق',
-            'cart.short':         'السلة',
 
             // Payment
             'pay.title':          'إتمام الدفع',
@@ -180,21 +173,15 @@
             'nav.admin':          'Admin',
 
             // Home
-            'home.hero.title':    "Your #1 Platform for Digital Products & Services",
-            'home.hero.subtitle': 'Order custom services from certified experts, or get ready-made digital products instantly — with full security and a refund guarantee',
-            'home.hero.cta':      'Browse Services & Products',
+            'home.hero.title':    'Your #1 Platform for Professional Digital Services',
+            'home.hero.subtitle': 'Order the best services from certified experts with full security and refund guarantee',
+            'home.hero.cta':      'Browse Services',
             'home.hero.sell':     'Start Selling',
-            'home.hero.searchPlaceholder': 'Search here... looking for a service or product?',
-            'home.hero.searchBtn':         'Search',
-            'home.hero.chip1': 'Digital Marketing',
-            'home.hero.chip2': 'Cybersecurity',
-            'home.hero.chip3': 'Tech Consulting',
-            'home.hero.chip4': 'Health Services',
-            'home.stats.services':'Active Listings',
+            'home.stats.services':'Active Services',
             'home.stats.sellers': 'Pro Sellers',
             'home.stats.orders':  'Completed Orders',
             'home.stats.rating':  'User Rating',
-            'home.featured':      'Featured Services & Products',
+            'home.featured':      'Featured Services',
             'home.categories':    'Browse Categories',
 
             // Services
@@ -218,7 +205,6 @@
             'cart.checkout':      'Checkout',
             'cart.remove':        'Remove',
             'cart.continue':      'Continue Shopping',
-            'cart.short':         'Cart',
 
             // Payment
             'pay.title':          'Complete Payment',
@@ -440,18 +426,12 @@
         if (menu) menu.classList.toggle('active');
     }
 
-    function toggleTheme() {
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-
     // ── Expose ────────────────────────────────────────────────────────────────
     window.I18n         = I18n;
     window.t            = (key, vars) => I18n.t(key, vars);
     window.setCurrency  = setCurrency;
     window.toggleLanguage = toggleLanguage;
     window.toggleCurrencyMenu = toggleCurrencyMenu;
-    window.toggleTheme = toggleTheme;
     window.detectUserLocation = detectUserLocation;
 
     // Init on DOM ready

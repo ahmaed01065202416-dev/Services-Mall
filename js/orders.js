@@ -92,14 +92,8 @@
             const role     = AppState.currentUser?.role;
             const isAdmin  = role === 'admin';
 
-            const needsSellerReply   = !isBuyer && order.status === ORDER_STATUS.PENDING;
-            const needsShipping      = !isBuyer && order.listingType === 'product'
-                                        && [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PAYMENT_HELD].includes(order.status)
-                                        && (order.shippingStatus || 'processing') !== 'delivered';
-            const needsAttention     = needsSellerReply || needsShipping;
-
             return `
-            <div class="bg-white rounded-2xl border ${needsAttention ? 'border-amber-300 ring-1 ring-amber-100' : 'border-gray-200'} p-5 hover:shadow-lg transition-all duration-300 order-card" data-order="${order.id}">
+            <div class="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-lg transition-all duration-300 order-card" data-order="${order.id}">
               <div class="flex flex-wrap items-start gap-4">
                 <!-- Image -->
                 <img src="${order.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
@@ -110,19 +104,7 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <div class="flex items-center gap-2 mb-1 flex-wrap">
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-md ${isBuyer ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}">
-                          <i class="fa-solid ${isBuyer ? 'fa-cart-shopping' : 'fa-store'} me-1"></i>
-                          ${isBuyer ? (isAr ? 'أنت المشتري' : 'You are the buyer') : (isAr ? 'أنت البائع' : 'You are the seller')}
-                        </span>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">
-                          <i class="fa-solid ${order.listingType === 'product' ? 'fa-box' : 'fa-screwdriver-wrench'} me-1"></i>
-                          ${order.listingType === 'product' ? (isAr ? 'منتج' : 'Product') : (isAr ? 'خدمة' : 'Service')}
-                        </span>
-                        ${needsSellerReply ? `<span class="text-xs font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 animate-pulse"><i class="fa-solid fa-bell me-1"></i>${isAr?'يحتاج ردك':'Needs your reply'}</span>` : ''}
-                        ${needsShipping ? `<span class="text-xs font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800"><i class="fa-solid fa-truck me-1"></i>${isAr?'يحتاج شحن':'Needs shipping'}</span>` : ''}
-                      </div>
-                      <h3 class="font-black text-gray-900 text-lg truncate">${escapeHtml(order.serviceTitle || '—')}</h3>
+                      <h3 class="font-black text-gray-900 text-lg truncate">${order.serviceTitle || '—'}</h3>
                       <p class="text-sm text-gray-500">#${order.id.substr(-8).toUpperCase()}</p>
                     </div>
                     <span class="status-badge ${getStatusClass(order.status)} flex-shrink-0">${getStatusText(order.status)}</span>
@@ -134,9 +116,9 @@
                     </span>
                     <span class="flex items-center gap-1">
                       <i class="fa-solid fa-user text-xs text-gray-400"></i>
-                      ${escapeHtml(isBuyer ? (order.sellerName || '—') : (order.buyerName || '—'))}
+                      ${isBuyer ? (order.sellerName || '—') : (order.buyerName || '—')}
                     </span>
-                    <span class="flex items-center gap-1 font-black text-navy-700">
+                    <span class="flex items-center gap-1 font-black text-brand-700">
                       <i class="fa-solid fa-coins text-xs"></i>${formatCurrency(order.price || 0)}
                     </span>
                     <span class="flex items-center gap-1">
@@ -168,12 +150,6 @@
                     <i class="fa-solid fa-check"></i>${t('escrow.confirm')}
                   </button>` : ''}
 
-                  ${needsShipping ? `
-                  <button onclick="OrdersManager.quickMarkShipped('${order.id}', event)"
-                    class="text-sm px-4 py-2 bg-navy-700 text-white rounded-xl hover:bg-navy-800 transition flex items-center gap-2">
-                    <i class="fa-solid fa-truck"></i>${isAr ? 'تحديد كـ: شُحن' : 'Mark shipped'}
-                  </button>` : ''}
-
                   ${isAdmin ? `
                   <button onclick="OrdersManager.adminViewOrder('${order.id}')"
                     class="btn-secondary text-sm px-4 py-2">
@@ -184,18 +160,6 @@
             </div>`;
         },
 
-        // ── Quick "mark shipped" action straight from the orders list ───────────
-        async quickMarkShipped(orderId, event) {
-            if (event) event.stopPropagation();
-            const order = _orders.find(o => o.id === orderId);
-            if (!order || !window.OrderWorkspace?.markProductShipped) return;
-            const ok = await window.OrderWorkspace.markProductShipped(orderId, order);
-            if (ok) {
-                order.shippingStatus = 'shipped';
-                this.renderOrders(_orders);
-            }
-        },
-
         // ── Filter Orders ─────────────────────────────────────────────────────
         filterOrders(status) {
             _currentFilter = status;
@@ -203,7 +167,7 @@
             // Update filter buttons
             document.querySelectorAll('.order-filter-btn').forEach(btn => {
                 const active = btn.dataset.status === status;
-                btn.classList.toggle('bg-navy-600', active);
+                btn.classList.toggle('bg-brand-600', active);
                 btn.classList.toggle('text-white', active);
                 btn.classList.toggle('bg-white', !active);
                 btn.classList.toggle('text-gray-600', !active);
@@ -286,7 +250,7 @@
                 ${statuses.map(s => `
                   <button onclick="OrdersManager.filterOrders('${s.key}')"
                     data-status="${s.key}"
-                    class="order-filter-btn flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 transition ${s.key === 'all' ? 'bg-navy-600 text-white border-navy-600' : 'bg-white text-gray-600'}">
+                    class="order-filter-btn flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 transition ${s.key === 'all' ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-600'}">
                     ${s.label}
                   </button>`).join('')}
               </div>

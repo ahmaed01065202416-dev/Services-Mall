@@ -1,39 +1,14 @@
 /**
- * SERVICE WORKER — Mall Services PWA v3.6
+ * SERVICE WORKER — Mall Services PWA v3.4
  * آمن 100% — لا يعترض أي مورد خارجي
- *
- * ⚠️ FIXED (v3.6): two real bugs found during a full project review:
- *
- * 1. EXTERNAL_KEYWORDS used to include the literal string 'pages.dev' to
- *    skip caching third-party pages.dev-hosted resources — but this site
- *    itself is hosted at mall-services.pages.dev, so EVERY request to the
- *    site's own origin also contains "pages.dev" and matched the same
- *    exclusion. Net effect: the service worker never actually cached or
- *    intercepted anything on this domain — offline support and the local
- *    cache were silently 100% non-functional. Now compares against
- *    `self.location.origin` instead of a fragile substring list, so only
- *    genuinely external requests are skipped.
- *
- * 2. The old strategy was cache-first for EVERYTHING, including index.html
- *    — meaning once caching actually worked (see #1), a returning visitor
- *    could keep seeing an old cached version of the whole site after every
- *    future deploy unless the cache-version string below was manually
- *    bumped each time. Given how often this project gets redeployed, that's
- *    a real footgun. Navigation requests (the page itself) are now
- *    network-first — always tries the live site first, and only falls back
- *    to the cached copy if the network request fails (offline). Static
- *    assets (JS/CSS/images) stay cache-first for speed, since a stale JS
- *    file for a few minutes matters much less than a stale whole page.
  */
-const LOCAL_CACHE = 'mall-local-v3.14';
+const LOCAL_CACHE = 'mall-local-v3.4';
 
 const LOCAL_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/icon.svg',
-  '/css/tailwind.css',
 ];
 
 // ── Install ──────────────────────────────────────────────────────────────────
@@ -66,62 +41,60 @@ self.addEventListener('fetch', (event) => {
   // 2. تجاهل أي بروتوكول غير http/https
   if (!req.url.startsWith('http')) return;
 
-  // 3. تجاهل أي طلب مش لنفس الأصل (نفس الدومين) — أي API خارجي، Firebase،
-  //    Google، إلخ. مقارنة بأصل الموقع نفسه مش بقايمة كلمات هشة.
-  let sameOrigin = false;
-  try { sameOrigin = new URL(req.url).origin === self.location.origin; } catch (_) {}
-  if (!sameOrigin) return;
+  // 3. تجاهل جميع الموارد الخارجية — لا نعترضها أبداً
+  const EXTERNAL_KEYWORDS = [
+    'googleapis.com', 'gstatic.com', 'firebaseio.com',
+    'apis.google.com', 'accounts.google.com',
+    'googleusercontent.com', 'google.com',
+    'cdnjs.cloudflare.com', 'tailwindcss.com',
+    'fonts.gstatic.com', 'fonts.googleapis.com',
+    'unsplash.com', 'ui-avatars.com',
+    'paymob.com', 'paypal.com', 'stripe.com',
+    'atfawry.com', 'google-analytics.com',
+    'googletagmanager.com', 'netlify.com',
+    'netlify.app', '/.netlify/', '/api/', 'pages.dev', 'firebaseapp.com'
+  ];
+  if (EXTERNAL_KEYWORDS.some(kw => req.url.includes(kw))) return;
 
-  // 4. لا نعترض أبداً مسارات الـ API الخاصة بالسيرفر (functions/api/*)
-  if (new URL(req.url).pathname.startsWith('/api/')) return;
-
-  // 5. طلبات التنقل (فتح الصفحة نفسها) → Network-first، مع رجوع للنسخة
-  //    المخزنة لو مفيش إنترنت — عشان أي تحديث جديد يوصل فورًا للزوار
-  //    العائدين، من غير ما نحتاج نرفع رقم إصدار الكاش يدويًا كل ديبلوي.
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then(response => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(LOCAL_CACHE).then(c => c.put(req, clone));
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match(req).then(cached => cached || caches.match('/index.html'))
-            .then(page => page || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } }))
-        )
-    );
-    return;
-  }
-
-  // 6. باقي الملفات المحلية (JS/CSS/صور): Network-first، مع رجوع للكاش لو
-  //    مفيش إنترنت فقط.
-  // ⚠️ FIXED (found in audit): this used to be cache-first — once a
-  // browser cached a JS/CSS file ONE time, it kept serving that exact copy
-  // forever, no matter how many times the site got redeployed, unless
-  // LOCAL_CACHE above was manually bumped. That's very likely why fixes
-  // during testing looked like they "didn't take" (old bugs reappearing,
-  // functions referenced in the current file reported as undefined) — the
-  // browser was quietly running stale cached code. Static assets now
-  // always try the network first too; only an offline visitor falls back
-  // to whatever was last cached.
+  // 4. للملفات المحلية فقط: Cache first → Network → Fallback
   event.respondWith(
-    fetch(req)
-      .then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(LOCAL_CACHE).then(c => c.put(req, clone));
-        }
-        return response;
+    caches.match(req)
+      .then(cached => {
+        if (cached) return cached;
+
+        return fetch(req)
+          .then(response => {
+            // خزّن فقط الاستجابات الصحيحة من نفس الأصل
+            if (response && response.status === 200 && response.type === 'basic') {
+              const clone = response.clone();
+              caches.open(LOCAL_CACHE).then(c => c.put(req, clone));
+            }
+            return response;
+          })
+          .catch(() => {
+            // SPA navigate fallback
+            if (req.mode === 'navigate') {
+              return caches.match('/index.html')
+                .then(page => page || new Response('Offline', {
+                  status: 503,
+                  headers: { 'Content-Type': 'text/plain' }
+                }));
+            }
+            // لأي مورد آخر يفشل: أرجع 503 بدلاً من undefined
+            return new Response('Resource unavailable offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
       })
-      .catch(() =>
-        caches.match(req).then(cached => cached || new Response('Resource unavailable offline', {
+      .catch(() => {
+        // fallback أخير لو caches.match نفسها فشلت
+        return new Response('Service Worker Error', {
           status: 503,
           statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain' },
-        }))
-      )
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      })
   );
 });

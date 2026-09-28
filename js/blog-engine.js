@@ -9,26 +9,6 @@
   const BLOG_COL = 'blog_posts';
   const PAGE_SIZE = 9;
 
-  // ⚠️ FIXED (found in audit): blog/index.html is a lightweight standalone
-  // page with its own minimal Firebase setup — it does NOT load js/constants.js
-  // (where the global escapeHtml() normally lives), so every call to
-  // escapeHtml() below threw "escapeHtml is not defined" and renderPost()
-  // failed with "حدث خطأ في تحميل المقال" for every single article. Defining
-  // it locally here — inside this file's own IIFE — is safe even when this
-  // same file also runs on the main app's index.html (which DOES have the
-  // global one from constants.js): a local function declaration always wins
-  // over an outer/global one of the same name within its own scope, so this
-  // can't shadow or break the version used elsewhere in the app.
-  function escapeHtml(value) {
-    if (value === null || value === undefined) return '';
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
   // ── Helpers ────────────────────────────────────────────────────────────────
   function _fmtDate(ts) {
     try {
@@ -78,7 +58,7 @@
              transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column">
       <div style="height:180px;overflow:hidden;position:relative">
         <img src="${post.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'}"
-          alt="${escapeHtml(post.title||'')}" loading="lazy"
+          alt="${post.title}" loading="lazy"
           style="width:100%;height:100%;object-fit:cover;transition:transform .4s"
           onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'" />
         <div style="position:absolute;top:10px;right:10px">${_catBadge(post.category)}</div>
@@ -87,7 +67,7 @@
       <div style="padding:16px;flex:1;display:flex;flex-direction:column">
         <h3 style="font-size:15px;font-weight:900;color:#111827;line-height:1.4;margin-bottom:8px;
                    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
-          ${escapeHtml(post.title||'')}
+          ${post.title}
         </h3>
         <p style="font-size:13px;color:#6b7280;line-height:1.6;flex:1;margin-bottom:12px;
                   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
@@ -190,7 +170,7 @@
         container.innerHTML = `<div style="text-align:center;padding:80px;color:#6b7280">
           <i class="fa-solid fa-search" style="font-size:48px;margin-bottom:16px;opacity:.3;display:block"></i>
           <p style="font-weight:700;font-size:18px">المقال غير موجود</p>
-          <button onclick="BlogEngine.showBlogList()" style="margin-top:20px;background:#0F172A;color:#fff;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">
+          <button onclick="BlogEngine.showBlogList()" style="margin-top:20px;background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">
             العودة للمدونة</button></div>`;
         return;
       }
@@ -209,7 +189,7 @@
       if (!progressBar) {
         progressBar = document.createElement('div');
         progressBar.id = 'reading-progress';
-        progressBar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0F172A,#ec4899);transform-origin:left;z-index:9999;transform:scaleX(0);transition:transform .1s';
+        progressBar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#2563eb,#ec4899);transform-origin:left;z-index:9999;transform:scaleX(0);transition:transform .1s';
         document.body.appendChild(progressBar);
       }
       const onScroll = () => {
@@ -227,7 +207,7 @@
       <div>
         <!-- Hero image -->
         <div style="position:relative;height:420px;overflow:hidden">
-          <img src="${post.image}" alt="${escapeHtml(post.title||'')}"
+          <img src="${post.image}" alt="${post.title}"
             style="width:100%;height:100%;object-fit:cover"
             onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80'" />
           <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 60%,transparent 100%)"></div>
@@ -238,7 +218,7 @@
                 ${post.aiGenerated ? '<span style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px">🤖 مُنشأ بالذكاء الاصطناعي</span>' : ''}
               </div>
               <h1 style="font-size:clamp(20px,4vw,36px);font-weight:900;color:#fff;line-height:1.3;margin:0">
-                ${escapeHtml(post.title||'')}
+                ${post.title}
               </h1>
               <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:rgba(255,255,255,.75);flex-wrap:wrap">
                 <span><i class="fa-regular fa-calendar" style="margin-left:5px"></i>${_fmtDate(post.createdAt)}</span>
@@ -268,13 +248,13 @@
             <!-- Keywords -->
             ${post.keywords?.length ? `
             <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
-              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#0F172A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
+              ${post.keywords.map(k => `<span style="background:#eff6ff;color:#2563eb;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
             </div>` : ''}
 
             <!-- Share -->
             <div style="margin-top:28px;background:#f8fafc;border-radius:16px;padding:20px;border:1px solid #e5e7eb">
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:14px">
-                <i class="fa-solid fa-share-nodes" style="color:#0F172A;margin-left:8px"></i>شارك هذا المقال
+                <i class="fa-solid fa-share-nodes" style="color:#2563eb;margin-left:8px"></i>شارك هذا المقال
               </p>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}" target="_blank" rel="noopener"
@@ -317,13 +297,13 @@
 
             <!-- CTA -->
             <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;text-align:center">
-              <i class="fa-solid fa-store" style="font-size:32px;color:#0F172A;margin-bottom:10px;display:block"></i>
+              <i class="fa-solid fa-store" style="font-size:32px;color:#2563eb;margin-bottom:10px;display:block"></i>
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:6px">ابدأ على المنصة</p>
               <p style="font-size:12px;color:#6b7280;margin-bottom:14px">آلاف المحترفين في انتظارك</p>
-              <a href="/#services"
-                style="display:block;width:100%;padding:10px;background:#0F172A;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-sizing:border-box">
+              <button onclick="navigateTo('services')"
+                style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">
                 استعرض الخدمات
-              </a>
+              </button>
             </div>
 
           </aside>

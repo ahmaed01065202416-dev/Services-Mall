@@ -1,13 +1,23 @@
 # نشر المشروع على Cloudflare Pages
 
-المشروع ده بالكامل على **Cloudflare Pages** — الاستضافة، الـ API functions
-(`functions/api/*.js`)، والـ headers/redirects. مفيش أي جزء منه على Netlify.
+تم تحويل المشروع بالكامل من Netlify إلى Cloudflare Pages. ملخص اللي اتغير:
 
-الجدولة اليومية (توليد مقالات، تحديث Quality Score، تحصيل الاشتراكات)
-بتحصل عبر **Cloudflare Worker منفصل** في `cron-worker/` — لأن Cloudflare
-Pages Functions مالهاش دعم Scheduled Functions، فاتعمل Worker صغير بيتنشر
-لوحده وله Cron Trigger، وبينادي `/api/ai-generate` و`/api/quality-score`
-و`/api/subscription` على نفس الموقع.
+| القديم (Netlify)                          | الجديد (Cloudflare)                          |
+|--------------------------------------------|-----------------------------------------------|
+| `netlify/functions/payment.js`             | `functions/api/payment.js`                    |
+| `netlify/functions/ai-generate.js`         | `functions/api/ai-generate.js`                |
+| `netlify/functions/sitemap-dynamic.js`     | `functions/api/sitemap-dynamic.js`             |
+| `netlify/functions/ai-daily-cron.js`       | `cron-worker/` (Worker منفصل بـ Cron Trigger)  |
+| `netlify.toml` (headers + redirects)       | `_headers` + `_redirects`                      |
+| `netlify.toml` (env vars)                  | Cloudflare Dashboard → Settings → Env Vars     |
+
+الفرونت إند (`js/payment-system.js`, `js/dashboard.js`, `index.html`) لسه بينادي
+`/.netlify/functions/...` — سيبتها زي ما هي عمدًا، وعملت `_redirects` تحوّلها
+تلقائيًا لـ `/api/...`. الموقع هيشتغل من غير ما تلمس أي سطر فرونت إند.
+
+⚠️ **ملاحظة عن الـ Cron**: Cloudflare Pages Functions مالهاش دعم Scheduled
+Functions زي Netlify. عشان كده اتعمل `cron-worker/` منفصل — Worker صغير بيتنشر
+لوحده وله Cron Trigger، وبينادي `/api/ai-generate` على نفس الموقع.
 
 ---
 
@@ -28,26 +38,27 @@ Pages Functions مالهاش دعم Scheduled Functions، فاتعمل Worker ص
 ```bash
 npm install -g wrangler
 wrangler login
-cd mall-v8
+cd mall-v6-final
 npx wrangler pages deploy . --project-name=mall-services
 ```
 
 ## 3. متغيرات البيئة (Environment Variables)
-Cloudflare Dashboard → مشروعك → **Settings** → **Environment Variables**.
-القايمة الكاملة مع الشرح في `.env.example` — أهمهم:
+Cloudflare Dashboard → مشروعك → **Settings** → **Environment Variables**، وضيف
+نفس المتغيرات اللي كانت في Netlify (شوف `.env.example`):
 
 ```
 FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, ...
-FIREBASE_SERVICE_ACCOUNT   ← الـ service account JSON كامل على سطر واحد
-GEMINI_API_KEY              ← لتوليد المقالات + مساعد كتابة الطلب بالـ AI
-UNSPLASH_ACCESS_KEY         ← اختياري، لصور المقالات
-FAWATERAK_API_KEY           ← بوابة الدفع الوحيدة في الموقع
-SITE_URL / ALLOWED_ORIGINS  ← دومين موقعك على Cloudflare (مثال: https://mall-services.pages.dev)
-ADMIN_SECRET                ← سر عشوائي قوي لحماية /api/ai-generate و /api/quality-score و /api/subscription
+GEMINI_API_KEY
+PAYMOB_API_KEY, PAYMOB_INTEGRATION_ID, PAYMOB_IFRAME_ID, PAYMOB_HMAC_SECRET
+FAWRY_MERCHANT_CODE, FAWRY_SECURITY_KEY
+STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE
+ALLOWED_ORIGINS   ← حط دومين الموقع بتاعك على Cloudflare (مثال: https://mall-services.pages.dev)
+ADMIN_SECRET      ← سر عشوائي قوي لحماية /api/ai-generate
 ```
 لازم تعمل **redeploy** بعد إضافة/تعديل المتغيرات عشان تتفعل.
 
-## 4. نشر الـ Cron Worker (الجدولة اليومية)
+## 4. نشر الـ Cron Worker (لتوليد المقالات اليومي)
 ```bash
 cd cron-worker
 npx wrangler login          # لو أول مرة
@@ -57,22 +68,25 @@ npx wrangler deploy
 عدّل `SITE_URL` جوه `wrangler.toml` ليبقى دومين موقعك الفعلي على Cloudflare
 قبل الـ deploy.
 
-## 5. لو ربطت دومين مخصص (custom domain) لاحقاً
-روابط الـ SEO (canonical, og:url, structured data) في `index.html` وصفحات
-`blog/*`, `about`, `contact`, `privacy`, `terms` وملفات الـ sitemap متظبطة
-حالياً على `mall-services.pages.dev`. لو غيّرت لدومين خاص، لازم تستبدلها
-بيه في نفس الأماكن دي عشان الـ SEO يبقى صح. قولّي الدومين الجديد وأنا أعمل
-find & replace شامل.
+## 5. حاجات لازم تحدّثها يدويًا بعد ما ياخد دومين نهائي
+فيه روابط `services-mall2.netlify.app` مكتوبة داخل:
+- `index.html` (canonical, og:url, structured data)
+- `sitemap.xml`, `sitemap-main.xml`, `blog-sitemap.xml`
+- صفحات `blog/*`, `about`, `contact`, `privacy`, `terms`
+
+دي روابط SEO/meta بس، مش هتكسر وظيفة الموقع، بس لازم تستبدلها بدومينك
+الجديد (custom domain لو ربطته، أو `xxx.pages.dev`) عشان الـ SEO يبقى صح.
+لو حابب أعمل find & replace شامل لما تديني الدومين النهائي، قولي وأنا أعملها.
 
 ## 6. اختبار سريع بعد النشر
 - `https://your-site.pages.dev/` — الصفحة الرئيسية
-- `https://your-site.pages.dev/api/payment` (POST `{"action":"checkKeys"}`) — لازم يرجع JSON فيه `fawaterak_configured`
+- `https://your-site.pages.dev/api/payment` (POST `{"action":"checkKeys"}`) — لازم يرجع JSON
 - `https://your-site.pages.dev/sitemap-live.xml` — لازم يرجع XML
 
 ## 7. Firebase Auth
-لو بتستخدم Google Sign-in، ضيف دومين Cloudflare (أو الدومين المخصص) في:
+لو بتستخدم Google Sign-in، ضيف دومين Cloudflare الجديد في:
 Firebase Console → Authentication → Settings → Authorized domains.
 
-## 8. لا تنسَ نشر قواعد الأمان
-Cloudflare Pages بيستضيف الموقع بس — مش بينشر `firestore.rules` أو
-`database.rules.json`. ده لازم يحصل يدوياً، منفصل تماماً. راجع `DEPLOY_RULES.md`.
+---
+النسخة الأصلية بتاعة Netlify (`netlify.toml`, `netlify/functions/`) موجودة
+محفوظة في `_legacy-netlify/` للرجوع ليها لو احتجت.

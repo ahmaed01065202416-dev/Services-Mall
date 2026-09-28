@@ -1,0 +1,22 @@
+{
+  "name": "mall-services-v3",
+  "version": "3.0.0",
+  "description": "Mall Services - Professional Services Marketplace Platform",
+  "private": true,
+  "scripts": {
+    "dev":   "npx live-server --port=3000 --open=/index.html",
+    "build:css": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify",
+    "build": "npm run build:css",
+    "watch:css": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --watch",
+    "deploy:rules": "npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project services-mall",
+    "deploy": "npm run build:css && npm run deploy:rules && npx wrangler pages deploy . --project-name=mall-services"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.90.0",
+    "tailwindcss": "^3.4.13"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
