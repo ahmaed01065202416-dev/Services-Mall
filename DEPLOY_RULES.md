@@ -1,7 +1,12 @@
-# نشر Firestore Rules — خطوات إلزامية
+# نشر Firestore + Realtime Database Rules — خطوات إلزامية
 
-ملف `firestore.rules` الموجود في المشروع **لازم تنشره يدوياً على Firebase**.
-Netlify بتستضيف الـ HTML/JS بس، مش بتنشر قواعد Firestore.
+ملفات `firestore.rules` و `database.rules.json` الموجودة في المشروع **لازم
+تتنشر يدوياً على Firebase**. Cloudflare Pages بتستضيف الـ HTML/JS ونداءات
+الـ API بس — مش بتنشر قواعد أمان Firebase، ده لازم يحصل من جهتك بشكل منفصل.
+
+⚠️ **مهم جداً**: لو عدّلت `firestore.rules` ومنشرتهاش، التعديلات دي (بما فيها
+إصلاح ثغرة تصعيد الصلاحيات في مجموعة `users`) **مش شغالة فعلياً** على
+الموقع الحي، حتى لو الكود نفسه اتحدّث.
 
 ---
 
@@ -17,19 +22,25 @@ firebase login
 # روح على مجلد المشروع
 cd mall-v8
 
-# نشر القواعد فقط (بدون ما تغير أي حاجة تانية)
-firebase deploy --only firestore:rules
+# نشر قواعد Firestore + Realtime Database معاً
+firebase deploy --only firestore:rules,database
 ```
 
 ---
 
 ## الطريقة الثانية: Firebase Console (بدون CLI)
 
+**Firestore:**
 1. افتح [console.firebase.google.com](https://console.firebase.google.com)
-2. اختار مشروعك `services-mall`
+2. اختار مشروعك
 3. من القائمة الجانبية: **Firestore Database → Rules**
 4. انسخ محتوى ملف `firestore.rules` بالكامل والصقه
 5. اضغط **Publish**
+
+**Realtime Database (نظام الشات):**
+1. من القائمة الجانبية: **Realtime Database → Rules**
+2. انسخ محتوى ملف `database.rules.json` والصقه
+3. اضغط **Publish**
 
 ---
 
@@ -37,5 +48,8 @@ firebase deploy --only firestore:rules
 
 بعد النشر، جرب:
 - حذف خدمة من لوحة البائع ✓
-- الدفع بالمحفظة ✓
+- الدفع عبر فواتيرك (الطريقة الوحيدة المتاحة) ✓
 - تأكيد استلام طلب (escrow release) ✓
+- **حاول من حساب مشتري عادي (مش أدمن) تفتح Console وتنفّذ:**
+  `db.collection('users').doc(myUid).update({role:'admin'})` — **لازم يترفض**
+  برسالة `Missing or insufficient permissions`. لو نجحت، القواعد لسه القديمة.

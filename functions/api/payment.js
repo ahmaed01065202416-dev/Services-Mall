@@ -1,14 +1,23 @@
 /**
  * ============================================================================
  * functions/api/payment.js — Cloudflare Pages Function
- * Handles ALL payment gateways SERVER-SIDE (keys never exposed to frontend)
- * Supports: Paymob · Fawry · Mobile Wallets · Stripe · PayPal · Bank Transfer
+ * Handles payment SERVER-SIDE (keys never exposed to frontend)
+ * Gateway: Fawaterak ONLY (all other gateways removed per product decision).
+ * ============================================================================
+ * ⚠️  SECURITY MODEL:
+ *   The browser NEVER decides what an order costs and NEVER writes a "paid"
+ *   order to Firestore directly. It only sends WHICH services it wants to buy.
+ *   This server looks up the real price in Firestore, computes the real total,
+ *   and is the only thing allowed to create an order marked as paid — only
+ *   once Fawaterak's server-to-server webhook confirms the transaction
+ *   (see functions/api/fawaterak-webhook.js).
  * ============================================================================
  * ⚠️  ADD YOUR KEYS IN CLOUDFLARE DASHBOARD → Pages → Settings → Environment Variables
- * Route: /api/payment  (frontend calls /.netlify/functions/payment which is
- *        redirected here automatically via _redirects)
+ *   FAWATERAK_API_KEY, FAWATERAK_BASE_URL (optional)
+ * Route: /api/payment
  * ============================================================================
  */
+import { verifyIdToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js';
 
 // ── Web Crypto helpers (Node's `crypto`/`https` don't exist in Workers) ──────
 async function hmacHex(secret, message, hash = 'SHA-512') {
@@ -17,11 +26,11 @@ async function hmacHex(secret, message, hash = 'SHA-512') {
     const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
     return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
-async function sha256Hex(message) {
-    const enc = new TextEncoder();
-    const digest = await crypto.subtle.digest('SHA-256', enc.encode(message));
-    return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+function timingSafeEqual(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return diff === 0;
 }
 
 async function apiPost(url, bodyData, extraHeaders = {}) {
@@ -32,12 +41,6 @@ async function apiPost(url, bodyData, extraHeaders = {}) {
         ...extraHeaders,
     };
     const res = await fetch(url, { method: 'POST', headers, body: payload });
-    const text = await res.text();
-    try { return JSON.parse(text); } catch (_) { return { raw: text }; }
-}
-
-async function apiGet(url, headers = {}) {
-    const res = await fetch(url, { headers });
     const text = await res.text();
     try { return JSON.parse(text); } catch (_) { return { raw: text }; }
 }
@@ -60,6 +63,25 @@ function json(statusCode, headers, obj) {
     return new Response(JSON.stringify(obj), { status: statusCode, headers });
 }
 
+// ── Simple fixed-window rate limiter (1-minute buckets, stored in Firestore) ─
+async function _checkRateLimit(env, key, maxPerMinute) {
+    const bucket = Math.floor(Date.now() / 60000);
+    const docId = `${key}_${bucket}`;
+    try {
+        const existing = await fsGet(env, `rate_limits/${docId}`);
+        if (!existing) {
+            await fsCreate(env, 'rate_limits', { count: 1, createdAt: new Date() }, docId).catch(() => {});
+            return true;
+        }
+        if ((existing.count || 0) >= maxPerMinute) return false;
+        await fsCommit(env, [writeIncrement(env, `rate_limits/${docId}`, 'count', 1)]);
+        return true;
+    } catch (e) {
+        console.warn('[RateLimit] check failed, allowing request:', e.message);
+        return true; // fail open — don't block real payments over a rate-limit bug
+    }
+}
+
 // ── Main entry point (Cloudflare Pages Functions) ────────────────────────────
 export async function onRequest(context) {
     const { request, env } = context;
@@ -79,18 +101,40 @@ export async function onRequest(context) {
     const { action } = body;
     console.log(`[Payment] Action: ${action} | IP: ${ip}`);
 
+    // Actions that touch money/orders require a verified Firebase ID token.
+    const AUTH_REQUIRED = new Set(['fawaterakPay', 'kashierPay', 'releaseEscrow', 'requestWithdrawal', 'resolveDispute']);
+    let auth = null;
+    if (AUTH_REQUIRED.has(action)) {
+        const authHeader = request.headers.get('Authorization') || '';
+        const idToken = authHeader.replace(/^Bearer\s+/i, '');
+        auth = await verifyIdToken(idToken, env);
+        if (!auth) return json(401, CORS, { error: 'يجب تسجيل الدخول لإتمام الدفع' });
+        if (!auth.emailVerified) {
+            return json(403, CORS, { error: 'لازم تفعّل بريدك الإلكتروني الأول — تحقق من صندوق الوارد بتاعك', code: 'EMAIL_NOT_VERIFIED' });
+        }
+
+        const overIp = !(await _checkRateLimit(env, `ip_${ip.replace(/[:.]/g, '_')}`, 20));
+        const overUser = !(await _checkRateLimit(env, `uid_${auth.uid}`, 20));
+        if (overIp || overUser) {
+            return json(429, CORS, { error: 'محاولات كتير في وقت قصير — استنى دقيقة وحاول تاني' });
+        }
+    }
+
     try {
         switch (action) {
-            case 'getPaymentKey':  return await handlePaymobCard(body, env, CORS);
-            case 'fawryCharge':    return await handleFawry(body, env, CORS);
-            case 'mobileWallet':   return await handleMobileWallet(body, env, CORS);
-            case 'stripeSession':  return await handleStripe(body, env, CORS);
-            case 'paypalOrder':    return await handlePayPal(body, env, CORS);
-            case 'walletDeduct':   return await handleWalletDeduct(body, env, CORS);
-            case 'bankDetails':    return handleBankDetails(env, CORS);
-            case 'verifyPayment':  return await handleVerifyPayment(body, env, CORS);
-            case 'paymobCallback': return await handlePaymobCallback(body, env, CORS);
-            case 'checkKeys':      return handleCheckKeys(env, CORS);
+            case 'fawaterakPay':   return await handleFawaterak(body, env, CORS, auth);
+            case 'kashierPay':     return await handleKashier(body, env, CORS, auth);
+            case 'releaseEscrow':  return await handleReleaseEscrow(body, env, CORS, auth);
+            case 'resolveDispute': return await handleResolveDispute(body, env, CORS, auth);
+            case 'requestWithdrawal': return await handleRequestWithdrawal(body, env, CORS, auth);
+            case 'checkKeys':      return await handleCheckKeys(env, CORS);
+            case 'autoFlagStaleDeliveries': {
+                // Cron-only (mirrors subscription.js chargeDue) — not in AUTH_REQUIRED
+                // because cron has no Firebase user, just the admin secret.
+                const adminToken = request.headers.get('X-Admin-Token');
+                if (!env.ADMIN_SECRET || adminToken !== env.ADMIN_SECRET) return json(401, CORS, { error: 'Unauthorized' });
+                return await handleAutoFlagStaleDeliveries(env, CORS);
+            }
             default:
                 return json(400, CORS, { error: `Unknown action: ${action}` });
         }
@@ -100,248 +144,719 @@ export async function onRequest(context) {
     }
 }
 
-// ── Paymob Card Payment ───────────────────────────────────────────────────────
-async function handlePaymobCard(body, env, CORS) {
-    const { amount, orderId, customerData = {}, currency = 'EGP' } = body;
-    if (!amount || amount <= 0) throw new Error('Invalid amount');
-
-    if (!env.PAYMOB_API_KEY) {
-        return json(200, CORS, {
-            iframeUrl: `https://accept.paymob.com/api/acceptance/iframes/DEMO?payment_token=DEMO_TOKEN`,
-            simulated: true,
-            message: 'Add PAYMOB_API_KEY to enable real payments',
+// ── Price resolution: NEVER trust an amount coming from the browser. ─────────
+async function resolveOrderItems(items, env) {
+    if (!Array.isArray(items) || items.length === 0) throw new Error('لا يوجد عناصر للدفع');
+    const resolved = [];
+    let subtotal = 0;
+    for (const it of items) {
+        if (!it || !it.serviceId) throw new Error('عنصر غير صالح في السلة');
+        const svc = await fsGet(env, `services/${it.serviceId}`);
+        if (!svc) throw new Error(`الخدمة غير موجودة: ${it.serviceId}`);
+        const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
+        const price = Number(svc.price) || 0;
+        subtotal = Number((subtotal + price * qty).toFixed(2));
+        resolved.push({
+            serviceId: it.serviceId,
+            title: svc.title || '',
+            image: (svc.images && svc.images[0]) || svc.image || '',
+            price, quantity: qty,
+            deliveryDays: svc.deliveryDays || 3,
+            sellerId: svc.sellerId || '',
+            sellerName: svc.sellerName || '',
         });
     }
+    const cfg = await getPlatformConfig(env);
+    const fees = calcFee(subtotal, cfg);
+    const total = Number((subtotal + fees).toFixed(2));
+    if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
+    return { resolved, subtotal, fees, total };
+}
 
-    const authResp = await apiPost('https://accept.paymob.com/api/auth/tokens', { api_key: env.PAYMOB_API_KEY });
-    const authToken = authResp.token;
-    if (!authToken) throw new Error('Paymob auth failed');
+// ── Pay for an EXISTING order (custom request flow) ──────────────────────────
+async function resolveExistingOrder(orderId, auth, env) {
+    const order = await fsGet(env, `orders/${orderId}`);
+    if (!order) throw new Error('الطلب غير موجود');
+    if (order.buyerId !== auth.uid) throw new Error('غير مصرح لك بدفع هذا الطلب');
+    if (order.status !== 'accepted') throw new Error('لسه البائع مايوافقش على الطلب ده');
+    if (order.paymentStatus && order.paymentStatus !== 'no_payment') throw new Error('تم دفع هذا الطلب بالفعل');
 
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    const orderResp = await apiPost('https://accept.paymob.com/api/ecommerce/orders', {
-        auth_token: authToken, delivery_needed: false,
-        amount_cents: amountCents, currency, merchant_order_id: orderId, items: [],
-    });
-    const paymobOrderId = orderResp.id;
+    const svc = await fsGet(env, `services/${order.serviceId}`);
+    if (!svc) throw new Error('الخدمة غير موجودة');
+    const price = Number(svc.price) || 0;
+    const cfg = await getPlatformConfig(env);
+    const fees = calcFee(price, cfg);
+    const total = Number((price + fees).toFixed(2));
+    if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
 
-    const keyResp = await apiPost('https://accept.paymob.com/api/acceptance/payment_keys', {
-        auth_token: authToken, amount_cents: amountCents, expiration: 3600,
-        order_id: paymobOrderId, currency, integration_id: parseInt(env.PAYMOB_INTEGRATION_ID),
-        billing_data: {
-            first_name: customerData.first_name || 'N', last_name: customerData.last_name || 'A',
-            email: customerData.email || 'na@na.com', phone_number: customerData.phone || '+201000000000',
-            apartment: 'NA', floor: 'NA', street: 'NA', building: 'NA',
-            shipping_method: 'NA', postal_code: 'NA', city: 'Cairo', country: 'EG', state: 'Cairo',
+    // ⚠️ SECURITY FIX (audit finding — critical): this used to trust
+    // `order.sellerId` (a field written by the BUYER's own client when the
+    // order document was first created — firestore.rules' orders `create`
+    // rule never cross-checks sellerId against the service doc). A buyer
+    // could hand-craft an order write with `serviceId` pointing at a real,
+    // expensive service but `sellerId` set to an account THEY control, then
+    // pay through this endpoint — the escrow (and the eventual payout) would
+    // go to the attacker's wallet instead of the real service owner's,
+    // because svc.sellerId was never consulted here (resolveOrderItems(),
+    // used by the cart/items checkout path, already did this correctly —
+    // only this "existing order" / custom-request path had the gap).
+    // Now sellerId always comes from the service document itself, which is
+    // the one thing on this path a buyer can never write to (see
+    // firestore.rules match /services — only the seller who owns it, or an
+    // admin, can ever change sellerId, and in practice sellerId is never
+    // even in the update rule's editable-fields allow-list, so it's
+    // permanently fixed at creation). If the order's own sellerId disagrees
+    // with the service's real owner, something is already wrong (tampering,
+    // or the service changed hands) — the safe move is to refuse the
+    // payment outright rather than silently paying whoever the order
+    // happened to name.
+    if (order.sellerId && order.sellerId !== svc.sellerId) {
+        throw new Error('تعارض في بيانات الطلب — تواصل مع الدعم الفني');
+    }
+
+    return {
+        mode: 'existing_order', orderId,
+        item: {
+            serviceId: order.serviceId, title: svc.title || order.serviceTitle || '',
+            image: (svc.images && svc.images[0]) || svc.image || order.image || '',
+            price, deliveryDays: svc.deliveryDays || order.deliveryDays || 3,
+            sellerId: svc.sellerId || '', sellerName: svc.sellerName || order.sellerName || '',
         },
-    });
-
-    const paymentToken = keyResp.token;
-    if (!paymentToken) throw new Error('Failed to get Paymob payment token');
-
-    const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`;
-    return json(200, CORS, { iframeUrl, orderId: paymobOrderId, simulated: false });
-}
-
-// ── Paymob HMAC Callback Verification ────────────────────────────────────────
-async function handlePaymobCallback(body, env, CORS) {
-    const { hmac, data } = body;
-    if (!env.PAYMOB_HMAC_SECRET) {
-        return json(200, CORS, { verified: true, simulated: true });
-    }
-
-    const fields = [
-        data.amount_cents, data.created_at, data.currency,
-        data.error_occured, data.has_parent_transaction, data.id,
-        data.integration_id, data.is_3d_secure, data.is_auth,
-        data.is_capture, data.is_refunded, data.is_standalone_payment,
-        data.is_voided, data.order?.id, data.owner, data.pending,
-        data.source_data?.pan, data.source_data?.sub_type, data.source_data?.type,
-        data.success,
-    ].join('');
-
-    const computed = await hmacHex(env.PAYMOB_HMAC_SECRET, fields, 'SHA-512');
-    const verified = computed === hmac;
-    return json(200, CORS, { verified, success: data.success === true || data.success === 'true' });
-}
-
-// ── Fawry ─────────────────────────────────────────────────────────────────────
-async function handleFawry(body, env, CORS) {
-    const { amount, orderId, email = '' } = body;
-
-    if (!env.FAWRY_MERCHANT_CODE) {
-        const fakeCode = Math.floor(100000000 + Math.random() * 900000000).toString();
-        return json(200, CORS, { referenceNumber: fakeCode, simulated: true,
-            message: 'Add FAWRY_MERCHANT_CODE to enable real Fawry payments' });
-    }
-
-    const amountStr = parseFloat(amount).toFixed(2);
-    const signatureStr = env.FAWRY_MERCHANT_CODE + orderId + email + amountStr + 'EGP' + env.FAWRY_SECURITY_KEY;
-    const signature = await sha256Hex(signatureStr);
-
-    const payload = {
-        merchantCode: env.FAWRY_MERCHANT_CODE, merchantRefNum: orderId,
-        customerMobile: '01000000000', customerEmail: email,
-        paymentExpiry: Math.floor(Date.now() / 1000) + (72 * 3600),
-        currencyCode: 'EGP', amount: amountStr,
-        chargeItems: [{ itemId: orderId, description: 'Mall Services', price: amountStr, quantity: 1 }],
-        signature,
+        subtotal: price, fees, total,
     };
-
-    const resp = await apiPost('https://www.atfawry.com/ECommerceWeb/api/payments/charge', payload);
-    const code = resp.referenceNumber || resp.referenceNum;
-    if (!code) throw new Error(resp.statusDescription || 'Fawry charge failed');
-
-    return json(200, CORS, { referenceNumber: code, simulated: false });
 }
 
-// ── Mobile Wallet (Vodafone/Etisalat/Orange/WE) ───────────────────────────────
-async function handleMobileWallet(body, env, CORS) {
-    const { method, amount, orderId, phone } = body;
+async function resolvePaymentTarget(body, env, auth) {
+    if (body.existingOrderId) return await resolveExistingOrder(body.existingOrderId, auth, env);
+    const { resolved, subtotal, fees, total } = await resolveOrderItems(body.items, env);
+    return { mode: 'items', resolved, subtotal, fees, total };
+}
 
-    if (!env.PAYMOB_API_KEY) {
-        return json(200, CORS, { pending: true, simulated: true,
-            message: `${method} payment request sent to ${phone} (simulated)` });
+function buildPendingPaymentDoc(target, auth, currency, method) {
+    const base = { uid: auth.uid, currency, status: 'pending', method, createdAt: new Date(), mode: target.mode };
+    if (target.mode === 'existing_order') {
+        return Object.assign(base, { orderId: target.orderId, item: target.item, subtotal: target.subtotal, fees: target.fees, total: target.total });
     }
-
-    const walletIntegIds = {
-        vodafone_cash: env.PAYMOB_WALLET_INTEG_ID || env.PAYMOB_INTEGRATION_ID,
-        etisalat_cash: env.PAYMOB_ETISALAT_INTEG_ID || env.PAYMOB_INTEGRATION_ID,
-        orange_cash: env.PAYMOB_ORANGE_INTEG_ID || env.PAYMOB_INTEGRATION_ID,
-        we_pay: env.PAYMOB_WE_INTEG_ID || env.PAYMOB_INTEGRATION_ID,
-    };
-    const integId = walletIntegIds[method] || env.PAYMOB_INTEGRATION_ID;
-
-    const authResp = await apiPost('https://accept.paymob.com/api/auth/tokens', { api_key: env.PAYMOB_API_KEY });
-    const authToken = authResp.token;
-
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    const orderResp = await apiPost('https://accept.paymob.com/api/ecommerce/orders', {
-        auth_token: authToken, delivery_needed: false,
-        amount_cents: amountCents, currency: 'EGP', merchant_order_id: orderId, items: [],
-    });
-
-    const keyResp = await apiPost('https://accept.paymob.com/api/acceptance/payment_keys', {
-        auth_token: authToken, amount_cents: amountCents, expiration: 3600,
-        order_id: orderResp.id, currency: 'EGP', integration_id: parseInt(integId),
-        billing_data: { first_name: 'N', last_name: 'A', email: 'na@na.com', phone_number: phone || '+201000000000',
-            apartment: 'NA', floor: 'NA', street: 'NA', building: 'NA', shipping_method: 'NA', postal_code: 'NA', city: 'Cairo', country: 'EG', state: 'Cairo' },
-    });
-
-    const walletResp = await apiPost('https://accept.paymob.com/api/acceptance/payments/pay', {
-        source: { identifier: phone, subtype: 'WALLET' },
-        payment_token: keyResp.token,
-    });
-
-    const redirectUrl = walletResp.redirect_url;
-    if (redirectUrl) return json(200, CORS, { redirectUrl, simulated: false });
-    return json(200, CORS, { pending: true, simulated: false });
+    return Object.assign(base, { items: target.resolved, subtotal: target.subtotal, fees: target.fees, total: target.total });
 }
 
-// ── Stripe ────────────────────────────────────────────────────────────────────
-async function handleStripe(body, env, CORS) {
-    const { amount, orderId, email = '' } = body;
+async function getPlatformConfig(env) {
+    const doc = await fsGet(env, 'settings/platform').catch(() => null);
+    return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0, TIERS_ENABLED: false, TIERS: [] }, doc || {});
+}
+// ⚠️ FIXED (found in audit): the client's calcPlatformFee() (js/constants.js)
+// has supported commission Tiers for a while — but this server function,
+// which computes the REAL amount that gets charged and recorded, silently
+// ignored TIERS_ENABLED/TIERS and always used the flat FEE_PERCENT/FEE_FIXED.
+// Turning tiers on in the admin panel changed the price shown to the buyer
+// on the checkout preview but not what they were actually charged — a real
+// quote-vs-charge mismatch. Now mirrors the client's tier logic exactly.
+function calcFee(amount, cfg) {
+    if (cfg.TIERS_ENABLED && Array.isArray(cfg.TIERS) && cfg.TIERS.length) {
+        const tier = cfg.TIERS.find(t => amount >= (t.minAmount || 0) && amount <= (t.maxAmount != null ? t.maxAmount : Infinity));
+        if (tier) {
+            const pct   = (tier.feePercent || 0) * amount / 100;
+            const fixed = tier.feeFixed || 0;
+            return Number((pct + fixed).toFixed(2));
+        }
+    }
+    let fee;
+    if (cfg.FEE_TYPE === 'fixed') fee = cfg.FEE_FIXED || 0;
+    else if (cfg.FEE_TYPE === 'both') fee = (cfg.FEE_PERCENT || 0) * amount / 100 + (cfg.FEE_FIXED || 0);
+    else fee = (cfg.FEE_PERCENT || 0) * amount / 100;
+    if (cfg.FEE_MIN) fee = Math.max(fee, cfg.FEE_MIN);
+    if (cfg.FEE_MAX && cfg.FEE_MAX > 0) fee = Math.min(fee, cfg.FEE_MAX);
+    return Number(fee.toFixed(2));
+}
 
-    if (!env.STRIPE_SECRET_KEY) {
-        return json(200, CORS, {
-            url: `${env.ALLOWED_ORIGINS}#orders?payment_success=true&order_id=${orderId}&method=stripe`,
-            simulated: true, message: 'Add STRIPE_SECRET_KEY to enable real Stripe payments',
+function genOrderId() {
+    return 'MS_' + Date.now().toString(36).toUpperCase() + '_' + crypto.randomUUID().slice(0, 8).toUpperCase();
+}
+
+// Once a real payment is confirmed (webhook), this is the ONLY place that
+// creates the actual paid `orders` documents. Idempotent.
+async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
+    const pending = await fsGet(env, `pending_payments/${pendingId}`);
+    if (!pending) return { ok: false, reason: 'not_found' };
+    if (pending.status === 'processed') return { ok: true, alreadyProcessed: true, orderIds: pending.orderIds || [] };
+
+    if (pending.mode === 'existing_order') {
+        const orderId = pending.orderId;
+        const item = pending.item;
+
+        // ⚠️ ADDED: products (listingType: 'product') are ready-made digital
+        // items — no seller approval or manual delivery step. As soon as
+        // payment clears, auto-attach the seller's digital delivery content
+        // and mark the order 'delivered' immediately (instead of leaving it
+        // at 'payment_held' waiting for the seller to do something). This
+        // still goes through the exact same confirm-receipt / 7-day
+        // auto-dispute safety net as a normal delivery — only the "seller
+        // manually delivers" step is skipped, not the buyer-protection path.
+        let productDelivery = null;
+        let stockLimitedSvc = null;
+        try {
+            const svc = await fsGet(env, `services/${item.serviceId}`);
+            if (svc && svc.listingType === 'product' && svc.digitalDelivery) {
+                productDelivery = svc.digitalDelivery;
+                if (svc.stockLimit != null) stockLimitedSvc = svc;
+            }
+        } catch (_) { /* if this lookup fails, fall back to the normal service flow below */ }
+
+        const orderUpdate = productDelivery
+            ? {
+                status: 'delivered', paymentMethod: method, paymentId: String(paymentId),
+                merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
+                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
+                listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
+                digitalDelivery: productDelivery,
+            }
+            : {
+                status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
+                merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
+                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
+            };
+        await fsSet(env, `orders/${orderId}`, orderUpdate, true);
+
+        await fsCreate(env, 'escrow', {
+            orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
+            status: 'held', paymentId: String(paymentId), method, currency: pending.currency,
+            createdAt: new Date(),
+        }, orderId);
+
+        // ⚠️ ADDED: decrement stock for a stock-limited product. Best-effort,
+        // not a transaction — under a genuine race between two simultaneous
+        // last-unit buyers the count could briefly go negative by one; given
+        // the low concurrency expected here, that tradeoff is accepted rather
+        // than adding transaction complexity for it. Auto-deactivates the
+        // listing once stock hits zero so it stops appearing as purchasable.
+        if (stockLimitedSvc) {
+            const newStock = Math.max(0, (stockLimitedSvc.stockLimit || 0) - 1);
+            const stockUpdate = { stockLimit: newStock };
+            if (newStock === 0) stockUpdate.active = false;
+            await fsSet(env, `services/${item.serviceId}`, stockUpdate, true);
+        }
+
+        if (item.sellerId) {
+            await fsCreate(env, 'notifications', {
+                userId: item.sellerId, type: 'payment_confirmed', title: '💰 تم الدفع!',
+                message: productDelivery ? `تم بيع منتج تلقائيًا: ${item.title}` : `المشتري دفع طلب: ${item.title}`,
+                orderId, read: false, createdAt: new Date(),
+            });
+        }
+        await fsCreate(env, 'notifications', {
+            userId: pending.uid, type: productDelivery ? 'product_delivered' : 'payment_confirmed',
+            title: productDelivery ? '📦 منتجك جاهز!' : '✅ تم الدفع',
+            message: productDelivery ? `منتجك "${item.title}" جاهز للتحميل الآن` : `تم دفع طلب: ${item.title}`,
+            orderId, read: false, createdAt: new Date(),
         });
+
+        await fsSet(env, `pending_payments/${pendingId}`, { status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds: [orderId] }, true);
+        return { ok: true, orderIds: [orderId] };
     }
 
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    const successUrl = `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=stripe#orders`;
-    const cancelUrl = `${env.ALLOWED_ORIGINS}#payment`;
+    const orderIds = [];
+    for (const item of pending.items) {
+        const orderId = crypto.randomUUID();
 
-    const params = new URLSearchParams({
-        'payment_method_types[]': 'card',
-        'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]': 'Mall Services Purchase',
-        'line_items[0][price_data][unit_amount]': String(amountCents),
-        'line_items[0][quantity]': '1',
-        'mode': 'payment',
-        'success_url': successUrl,
-        'cancel_url': cancelUrl,
-        'customer_email': email,
-        'metadata[orderId]': orderId,
-    }).toString();
+        // ⚠️ ADDED: cart checkout used to always create orders at
+        // 'payment_held' and wait for the seller to manually deliver — but a
+        // cart item can be a listingType:'product' just as easily as the
+        // single-item "buy now" flow (resolveOrderItems doesn't distinguish).
+        // Without this, a product bought through the cart would NOT
+        // auto-deliver, unlike the exact same product bought via "buy now" —
+        // an inconsistency, not a deliberate difference. Mirrors the
+        // existing_order branch above exactly.
+        let productDelivery = null;
+        let stockLimitedSvc = null;
+        try {
+            const svc = await fsGet(env, `services/${item.serviceId}`);
+            if (svc && svc.listingType === 'product' && svc.digitalDelivery) {
+                productDelivery = svc.digitalDelivery;
+                if (svc.stockLimit != null) stockLimitedSvc = svc;
+            }
+        } catch (_) { /* fall back to the normal service flow below */ }
 
-    const resp = await apiPost('https://api.stripe.com/v1/checkout/sessions', params, {
-        'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-    });
+        await fsCreate(env, 'orders', {
+            serviceId: item.serviceId, serviceTitle: item.title, image: item.image,
+            price: item.price, deliveryDays: item.deliveryDays,
+            buyerId: pending.uid, sellerId: item.sellerId, sellerName: item.sellerName,
+            status: productDelivery ? 'delivered' : 'payment_held',
+            paymentMethod: method, paymentId: String(paymentId),
+            merchantOrderId: pendingId,
+            currency: pending.currency, escrowHeld: true, escrowAmount: item.price,
+            chatEnabled: true, filesEnabled: true, buyerFiles: [],
+            deliveryDeadline: new Date(Date.now() + (item.deliveryDays || 3) * 86400000).toISOString(),
+            createdAt: new Date(), updatedAt: new Date(),
+            ...(productDelivery ? {
+                listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
+                digitalDelivery: productDelivery,
+            } : {}),
+        }, orderId);
 
-    if (!resp.url) throw new Error(resp.error?.message || 'Stripe session creation failed');
-    return json(200, CORS, { url: resp.url, simulated: false });
+        await fsCreate(env, 'escrow', {
+            orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
+            status: 'held', paymentId: String(paymentId), method, currency: pending.currency,
+            createdAt: new Date(),
+        }, orderId);
+
+        if (stockLimitedSvc) {
+            const newStock = Math.max(0, (stockLimitedSvc.stockLimit || 0) - 1);
+            const stockUpdate = { stockLimit: newStock };
+            if (newStock === 0) stockUpdate.active = false;
+            await fsSet(env, `services/${item.serviceId}`, stockUpdate, true);
+        }
+
+        if (item.sellerId) {
+            await fsCreate(env, 'notifications', {
+                userId: item.sellerId, type: 'new_order',
+                title: productDelivery ? '💰 تم بيع منتج!' : '🛒 طلب جديد!',
+                message: productDelivery ? `تم بيع منتج تلقائيًا: ${item.title}` : `طلب خدمة: ${item.title}`,
+                orderId, serviceId: item.serviceId,
+                read: false, createdAt: new Date(),
+            });
+        }
+        if (productDelivery) {
+            await fsCreate(env, 'notifications', {
+                userId: pending.uid, type: 'product_delivered', title: '📦 منتجك جاهز!',
+                message: `منتجك "${item.title}" جاهز للتحميل الآن`,
+                orderId, read: false, createdAt: new Date(),
+            });
+        }
+        orderIds.push(orderId);
+    }
+
+    await fsSet(env, `pending_payments/${pendingId}`, {
+        status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds,
+    }, true);
+
+    return { ok: true, orderIds };
 }
 
-// ── PayPal ────────────────────────────────────────────────────────────────────
-async function handlePayPal(body, env, CORS) {
-    const { amount, orderId, currency = 'USD' } = body;
+// ── Fawaterak (the ONLY payment gateway) ──────────────────────────────────────
+// Price is validated server-side (resolvePaymentTarget). Order is only ever
+// marked "paid" once functions/api/fawaterak-webhook.js verifies the payment
+// signature server-to-server — see that file for the HMAC check.
+async function handleFawaterak(body, env, CORS, auth) {
+    const { customerData = {} } = body;
+    const target = await resolvePaymentTarget(body, env, auth);
+    const { total } = target;
+    const orderId = genOrderId();
+    await fsCreate(env, 'pending_payments', buildPendingPaymentDoc(target, auth, 'EGP', 'fawaterak'), orderId);
 
-    if (!env.PAYPAL_CLIENT_ID) {
-        return json(200, CORS, {
-            approvalUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=paypal#orders`,
-            simulated: true, message: 'Add PAYPAL_CLIENT_ID to enable real PayPal payments',
-        });
+    if (!env.FAWATERAK_API_KEY) {
+        // ⚠️ CRITICAL SAFETY GATE (found in audit): this used to fall into
+        // "demo mode" — marking the order paid and releasing it — on the sole
+        // condition that FAWATERAK_API_KEY was unset, with NO way to tell an
+        // intentional local test apart from a production deploy that simply
+        // forgot to set the env var. A missing key in production would have
+        // silently made every purchase on the site free while still creating
+        // real paid orders. Demo mode now also requires an explicit
+        // ALLOW_SIMULATED_PAYMENTS=true env var — so it stays available for
+        // local/staging testing but a bare missing key in production fails
+        // loudly instead of quietly giving away the store.
+        if (env.ALLOW_SIMULATED_PAYMENTS !== 'true') {
+            throw new Error('Payment gateway is not configured (FAWATERAK_API_KEY missing). Refusing to simulate a real charge.');
+        }
+        const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'fawaterak' });
+        return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`, simulated: true, orderId, orderIds: result.orderIds });
     }
 
-    const host = env.PAYPAL_MODE === 'live' ? 'api-m.paypal.com' : 'api-m.sandbox.paypal.com';
-    const credentials = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
-
-    const tokenResp = await apiPost(`https://${host}/v1/oauth2/token`, 'grant_type=client_credentials',
-        { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' });
-    const accessToken = tokenResp.access_token;
-
-    const orderResp = await apiPost(`https://${host}/v2/checkout/orders`, {
-        intent: 'CAPTURE',
-        purchase_units: [{ reference_id: orderId, amount: { currency_code: currency, value: parseFloat(amount).toFixed(2) } }],
-        application_context: {
-            return_url: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=paypal#orders`,
-            cancel_url: `${env.ALLOWED_ORIGINS}#payment`,
+    const base = env.FAWATERAK_BASE_URL || 'https://app.fawaterk.com';
+    const nameParts = String(customerData.name || 'Buyer N/A').trim().split(' ');
+    const resp = await apiPost(`${base}/api/v2/createInvoiceLink`, {
+        cartTotal: total, currency: 'EGP',
+        customer: {
+            first_name: nameParts[0] || 'Buyer', last_name: nameParts.slice(1).join(' ') || 'N/A',
+            email: customerData.email || '', phone: customerData.phone || '',
         },
-    }, { 'Authorization': `Bearer ${accessToken}` });
+        cartItems: [{ name: 'Mall Services Order', price: total, quantity: 1 }],
+        payLoad: { orderId },
+        redirectionUrls: {
+            successUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`,
+            failUrl:    `${env.ALLOWED_ORIGINS}?payment_success=false&order_id=${orderId}&method=fawaterak#payment`,
+            pendingUrl: `${env.ALLOWED_ORIGINS}?payment_success=pending&order_id=${orderId}&method=fawaterak#orders`,
+            webhookUrl: `${env.SITE_URL || env.ALLOWED_ORIGINS}/api/fawaterak-webhook`,
+        },
+        sendEmail: false, sendSMS: false,
+    }, { 'Authorization': `Bearer ${env.FAWATERAK_API_KEY}` });
 
-    const approvalLink = orderResp.links?.find(l => l.rel === 'approve');
-    if (!approvalLink) throw new Error('PayPal order creation failed');
+    if (resp.status !== 'success' || !resp.data?.url) {
+        throw new Error(resp.message || 'Fawaterak invoice creation failed');
+    }
 
-    return json(200, CORS, { approvalUrl: approvalLink.href, simulated: false });
+    return json(200, CORS, { redirectUrl: resp.data.url, orderId, invoiceKey: resp.data.invoiceKey, simulated: false });
 }
 
-// ── Wallet Deduct (server-side validation) ────────────────────────────────────
-async function handleWalletDeduct(body, env, CORS) {
-    const { amount, orderId } = body;
-    return json(200, CORS, { success: true, deducted: amount, orderId });
+// ── Kashier — ⚠️ SCAFFOLD, NOT VERIFIED ──────────────────────────────────────
+// This mirrors handleFawaterak's structure (same resolvePaymentTarget /
+// pending_payments / finalizePendingPayment pipeline) so wiring it in is a
+// small diff once it's real. The endpoint path, request body shape, and
+// response field names below are placeholders — I don't have access to
+// Kashier's real API reference (it's behind a merchant login), so guessing
+// exact values here would risk the same silent-failure bug we found and
+// fixed in ai-generate.js earlier. Before enabling KASHIER_API_KEY:
+//   1. Log into the Kashier merchant dashboard → Developer/API docs.
+//   2. Replace `base`, the request path, and the request body fields below
+//      with what their "create payment"/hosted-checkout docs actually show.
+//   3. Confirm the response field that holds the redirect/checkout URL.
+//   4. Do the same for functions/api/kashier-webhook.js (signature method +
+//      field names — do NOT assume HMAC-SHA256 or any field name below).
+// Until then this throws instead of silently no-oping, so a half-wired
+// integration fails loudly in testing rather than looking done.
+async function handleKashier(body, env, CORS, auth) {
+    const { customerData = {}, currency = 'EGP' } = body;
+    const target = await resolvePaymentTarget(body, env, auth);
+    const { total } = target;
+    const orderId = genOrderId();
+    await fsCreate(env, 'pending_payments', buildPendingPaymentDoc(target, auth, currency, 'kashier'), orderId);
+
+    if (!env.KASHIER_API_KEY) {
+        // See the matching gate in handleFawaterak() above — same reasoning.
+        if (env.ALLOW_SIMULATED_PAYMENTS !== 'true') {
+            throw new Error('Payment gateway is not configured (KASHIER_API_KEY missing). Refusing to simulate a real charge.');
+        }
+        const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'kashier' });
+        return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`, simulated: true, orderId, orderIds: result.orderIds });
+    }
+
+    throw new Error(
+        'Kashier integration is a scaffold — fill in the real endpoint/body/response ' +
+        'fields in handleKashier() (functions/api/payment.js) from your Kashier ' +
+        'merchant dashboard docs before enabling KASHIER_API_KEY.'
+    );
+
+    // Once real, this will look roughly like:
+    // const base = env.KASHIER_BASE_URL || 'https://TODO-confirm-real-host';
+    // const resp = await apiPost(`${base}/TODO-real-path`, {
+    //     amount: total, currency,
+    //     customer: { name: customerData.name || '', email: customerData.email || '', phone: customerData.phone || '' },
+    //     merchantOrderId: orderId,
+    //     redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`,
+    //     webhookUrl: `${env.SITE_URL || env.ALLOWED_ORIGINS}/api/kashier-webhook`,
+    // }, { 'Authorization': `Bearer ${env.KASHIER_API_KEY}` });
+    // return json(200, CORS, { redirectUrl: resp.TODO_real_url_field, orderId, simulated: false });
 }
 
-// ── Bank Transfer Details ─────────────────────────────────────────────────────
-function handleBankDetails(env, CORS) {
-    return json(200, CORS, {
-        bankName: env.BANK_NAME || 'CIB',
-        accountNo: env.BANK_ACCOUNT || '100XXX-XXXXXX',
-        iban: env.BANK_IBAN || 'EG380019XXXX',
-        accountName: env.BANK_ACCOUNT_NAME || 'Mall Services Ltd.',
+// ── Two-tier affiliate commission ─────────────────────────────────────────────
+// Pays the referrer a % of the PLATFORM'S OWN FEE (never an extra charge on
+// the buyer or seller) — capped at the referred user's first 5 sales/purchases,
+// and capped in total so both a referred-buyer + referred-seller payout on the
+// same order can never exceed the platform fee actually collected on it.
+// Off by default (settings/platform.AFFILIATE_ENABLED) until an admin sets it.
+async function _creditAffiliateCommission(env, cfg, platformFee, buyerId, sellerId, orderId) {
+    if (!cfg.AFFILIATE_ENABLED) return;
+    const pct = Number(cfg.AFFILIATE_COMMISSION_PERCENT) || 0;
+    if (pct <= 0 || platformFee <= 0) return;
+
+    let remainingFee = platformFee;
+    for (const referredUid of [buyerId, sellerId]) {
+        if (!referredUid || remainingFee <= 0) break;
+        const referredUser = await fsGet(env, `users/${referredUid}`).catch(() => null);
+        if (!referredUser || !referredUser.referredBy) continue;
+        if (referredUser.referredBy === referredUid) continue; // can't refer yourself
+
+        const priorCount = Number(referredUser.referralCommissionCount) || 0;
+        if (priorCount >= 5) continue; // cap: first 5 sales/purchases only
+
+        const referrerUid = referredUser.referredBy;
+        const referrer = await fsGet(env, `users/${referrerUid}`).catch(() => null);
+        if (!referrer) continue; // referrer account no longer exists — skip silently
+
+        const commission = Number(Math.min(remainingFee, platformFee * pct / 100).toFixed(2));
+        if (commission <= 0) continue;
+
+        await fsCommit(env, [
+            writeIncrement(env, `wallets/${referrerUid}`, 'balance', commission),
+            writeIncrement(env, `users/${referredUid}`, 'referralCommissionCount', 1),
+            writeCreate(env, `transactions/${crypto.randomUUID()}`, {
+                userId: referrerUid, type: 'affiliate_commission', amount: commission,
+                orderId, referredUserId: referredUid,
+                description: 'عمولة برنامج التسويق بالعمولة', status: 'completed', createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: referrerUid, type: 'affiliate_commission', title: '🎉 عمولة إحالة جديدة!',
+                message: `حصلت على ${commission} ج.م من عمولة إحالة`, orderId, read: false, createdAt: new Date(),
+            }),
+        ]).catch(err => console.error('[Affiliate] commission credit failed:', err.message));
+
+        remainingFee -= commission;
+    }
+}
+
+// ── Shared: pay the seller out of a held escrow ───────────────────────────────
+// Used by a buyer's manual "confirm receipt" (handleReleaseEscrow) and a
+// dispute resolved in the seller's favor (handleResolveDispute's pay_seller
+// branch) — one guarded path for every way money can leave escrow to a seller.
+// (The stale-delivery timeout, handleAutoFlagStaleDeliveries below, does NOT
+// use this — it opens a dispute instead of paying automatically.)
+async function _releaseEscrowToSeller(env, orderId, order, escrow, cfg, buildNotice) {
+    const platformFee = calcFee(escrow.amount, cfg);
+    const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
+    const { title, message, description } = buildNotice(sellerAmount);
+    const txId = crypto.randomUUID();
+
+    await fsCommit(env, [
+        writeIncrement(env, `wallets/${escrow.sellerId}`, 'balance', sellerAmount),
+        writeUpdate(env, `escrow/${orderId}`, { status: 'released', releasedAt: new Date() }, { updateTime: escrow._updateTime }),
+        writeUpdate(env, `orders/${orderId}`, { status: 'completed', completedAt: new Date(), escrowReleased: true, updatedAt: new Date() }),
+        writeCreate(env, `transactions/${txId}`, {
+            userId: escrow.sellerId, type: 'earning', amount: sellerAmount, platformFee, orderId,
+            description, status: 'completed', createdAt: new Date(),
+        }),
+        writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+            userId: escrow.sellerId, type: 'payment_received', title, message, orderId, read: false, createdAt: new Date(),
+        }),
+    ]);
+
+    await _creditAffiliateCommission(env, cfg, platformFee, order.buyerId, escrow.sellerId, orderId);
+    return { sellerAmount, platformFee };
+}
+
+async function handleReleaseEscrow(body, env, CORS, auth) {
+    const { orderId } = body;
+    if (!orderId) return json(400, CORS, { error: 'orderId مطلوب' });
+
+    const order = await fsGet(env, `orders/${orderId}`);
+    if (!order) return json(404, CORS, { error: 'الطلب غير موجود' });
+
+    const user = await fsGet(env, `users/${auth.uid}`);
+    const isAdmin = user && user.role === 'admin';
+    if (order.buyerId !== auth.uid && !isAdmin) return json(403, CORS, { error: 'غير مصرح لك بتأكيد استلام هذا الطلب' });
+
+    const escrow = await fsGet(env, `escrow/${orderId}`);
+    if (!escrow || escrow.status !== 'held') {
+        return json(409, CORS, { error: 'تم تحويل هذه الأموال بالفعل أو لا يوجد ضمان لهذا الطلب' });
+    }
+
+    const cfg = await getPlatformConfig(env);
+    const { sellerAmount, platformFee } = await _releaseEscrowToSeller(env, orderId, order, escrow, cfg, (amount) => ({
+        title: 'تم استلام الأموال!',
+        message: `تم تحويل ${amount} لمحفظتك`,
+        description: 'أرباح من طلب مكتمل',
+    }));
+
+    return json(200, CORS, { success: true, sellerAmount, platformFee });
+}
+
+// ── Auto-flag stale deliveries → opens a DISPUTE, does NOT auto-pay ──────────
+// ⚠️ CHANGED (per Ahmed's feedback): this used to auto-*release* the money to
+// the seller after AUTO_DISPUTE_DAYS of silence. That's wrong for anything
+// that isn't instant — e.g. a physical product can still legitimately be in
+// transit to the buyer past the deadline, so silently paying the seller out
+// could pay for something the buyer never actually received. Now it opens a
+// system-raised DISPUTE for admin review instead — the seller still gets a
+// guaranteed outcome (it doesn't sit forever), but a human decides refund vs.
+// pay instead of the clock deciding "pay" by default. See js/order-workspace.js
+// for the matching banner text change. A dispute already open (by either
+// party) freezes the escrow and takes the order out of this query, so this
+// never fires twice on the same order.
+async function handleAutoFlagStaleDeliveries(env, CORS) {
+    const AUTO_DISPUTE_DAYS = 7; // keep in sync with js/constants.js AUTO_DISPUTE_DAYS
+    const cutoff = new Date(Date.now() - AUTO_DISPUTE_DAYS * 24 * 60 * 60 * 1000);
+
+    const staleOrders = await fsQuery(env, {
+        from: [{ collectionId: 'orders' }],
+        where: {
+            compositeFilter: {
+                op: 'AND',
+                filters: [
+                    { fieldFilter: { field: { fieldPath: 'status' },     op: 'EQUAL',        value: { stringValue: 'delivered' } } },
+                    { fieldFilter: { field: { fieldPath: 'deliveredAt' }, op: 'LESS_THAN_OR_EQUAL', value: { timestampValue: cutoff.toISOString() } } },
+                ],
+            },
+        },
+        limit: 200,
     });
+
+    const results = [];
+    for (const order of staleOrders) {
+        try {
+            const escrow = await fsGet(env, `escrow/${order.id}`);
+            // Skip anything not cleanly "still held" — a dispute already froze it,
+            // or it was released/refunded through some other path in the meantime.
+            if (!escrow || escrow.status !== 'held') continue;
+
+            const disputeId = crypto.randomUUID();
+            await fsCommit(env, [
+                writeCreate(env, `disputes/${disputeId}`, {
+                    orderId: order.id,
+                    buyerId: order.buyerId || null, sellerId: escrow.sellerId || null,
+                    raisedBy: 'system', raisedByName: 'نظام تلقائي', raisedByRole: 'system',
+                    reason: `لم يتفاعل العميل خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم — تم فتح النزاع تلقائيًا للمراجعة بدل تحويل المبلغ مباشرة (فقد يكون المنتج لا يزال في الطريق للعميل).`,
+                    status: 'open', adminNotes: '', resolution: null,
+                    createdAt: new Date(), updatedAt: new Date(),
+                }),
+                writeUpdate(env, `escrow/${order.id}`, { status: 'frozen', frozenAt: new Date() }, { updateTime: escrow._updateTime }),
+                writeUpdate(env, `orders/${order.id}`, { status: 'disputed', updatedAt: new Date() }),
+                writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                    userId: order.buyerId, type: 'auto_disputed', title: '⚠️ تم فتح نزاع تلقائي على طلبك',
+                    message: `مضى ${AUTO_DISPUTE_DAYS} أيام على التسليم بدون رد منك، فتم تحويل الطلب لمراجعة الإدارة. لو استلمت الخدمة بالفعل، أكّد الاستلام في أقرب وقت.`,
+                    orderId: order.id, read: false, createdAt: new Date(),
+                }),
+                writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                    userId: escrow.sellerId, type: 'auto_disputed', title: '⚠️ تم فتح نزاع تلقائي على طلبك',
+                    message: `العميل لم يتفاعل خلال ${AUTO_DISPUTE_DAYS} أيام من التسليم، فتم تحويل الطلب لمراجعة الإدارة بدل غلقه تلقائيًا.`,
+                    orderId: order.id, read: false, createdAt: new Date(),
+                }),
+            ]);
+            results.push({ orderId: order.id, disputeId });
+        } catch (err) {
+            console.error('[autoFlagStaleDeliveries] failed for order', order.id, err.message);
+        }
+    }
+
+    return json(200, CORS, { success: true, flagged: results.length, orders: results });
 }
 
-// ── Verify Payment ────────────────────────────────────────────────────────────
-async function handleVerifyPayment(body, env, CORS) {
-    const { transactionId } = body;
-    if (!transactionId) return json(400, CORS, { error: 'No transactionId' });
+// ── Admin: resolve a dispute (refund the buyer OR pay the seller) ────────────
+// ⚠️ FIXED: this used to be js/escrow.js EscrowManager.resolveDispute() writing
+// directly from the admin's browser via a Firestore batch — with NO check that
+// the escrow hadn't already been resolved (no double-payout guard, unlike
+// handleReleaseEscrow above), no transaction record, no affiliate commission,
+// and a fee computed client-side while the server's calcFee() didn't match it
+// (calcFee() is now tier-aware too, so this is no longer a divergence — see
+// the fix note above getPlatformConfig()/calcFee()). Moved server-side so it
+// goes through the exact same guarded path as a normal escrow release.
+async function handleResolveDispute(body, env, CORS, auth) {
+    const { disputeId, orderId, resolution } = body;
+    if (!disputeId || !orderId) return json(400, CORS, { error: 'disputeId و orderId مطلوبين' });
+    if (resolution !== 'refund_buyer' && resolution !== 'pay_seller') {
+        return json(400, CORS, { error: 'resolution لازم يكون refund_buyer أو pay_seller' });
+    }
 
-    if (!env.PAYMOB_API_KEY) return json(200, CORS, { verified: true, simulated: true });
+    const user = await fsGet(env, `users/${auth.uid}`);
+    if (!user || user.role !== 'admin') return json(403, CORS, { error: 'غير مصرح لك بحل النزاعات' });
 
-    const resp = await apiGet(`https://accept.paymob.com/api/acceptance/transactions/${transactionId}`,
-        { 'Authorization': `Bearer ${env.PAYMOB_API_KEY}` });
+    const dispute = await fsGet(env, `disputes/${disputeId}`);
+    if (!dispute) return json(404, CORS, { error: 'النزاع غير موجود' });
+    if (dispute.status !== 'open') return json(409, CORS, { error: 'تم حل هذا النزاع بالفعل' });
 
-    return json(200, CORS, { verified: resp.success === true, data: resp });
+    const escrow = await fsGet(env, `escrow/${orderId}`);
+    if (!escrow || (escrow.status !== 'frozen' && escrow.status !== 'held')) {
+        return json(409, CORS, { error: 'لا يوجد ضمان قابل للحل لهذا الطلب (اتحل قبل كده أو مفيش ضمان أصلاً)' });
+    }
+
+    const disputeWrites = [
+        writeUpdate(env, `disputes/${disputeId}`, {
+            status: 'resolved', resolution, resolvedAt: new Date(), resolvedBy: auth.uid,
+        }, { updateTime: dispute._updateTime }),
+    ];
+
+    let responsePayload;
+
+    if (resolution === 'refund_buyer') {
+        const txId = crypto.randomUUID();
+        await fsCommit(env, [
+            ...disputeWrites,
+            writeIncrement(env, `wallets/${escrow.buyerId}`, 'balance', escrow.amount),
+            writeUpdate(env, `escrow/${orderId}`, { status: 'refunded', resolvedAt: new Date() }, { updateTime: escrow._updateTime }),
+            writeUpdate(env, `orders/${orderId}`, { status: 'refunded', updatedAt: new Date() }),
+            writeCreate(env, `transactions/${txId}`, {
+                userId: escrow.buyerId, type: 'refund', amount: escrow.amount, orderId,
+                description: 'استرداد بعد حل نزاع', status: 'completed', createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: escrow.buyerId, type: 'dispute_resolved', title: '↩️ تم استرداد أموالك',
+                message: `تم حل النزاع لصالحك واسترداد ${escrow.amount}`, orderId, read: false, createdAt: new Date(),
+            }),
+        ]);
+        responsePayload = { refundedAmount: escrow.amount };
+    } else {
+        const cfg = await getPlatformConfig(env);
+        const platformFee = calcFee(escrow.amount, cfg);
+        const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
+        const txId = crypto.randomUUID();
+        await fsCommit(env, [
+            ...disputeWrites,
+            writeIncrement(env, `wallets/${escrow.sellerId}`, 'balance', sellerAmount),
+            writeUpdate(env, `escrow/${orderId}`, { status: 'released', resolvedAt: new Date() }, { updateTime: escrow._updateTime }),
+            writeUpdate(env, `orders/${orderId}`, { status: 'completed', completedAt: new Date(), escrowReleased: true, updatedAt: new Date() }),
+            writeCreate(env, `transactions/${txId}`, {
+                userId: escrow.sellerId, type: 'earning', amount: sellerAmount, platformFee, orderId,
+                description: 'أرباح بعد حل نزاع', status: 'completed', createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: escrow.sellerId, type: 'dispute_resolved', title: '✅ تم حل النزاع لصالحك',
+                message: `تم تحويل ${sellerAmount} لمحفظتك`, orderId, read: false, createdAt: new Date(),
+            }),
+        ]);
+        await _creditAffiliateCommission(env, cfg, platformFee, escrow.buyerId, escrow.sellerId, orderId);
+        responsePayload = { sellerAmount, platformFee };
+    }
+
+    return json(200, CORS, { success: true, resolution, ...responsePayload });
+}
+
+// ── Request a withdrawal (seller cash-out request, reviewed by admin manually
+//    — this is NOT a payment gateway, it just records a request). ────────────
+async function handleRequestWithdrawal(body, env, CORS, auth) {
+    const { amount, method, accountInfo } = body;
+    const amt = Number(amount);
+    if (!amt || amt <= 0) return json(400, CORS, { error: 'مبلغ غير صالح' });
+
+    const cfg = await getPlatformConfig(env);
+    const minW = cfg.MIN_WITHDRAWAL || 0;
+    if (minW && amt < minW) return json(400, CORS, { error: `أقل مبلغ للسحب هو ${minW}` });
+
+    const wallet = await fsGet(env, `wallets/${auth.uid}`);
+    const balance = Number(wallet && wallet.balance) || 0;
+    if (amt > balance) return json(400, CORS, { error: 'رصيدك غير كافٍ لهذا المبلغ' });
+
+    // ⚠️ ADDED: net amount after the payout provider's transfer fee (e.g.
+    // Kashier's cost to move money out), separate from the platform commission
+    // already deducted when the order completed. `amt` still leaves the
+    // seller's earned balance in full — feeAmount/netAmount are just recorded
+    // so both the seller and the admin see exactly what will actually arrive,
+    // instead of the fee being an invisible surprise at payout time.
+    const feePercent = Number(cfg.WITHDRAWAL_FEE_PERCENT) || 0;
+    const feeAmount  = Number((amt * feePercent / 100).toFixed(2));
+    const netAmount  = Number((amt - feeAmount).toFixed(2));
+
+    const user = await fsGet(env, `users/${auth.uid}`);
+    const reqId = crypto.randomUUID();
+
+    await fsCommit(env, [
+        writeIncrement(env, `wallets/${auth.uid}`, 'balance', -amt),
+        writeCreate(env, `withdrawals/${reqId}`, {
+            userId: auth.uid, userName: (user && user.displayName) || '', userEmail: (user && user.email) || auth.email || '',
+            amount: amt, feePercent, feeAmount, netAmount,
+            method: method || 'bank', accountInfo: String(accountInfo || '').slice(0, 300),
+            status: 'pending', createdAt: new Date(),
+        }),
+    ]);
+
+    return json(200, CORS, { success: true, requestId: reqId, netAmount, feeAmount, newBalance: Number((balance - amt).toFixed(2)) });
 }
 
 // ── Check Which Keys Are Configured (no secrets returned) ────────────────────
-function handleCheckKeys(env, CORS) {
-    return json(200, CORS, {
-        paymob_configured: !!(env.PAYMOB_API_KEY && env.PAYMOB_INTEGRATION_ID),
-        fawry_configured: !!(env.FAWRY_MERCHANT_CODE && env.FAWRY_SECURITY_KEY),
-        stripe_configured: !!(env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY.startsWith('sk_')),
-        paypal_configured: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
-    });
+async function handleCheckKeys(env, CORS) {
+    const out = {
+        fawaterak_configured: !!env.FAWATERAK_API_KEY,
+        firebase_admin_configured: !!(env.FIREBASE_SERVICE_ACCOUNT && env.FIREBASE_PROJECT_ID),
+        firebase_project_id: env.FIREBASE_PROJECT_ID || null,
+    };
+    // Try to actually reach Firestore with the service account so a
+    // misconfigured/expired key or wrong project ID shows up here instead of
+    // as a confusing "order not found" on a real payment attempt.
+    if (out.firebase_admin_configured) {
+        try {
+            await getAccessToken(env);
+            out.firebase_auth_ok = true;
+            try {
+                await fsGet(env, 'settings/platform');
+                out.firestore_reachable = true;
+            } catch (e) {
+                out.firestore_reachable = false;
+                out.firestore_error = e.message;
+            }
+        } catch (e) {
+            out.firebase_auth_ok = false;
+            out.firebase_auth_error = e.message;
+        }
+    }
+    return json(200, CORS, out);
 }
+
+export { finalizePendingPayment, hmacHex, timingSafeEqual };

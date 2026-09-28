@@ -10,27 +10,56 @@
 (function () {
     'use strict';
 
+    // ── Affiliate referral capture ────────────────────────────────────────────
+    // ?ref=<referrerUid> in the URL (e.g. shared from the profile/wallet page)
+    // is captured on ANY page load — not just the register page — since a
+    // visitor usually browses a bit before signing up. Kept in sessionStorage
+    // so it survives navigation but not F5-forever (matches how referral
+    // attribution windows normally work for a simple, honest program).
+    try {
+        const refParam = new URLSearchParams(window.location.search).get('ref');
+        if (refParam && refParam.length < 128) sessionStorage.setItem('pendingReferrer', refParam);
+    } catch (_) { /* sessionStorage unavailable (e.g. private mode) — non-critical */ }
+    function _getPendingReferrer(selfUid) {
+        try {
+            const ref = sessionStorage.getItem('pendingReferrer');
+            return (ref && ref !== selfUid) ? ref : null; // can't refer yourself
+        } catch (_) { return null; }
+    }
+
     // ── Create user doc if not exists ─────────────────────────────────────────
+    // ⚠️ CHANGED (privacy audit): phone now goes to the private subcollection
+    // (see firestore.rules) instead of the main, publicly-readable-by-any-
+    // signed-in-user document. Uses a batch so both writes succeed or fail
+    // together — a half-written account (main doc but no private doc, or
+    // vice versa) would otherwise be possible if the second write failed.
     async function _ensureUserDoc(user) {
         if (!user) return;
         try {
             const ref  = window.db.collection(COLLECTIONS.USERS).doc(user.uid);
             const snap = await ref.get();
             if (!snap.exists) {
-                await ref.set({
+                const referredBy = _getPendingReferrer(user.uid);
+                const batch = window.db.batch();
+                batch.set(ref, {
                     name:          user.displayName || '',
                     email:         user.email       || '',
-                    phone:         user.phoneNumber || '',
                     avatar:        user.photoURL    || '',
                     role:          'buyer',
                     verified:      false,
                     acceptedTerms: false,
+                    ...(referredBy ? { referredBy } : {}),
                     createdAt:     serverTimestamp(),
                     updatedAt:     serverTimestamp(),
                 });
-                await window.db.collection(COLLECTIONS.WALLET).doc(user.uid).set({
+                batch.set(ref.collection('private').doc('contact'), {
+                    phone: user.phoneNumber || '', payoutMethod: '', payoutAccount: '',
+                    updatedAt: serverTimestamp(),
+                });
+                batch.set(window.db.collection(COLLECTIONS.WALLET).doc(user.uid), {
                     balance: 0, currency: 'EGP', createdAt: serverTimestamp(),
                 });
+                await batch.commit();
             } else {
                 await ref.update({ updatedAt: serverTimestamp() });
             }
@@ -55,7 +84,14 @@
                 const cred = await window.auth.signInWithEmailAndPassword(email, password);
                 await _ensureUserDoc(cred.user);
                 hideLoading();
-                showToast(isAr ? 'مرحباً بك!' : 'Welcome back!', 'success');
+                if (!cred.user.emailVerified) {
+                    showToast(
+                        isAr ? '⚠️ بريدك الإلكتروني لسه مش مفعّل — لازم تفعّله قبل ما تقدر تدفع أو تبيع' : '⚠️ Your email isn\'t verified yet — required before you can pay or sell',
+                        'warning', 7000
+                    );
+                } else {
+                    showToast(isAr ? 'مرحباً بك!' : 'Welcome back!', 'success');
+                }
                 navigateTo('home');
             } catch (err) {
                 hideLoading();
@@ -67,7 +103,7 @@
         // WHY POPUP: Chrome 115+ blocks 3rd-party cookies which signInWithRedirect
         // depends on (Firebase iframe to firebaseapp.com). getRedirectResult() returns
         // null silently. signInWithPopup works without 3rd-party cookies.
-        // netlify.toml has: Cross-Origin-Opener-Policy = "same-origin-allow-popups" ✅
+        // _headers file has: Cross-Origin-Opener-Policy = "same-origin-allow-popups" ✅
         async loginWithGoogle() {
             const isAr = AppState.language !== 'en';
             showLoading(isAr ? 'جاري تسجيل الدخول بـ Google...' : 'Signing in with Google...');
@@ -147,21 +183,61 @@
                 showToast(isAr ? 'كلمة المرور 8 أحرف على الأقل' : 'Password must be 8+ characters', 'warning');
                 return;
             }
+            if (!document.getElementById('acceptTermsCheckbox')?.checked) {
+                showToast(isAr ? 'لازم توافق على الشروط والأحكام وسياسة الخصوصية' : 'You must accept the Terms & Privacy Policy', 'warning');
+                return;
+            }
             showLoading(isAr ? 'جاري إنشاء الحساب...' : 'Creating account...');
             try {
                 const cred = await window.auth.createUserWithEmailAndPassword(email, password);
                 await cred.user.updateProfile({ displayName: name });
-                await window.db.collection(COLLECTIONS.USERS).doc(cred.user.uid).set({
-                    name, email, phone, role,
-                    avatar: '', verified: false, acceptedTerms: false,
+                const referredBy = _getPendingReferrer(cred.user.uid);
+                // ⚠️ CHANGED (privacy audit): phone → private subcollection,
+                // same reasoning as _ensureUserDoc() above.
+                const userRef = window.db.collection(COLLECTIONS.USERS).doc(cred.user.uid);
+                const batch = window.db.batch();
+                batch.set(userRef, {
+                    name, email, role,
+                    avatar: '', verified: false, acceptedTerms: true,
+                    emailVerified: false,
+                    ...(referredBy ? { referredBy } : {}),
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                 });
-                await window.db.collection(COLLECTIONS.WALLET).doc(cred.user.uid).set({
+                batch.set(userRef.collection('private').doc('contact'), {
+                    phone, payoutMethod: '', payoutAccount: '', updatedAt: serverTimestamp(),
+                });
+                batch.set(window.db.collection(COLLECTIONS.WALLET).doc(cred.user.uid), {
                     balance: 0, currency: 'EGP', createdAt: serverTimestamp(),
                 });
+                await batch.commit();
+
+                // Send a real verification email — required before the account
+                // can pay or sell (enforced server-side in functions/api/payment.js).
+                try { await cred.user.sendEmailVerification(); } catch (e) { console.warn('[Auth] verification email failed:', e.message); }
+
                 hideLoading();
-                showToast(isAr ? 'تم إنشاء حسابك!' : 'Account created!', 'success');
+                showToast(
+                    isAr ? 'تم إنشاء حسابك! ابعتنالك رابط تفعيل على بريدك — لازم تفعّله قبل ما تقدر تدفع أو تبيع.'
+                         : 'Account created! Check your email for a verification link — required before you can pay or sell.',
+                    'success', 6000
+                );
                 navigateTo('home');
+            } catch (err) {
+                hideLoading();
+                showToast(_authError(err.code), 'error');
+            }
+        },
+
+        async resendVerificationEmail() {
+            const isAr = AppState.language !== 'en';
+            const user = window.auth?.currentUser;
+            if (!user) { showToast(isAr ? 'سجّل الدخول الأول' : 'Log in first', 'warning'); return; }
+            if (user.emailVerified) { showToast(isAr ? 'بريدك مفعّل بالفعل ✅' : 'Your email is already verified ✅', 'success'); return; }
+            showLoading();
+            try {
+                await user.sendEmailVerification();
+                hideLoading();
+                showToast(isAr ? 'تم إرسال رابط التفعيل — راجع بريدك' : 'Verification link sent — check your inbox', 'success');
             } catch (err) {
                 hideLoading();
                 showToast(_authError(err.code), 'error');
@@ -212,14 +288,22 @@
             try {
                 const updates = { updatedAt: serverTimestamp() };
                 if (data.name)   updates.name   = sanitizeInput(data.name);
-                if (data.phone)  updates.phone  = data.phone;
                 if (data.avatar) updates.avatar = data.avatar;
                 await window.db.collection(COLLECTIONS.USERS).doc(user.uid).update(updates);
+                // ⚠️ CHANGED (privacy audit): phone → private subcollection.
+                // set(..., {merge:true}) instead of update() since a very old
+                // account might not have this subdoc yet at all.
+                if (data.phone) {
+                    await window.db.collection(COLLECTIONS.USERS).doc(user.uid)
+                        .collection('private').doc('contact')
+                        .set({ phone: data.phone, updatedAt: serverTimestamp() }, { merge: true });
+                }
                 if (data.name)   await user.updateProfile({ displayName: data.name });
                 if (data.avatar) await user.updateProfile({ photoURL: data.avatar });
                 if (AppState.currentUser) {
                     if (data.name)   AppState.currentUser.displayName = data.name;
                     if (data.avatar) AppState.currentUser.photoURL    = data.avatar;
+                    if (data.phone)  AppState.currentUser.phone       = data.phone;
                 }
                 hideLoading();
                 showToast(isAr ? 'تم التحديث' : 'Profile updated', 'success');
@@ -294,15 +378,15 @@
                 <img id="profileAvatarPreview" src="${user.photoURL || avatarFallback}"
                   class="w-20 h-20 rounded-2xl object-cover"
                   onerror="this.src='${avatarFallback}'">
-                <label class="absolute bottom-0 end-0 w-7 h-7 bg-brand-600 text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-brand-700 transition">
+                <label class="absolute bottom-0 end-0 w-7 h-7 bg-secondary text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-secondary-600 transition">
                   <i class="fa-solid fa-pen text-xs"></i>
                   <input type="file" accept="image/*" class="hidden" id="avatarFileInput" onchange="AuthManager._uploadAvatar(this)">
                 </label>
               </div>
               <div>
-                <h2 class="font-black text-gray-900 text-xl">${user.displayName || ''}</h2>
+                <h2 class="font-black text-gray-900 text-xl">${escapeHtml(user.displayName || '')}</h2>
                 <p class="text-gray-500">${user.email || ''}</p>
-                <span class="inline-block mt-1 text-xs bg-brand-50 text-brand-600 font-bold px-3 py-1 rounded-full">
+                <span class="inline-block mt-1 text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">
                   ${user.role === 'admin' ? '👑 Admin' : user.role === 'seller' ? '🏪 '+(isAr?'بائع':'Seller') : '🛍️ '+(isAr?'مشتري':'Buyer')}
                 </span>
               </div>
@@ -310,7 +394,7 @@
             <hr class="border-gray-100">
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-2">${t('auth.name')}</label>
-              <input type="text" id="profileName" class="form-input" value="${user.displayName || ''}">
+              <input type="text" id="profileName" class="form-input" value="${escapeHtml(user.displayName || '')}">
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-2">${t('auth.email')}</label>

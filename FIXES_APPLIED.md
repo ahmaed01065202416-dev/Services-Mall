@@ -1,6 +1,11 @@
 # ✅ Mall Services — Security & Feature Fixes Applied
 *Version 3.4 — All fixes production-ready*
 
+> ⚠️ **قديم/جزئيًا غير دقيق:** الملف ده بيتكلم عن `netlify.toml` و Paymob —
+> المشروع دلوقتي على Cloudflare Pages (CSP/headers في `_headers`) والبوابة
+> الوحيدة هي Fawaterak (`functions/api/fawaterak-webhook.js`). خد اللي فيه
+> كخلفية تاريخية بس، مش كحالة حالية للمشروع.
+
 ---
 
 ## 1. Content Security Policy (CSP) — FIXED ✅
@@ -170,7 +175,7 @@ window.trackEvent('button_click', 'engagement', 'buy_now');
 ## NEXT STEPS
 
 1. **Replace `G-XXXXXXXXXX`** in `index.html` with your real Google Analytics 4 ID
-2. **Deploy to Netlify** (drag & drop the zip or push to GitHub)
+2. **Deploy to Cloudflare Pages** (connect the GitHub repo, or `npx wrangler pages deploy .` — see `DEPLOY_CLOUDFLARE.md`)
 3. **Add domain to Firebase** → Console → Authentication → Authorized domains
 4. **Create Firestore composite index** for chat (link appears in console on first message)
 5. **Update WhatsApp number** (`201000000000`) in blog pages

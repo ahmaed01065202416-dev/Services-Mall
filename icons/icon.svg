@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#0284c7"/>
-  <text x="96" y="130" font-family="Arial,sans-serif" font-size="100" font-weight="bold" fill="white" text-anchor="middle">م</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#1B2A4A"/>
+  <circle cx="32" cy="32" r="21" fill="none" stroke="#14B8A6" stroke-width="2.5"/>
+  <path d="M22 33.5 L28.5 40 L43 24" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

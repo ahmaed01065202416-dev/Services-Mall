@@ -24,12 +24,14 @@ const COLLECTIONS = {
     PAYMENTS:      'payments',
     REPORTS:       'reports',
     CATEGORIES:    'categories',
+    CATEGORY_REQUESTS: 'category_requests', // ⚠️ ADDED: seller-suggested new categories awaiting admin review
     ESCROW:        'escrow',
     DISPUTES:      'disputes',
     WITHDRAWALS:   'withdrawals',
     COUPONS:       'coupons',
     SUBSCRIPTIONS: 'subscriptions',
     DELIVERIES:    'deliveries',
+    RETURNS:       'returns', // ⚠️ ADDED: product-return requests (buyer → seller → admin refund)
 };
 
 // ── Platform Config (defaults — overridden by Firestore settings/platform) ────
@@ -48,6 +50,18 @@ const PLATFORM = {
     MIN_WITHDRAWAL:   100,
     MAX_WITHDRAWAL:   50000,
     WITHDRAWAL_NOTE:  '',
+    // Gateway/transfer cost deducted at withdrawal time (e.g. Kashier's payout
+    // fee) — separate from the platform commission (already deducted from the
+    // wallet balance when the order was completed). Shown to the seller as a
+    // net-amount preview before they submit the request. Default 0 until the
+    // real payout provider fee is known — update via admin settings.
+    WITHDRAWAL_FEE_PERCENT: 0,
+    // Payout cadence shown to sellers so they know when to expect money —
+    // wording only, does not restrict when a withdrawal request can be made.
+    PAYOUT_SCHEDULE_NOTE: 'الأرباح بتتحول كل 15 يوم من تاريخ آخر سحب (ممكن يوم أو يومين فرق حسب المعالجة).',
+    // ── Product Returns ─────────────────────────────────────────────────
+    RETURNS_ENABLED:     true, // master on/off switch for the whole feature
+    RETURN_WINDOW_DAYS:  14,   // days after delivery a buyer may request a return
     // ── Platform Info ─────────────────────────────────────────────────
     CURRENCY:         'ج.م',
     CURRENCY_CODE:    'EGP',
@@ -97,6 +111,7 @@ const CURRENCIES = {
 // ── Order Statuses ────────────────────────────────────────────────────────────
 const ORDER_STATUS = {
     PENDING:        'pending',
+    ACCEPTED:       'accepted',   // seller approved a custom request — awaiting buyer payment
     PAYMENT_HELD:   'payment_held',
     IN_PROGRESS:    'in_progress',
     DELIVERED:      'delivered',
@@ -107,19 +122,40 @@ const ORDER_STATUS = {
     REFUNDED:       'refunded',
 };
 
-// ── Payment Methods ───────────────────────────────────────────────────────────
-const PAYMENT_METHODS = {
-    PAYMOB_CARD:    'paymob_card',
-    FAWRY:          'fawry',
-    VODAFONE:       'vodafone_cash',
-    ETISALAT:       'etisalat_cash',
-    ORANGE:         'orange_cash',
-    WE_PAY:         'we_pay',
-    PAYONEER:       'payoneer',
-    STRIPE:         'stripe',
-    WALLET:         'wallet_balance',
-    BANK_TRANSFER:  'bank_transfer',
+// ── Product Return Requests ────────────────────────────────────────────────────
+// ⚠️ ADDED: "returns" feature — buyer requests to return a physical PRODUCT
+// order (listingType === 'product'). Kept as its own collection instead of new
+// fields on `orders`, because firestore.rules' orders-update rule already
+// blocks a buyer/seller from writing to an order while its status stays
+// 'delivered' unchanged (see firestore.rules match /orders — the branch that
+// requires resource.data.status to be in ['payment_held','in_progress',
+// 'revision'] whenever the new status is 'delivered'). A separate collection
+// needs no changes to that guard at all. See js/returns.js.
+// Its on/off switch and window length live in PLATFORM (RETURNS_ENABLED,
+// RETURN_WINDOW_DAYS above), editable from the admin Settings tab — NOT
+// hardcoded here, so admins control this without a code change.
+const RETURN_STATUS = {
+    PENDING:  'pending',   // buyer submitted, awaiting seller's decision
+    APPROVED: 'approved',  // seller approved — escalated to the existing admin dispute/refund flow
+    REJECTED: 'rejected',  // seller declined the return
 };
+
+// ── Payment Methods ───────────────────────────────────────────────────────────
+// Fawaterak only — all other gateways (Paymob, Fawry, mobile wallets, Stripe,
+// PayPal, bank transfer, in-app wallet payment) were removed on purpose.
+const PAYMENT_METHODS = {
+    FAWATERAK: 'fawaterak',
+};
+
+// ── Escrow auto-dispute window ──────────────────────────────────────────────
+// If a buyer never clicks "confirm receipt" after a real DELIVERED order, the
+// payment used to be stuck in escrow forever (no seller-side dispute button,
+// no timeout). After this many days of silence the server opens a DISPUTE for
+// admin review — it does NOT auto-pay the seller, since a delivery (e.g. a
+// physical product) can still legitimately be in transit past the deadline.
+// See functions/api/payment.js (autoFlagStaleDeliveries) + cron-worker.
+// Keep this in sync with AUTO_DISPUTE_DAYS in functions/api/payment.js.
+const AUTO_DISPUTE_DAYS = 7;
 
 // ── Global AppState ───────────────────────────────────────────────────────────
 window.AppState = window.AppState || {
@@ -168,9 +204,49 @@ function saveToStorage() {
 }
 
 async function uploadFile(file, folder, filename) {
-    // ── Canvas Compression (bypasses Firebase Storage CORS entirely) ─────────
-    // Resizes image to max 900px, converts to JPEG @0.78 quality → base64 data URL
-    // Stored directly in Firestore — no external storage request, no CORS error.
+    // ── Non-image files (PDF, ZIP, DOCX, video...) ────────────────────────
+    // ⚠️ FIXED: this function used to force EVERY file — images and non-images
+    // alike — through `new Image()` to compress it as a JPEG. For any file
+    // that isn't a real image, the browser can't decode it as one, so
+    // `img.onerror` fired immediately with "Failed to load image" and the
+    // upload was rejected outright. That's exactly what broke sending PDFs/
+    // ZIPs/docs in chat (and product digital-delivery files, and delivery
+    // attachments) — never actually about images specifically.
+    // There's no object-storage bucket wired up here (see the note below —
+    // files are embedded as base64 straight into Firestore/RTDB on purpose,
+    // to avoid Firebase Storage CORS issues), so a real hard cap is needed
+    // for non-images since they can't be compressed the way photos are.
+    //
+    // ⚠️ FIXED (2nd bug): the cap here used to be 8MB, which LOOKS safely
+    // under Firebase Realtime Database's documented 10MB max string-value
+    // size (https://firebase.google.com/docs/database/usage/limits) — but
+    // base64 encoding inflates a file's byte size by ~33% (4 chars for every
+    // 3 raw bytes). An 8MB file becomes a ~10.9MB base64 string, which is
+    // OVER the 10MB RTDB limit — the client-side check passed, then the
+    // actual chats/{orderId}/messages push() to Firebase silently failed
+    // with a write error. This is exactly what broke "upload a file in the
+    // buyer/seller chat" for anything close to the old limit. 6MB raw file
+    // → ~8MB base64 stays safely under the 10MB ceiling with margin to
+    // spare for the surrounding JSON (senderId/type/createdAt/etc).
+    const isImage = !!(file.type && file.type.startsWith('image/'));
+    if (!isImage) {
+        const NON_IMAGE_LIMIT = 6 * 1024 * 1024; // 6MB raw → ~8MB base64, safely under Firebase RTDB's 10MB string limit
+        if (file.size > NON_IMAGE_LIMIT) {
+            throw new Error(AppState.language === 'en'
+                ? 'File too large — non-image files are limited to 6MB for now'
+                : 'الملف كبير جدًا — الحد الأقصى للملفات غير الصور حاليًا 6 ميجا');
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error(AppState.language === 'en' ? 'Failed to read file' : 'تعذرت قراءة الملف'));
+            reader.onload  = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ── Canvas Compression (images only) — bypasses Firebase Storage CORS
+    // entirely. Resizes image to max 900px, converts to JPEG @0.78 quality
+    // → base64 data URL, stored directly in Firestore/RTDB. ─────────────
     return new Promise((resolve, reject) => {
         const MAX_PX = 900;
         const QUALITY = 0.78;
@@ -243,7 +319,14 @@ function formatCurrency(amount, currencyCode) {
     const code = currencyCode || AppState.currency || 'EGP';
     const cur  = CURRENCIES[code] || CURRENCIES.EGP;
     const val  = (parseFloat(amount) || 0) * cur.rate;
-    const locale = AppState.language === 'en' ? 'en-US' : 'ar-EG';
+    // ⚠️ FIXED (found in audit): 'ar-EG' renders Eastern Arabic-Indic digits
+    // (٠١٢٣...), which visually scramble/reverse when mixed with RTL text,
+    // dashes, and a currency symbol right next to them (classic bidi
+    // rendering bug — this is what produced "٥٣٠,.." in a screenshot
+    // instead of a readable "1,050.00"). The '-u-nu-latn' extension keeps
+    // Arabic month/plural formatting rules but forces plain 0-9 digits,
+    // which is how Egyptian apps normally show money anyway.
+    const locale = AppState.language === 'en' ? 'en-US' : 'ar-EG-u-nu-latn';
     try {
         return new Intl.NumberFormat(locale, {
             minimumFractionDigits: 2,
@@ -273,6 +356,7 @@ function getStatusText(status) {
     const isAr = AppState.language !== 'en';
     const map = {
         pending:        isAr ? 'في الانتظار'    : 'Pending',
+        accepted:       isAr ? 'بانتظار الدفع'  : 'Awaiting Payment',
         payment_held:   isAr ? 'الدفع محجوز'    : 'Payment Held',
         in_progress:    isAr ? 'جاري التنفيذ'   : 'In Progress',
         delivered:      isAr ? 'تم التسليم'     : 'Delivered',
@@ -288,6 +372,7 @@ function getStatusText(status) {
 function getStatusClass(status) {
     const map = {
         pending:        'status-pending',
+        accepted:       'status-pending',
         payment_held:   'status-pending',
         in_progress:    'status-in-progress',
         delivered:      'status-delivered',
@@ -326,7 +411,7 @@ function showToast(message, type = 'info', duration = 4000) {
     const toast = document.createElement('div');
     toast.id = 'globalToast';
     toast.className = `toast ${type} show`;
-    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${escapeHtml(message)}</span>`;
     document.body.appendChild(toast);
 
     setTimeout(() => {
@@ -344,8 +429,8 @@ function showLoading(msg = AppState.language === 'en' ? 'Loading...' : 'جاري
         loader.className = 'fixed inset-0 bg-black/50 z-[100000] flex items-center justify-center';
         loader.innerHTML = `
             <div class="bg-white rounded-3xl p-8 flex flex-col items-center gap-4 shadow-2xl">
-                <div class="w-14 h-14 rounded-full border-4 border-brand-200 border-t-brand-600 animate-spin"></div>
-                <p id="loaderMsg" class="text-gray-700 font-semibold text-lg">${msg}</p>
+                <div class="w-14 h-14 rounded-full border-4 border-navy-200 border-t-navy-600 animate-spin"></div>
+                <p id="loaderMsg" class="text-gray-700 font-semibold text-lg">${escapeHtml(msg)}</p>
             </div>`;
         document.body.appendChild(loader);
     } else {
@@ -387,6 +472,70 @@ function sanitizeInput(value, maxLength = 1000) {
         .replace(/<[^>]*>/g, '')
         .trim()
         .slice(0, maxLength);
+}
+
+// ── HTML Escape (use this around ANY user-supplied text before putting it
+//    inside innerHTML — service titles/descriptions, review text, reviewer /
+//    buyer / seller names, dispute reasons, etc. Prevents stored XSS.) ────────
+function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ── Off-platform contact/payment leak scanner ─────────────────────────────────
+// ⚠️ ADDED: this used to live ONLY inside the order chat (order-workspace.js),
+// which meant a seller/buyer could still dodge escrow entirely by putting a
+// phone number, WhatsApp/Telegram handle, or "pay me directly" text right
+// inside a service LISTING (title/description/order rules/delivery notes) or
+// inside a REQUEST brief — none of which ever passed through the chat filter.
+// Shared here so every free-text field the seller or buyer publishes/sends
+// (listing fields, custom-service requests, product order notes, chat) runs
+// through the exact same rule set instead of three different copies drifting
+// out of sync. Client-side heuristic only — a deterrent + admin signal, not a
+// hard security boundary.
+const CONTACT_LEAK_PATTERNS = [
+    { re: /(\+?\d[\s.-]?){9,}/g,                              kind: 'phone' },
+    { re: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,   kind: 'email' },
+    { re: /(واتساب|whatsapp|واتس\s*اب|تيليجرام|telegram|انستقرام|instagram|سناب\s*شات|snapchat|تيك\s*توك|tiktok)/gi, kind: 'external_contact' },
+    { re: /(انستاباي|instapay|فودافون\s*كاش|vodafone\s*cash|تحويل\s*بنكي|رقم\s*المحفظة|برا\s*المنصة|خارج\s*المنصة|بره\s*الموقع|من\s*غير\s*الموقع|كاش\s*مباشر|ادفعلي\s*كاش)/gi, kind: 'external_payment' },
+];
+function scanForContactLeak(text) {
+    if (!text) return null;
+    for (const p of CONTACT_LEAK_PATTERNS) {
+        p.re.lastIndex = 0;
+        if (p.re.test(text)) return p.kind;
+    }
+    return null;
+}
+// Scans several fields of a single record (e.g. a listing about to be
+// published, or a request about to be submitted) in one go. Returns the kind
+// of the FIRST leak found, or null if all fields are clean.
+function scanFieldsForContactLeak(fields) {
+    for (const text of fields) {
+        const kind = scanForContactLeak(text);
+        if (kind) return kind;
+    }
+    return null;
+}
+async function flagSuspiciousContent(context, text, kind) {
+    try {
+        await window.db.collection('fraud_flags').add({
+            ...context,
+            kind,
+            textSample: String(text || '').slice(0, 200),
+            createdAt: serverTimestamp(),
+        });
+    } catch (_) { /* non-critical, never block the UI on this */ }
+}
+function contactLeakWarning(isAr) {
+    return isAr
+        ? '🚫 مينفعش تحط رقم تليفون أو إيميل أو تتفقوا على تواصل/دفع برا المنصة — ده بيلغي ضمان الاسترجاع بتاعك ومنعنا نشره'
+        : "🚫 Phone numbers, emails, or arranging off-platform contact/payment aren't allowed — this voids your protection and we can't publish it";
 }
 
 // ── Image Preview ─────────────────────────────────────────────────────────────
@@ -479,6 +628,10 @@ function navigateTo(page, data = null) {
     document.querySelectorAll('[data-nav]').forEach(el => {
         el.classList.toggle('active', el.dataset.nav === page);
     });
+    document.querySelectorAll('[data-mobile-nav]').forEach(el => {
+        el.classList.toggle('text-secondary', el.dataset.mobileNav === page);
+        el.classList.toggle('text-textsecondary', el.dataset.mobileNav !== page);
+    });
 
     // Page-specific init
     const pageKey = page.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
@@ -500,12 +653,14 @@ window._feeLabel = function() {
 };
 // ── Expose to Global Scope ───────────────────────────────────────────────────
 Object.assign(window, {
-    COLLECTIONS, PLATFORM, CURRENCIES, ORDER_STATUS, PAYMENT_METHODS,
+    COLLECTIONS, PLATFORM, CURRENCIES, ORDER_STATUS, PAYMENT_METHODS, AUTO_DISPUTE_DAYS,
+    RETURN_STATUS,
     serverTimestamp, increment, saveToStorage, uploadFile,
     generateId, formatDateAr, formatTimeAgo, formatCurrency, convertCurrency,
     updateCartCount, getStatusText, getStatusClass,
     openModal, closeModal, showToast, showLoading, hideLoading,
-    secureApiCall, sanitizeInput, previewImage,
+    secureApiCall, sanitizeInput, escapeHtml, previewImage,
+    scanForContactLeak, scanFieldsForContactLeak, flagSuspiciousContent, contactLeakWarning,
     calcPlatformFee, addToCart, removeFromCart, clearCart, getCartTotals,
     navigateTo,
 });

@@ -22,65 +22,20 @@
 
             showLoading(isAr ? 'جاري تحويل الأموال للبائع...' : 'Releasing funds to seller...');
             try {
-                const batch = window.db.batch();
-
-                // Update order
-                const orderRef = window.db.collection(COLLECTIONS.ORDERS).doc(orderId);
-                batch.update(orderRef, {
-                    status:           ORDER_STATUS.COMPLETED,
-                    completedAt:      serverTimestamp(),
-                    escrowReleased:   true,
-                    updatedAt:        serverTimestamp(),
+                // Fund release is now handled entirely server-side: it verifies
+                // the caller really is the buyer on this order, checks the
+                // escrow hasn't already been released (no double-payout), and
+                // atomically credits the seller's wallet. The browser can no
+                // longer write to /wallets directly — Firestore rules block it.
+                const idToken = window.auth && window.auth.currentUser ? await window.auth.currentUser.getIdToken() : '';
+                const resp = await fetch('/api/payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                    body: JSON.stringify({ action: 'releaseEscrow', orderId }),
                 });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.error || (isAr ? 'تعذر تحويل الأموال' : 'Could not release funds'));
 
-                // Update escrow
-                const escrowRef = window.db.collection(COLLECTIONS.ESCROW).doc(orderId);
-                const escrowSnap = await escrowRef.get();
-
-                if (escrowSnap.exists) {
-                    const escrow = escrowSnap.data();
-                    batch.update(escrowRef, {
-                        status:      'released',
-                        releasedAt:  serverTimestamp(),
-                    });
-
-                    // Credit seller wallet
-                    const platformFee = calcPlatformFee(escrow.amount);
-                    const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
-
-                    const sellerWalletRef = window.db.collection(COLLECTIONS.WALLET).doc(escrow.sellerId);
-                    batch.set(sellerWalletRef, {
-                        balance:    increment(sellerAmount),
-                        updatedAt:  serverTimestamp(),
-                    }, { merge: true });
-
-                    // Transaction record
-                    const txRef = window.db.collection(COLLECTIONS.TRANSACTIONS).doc();
-                    batch.set(txRef, {
-                        userId:     escrow.sellerId,
-                        type:       'earning',
-                        amount:     sellerAmount,
-                        platformFee,
-                        orderId,
-                        description: isAr ? 'أرباح من طلب مكتمل' : 'Earnings from completed order',
-                        status:     'completed',
-                        createdAt:  serverTimestamp(),
-                    });
-
-                    // Notify seller
-                    const notifRef = window.db.collection(COLLECTIONS.NOTIFICATIONS).doc();
-                    batch.set(notifRef, {
-                        userId:    escrow.sellerId,
-                        type:      'payment_received',
-                        title:     isAr ? 'تم استلام الأموال!' : 'Payment Received!',
-                        message:   `${isAr ? 'تم تحويل' : 'Received'} ${formatCurrency(sellerAmount)} ${isAr ? 'لمحفظتك' : 'to your wallet'}`,
-                        orderId,
-                        read:      false,
-                        createdAt: serverTimestamp(),
-                    });
-                }
-
-                await batch.commit();
                 hideLoading();
                 showToast(isAr ? 'تم تأكيد الاستلام وتحويل الأموال بنجاح!' : 'Delivery confirmed and funds released!', 'success');
 
@@ -100,11 +55,33 @@
         // ── Open Dispute (Buyer or Seller) ────────────────────────────────────
         async openDispute(orderId) {
             const isAr = AppState.language !== 'en';
-            const reason = await _showDisputeDialog(orderId);
-            if (!reason) return;
+            const input = await _showDisputeDialog(orderId);
+            if (!input) return;
 
             showLoading(isAr ? 'جاري إرسال النزاع...' : 'Submitting dispute...');
             try {
+                // ⚠️ ADDED: raisedByName/raisedByRole so the admin disputes tab
+                // (js/dashboard.js) shows a real name + "buyer"/"seller" instead
+                // of a bare uid. Also — ⚠️ FIXED: the dispute doc used to be
+                // written with no buyerId/sellerId fields at all, but
+                // firestore.rules' disputes read/create rules check exactly
+                // those fields — dot-accessing a field that isn't on the
+                // document throws in Rules, so opening AND reading back a
+                // dispute was denied with "Missing or insufficient
+                // permissions" every time. Fetching the order here for the
+                // role/name lookup anyway, so storing buyerId/sellerId costs
+                // nothing extra and fixes both rules at once.
+                const uid = AppState.currentUser?.uid;
+                let raisedByName = AppState.currentUser?.displayName || AppState.currentUser?.email || uid;
+                let raisedByRole = '';
+                let orderData = {};
+                try {
+                    const orderSnap = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
+                    orderData = orderSnap.data() || {};
+                    if (orderData.buyerId === uid)  { raisedByRole = 'buyer';  raisedByName = orderData.buyerName  || raisedByName; }
+                    if (orderData.sellerId === uid) { raisedByRole = 'seller'; raisedByName = orderData.sellerName || raisedByName; }
+                } catch (_) { /* non-critical — falls back to uid/displayName above */ }
+
                 const batch = window.db.batch();
 
                 // Update order status
@@ -125,8 +102,14 @@
                 const disputeRef = window.db.collection(COLLECTIONS.DISPUTES).doc();
                 batch.set(disputeRef, {
                     orderId,
-                    raisedBy:   AppState.currentUser?.uid,
-                    reason,
+                    buyerId:      orderData.buyerId  || null,
+                    sellerId:     orderData.sellerId || null,
+                    raisedBy:     uid,
+                    raisedByName,
+                    raisedByRole,
+                    reason:       input.combined,
+                    reasonCode:   input.reasonCode,
+                    description:  input.description,
                     status:     'open',
                     adminNotes: '',
                     resolution: null,
@@ -156,45 +139,38 @@
         },
 
         // ── Admin: Resolve Dispute ────────────────────────────────────────────
+        // ⚠️ FIXED: this used to move money with a client-side Firestore batch
+        // — no check that the dispute/escrow wasn't already resolved (a second
+        // click, or clicking "Refund" then "Pay Seller", could double-pay out
+        // of the same escrow), no transaction record, no affiliate commission,
+        // and a fee computed from client-cached settings that can drift from
+        // the server's. Now calls functions/api/payment.js (resolveDispute),
+        // which has the same status/idempotency guard as a normal escrow
+        // release. See dashboard.js adminTab('disputes') for the re-render
+        // that removes this dispute's buttons once it's resolved.
         async resolveDispute(disputeId, resolution, orderId) {
-            // resolution: 'refund_buyer' | 'pay_seller' | 'split'
+            // resolution: 'refund_buyer' | 'pay_seller'
             const isAr = AppState.language !== 'en';
             showLoading(isAr ? 'جاري حل النزاع...' : 'Resolving dispute...');
             try {
-                const escrowSnap = await window.db.collection(COLLECTIONS.ESCROW).doc(orderId).get();
-                const escrow     = escrowSnap.data() || {};
-                const batch      = window.db.batch();
-
-                if (resolution === 'refund_buyer') {
-                    // Refund buyer
-                    const buyerWallet = window.db.collection(COLLECTIONS.WALLET).doc(escrow.buyerId);
-                    batch.set(buyerWallet, { balance: increment(escrow.amount), updatedAt: serverTimestamp() }, { merge: true });
-                    batch.update(window.db.collection(COLLECTIONS.ORDERS).doc(orderId), { status: ORDER_STATUS.REFUNDED, updatedAt: serverTimestamp() });
-                    batch.update(window.db.collection(COLLECTIONS.ESCROW).doc(orderId), { status: 'refunded', resolvedAt: serverTimestamp() });
-
-                } else if (resolution === 'pay_seller') {
-                    // Release to seller
-                    const platformFee  = calcPlatformFee(escrow.amount);
-                    const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
-                    const sellerWallet = window.db.collection(COLLECTIONS.WALLET).doc(escrow.sellerId);
-                    batch.set(sellerWallet, { balance: increment(sellerAmount), updatedAt: serverTimestamp() }, { merge: true });
-                    batch.update(window.db.collection(COLLECTIONS.ORDERS).doc(orderId), { status: ORDER_STATUS.COMPLETED, updatedAt: serverTimestamp() });
-                    batch.update(window.db.collection(COLLECTIONS.ESCROW).doc(orderId), { status: 'released', resolvedAt: serverTimestamp() });
-                }
-
-                batch.update(window.db.collection(COLLECTIONS.DISPUTES).doc(disputeId), {
-                    status:     'resolved',
-                    resolution,
-                    resolvedAt: serverTimestamp(),
-                    resolvedBy: AppState.currentUser?.uid,
+                const idToken = window.auth && window.auth.currentUser ? await window.auth.currentUser.getIdToken() : '';
+                const resp = await fetch('/api/payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                    body: JSON.stringify({ action: 'resolveDispute', disputeId, orderId, resolution }),
                 });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.error || (isAr ? 'تعذر حل النزاع' : 'Could not resolve dispute'));
 
-                await batch.commit();
                 hideLoading();
                 showToast(isAr ? 'تم حل النزاع بنجاح' : 'Dispute resolved', 'success');
+
+                // Refresh the disputes tab so the resolved dispute's buttons
+                // disappear immediately instead of staying clickable.
+                if (typeof window.adminTab === 'function') window.adminTab('disputes');
             } catch (err) {
                 hideLoading();
-                showToast(t('general.error'), 'error');
+                showToast((isAr ? 'خطأ: ' : 'Error: ') + err.message, 'error');
             }
         },
 
@@ -290,15 +266,35 @@
 
     function _showDisputeDialog(orderId) {
         const isAr = AppState.language !== 'en';
+        // ⚠️ CHANGED: this used to be a single free-text box. Per Ahmed's
+        // request: a real form — a structured reason (so both the other
+        // party and admin instantly know the category of problem) plus a
+        // free-text description of what actually happened between them.
+        const REASONS = [
+            { code: 'not_delivered',  ar: 'لم يتم تسليم العمل في الموعد',        en: "Work wasn't delivered on time" },
+            { code: 'quality_issue',  ar: 'جودة العمل ضعيفة أو غير مطابقة',      en: 'Poor quality / not as advertised' },
+            { code: 'not_as_agreed',  ar: 'العمل غير مطابق لما تم الاتفاق عليه', en: "Doesn't match what was agreed" },
+            { code: 'no_response',    ar: 'الطرف الآخر لا يرد',                  en: 'The other party stopped responding' },
+            { code: 'payment_issue',  ar: 'مشكلة متعلقة بالدفع أو المبلغ',       en: 'A payment/amount issue' },
+            { code: 'other',          ar: 'سبب آخر',                            en: 'Other' },
+        ];
         return new Promise((resolve) => {
             const overlay = document.createElement('div');
             overlay.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
             overlay.innerHTML = `
-              <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
+              <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-xl font-black text-gray-900 mb-2">${isAr ? 'فتح نزاع' : 'Open Dispute'}</h3>
-                <p class="text-gray-500 text-sm mb-4">${isAr ? 'سيتم تجميد الأموال وإعلام الأدمن' : 'Funds will be frozen and admin will be notified'}</p>
-                <textarea id="disputeReason" rows="4" class="form-input mb-4"
+                <p class="text-gray-500 text-sm mb-4">${isAr ? 'هيتم تجميد الأموال وإرسال كل بيانات الطلب والمحادثة للإدارة للفصل فيه' : "Funds will be frozen and the order's full details and conversation sent to the admin to review"}</p>
+
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'سبب النزاع' : 'Reason for the dispute'}</label>
+                <select id="disputeReasonCode" class="form-input mb-3 w-full">
+                  ${REASONS.map(r => `<option value="${r.code}">${isAr ? r.ar : r.en}</option>`).join('')}
+                </select>
+
+                <label class="text-sm font-bold text-gray-700 mb-1 block">${isAr ? 'وضّح المشكلة بينك وبين الطرف الآخر' : 'Describe the problem between you and the other party'}</label>
+                <textarea id="disputeReason" rows="4" class="form-input mb-4 w-full"
                   placeholder="${isAr ? 'اشرح سبب النزاع بالتفصيل...' : 'Explain the dispute reason in detail...'}"></textarea>
+
                 <div class="flex gap-3">
                   <button id="dlg_cancel" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
                   <button id="dlg_submit" class="btn-primary flex-1 py-3 bg-red-600">${isAr ? 'إرسال النزاع' : 'Submit Dispute'}</button>
@@ -306,9 +302,26 @@
               </div>`;
             document.body.appendChild(overlay);
             overlay.querySelector('#dlg_submit').onclick = () => {
-                const reason = overlay.querySelector('#disputeReason').value.trim();
+                const reasonCode = overlay.querySelector('#disputeReasonCode').value;
+                const reasonObj  = REASONS.find(r => r.code === reasonCode) || REASONS[REASONS.length - 1];
+                const description = overlay.querySelector('#disputeReason').value.trim();
+                if (!description) {
+                    overlay.querySelector('#disputeReason').classList.add('border-red-400');
+                    showToast(isAr ? 'من فضلك اشرح المشكلة' : 'Please describe the problem', 'warning');
+                    return;
+                }
                 overlay.remove();
-                resolve(reason || '—');
+                resolve({
+                    reasonCode,
+                    reasonLabel: isAr ? reasonObj.ar : reasonObj.en,
+                    description,
+                    // Combined single-line summary — kept so every existing
+                    // place that just prints `dispute.reason` as plain text
+                    // (dashboard.js's history list, notifications...) still
+                    // reads sensibly without needing to know about the new
+                    // separate reasonCode/description fields.
+                    combined: `${reasonObj.ar} — ${description}`,
+                });
             };
             overlay.querySelector('#dlg_cancel').onclick = () => { overlay.remove(); resolve(null); };
         });

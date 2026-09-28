@@ -16,27 +16,61 @@ service cloud.firestore {
     function isSellerOwner(sellerId) {
       return isSignedIn() && request.auth.uid == sellerId;
     }
+    function _order(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data;
+    }
 
     // ── users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isOwner(userId);
-      // User can update own doc; admin can update anyone's
-      allow update: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller']);
+      // ⚠️ CHANGED (privacy audit): 'phone' removed from the editable-fields
+      // list. This document is readable by ANY signed-in user (needed so
+      // buyers can see a seller's public name/avatar/bio/rating) — there is
+      // no such thing as a "partial" Firestore rule that opens some fields
+      // to everyone and others to nobody, security rules only ever see the
+      // whole document. So anything that shouldn't be readable by every
+      // other logged-in user (phone number; payoutMethod/payoutAccount were
+      // already never in this list) now lives in the private subcollection
+      // just below instead, not here. See js/auth.js (_ensureUserDoc,
+      // register, updateProfile) and js/seller-dashboard.js
+      // (savePayoutInfo) for the corresponding client-side change, and
+      // functions/api/admin-migrate-private-fields.js for the one-time
+      // migration of any pre-existing users' data out of this document.
+      allow update: if isAdmin() || (
+                      isOwner(userId) &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['name','displayName','avatar','photoURL','bio',
+                                  'role','updatedAt','acceptedTerms','termsAcceptedAt']) &&
+                      (!('role' in request.resource.data.diff(resource.data).affectedKeys()) ||
+                       (resource.data.role == 'buyer' && request.resource.data.role == 'seller'))
+                    );
       allow delete: if isAdmin();
+
+      // ── users/{uid}/private/{contact} ─────────────────────────────────────
+      // ⚠️ ADDED: phone number + payout method/account — readable only by the
+      // account owner and admins, never by "any signed-in user" the way the
+      // parent document above is. A single fixed-id doc ('contact') rather
+      // than one per field, since these are always read/written together.
+      match /private/{docId} {
+        allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
+      }
     }
 
     // ── services ──────────────────────────────────────────────────────────────
     match /services/{serviceId} {
-      // Public read — customers and guests can view services
       allow read: if true;
-      // Only verified sellers can create their own services
       allow create: if isSeller()
                     && request.resource.data.sellerId == request.auth.uid
                     && request.resource.data.keys().hasAll(['title','price','sellerId','createdAt']);
-      // Only the owning seller (or admin) can update
-      allow update: if (isSellerOwner(resource.data.sellerId) && isSeller()) || isAdmin();
-      // Only the owning seller (or admin) can delete
+      allow update: if isAdmin() || (
+                      isSellerOwner(resource.data.sellerId) && isSeller() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['title','description','category','price','deliveryDays',
+                                  'revisions','image','tags','active','status','recurring','updatedAt',
+                                  'listingType','digitalDelivery','stockLimit','expiryDate'])
+                    );
       allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
     }
 
@@ -46,12 +80,55 @@ service cloud.firestore {
                        (request.auth.uid == resource.data.buyerId ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
+      // Products skip approval (buyProductNow), and "instant" order-mode
+      // services (openInstantModal → submitRequest) also start at 'accepted'
+      // so payment can begin right away — everything else must start 'pending'.
+      // ⚠️ SECURITY FIX (audit finding): price/sellerId used to be taken
+      // straight from the client's write with no cross-check at all — a
+      // buyer's own browser is what writes this document, so nothing stopped
+      // it from naming a real service's serviceId while setting sellerId to
+      // an account the buyer controls, or a price far from the service's
+      // real one. The actual money was always safe (functions/api/payment.js
+      // re-resolves both from the service doc itself before ever charging or
+      // crediting anyone — see resolveExistingOrder()'s comments there for
+      // the one path that had drifted from that and has since been fixed
+      // too), but the order document itself — what the seller and the admin
+      // panel display and reason about before payment — could still show a
+      // spoofed seller/price. Requiring it to match the live service doc at
+      // write time closes that gap at the source as well, not just at the
+      // one endpoint that touches money.
       allow create: if isSignedIn()
-                    && request.resource.data.buyerId == request.auth.uid;
+                    && request.resource.data.buyerId == request.auth.uid
+                    && request.resource.data.paymentStatus == 'no_payment'
+                    && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true)
+                    && (
+                         !('serviceId' in request.resource.data) ||
+                         (
+                           request.resource.data.sellerId == get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.sellerId &&
+                           request.resource.data.price    == get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.price
+                         )
+                       )
+                    && (
+                         request.resource.data.status == 'pending'
+                         || (request.resource.data.status == 'accepted' &&
+                             (request.resource.data.listingType == 'product' ||
+                              request.resource.data.orderMode == 'instant'))
+                       );
       allow update: if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
-                        isAdmin());
+                        isAdmin()) &&
+                       (isAdmin() || (
+                         request.resource.data.status != 'completed' &&
+                         (request.resource.data.status != 'delivered' ||
+                          resource.data.status in ['payment_held','in_progress','revision']) &&
+                         (!('escrowHeld' in resource.data)   || request.resource.data.escrowHeld   == resource.data.escrowHeld) &&
+                         (!('escrowAmount' in resource.data) || request.resource.data.escrowAmount == resource.data.escrowAmount) &&
+                         (!('paymentId' in resource.data)    || request.resource.data.paymentId    == resource.data.paymentId) &&
+                         request.resource.data.price == resource.data.price &&
+                         request.resource.data.buyerId == resource.data.buyerId &&
+                         request.resource.data.sellerId == resource.data.sellerId
+                       ));
       allow delete: if isAdmin();
     }
 
@@ -65,31 +142,97 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ── wallet ────────────────────────────────────────────────────────────────
-    match /wallet/{userId} {
+    // ── wallets ───────────────────────────────────────────────────────────────
+    match /wallets/{userId} {
       allow read:   if isOwner(userId) || isAdmin();
-      allow write:  if isAdmin(); // Only admin / cloud functions write wallet
+      allow write:  if isAdmin();
     }
-    match /wallet_transactions/{txId} {
+    // ── transactions ──────────────────────────────────────────────────────────
+    match /transactions/{txId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow write:  if isAdmin();
+    }
+    // ── escrow ────────────────────────────────────────────────────────────────
+    match /escrow/{orderId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if false;
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId) &&
+                       resource.data.status == 'held' &&
+                       request.resource.data.status == 'frozen' &&
+                       request.resource.data.amount   == resource.data.amount &&
+                       request.resource.data.buyerId  == resource.data.buyerId &&
+                       request.resource.data.sellerId == resource.data.sellerId
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+    // ── withdrawals ───────────────────────────────────────────────────────────
+    // ⚠️ SECURITY FIX (audit finding — critical): this used to allow ANY
+    // signed-in user to create a withdrawals doc directly (only checking
+    // `userId == auth.uid`), with no check on `amount` against their real
+    // wallet balance at all. The real request flow (js/dashboard.js
+    // submitWithdrawal → POST /api/payment `requestWithdrawal`) never uses
+    // this client path — it goes entirely through functions/api/payment.js's
+    // handleRequestWithdrawal, which verifies the balance server-side and
+    // atomically debits the wallet using the service account (which bypasses
+    // these rules by design, the same way escrow/wallets writes do). So a
+    // client `create` here was never legitimate, only exploitable: someone
+    // could hand-write a fake request for any amount with NO matching debit
+    // ever having happened, have it sit in the admin's queue looking
+    // identical to a real one, and if an admin clicked "✕ Reject" on it —
+    // WalletManager.rejectWithdrawal() credits the wallet back by that exact
+    // amount to undo a debit that, for a forged request, never occurred —
+    // manufacturing real spendable balance out of nothing. Blocking client
+    // `create` entirely closes this at the source; js/dashboard.js's
+    // approve/reject actions were also hardened to check `status=='pending'`
+    // first as defense in depth against double-processing.
+    match /withdrawals/{reqId} {
+      allow read:   if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if false;
       allow update, delete: if isAdmin();
     }
 
     // ── reviews ───────────────────────────────────────────────────────────────
+    // ⚠️ SECURITY FIX (audit finding): create used to only check
+    // `reviewerId == auth.uid` — nothing tied the review to a real completed
+    // order at all. Any signed-in user (a competitor, a seller reviewing
+    // their own service from a second account, anyone) could post a review
+    // for any seller/service with any rating, with no order ever having
+    // happened — directly corrupting the rating shown to buyers and the
+    // seller "quality score" functions/api/quality-score.js computes from
+    // this same collection. Now a review can only be created by the actual
+    // buyer of a real, COMPLETED order for that exact seller+service, and
+    // only once per order (orders.reviewed flips to true in the same batch
+    // that creates the review — see js/order-workspace.js submitReview —
+    // so a second attempt sees reviewed==true and is rejected).
     match /reviews/{reviewId} {
       allow read:   if true;
       allow create: if isSignedIn()
-                    && request.resource.data.buyerId == request.auth.uid;
-      allow update: if isOwner(resource.data.buyerId) || isAdmin();
-      allow delete: if isOwner(resource.data.buyerId) || isAdmin();
+                    && request.resource.data.reviewerId == request.auth.uid
+                    && request.resource.data.orderId is string
+                    && _order(request.resource.data.orderId).buyerId    == request.auth.uid
+                    && _order(request.resource.data.orderId).sellerId   == request.resource.data.sellerId
+                    && _order(request.resource.data.orderId).serviceId  == request.resource.data.serviceId
+                    && _order(request.resource.data.orderId).status     == 'completed'
+                    && _order(request.resource.data.orderId).reviewed   != true;
+      allow update: if isAdmin() || (
+                      isOwner(resource.data.reviewerId) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','text','updatedAt']) &&
+                      request.resource.data.sellerId  == resource.data.sellerId &&
+                      request.resource.data.serviceId == resource.data.serviceId &&
+                      request.resource.data.orderId   == resource.data.orderId
+                    );
+      allow delete: if isOwner(resource.data.reviewerId) || isAdmin();
     }
 
     // ── articles / blog_posts ─────────────────────────────────────────────────
     match /articles/{articleId} {
       allow read: if true;
-      // Only admins can create / update / delete articles
       allow write: if isAdmin();
     }
     match /blog_posts/{postId} {
@@ -109,30 +252,65 @@ service cloud.firestore {
     // ── subscriptions ─────────────────────────────────────────────────────────
     match /subscriptions/{subId} {
       allow read:   if isSignedIn() &&
-                       (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId) || isAdmin();
-      allow delete: if isAdmin();
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow write:  if isAdmin();
     }
 
     // ── notifications ─────────────────────────────────────────────────────────
+    // Per-type allow-list of every legitimate cross-user notification the app
+    // actually creates client-side:
+    //   'new_request'/'new_order'   buyer  -> seller  (request-system.js)
+    //   'request_accepted'          seller -> buyer   (order-workspace.js)
+    //   'payment_reminder'          seller -> buyer   (seller-dashboard.js)
+    //   'delivery'                  seller -> buyer   (order-workspace.js)
+    //   'buyer_instructions'        buyer  -> seller  (order-workspace.js)
+    //   'stage_update'              seller -> buyer   (order-workspace.js)
+    //   'dispute'                   buyer/seller -> 'ADMIN' (escrow.js)
+    // Anything else (payment_confirmed, withdrawal_paid, etc.) requires
+    // isAdmin(), i.e. only the server's service-account writes.
     match /notifications/{notifId} {
       allow read:   if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isSignedIn();
+      allow create: if isAdmin() || (
+        isSignedIn() && request.resource.data.orderId is string && (
+          ((request.resource.data.type == 'new_request' || request.resource.data.type == 'new_order') &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          ((request.resource.data.type == 'request_accepted' || request.resource.data.type == 'payment_reminder' ||
+            request.resource.data.type == 'delivery' || request.resource.data.type == 'stage_update') &&
+           request.auth.uid == _order(request.resource.data.orderId).sellerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).buyerId) ||
+          (request.resource.data.type == 'buyer_instructions' &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          ((request.resource.data.type == 'dispute' || request.resource.data.type == 'return_manual_refund' || request.resource.data.type == 'user_report') &&
+           request.resource.data.userId == 'ADMIN' &&
+           (request.auth.uid == _order(request.resource.data.orderId).buyerId ||
+            request.auth.uid == _order(request.resource.data.orderId).sellerId)) ||
+          // ── Product returns (js/returns.js) ─────────────────────────────
+          (request.resource.data.type == 'return_requested' &&
+           request.auth.uid == _order(request.resource.data.orderId).buyerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
+          ((request.resource.data.type == 'return_approved' || request.resource.data.type == 'return_rejected') &&
+           request.auth.uid == _order(request.resource.data.orderId).sellerId &&
+           request.resource.data.userId == _order(request.resource.data.orderId).buyerId)
+        )
+      );
       allow update: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
-    // ── chats / messages ──────────────────────────────────────────────────────
+    // ── chats / messages (legacy Firestore — real chat lives in RTDB now) ────
     match /chats/{chatId} {
       allow read, write: if isSignedIn() &&
                             (request.auth.uid in resource.data.participants || isAdmin());
       match /messages/{msgId} {
-        allow read, write: if isSignedIn();
+        allow read, write: if false;
       }
     }
     match /messages/{msgId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if false;
     }
 
     // ── coupons ───────────────────────────────────────────────────────────────
@@ -147,31 +325,98 @@ service cloud.firestore {
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() &&
-                       (request.auth.uid == resource.data.buyerId  ||
-                        request.auth.uid == resource.data.sellerId ||
-                        isAdmin());
+      allow create: if isSignedIn() &&
+                       (request.resource.data.buyerId == request.auth.uid ||
+                        request.resource.data.sellerId == request.auth.uid);
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
-    // ── service_views counter (public increment) ───────────────────────────────
-    match /service_views/{viewId} {
-      allow read:   if true;
-      allow create: if true;  // anonymous view tracking
-      allow update, delete: if isAdmin();
+    // ── returns (product-return requests: buyer → seller → admin refund) ───────
+    // Mirrors the /disputes pattern above: buyer creates, only the seller on
+    // that order (or admin) can move it forward, and only while it's still
+    // 'pending' (a decided return can't be flipped back by the seller).
+    match /returns/{returnId} {
+      allow read:   if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin());
+      allow create: if isSignedIn() &&
+                       request.resource.data.buyerId  == request.auth.uid &&
+                       request.resource.data.status   == 'pending' &&
+                       request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt']);
+      allow update: if isAdmin() || (
+                       isSignedIn() &&
+                       request.auth.uid == resource.data.sellerId &&
+                       resource.data.status == 'pending' &&
+                       request.resource.data.status in ['approved','rejected'] &&
+                       request.resource.data.orderId  == resource.data.orderId &&
+                       request.resource.data.buyerId  == resource.data.buyerId &&
+                       request.resource.data.sellerId == resource.data.sellerId
+                     );
+      allow delete: if isAdmin();
     }
 
-    // ── categories (public) ──────────────────────────────────────────────────
+    // ── service_views counter ─────────────────────────────────────────────────
+    // ⚠️ SECURITY FIX (audit finding): `create: if true` let literally
+    // anyone — including a signed-out visitor — write unlimited documents
+    // here for free, with no shape or rate check at all: a pure storage/
+    // quota-abuse (denial-of-wallet) vector. Grepping the whole app, nothing
+    // in js/ or functions/ actually reads or writes this collection any
+    // more (it appears to be leftover from a view-counter feature that was
+    // never wired up, or was removed) — closing it to admin-only rather
+    // than trying to validate a shape nothing currently produces.
+    match /service_views/{viewId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── categories ────────────────────────────────────────────────────────────
     match /categories/{catId} {
       allow read:  if true;
       allow write: if isAdmin();
     }
 
-    // ── settings (admin only) ────────────────────────────────────────────────
+    // ── reports ───────────────────────────────────────────────────────────────
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
+    }
+
+    // ── fraud_flags ───────────────────────────────────────────────────────────
+    match /fraud_flags/{flagId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ── settings ──────────────────────────────────────────────────────────────
+    // ⚠️ FIXED (found in audit): read used to require isSignedIn(), but
+    // loadPlatformSettings() in constants.js runs at app start BEFORE
+    // Firebase Auth has resolved (even for a logged-in user auth.uid can
+    // still be null at that exact moment — a timing race, not a real
+    // permission problem), and guests browsing services before logging in
+    // also need the real commission % to see accurate pricing. This
+    // document only holds public config (fee %, feature toggles) — never
+    // secrets — so making it world-readable is safe; only admins can still
+    // write it.
     match /settings/{docId} {
-      allow read:  if isSignedIn();
+      allow read:  if true;
       allow write: if isAdmin();
+    }
+
+    // ── pending_payments (server-only) ───────────────────────────────────────
+    match /pending_payments/{id} {
+      allow read, write: if false;
+    }
+
+    // ── rate_limits (server-only) ─────────────────────────────────────────────
+    match /rate_limits/{id} {
+      allow read, write: if false;
+    }
+
+    // ── admin_actions (audit log — server-write only via admin-delete.js) ───
+    match /admin_actions/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
     }
   }
 }

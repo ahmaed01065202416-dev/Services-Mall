@@ -1,6 +1,5 @@
 # ============================================================================
 # _headers — Cloudflare Pages headers config
-# (converted from netlify.toml [[headers]] rules)
 # ============================================================================
 
 /*
@@ -9,14 +8,17 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Cross-Origin-Resource-Policy: cross-origin
-  Permissions-Policy: accelerometer=(self "https://accept.paymob.com"), gyroscope=(self "https://accept.paymob.com"), camera=(), microphone=(), geolocation=(), payment=(self "https://accept.paymob.com" "https://js.stripe.com")
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://js.stripe.com https://*.firebaseio.com https://firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https://firebasestorage.googleapis.com; connect-src 'self' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://apis.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.cloudfunctions.net wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://api.paymob.com https://accept.paymob.com https://api.paypal.com https://www.paypal.com https://api.stripe.com https://r.stripe.com; frame-src 'self' https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://accept.paymob.com https://js.stripe.com https://hooks.stripe.com https://iframe.paymob.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://accept.paymob.com
+  Permissions-Policy: accelerometer=(), gyroscope=(), camera=(), microphone=(), geolocation=(), payment=(self "https://app.fawaterk.com")
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https://firebasestorage.googleapis.com; connect-src 'self' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://apis.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.cloudfunctions.net wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://app.fawaterk.com https://fawaterk.com; frame-src 'self' https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://*.firebaseio.com https://app.fawaterk.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://app.fawaterk.com
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
 
 /js/*
+  Cache-Control: no-cache, must-revalidate
+
+/css/*
   Cache-Control: no-cache, must-revalidate
 
 /icons/*
