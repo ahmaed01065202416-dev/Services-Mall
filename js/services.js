@@ -14,6 +14,9 @@
     let _expressOnly   = false;
     let _activeCat     = '';
     let _activeType    = ''; // '', 'service', or 'product'
+    let _searchQuery   = ''; // ⚠️ ADDED: search text is now part of the one shared filter pipeline (_applyFilters)
+    let _hasMore       = false; // ⚠️ ADDED: last page came back full → more listings exist server-side
+    let _sortBy        = 'newest'; // ⚠️ ADDED: remembered so a filter change doesn't silently undo the chosen sort
     let _pendingGalleryFiles = []; // new gallery photos chosen but not yet uploaded
     let _keptExistingGallery = [];  // existing gallery URLs kept when editing (minus any removed)
     let _digitalProducts = []; // ⚠️ ADDED: cache for the dedicated Digital Products page
@@ -131,7 +134,7 @@
             if (_loading) return;
             _loading = true;
 
-            if (reset) { _allServices = []; _filtered = []; _lastDoc = null; }
+            if (reset) { _allServices = []; _filtered = []; _lastDoc = null; _hasMore = false; }
 
             try {
                 let query = window.db.collection(COLLECTIONS.SERVICES)
@@ -143,16 +146,25 @@
 
                 const snap = await query.get();
                 _lastDoc   = snap.docs[snap.docs.length - 1] || null;
+                _hasMore   = snap.docs.length >= PAGE_SIZE;
 
                 const newServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 _allServices = reset ? newServices : [..._allServices, ...newServices];
-                _filtered    = [..._allServices];
 
-                this._renderServiceCards(_filtered);
+                // ⚠️ FIXED: this used to render `_allServices` as-is, ignoring the
+                // active type/category/express/search filters and the digital
+                // exclusion. initServicesPage() applies the "منتجات"/"خدمات" tab
+                // 200ms after starting this (un-awaited) fetch — when the fetch
+                // took longer than that, the tab was applied to an empty list and
+                // then this unfiltered render landed on top of it, so services
+                // showed up under "منتجات" (and products under "خدمات") while the
+                // tab/title claimed otherwise. "تحميل المزيد" had the same hole.
+                // Every render now goes through the one filter pipeline.
+                this._applyFilters();
 
                 // Load more button
                 const loadMoreBtn = document.getElementById('loadMoreBtn');
-                if (loadMoreBtn) loadMoreBtn.classList.toggle('hidden', snap.docs.length < PAGE_SIZE);
+                if (loadMoreBtn) loadMoreBtn.classList.toggle('hidden', !_hasMore);
 
             } catch (err) {
                 if (err.code === 'failed-precondition') {
@@ -164,6 +176,15 @@
             } finally {
                 _loading = false;
             }
+
+            // ⚠️ ADDED: filtering happens in the browser on a page of 12 mixed
+            // listings, so a tab like "منتجات" could show 2 items (or none)
+            // while plenty more products sat on later pages behind "تحميل
+            // المزيد". While a filter is active and the visible result is
+            // still under one page, keep pulling the next page automatically.
+            if (_hasMore && (_activeType || _activeCat || _searchQuery) && _filtered.length < PAGE_SIZE) {
+                return this.loadServices(false);
+            }
         },
 
         async _loadFallback() {
@@ -171,8 +192,7 @@
                 const snap = await window.db.collection(COLLECTIONS.SERVICES)
                     .where('active', '==', true).limit(PAGE_SIZE).get();
                 _allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                _filtered    = [..._allServices];
-                this._renderServiceCards(_filtered);
+                this._applyFilters();
             } catch (err) {
                 console.warn('[Services] Fallback error:', err.message);
             }
@@ -180,25 +200,23 @@
 
         // ── Search ────────────────────────────────────────────────────────────
         search(query) {
-            const q = (query || '').trim().toLowerCase();
-            if (!q) {
-                _filtered = [..._allServices];
-            } else {
-                _filtered = _allServices.filter(s =>
-                    (s.title || '').toLowerCase().includes(q) ||
-                    (s.description || '').toLowerCase().includes(q) ||
-                    (s.sellerName || '').toLowerCase().includes(q) ||
-                    (s.category || '').toLowerCase().includes(q) ||
-                    (s.tags || []).some(t => t.toLowerCase().includes(q))
-                );
-            }
-            this._renderServiceCards(_filtered);
+            // ⚠️ FIXED: used to filter `_allServices` directly, so searching threw
+            // away the active type/category tab (and un-hid digital products,
+            // which live on their own page). Now it only records the text —
+            // _applyFilters() combines it with everything else.
+            _searchQuery = (query || '').trim().toLowerCase();
+            this._applyFilters();
         },
 
         // ── Filter by Category ────────────────────────────────────────────────
         filterCategory(cat) {
+            this._setActiveCat(cat);
+            this._applyFilters();
+        },
+        // State + pill highlight only (no render) — initServicesPage() uses this
+        // to apply a starting category BEFORE the first load finishes.
+        _setActiveCat(cat) {
             _activeCat = cat;
-            // Update UI
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 const isActive = btn.dataset.cat === cat;
                 btn.classList.toggle('bg-navy-600', isActive);
@@ -207,7 +225,6 @@
                 btn.classList.toggle('text-gray-600', !isActive);
                 btn.classList.toggle('border-gray-200', !isActive);
             });
-            this._applyFilters();
         },
 
         // ⚠️ ADDED: rebuild the browse-page category pills to match whichever
@@ -233,6 +250,11 @@
 
         // ⚠️ ADDED: خدمات (custom request flow) vs منتجات (instant buy) — '' = both
         filterType(type) {
+            this._setActiveType(type);
+            this._applyFilters();
+        },
+        // State + tab/title/pills/nav highlight only (no render) — see _setActiveCat.
+        _setActiveType(type) {
             _activeType = type;
             _activeCat  = '';
             document.querySelectorAll('.type-tab-btn').forEach(btn => {
@@ -260,7 +282,6 @@
                     : type === 'service' ? (isAr ? 'الخدمات' : 'Services')
                     : (isAr ? 'الخدمات والمنتجات' : 'Services & Products');
             }
-            this._applyFilters();
         },
 
         // ── Toggle Express Delivery Hub (services deliverable in ≤1 day) ──────
@@ -288,21 +309,42 @@
             let list = _allServices.filter(s => (s.category||'').trim() !== 'digital');
             if (_activeCat) list = list.filter(s => (s.category||'').trim() === _activeCat);
             if (_activeType) list = list.filter(s => ((s.listingType||'service').trim()) === _activeType);
-            if (_expressOnly) list = list.filter(s => (Number(s.deliveryDays) || 3) <= 1);
+            // ⚠️ FIXED: the express toggle is hidden on the products tab but its
+            // filter used to stay switched on underneath — quietly hiding every
+            // product with a delivery time over a day. Express only applies to
+            // services.
+            if (_expressOnly && _activeType !== 'product') list = list.filter(s => (Number(s.deliveryDays) || 3) <= 1);
+            if (_searchQuery) {
+                const q = _searchQuery;
+                list = list.filter(s =>
+                    (s.title || '').toLowerCase().includes(q) ||
+                    (s.description || '').toLowerCase().includes(q) ||
+                    (s.sellerName || '').toLowerCase().includes(q) ||
+                    (s.category || '').toLowerCase().includes(q) ||
+                    (s.tags || []).some(t => String(t).toLowerCase().includes(q))
+                );
+            }
+            switch (_sortBy) {
+                case 'price_asc':  list.sort((a,b) => (a.price||0)  - (b.price||0));   break;
+                case 'price_desc': list.sort((a,b) => (b.price||0)  - (a.price||0));   break;
+                case 'rating':     list.sort((a,b) => (b.rating||0) - (a.rating||0));  break;
+                case 'quality':    list.sort((a,b) => (b.qualityScore||0) - (a.qualityScore||0)); break;
+                default:           list.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+            }
             _filtered = list;
             this._renderServiceCards(_filtered);
+            // Same "keep filling the tab" rule as the end of loadServices(),
+            // for filters changed by the user AFTER the initial load. (Skipped
+            // while a load is running — that call continues on its own.)
+            if (!_loading && _hasMore && (_activeType || _activeCat || _searchQuery) && _filtered.length < PAGE_SIZE) {
+                this.loadServices(false);
+            }
         },
 
         // ── Sort ──────────────────────────────────────────────────────────────
         sort(by) {
-            switch (by) {
-                case 'price_asc':  _filtered.sort((a,b) => (a.price||0)  - (b.price||0));   break;
-                case 'price_desc': _filtered.sort((a,b) => (b.price||0)  - (a.price||0));   break;
-                case 'rating':     _filtered.sort((a,b) => (b.rating||0) - (a.rating||0));  break;
-                case 'quality':    _filtered.sort((a,b) => (b.qualityScore||0) - (a.qualityScore||0)); break;
-                default:           _filtered.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-            }
-            this._renderServiceCards(_filtered);
+            _sortBy = by || 'newest';
+            this._applyFilters();
         },
 
         // ── Render Cards ──────────────────────────────────────────────────────
@@ -417,7 +459,7 @@
                     var lang = AppState.language;
                     if (isOwnService || isAdm) {
                       return '<button onclick="event.stopPropagation();ServicesManager.deleteService(\'' + s.id + '\')" class="flex-1 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-trash text-xs\"></i>' + (lang !== 'en' ? 'حذف الإعلان' : 'Delete') + '</button>'
-                           + '<button onclick="event.stopPropagation();ServicesManager._renderAddServiceForm(' + editDataStr + ');navigateTo(\'add-service\')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
+                           + '<button onclick="event.stopPropagation();navigateTo(\'add-service\', ' + editDataStr + ')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
                     }
                     if (s.listingType === 'product') {
                       return '<button onclick="event.stopPropagation();addToCart(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-plus text-xs\"></i>' + (lang !== 'en' ? 'أضف للسلة' : 'Add to Cart') + '</button>';
@@ -1289,22 +1331,30 @@
         // on every fresh visit unless the caller explicitly passed a filter
         // via AppState.filterType/filterCategory (handled right below).
         initServicesPage() {
-            _activeType = '';
-            _activeCat  = '';
+            // ⚠️ FIXED (race): the starting type/category (from the top-nav
+            // "الخدمات"/"المنتجات" links, the hero search, or a home category
+            // card) used to be applied by two setTimeout()s 200ms after an
+            // un-awaited loadServices() fired. If the fetch was slower than
+            // that, the tab was applied to an empty list and the fetch result
+            // then rendered unfiltered over it. Everything is now set up
+            // synchronously first — and the type BEFORE the category, because
+            // switching type resets the category — so the load's own render
+            // (which goes through _applyFilters) already honours it.
+            const startType  = AppState.filterType     || '';
+            const startCat   = AppState.filterCategory || '';
+            const startQuery = (AppState.searchQuery   || '').trim();
+            AppState.filterType = ''; AppState.filterCategory = ''; AppState.searchQuery = '';
+
+            _activeType = ''; _activeCat = ''; _searchQuery = startQuery.toLowerCase(); _sortBy = 'newest';
+            const searchEl = document.getElementById('servicesSearch');
+            if (searchEl) searchEl.value = startQuery;
+            const sortEl = document.getElementById('servicesSort');
+            if (sortEl) sortEl.value = 'newest';
+
+            this._setActiveType(startType);
+            if (startCat) this._setActiveCat(startCat);
+
             this.loadServices();
-            this._renderCategoryPills(_activeType);
-            if (AppState.filterCategory) {
-                setTimeout(() => {
-                    this.filterCategory(AppState.filterCategory);
-                    AppState.filterCategory = '';
-                }, 200);
-            }
-            if (AppState.filterType) {
-                setTimeout(() => {
-                    this.filterType(AppState.filterType);
-                    AppState.filterType = '';
-                }, 200);
-            }
         },
 
         // ── Init add-service page ─────────────────────────────────────────────
@@ -1324,7 +1374,25 @@
                 </div>`;
                 return;
             }
-            this._renderAddServiceForm();
+            // ⚠️ FIXED: navigateTo() calls this on EVERY navigation to
+            // 'add-service' (it's the generic "page init" hook — see
+            // constants.js navigateTo, which runs init<Page>Page()
+            // automatically). This used to unconditionally call
+            // _renderAddServiceForm() with no arguments, which reset the
+            // form to a blank "Add New" state — including right after an
+            // Edit button had just rendered it WITH the listing's data, since
+            // every edit button called `_renderAddServiceForm(editData);
+            // navigateTo('add-service')` and that second call silently wiped
+            // out the first. Edit buttons now go through
+            // navigateTo('add-service', service) instead (see
+            // js/seller-dashboard.js, js/dashboard.js, js/services.js), which
+            // stores the listing in AppState.pageData for exactly this
+            // moment — read it once here, then clear it so a later plain
+            // "Add Product/Service" click doesn't accidentally reopen it
+            // pre-filled with someone's old edit.
+            const editingService = AppState.pageData;
+            AppState.pageData = null;
+            this._renderAddServiceForm(editingService || null);
         }
     };
 

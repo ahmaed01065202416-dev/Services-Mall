@@ -1923,11 +1923,13 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     }
 
     window.filterByCategory = function(cat) {
+        // ⚠️ FIXED: no more setTimeout re-apply here — initServicesPage()
+        // (run by navigateTo) reads AppState.filterCategory/filterType/
+        // searchQuery synchronously, in the right order, before the list
+        // loads. The old delayed calls raced the load and (in the hero
+        // search) applied category-then-type, which wiped the category.
         AppState.filterCategory = cat;
         navigateTo('services');
-        setTimeout(() => {
-            if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
-        }, 100);
     };
 
     // ⚠️ FIXED: "الخدمات" and "المنتجات" both navigate to the SAME page
@@ -1940,9 +1942,6 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         AppState.filterType = type;
         navigateTo('services');
         _syncTypeNavHighlight(type);
-        setTimeout(() => {
-            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
-        }, 100);
     };
 
     window._syncTypeNavHighlight = function(type) {
@@ -1964,10 +1963,6 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         AppState.filterCategory = cat;
         navigateTo('services');
         _syncTypeNavHighlight(type);
-        setTimeout(() => {
-            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
-            if (typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
-        }, 100);
     };
 
     // ⚠️ ADDED: toggle the hero's services/products segmented control —
@@ -2000,16 +1995,8 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         const type  = window._heroSearchMode === 'products' ? 'product' : (window._heroSearchMode === 'services' ? 'service' : '');
         AppState.filterCategory = cat;
         AppState.filterType = type;
+        AppState.searchQuery = query;
         navigateTo('services');
-        setTimeout(() => {
-            if (cat && typeof ServicesManager?.filterCategory === 'function') ServicesManager.filterCategory(cat);
-            if (typeof ServicesManager?.filterType === 'function') ServicesManager.filterType(type);
-            if (query && typeof ServicesManager?.search === 'function') {
-                const input = document.getElementById('servicesSearch');
-                if (input) input.value = query;
-                ServicesManager.search(query);
-            }
-        }, 100);
     };
 
     // ── Home page stats — real counts from Firestore, not hardcoded marketing

@@ -159,7 +159,7 @@
                       <img src="${s.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                       <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(s.title||'—')}</p><p class="text-sm text-gray-500">${formatCurrency(s.price||0)} · ${s.orderCount||0} ${isAr?'طلب':'orders'}</p></div>
                       <div class="flex gap-2">
-                        <button onclick="ServicesManager._renderAddServiceForm(${editData});navigateTo('add-service')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="navigateTo('add-service', ${editData})" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button onclick="ServicesManager.deleteService('${s.id}')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-100 hover:text-red-600 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                       </div>
                     </div>`;

@@ -25,7 +25,7 @@
             const tabs = [
                 ['overview', 'fa-gauge-high', isAr ? 'نظرة عامة' : 'Overview'],
                 ['services', 'fa-layer-group', isAr ? 'خدماتي' : 'My Services'],
-                ['products', 'fa-box-open', isAr ? 'المنتجات الرقمية' : 'Digital Products'],
+                ['products', 'fa-box-open', isAr ? 'المنتجات' : 'Products'],
                 ['orders', 'fa-cart-shopping', isAr ? 'إدارة الطلبات' : 'Order Management'],
                 ['returns', 'fa-rotate-left', isAr ? 'المرتجعات' : 'Returns'],
                 ['analytics', 'fa-chart-line', isAr ? 'الإحصائيات والتحليلات' : 'Analytics'],
@@ -197,7 +197,7 @@
                       </div>
                       <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
-                          <h3 class="text-sm font-bold text-gray-900">${isAr?`منتجات رقمية جاهزة (${productsCount})`:`Digital Products (${productsCount})`}</h3>
+                          <h3 class="text-sm font-bold text-gray-900">${isAr?`المنتجات (${productsCount})`:`Products (${productsCount})`}</h3>
                           <a href="javascript:void(0)" onclick="SellerDash.tab('products')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'إدارة الكل':'Manage all'}</a>
                         </div>
                         ${services.filter(s=>s.listingType==='product').slice(0,2).map(s => `
@@ -207,7 +207,7 @@
                           <span class="text-[11px] font-bold ${s.active===false?'text-amber-600 bg-amber-50':'text-green-600 bg-green-50'} px-2 py-0.5 rounded shrink-0">${s.active===false?(isAr?'موقوف':'Paused'):(isAr?'نشط':'Active')}</span>
                         </div>`).join('') || `<p class="text-xs text-gray-400 text-center py-4">${isAr?'لا توجد منتجات بعد':'No products yet'}</p>`}
                         <button onclick="ServicesManager.openAddServiceForm('product')" class="w-full mt-2 py-2 border-2 border-dashed border-gray-200 hover:border-turquoise-400 text-gray-600 hover:text-turquoise-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
-                          <i class="fa-solid fa-upload text-[10px]"></i> ${isAr?'رفع منتج رقمي جديد':'Upload new digital product'}
+                          <i class="fa-solid fa-upload text-[10px]"></i> ${isAr?'إضافة منتج جديد':'Add new product'}
                         </button>
                       </div>
                     </div>
@@ -426,12 +426,21 @@
         // TAB: Services / Products (split by listingType, shared row renderer)
         // ══════════════════════════════════════════════════════════════════════
         async renderServices(container) { return this._renderListings(container, 'service'); },
-        async renderProducts(container) { return this._renderListings(container, 'product'); },
+        async renderProducts(container, productFilter) { return this._renderListings(container, 'product', productFilter); },
 
-        async _renderListings(container, kind) {
+        async _renderListings(container, kind, productFilter) {
             const user = AppState.currentUser;
             const isAr = AppState.language !== 'en';
             const isProduct = kind === 'product';
+            // ⚠️ ADDED: "المنتجات" now covers physical AND digital products
+            // together (it always did — listingType==='product' regardless of
+            // category — the old "المنتجات الرقمية"/"Digital Products" label
+            // was just inaccurate). This sub-filter splits the two so a
+            // seller with both kinds isn't stuck scanning one long list.
+            // category==='digital' is the same field _getProductCategories()
+            // (js/services.js) already offers in the add-listing form.
+            productFilter = isProduct ? (productFilter || this._productsFilter || 'all') : 'all';
+            this._productsFilter = productFilter;
 
             try {
                 const snap = await window.db.collection(COLLECTIONS.SERVICES)
@@ -440,18 +449,30 @@
                     .get();
 
                 const all = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                const services = all.filter(s => isProduct ? s.listingType === 'product' : s.listingType !== 'product');
+                let services = all.filter(s => isProduct ? s.listingType === 'product' : s.listingType !== 'product');
+                if (isProduct && productFilter !== 'all') {
+                    services = services.filter(s => (productFilter === 'digital') === ((s.category||'').trim() === 'digital'));
+                }
 
                 const addLabel = isProduct ? (isAr?'إضافة منتج':'Add Product') : (isAr?'إضافة خدمة':'Add Service');
-                const heading  = isProduct ? (isAr?`المنتجات الرقمية (${services.length})`:`Digital Products (${services.length})`) : (isAr?`خدماتي (${services.length})`:`My Services (${services.length})`);
+                const heading  = isProduct ? (isAr?`المنتجات (${services.length})`:`Products (${services.length})`) : (isAr?`خدماتي (${services.length})`:`My Services (${services.length})`);
+                const filters  = [
+                    ['all',     isAr?'الكل':'All'],
+                    ['physical',isAr?'منتج':'Product'],
+                    ['digital', isAr?'منتج رقمي':'Digital product'],
+                ];
 
                 container.innerHTML = `
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <h3 class="font-black text-gray-900 text-lg">${heading}</h3>
-                  <button onclick="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2">
+                  <button onclick="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
                     <i class="fa-solid fa-plus"></i>${addLabel}
                   </button>
                 </div>
+                ${isProduct ? `
+                <div class="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold w-fit mb-5">
+                  ${filters.map(([key,label]) => `<button onclick="SellerDash.renderProducts(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${productFilter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
+                </div>` : ''}
                 ${services.length === 0
                   ? `<div class="text-center py-16 bg-white rounded-2xl border border-gray-100">
                       <i class="fa-solid ${isProduct?'fa-box-open':'fa-layer-group'} text-gray-200 text-5xl mb-4"></i>
@@ -464,7 +485,10 @@
                 if (err.code === 'failed-precondition') {
                     try {
                         const snap2 = await window.db.collection(COLLECTIONS.SERVICES).where('sellerId','==',user.uid).get();
-                        const services = snap2.docs.map(d => ({id: d.id, ...d.data()})).filter(s => isProduct ? s.listingType === 'product' : s.listingType !== 'product');
+                        let services = snap2.docs.map(d => ({id: d.id, ...d.data()})).filter(s => isProduct ? s.listingType === 'product' : s.listingType !== 'product');
+                        if (isProduct && productFilter !== 'all') {
+                            services = services.filter(s => (productFilter === 'digital') === ((s.category||'').trim() === 'digital'));
+                        }
                         container.innerHTML = `
                         <div class="flex items-center justify-between mb-6">
                           <h3 class="font-black text-gray-900 text-lg">${services.length}</h3>
@@ -509,7 +533,10 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <h4 class="font-black text-gray-900 leading-snug">${escapeHtml(s.title||'—')}</h4>
-                    <span class="text-xs font-bold px-3 py-1 rounded-full flex-shrink-0 ${statusCls}">${statusLabel}</span>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                      ${s.listingType==='product' && (s.category||'').trim()==='digital' ? `<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-turquoise-50 text-turquoise-700"><i class="fa-solid fa-download"></i> ${isAr?'رقمي':'Digital'}</span>` : ''}
+                      <span class="text-xs font-bold px-3 py-1 rounded-full ${statusCls}">${statusLabel}</span>
+                    </div>
                   </div>
                   <div class="flex flex-wrap gap-4 text-xs text-gray-500 mb-3">
                     <span><i class="fa-solid fa-tag text-navy-400 me-1"></i>${formatCurrency(s.price||0)}</span>
@@ -520,7 +547,7 @@
                     ${s.listingType !== 'product' ? `<span><i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-teal-500 me-1"></i>${s.orderMode==='instant'?(isAr?'دفع مباشر':'Instant pay'):(isAr?'طلب ثم موافقة':'Request first')}</span>` : ''}
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <button onclick="ServicesManager._renderAddServiceForm(${editData});navigateTo('add-service')"
+                    <button onclick="navigateTo('add-service', ${editData})"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-navy-50 text-navy-700 rounded-xl font-bold hover:bg-navy-100 transition">
                       <i class="fa-solid fa-pen"></i>${isAr?'تعديل':'Edit'}
                     </button>
