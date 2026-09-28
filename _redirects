@@ -7,9 +7,8 @@
 # now calls /api/payment, /api/ai-generate, /api/sitemap-dynamic etc. directly,
 # so no shim is needed — deleting it instead of leaving a trap for the next
 # edit that forgets and calls an old path again.
-# (kept — this one is a GET-only alias, not affected by the POST bug above,
-# and may already be submitted somewhere like Search Console)
-/sitemap-live.xml /api/sitemap-dynamic 200
+# /sitemap-live.xml is now served directly by functions/sitemap-live.xml.js
+# (the old 200-rewrite to /api/sitemap-dynamic returned 404 on Pages).
 
 # Blog routes
 /blog /blog/index.html 200

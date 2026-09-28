@@ -35,7 +35,7 @@ export async function onRequest(context) {
 
   const urls = [
     ...STATIC.map(s => `\n  <url><loc>${site}${s.loc}</loc><lastmod>${today}</lastmod><changefreq>${s.freq}</changefreq><priority>${s.pri}</priority></url>`),
-    ...posts.map(p => `\n  <url><loc>${site}/blog/${p.slug}</loc><lastmod>${p.updated.split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`),
+    ...posts.map(p => `\n  <url><loc>${site}/blog/${encodeURIComponent(p.slug)}</loc><lastmod>${p.updated.split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}\n</urlset>`;
