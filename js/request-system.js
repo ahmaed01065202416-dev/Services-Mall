@@ -15,6 +15,35 @@
     // request → seller approves → buyer pays flow (System 1).
     let _instantMode = false;
 
+    // ── Link the buyer on the RTDB chat node through the server ──────────────
+    // ⚠️ FIXED: this file used to do `rtdb.ref('chats/<id>/buyerId').set(uid)`
+    // straight from the browser, but database.rules.json sets `.write: false`
+    // on buyerId/sellerId (only functions/api/link-chat-participant.js may
+    // write them, after checking the real order). The write was always denied,
+    // so the very next `messages.push()` was denied too — the buyer's request
+    // brief / product-order card NEVER reached the chat (the catch block just
+    // logged it and moved on). The order doc already exists when this runs, so
+    // the endpoint can verify it.
+    async function _linkChatViaServer(orderId) {
+        const delays = [0, 500, 1500];
+        let lastErr = null;
+        for (const d of delays) {
+            if (d) await new Promise(r => setTimeout(r, d));
+            try {
+                const idToken = await window.auth.currentUser.getIdToken();
+                const resp = await fetch('/api/link-chat-participant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                    body: JSON.stringify({ orderId }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (resp.ok && data.success) return true;
+                lastErr = new Error(data.error || ('HTTP ' + resp.status));
+            } catch (e) { lastErr = e; }
+        }
+        throw lastErr || new Error('chat link failed');
+    }
+
     /**
      * Open the request modal for a given service object
      * service = { id, title, price, image, sellerId, sellerName, deliveryDays }
@@ -127,7 +156,7 @@
                 id:            orderId,
                 serviceId:     service.id,
                 serviceTitle:  service.title  || '',
-                serviceImage:  service.image  || '',
+                serviceImage:  getServiceImage(service),
                 sellerId:      service.sellerId  || '',
                 sellerName:    service.sellerName || '',
                 buyerId:       user.uid,
@@ -151,14 +180,7 @@
                 updatedAt:     now,
                 lastMessageAt: now,
             };
-            // FIXED: firestore.rules requires paymentStatus == 'no_payment' on
-            // EVERY order create (it is the guard that stops a client from
-            // forging a paid order). It used to be set only on the non-instant
-            // branch below, so an "instant" order omitted the field entirely,
-            // `null == 'no_payment'` evaluated false, and the whole instant-pay
-            // order mode was rejected by security rules before it could ever
-            // reach payment. Always set it.
-            orderData.paymentStatus = 'no_payment';
+            if (!instant) orderData.paymentStatus = 'no_payment';
 
             // Write order to Firestore
             await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set(orderData);
@@ -177,38 +199,17 @@
                 // (not a plain-text emoji blob) so it renders professionally,
                 // consistent with the delivery-message card style.
                 if (window.rtdb) {
-                    // Link the chat through the server first — a direct
-                    // `chats/${orderId}/buyerId` write is denied by
-                    // database.rules.json (.write:false), which used to abort
-                    // this whole try block and silently drop the brief card.
-                    //
-                    // FIXED: the result of the link is now checked. Previously
-                    // the push was attempted unconditionally, so when the link
-                    // failed the push was denied too and the brief card was
-                    // lost with only a bare 'permission_denied' in the console.
-                    // Now we don't send a message we know will be rejected, we
-                    // say so explicitly, and — because the order itself is
-                    // already saved — the order still succeeds. The brief is
-                    // not retried here because the buyer's own workspace will
-                    // re-run the link (and now write BOTH parties) the moment
-                    // they open it, which is where the retry belongs.
-                    const linked = await linkChatParticipant(orderId);
-                    if (!linked) {
-                        const linkErr = (typeof getLinkChatLastError === 'function') ? getLinkChatLastError() : null;
-                        console.error('[RequestSystem] chat not linked, the request-brief card was NOT saved. Reason:',
-                            linkErr && linkErr.message, linkErr && linkErr.code ? `(${linkErr.code})` : '');
-                    } else {
-                        await window.rtdb.ref(`chats/${orderId}/messages`).push({
-                            senderId:   user.uid,
-                            senderName: user.displayName || user.email || 'عميل',
-                            type:       'request_brief',
-                            details,
-                            deadline:   deadline || '',
-                            budget:     budget || '',
-                            readBy:     { [user.uid]: true },
-                            createdAt:  firebase.database.ServerValue.TIMESTAMP,
-                        });
-                    }
+                    await _linkChatViaServer(orderId);
+                    await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                        senderId:   user.uid,
+                        senderName: user.displayName || user.email || 'عميل',
+                        type:       'request_brief',
+                        details,
+                        deadline:   deadline || '',
+                        budget:     budget || '',
+                        readBy:     { [user.uid]: true },
+                        createdAt:  firebase.database.ServerValue.TIMESTAMP,
+                    });
                 }
             } catch (chatErr) {
                 console.error('[RequestSystem] Chat message failed (order was still created):', chatErr);
@@ -365,8 +366,8 @@
                 id: orderId,
                 serviceId:     service.id,
                 serviceTitle:  service.title,
-                serviceImage:  service.image || '',
-                image:         service.image || '',
+                serviceImage:  getServiceImage(service),
+                image:         getServiceImage(service),
                 sellerId:      service.sellerId,
                 sellerName:    service.sellerName || '',
                 buyerId:       user.uid,
@@ -554,8 +555,8 @@
                 id: orderId,
                 serviceId:     service.id,
                 serviceTitle:  service.title,
-                serviceImage:  service.image || '',
-                image:         service.image || '',
+                serviceImage:  getServiceImage(service),
+                image:         getServiceImage(service),
                 sellerId:      service.sellerId,
                 sellerName:    service.sellerName || '',
                 buyerId:       user.uid,
@@ -589,10 +590,7 @@
             if (!isDigital) {
                 try {
                     if (window.rtdb) {
-                        // Server-side link (see linkChatParticipant) — a direct
-                        // buyerId write is denied by database.rules.json and used
-                        // to silently drop this first message.
-                        await linkChatParticipant(orderId);
+                        await _linkChatViaServer(orderId);
                         await window.rtdb.ref(`chats/${orderId}/messages`).push({
                             senderId:   user.uid,
                             senderName: user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),

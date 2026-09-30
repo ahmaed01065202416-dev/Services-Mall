@@ -70,47 +70,30 @@
     }
   }
   </script>
-  <!-- ── Google Analytics 4 ────────────────────────────────────────────────────
-       HISTORY: this block used to load gtag.js unconditionally with the
-       placeholder ID "G-XXXXXXXXXX" — not a real property, so it was pure
-       waste (~144 KB downloaded, ~68 KB unused, ~257 ms main thread) for
-       analytics that went nowhere. It was then hard-disabled behind
-       `if (false)`, which left the whole feature dead even though the real
-       Measurement ID G-20SMHQMQ1G had been sitting unused in
-       FIREBASE_CONFIG.measurementId all along.
-
-       NOW ENABLED with the real ID. Two details worth knowing:
-       - The ID is read from FIREBASE_CONFIG.measurementId rather than being
-         typed a third time. That object is defined further down this file, and
-         this block runs inline before it — so we wait for DOMContentLoaded
-         rather than reading a not-yet-initialised const (which would throw).
-       - anonymize_ip is on, which is the GDPR-friendly default.
-       Every js/*.js caller already guards with `if (window.trackEvent)`, so
-       this is safe even if GA itself fails to load — the app never depends on
-       it.
-
-       TO USE A DIFFERENT PROPERTY: change measurementId in FIREBASE_CONFIG
-       (line ~1570). Do not add the ID here as well.
-       TO DISABLE AGAIN: delete this whole block. -->
+  <!-- ⚠️ PERFORMANCE FIX: Google Analytics was loading unconditionally with the
+       placeholder ID "G-XXXXXXXXXX" — that's not a real property, so it was
+       pure waste: ~144 KB downloaded, ~68 KB of it never even used, plus
+       ~257ms of main-thread time, for analytics that literally go nowhere.
+       Flagged by both PageSpeed and GTmetrix reports. Every js/*.js caller
+       already guards with `if (window.trackEvent)`, so leaving trackEvent
+       undefined is completely safe — nothing breaks, it just no-ops.
+       TO ENABLE: replace G-XXXXXXXXXX below with your real Measurement ID
+       (Google Analytics → Admin → Data Streams → your stream), then remove
+       the "if (false)" wrapper. -->
   <script>
-  window.addEventListener('DOMContentLoaded', function () {
-    var GA_ID = (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.measurementId) || '';
-    if (!GA_ID || GA_ID.indexOf('XXXX') !== -1) return; // no real ID configured — stay off
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    window.gtag = gtag;
-    gtag('js', new Date());
-    gtag('config', GA_ID, { anonymize_ip: true });
-
-    window.trackEvent = function (action, category, label) {
-      gtag('event', action, { event_category: category, event_label: label });
-    };
-
-    var gaScript = document.createElement('script');
+  if (false) { // ← change to `if (true)` once you have a real Measurement ID
+    const gaScript = document.createElement('script');
     gaScript.async = true;
-    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX'; // ← your real ID here too
     document.head.appendChild(gaScript);
-  });
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX', { 'anonymize_ip': true }); // ← and here
+    window.trackEvent = function(action, category, label) {
+      gtag('event', action, { 'event_category': category, 'event_label': label });
+    };
+  }
   </script>
 
   <!-- PWA -->
@@ -1674,6 +1657,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <!-- 7b. Dedicated Chat Module -->
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
 <script src="js/blog-engine.js"></script>
 
 <!-- 8. Auth -->
@@ -1718,16 +1702,16 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
         const isAr = AppState.language !== 'en';
         container.innerHTML = cart.map((item, idx) => `
-          <div class="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 hover:border-navy-300 transition cart-item" data-id="${item.id}">
-            <img src="${item.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
+          <div class="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 hover:border-navy-300 transition cart-item" data-id="${escapeHtml(item.id)}">
+            <img src="${escapeHtml(item.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120')}"
               class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
               onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
             <div class="flex-1 min-w-0">
-              <h3 class="font-black text-gray-900 truncate">${item.title || '—'}</h3>
-              <p class="text-sm text-gray-500 mt-0.5">${item.sellerName || ''}</p>
+              <h3 class="font-black text-gray-900 truncate">${escapeHtml(item.title || '—')}</h3>
+              <p class="text-sm text-gray-500 mt-0.5">${escapeHtml(item.sellerName || '')}</p>
               <p class="text-navy-700 font-black text-lg mt-2">${formatCurrency(item.price || 0)}</p>
             </div>
-            <button onclick="removeFromCart('${item.id}')"
+            <button onclick="removeFromCart(${escapeHtml(JSON.stringify(String(item.id)))})"
               class="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition flex-shrink-0 self-start">
               <i class="fa-solid fa-trash text-sm"></i>
             </button>
@@ -1851,11 +1835,11 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             const s = { id: doc.id, ...doc.data() };
             const stars = Math.round(s.rating || 5);
             const isInstant = s.orderMode === 'instant';
-            const requestData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
+            const requestData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
             return `
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
               <div class="relative aspect-video bg-gray-100">
-                <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
+                <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
                   class="w-full h-full object-cover" loading="lazy"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'">
                 <span class="absolute top-3 start-3 bg-turquoise-50 text-turquoise-700 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -1907,11 +1891,11 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             const isAr = AppState.language !== 'en';
             container.innerHTML = snap.docs.map(doc => {
                 const s = { id: doc.id, ...doc.data() };
-                const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;');
+                const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;');
                 return `
                 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
                   <div class="relative aspect-video bg-gray-100">
-                    <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
+                    <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'}"
                       class="w-full h-full object-cover" loading="lazy"
                       onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500'">
                     <span class="absolute top-3 start-3 bg-turquoise-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -2071,12 +2055,12 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 const s = { id: d.id, ...d.data() };
                 const isProduct = s.listingType === 'product';
                 const actionBtn = isProduct
-                    ? `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">أضف للسلة</button>`
-                    : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-secondary text-white text-xs font-bold py-2 rounded-xl hover:bg-secondary-600 transition">اطلب الآن</button>`;
+                    ? `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">أضف للسلة</button>`
+                    : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-secondary text-white text-xs font-bold py-2 rounded-xl hover:bg-secondary-600 transition">اطلب الآن</button>`;
                 return `
                 <div class="flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow" style="width:220px">
                   <div class="relative h-32 bg-gray-100">
-                    ${s.image ? `<img src="${s.image}" class="w-full h-full object-cover" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-3xl"></i></div>`}
+                    <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
                     <span class="absolute top-2 start-2 text-[10px] font-black px-2 py-1 rounded-lg ${isProduct ? 'bg-turquoise-500 text-white' : 'bg-navy-800 text-white'}">${isProduct ? '<i class=\'fa-solid fa-box\'></i> منتج' : '<i class=\'fa-solid fa-toolbox\'></i> خدمة'}</span>
                   </div>
                   <div class="p-3">
@@ -2333,21 +2317,10 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 if (!list) return;
                 if (snap.empty) { list.innerHTML = '<p class="text-center text-gray-400 text-sm py-8">لا توجد إشعارات</p>'; return; }
 
-                // ⚠️ SECURITY FIX (was a stored-XSS sink): this block re-implements
-                // the notification list that js/notifications.js already renders
-                // correctly with escapeHtml(), and it dropped the escaping on
-                // n.title / n.message. Those are attacker-reachable: the
-                // seller-facing notifications embed buyerName/displayName, and
-                // dashboard.js broadcasts an admin-authored message to EVERY
-                // user — so one payload fired in every recipient's header UI.
-                // It is kept (rather than deleted) because it also drives the
-                // unread-count badge, but it now escapes at the same layer the
-                // rest of the app escapes at: render, never write.
                 list.innerHTML = snap.docs.map(doc => {
                     const n = doc.data();
-                    const oid = _safeId(n.orderId);
                     return `
-                    <div class="px-4 py-3 hover:bg-gray-50 transition cursor-pointer" onclick="if('${oid}')openWorkspace('${oid}');toggleNotifDropdown()">
+                    <div class="px-4 py-3 hover:bg-gray-50 transition cursor-pointer" onclick="${n.orderId ? 'openWorkspace(' + escapeHtml(JSON.stringify(String(n.orderId))) + ');' : ''}toggleNotifDropdown()">
                       <p class="text-sm font-bold text-gray-900">${escapeHtml(n.title || '')}</p>
                       <p class="text-xs text-gray-500 mt-0.5">${escapeHtml(n.message || '')}</p>
                       <p class="text-xs text-gray-400 mt-1">${formatTimeAgo(n.createdAt)}</p>
@@ -2438,21 +2411,15 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
             // ── Admin token fetch helper ────────────────────────────────────
             _fetchAI: async function(body) {
-              // FIXED (security): this used to send the admin's Firebase uid as
-              // `X-Admin-Token` and the endpoint treated a bare uid as proof of
-              // admin identity. A uid is not a secret — firestore.rules lets any
-              // signed-in user read every users/{uid} doc, so anyone could copy
-              // the admin's uid and call the endpoint as admin. It now sends a
-              // real, signature-verified ID token, which the function validates
-              // and then cross-checks against role == 'admin' / ADMIN_UIDS.
+              // The ADMIN_SECRET header is optional — Function skips the check if ADMIN_SECRET env is not set
               var headers = { 'Content-Type': 'application/json' };
+              // Send the real Firebase ID token — the server verifies it and checks
+              // the account is an admin (a bare uid is public and is NOT accepted).
               try {
-                var u = window.auth && window.auth.currentUser;
-                if (u) {
-                  var token = await u.getIdToken();
-                  if (token) headers['Authorization'] = 'Bearer ' + token;
+                if (window.auth && window.auth.currentUser) {
+                  headers['Authorization'] = 'Bearer ' + (await window.auth.currentUser.getIdToken());
                 }
-              } catch (e) { /* not signed in — the endpoint will 403 */ }
+              } catch (e) { console.warn('[AdminAI] could not get ID token', e); }
               var res = await fetch('/api/ai-generate', {
                 method: 'POST',
                 headers: headers,

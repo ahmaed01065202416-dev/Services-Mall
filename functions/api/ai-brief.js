@@ -17,16 +17,18 @@
  * user, not admin-only, since this is a buyer-facing feature)
  * ============================================================================
  */
-import { verifyIdToken, fsGet, fsSet, corsHeaders } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsSet } from '../_shared/gcp.js';
 
 function json(status, headers, obj) {
     return new Response(JSON.stringify(obj), { status, headers });
 }
-// FIXED: emitted the raw env var, so with more than one origin configured the
-// header became "https://a.com,https://b.com" and browsers rejected every
-// request. ALLOWED_ORIGINS is a comma-separated LIST.
-function getCORS(request, env) {
-    return corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
+function getCORS(env) {
+    return {
+        'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Content-Type': 'application/json',
+    };
 }
 
 const DAILY_CAP = 10;
@@ -90,7 +92,7 @@ async function _callOpenAI(prompt, key) {
 
 export async function onRequest(context) {
     const { request, env } = context;
-    const CORS = getCORS(request, env);
+    const CORS = getCORS(env);
     if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
     if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
 

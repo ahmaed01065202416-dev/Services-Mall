@@ -212,7 +212,7 @@
                   <div class="space-y-3 mb-5">
                     ${items.filter(Boolean).map(item => `
                       <div class="flex gap-3 items-start">
-                        <img src="${item.image || ''}" alt="" onerror="this.style.display='none'"
+                        <img src="${item.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" alt="" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'"
                           class="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-100">
                         <div class="flex-1 min-w-0">
                           <p class="font-bold text-gray-900 text-sm line-clamp-2">${escapeHtml(item.title || '')}</p>

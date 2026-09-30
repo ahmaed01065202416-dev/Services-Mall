@@ -19,44 +19,12 @@ service cloud.firestore {
     function _order(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
-    // A view counter bump: the ONLY non-admin write allowed on an article.
-    // Exactly one field changes, it must be an integer, and it must be the
-    // previous value plus one — so it cannot be used to rewrite an article or
-    // to jump the count by an arbitrary amount. (Clients should use
-    // FieldValue.increment(1), which the SDK sends as such an update.)
-    function _isViewBump() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
-             && request.resource.data.views is int
-             && (!('views' in resource.data) || request.resource.data.views == resource.data.views + 1);
-    }
 
     // ── users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
-      // ⚠️ OPEN BY DESIGN, but now pinned (audit finding). `read: if
-      // isSignedIn()` is REQUIRED: every public seller profile, the services
-      // list and the admin panels read other users' documents directly, and
-      // Firestore rules are all-or-nothing per document — there is no way to
-      // open `name`/`avatar`/`role` to everyone and keep the rest closed.
-      //
-      // The audit of every client write to this collection (js/auth.js:
-      // _ensureUserDoc / register / updateProfile / upgradeToSeller /
-      // acceptTerms, plus functions/api/admin-migrate-private-fields.js) found
-      // exactly ONE piece of personal data on this world-readable document:
-      // `email`. Everything else is name / avatar / role / verified /
-      // acceptedTerms / referredBy / timestamps — i.e. the intended public
-      // profile. Phone, payout method and payout account already live in the
-      // private subcollection below and are never accepted here.
-      //
-      // `create` therefore now pins the field set with hasOnly, so a client
-      // cannot attach arbitrary extra data to a document that every registered
-      // account can read. `update` was already allow-listed.
       allow read:   if isSignedIn();
       allow create: if isOwner(userId)
-                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller'])
-                    && request.resource.data.keys().hasOnly([
-                         'name','email','avatar','photoURL','displayName','bio',
-                         'role','verified','emailVerified','acceptedTerms','termsAcceptedAt',
-                         'referredBy','createdAt','updatedAt']);
+                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller']);
       // ⚠️ CHANGED (privacy audit): 'phone' removed from the editable-fields
       // list. This document is readable by ANY signed-in user (needed so
       // buyers can see a seller's public name/avatar/bio/rating) — there is
@@ -93,61 +61,33 @@ service cloud.firestore {
     // ── services ──────────────────────────────────────────────────────────────
     match /services/{serviceId} {
       allow read: if true;
-      // FIXED: this create rule only required hasAll(...) — any EXTRA field the
-      // seller chose to attach was accepted, and none of the trust/stats
-      // fields were pinned. A seller could therefore publish a listing with
-      // featured:true, rating:5, reviewCount:999, qualityScore:5 and
-      // sellerVerified:true, and since none of those are in the update
-      // allow-list either they could never be corrected afterwards. Enumerated
-      // the exact field set js/services.js line 1165-1231 writes, pinned every
-      // trust/stats field to its neutral starting value, and added hasOnly.
+      // ⚠️ FIXED: create used to accept ANY values for trust fields, so a seller
+      // could publish a listing already showing rating 5.0 / 999 reviews /
+      // featured / verified straight from the browser console. They must now
+      // start at their neutral defaults (js/services.js already sends exactly
+      // these); the server/admin changes them later.
       allow create: if isSeller()
+                    && serviceId.matches('[A-Za-z0-9_-]{1,64}')
                     && request.resource.data.sellerId == request.auth.uid
                     && request.resource.data.keys().hasAll(['title','price','sellerId','createdAt'])
-                    && request.resource.data.keys().hasOnly([
-                         'title','description','category','listingType','price','deliveryDays',
-                         'revisions','recurring','image','tags','orderMode','updatedAt','createdAt',
-                         'digitalDelivery','stockLimit','expiryDate','orderRules','images','structuredFields',
-                         'sellerId','sellerName','sellerAvatar','sellerVerified',
-                         'active','status','featured','rating','reviewCount','orderCount','ordersCount','views'])
-                    && (!('sellerVerified' in request.resource.data) || request.resource.data.sellerVerified == false)
-                    && (!('featured' in request.resource.data) || request.resource.data.featured == false)
-                    && (!('rating' in request.resource.data) || request.resource.data.rating == 0)
-                    && (!('reviewCount' in request.resource.data) || request.resource.data.reviewCount == 0)
-                    && (!('orderCount' in request.resource.data) || request.resource.data.orderCount == 0)
-                    && (!('ordersCount' in request.resource.data) || request.resource.data.ordersCount == 0)
-                    && (!('views' in request.resource.data) || request.resource.data.views == 0)
-                    && (!('qualityScore' in request.resource.data))
-                    && (!('active' in request.resource.data) || request.resource.data.active == true)
-                    && (!('status' in request.resource.data) || request.resource.data.status == 'active');
-      // FIXED: the allow-list below was missing fields that js/services.js
-      // ALWAYS sends on save (sellerId/sellerName/sellerAvatar/sellerVerified)
-      // plus the product-only fields (orderRules/images/structuredFields) and
-      // orderMode. Since security rules check the full diff, every single
-      // seller edit was rejected with permission-denied. The seller-* fields
-      // are re-derived from the caller's own profile and pinned to their
-      // current values below, so allowing them here does not let a seller
-      // impersonate another seller or self-award a "verified" badge.
+                    && request.resource.data.price is number && request.resource.data.price > 0
+                    && request.resource.data.get('rating', 0) == 0
+                    && request.resource.data.get('reviewCount', 0) == 0
+                    && request.resource.data.get('orderCount', 0) == 0
+                    && request.resource.data.get('ordersCount', 0) == 0
+                    && request.resource.data.get('featured', false) == false
+                    && request.resource.data.get('sellerVerified', false) == false;
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.sellerId) && isSeller() &&
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['title','description','category','price','deliveryDays',
-                                  'revisions','image','tags','active','status','recurring','updatedAt',
+                                  'revisions','image','images','tags','active','status','recurring','updatedAt',
                                   'listingType','digitalDelivery','stockLimit','expiryDate',
-                                  'orderMode','orderRules','images','structuredFields',
-                                  'sellerId','sellerName','sellerAvatar','sellerVerified']) &&
-                      (!('sellerId' in request.resource.data.diff(resource.data).affectedKeys()) ||
-                        request.resource.data.sellerId == resource.data.sellerId) &&
-                      (!('sellerName' in request.resource.data.diff(resource.data).affectedKeys()) ||
-                        request.resource.data.sellerName == resource.data.sellerName) &&
-                      (!('sellerAvatar' in request.resource.data.diff(resource.data).affectedKeys()) ||
-                        request.resource.data.sellerAvatar == resource.data.sellerAvatar) &&
-                      (!('sellerVerified' in request.resource.data.diff(resource.data).affectedKeys()) ||
-                        request.resource.data.sellerVerified == resource.data.sellerVerified)
+                                  'orderMode','orderRules','structuredFields',
+                                  'sellerName','sellerAvatar'])
+                      && request.resource.data.price is number && request.resource.data.price > 0
                     );
-      // FIXED: add isSeller() to match update — a non-seller whose uid happens
-      // to be sellerId of a listing could otherwise delete it.
-      allow delete: if isAdmin() || (isSeller() && isSellerOwner(resource.data.sellerId));
+      allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
     }
 
     // ── orders ────────────────────────────────────────────────────────────────
@@ -173,8 +113,13 @@ service cloud.firestore {
       // spoofed seller/price. Requiring it to match the live service doc at
       // write time closes that gap at the source as well, not just at the
       // one endpoint that touches money.
+      // Doc ids are interpolated into onclick="openWorkspace('<id>')" handlers
+      // all over the UI — a client-chosen id containing a quote was an XSS
+      // vector against the seller/admin. Legit ids (ord_…, auto-ids) always fit.
       allow create: if isSignedIn()
+                    && orderId.matches('[A-Za-z0-9_-]{1,64}')
                     && request.resource.data.buyerId == request.auth.uid
+                    && request.resource.data.sellerId != request.auth.uid
                     && request.resource.data.paymentStatus == 'no_payment'
                     && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true)
                     && (
@@ -190,120 +135,83 @@ service cloud.firestore {
                              (request.resource.data.listingType == 'product' ||
                               request.resource.data.orderMode == 'instant'))
                        );
-      // ─────────────────────────────────────────────────────────────────────
-      // Status transitions, bound to the party allowed to perform them.
-      //
-      // ⚠️ SECURITY FIX (critical audit finding): the update rule used to
-      // admit ANY status value as long as the new status wasn't 'completed'
-      // and the seller-owned escrow/payment fields were unchanged. The party
-      // check was `buyer OR seller OR admin`, so the BUYER could set their
-      // own order to 'accepted' — which is exactly the value both payment
-      // gates check (js/payment-system.js line 98 and functions/api/payment.js
-      // line 181) — and then pay real money into escrow for a service the
-      // seller never agreed to. The same hole let a buyer cancel an accepted
-      // order. This table is derived from the transitions the client actually
-      // performs (grep of every `status:` write against COLLECTIONS.ORDERS):
-      //
-      //   seller: respondToRequest -> accepted|cancelled   (order-workspace 1870)
-      //           sellerStartWork   -> in_progress         (order-workspace 1526)
-      //           sellerDeliver     -> delivered           (order-workspace 1129, 1703)
-      //   buyer:  requestRevision  -> revision            (order-workspace 1185)
-      //           openDispute       -> disputed            (escrow 90, returns 213)
-      //   buyer:  cancel before paying                    (anywhere)
-      //
-      // 'payment_held' and 'completed' are deliberately absent from the buyer
-      // and seller rows: both are only ever written by the server's
-      // service account (the Fawaterak webhook and the releaseEscrow handler),
-      // which bypasses these rules entirely — so a client legitimately never
-      // needs to set them here.
-      // ─────────────────────────────────────────────────────────────────────
-      function _sellerTransition() {
-        let f = resource.data.status;
-        let t = request.resource.data.status;
-        return (f == 'pending'      && t in ['accepted','cancelled']) ||
-               (f == 'accepted'     && t in ['cancelled','disputed']) ||
-               (f == 'payment_held' && t in ['in_progress','cancelled','disputed']) ||
-               (f == 'in_progress'  && t in ['delivered','revision','cancelled','disputed']) ||
-               (f == 'revision'     && t in ['in_progress','delivered','cancelled','disputed']) ||
-               (f == 'delivered'    && t in ['in_progress','disputed']);
-      }
-      function _buyerTransition() {
-        let f = resource.data.status;
-        let t = request.resource.data.status;
-        return (f == 'pending'      && t == 'cancelled') ||
-               (f == 'accepted'     && t == 'cancelled') ||
-               (f in ['payment_held','in_progress'] && t == 'revision') ||
-               (f in ['payment_held','in_progress','delivered'] && t == 'disputed');
-      }
-
-      allow update: if isAdmin() || (
-                       isSignedIn() &&
-                       (
-                         // ── status-changing write: the mover must be the
-                         //    party entitled to make that specific move.
-                         (request.resource.data.status != resource.data.status
-                            && (isSellerOwner(resource.data.sellerId) ? _sellerTransition()
-                               : isOwner(resource.data.buyerId)     ? _buyerTransition()
-                               : false))
-                         ||
-                         // ── status NOT changing: a plain aux-field write
-                         //    (customStages, currentStageIndex,
-                         //    shippingStatus, reviewed, updatedAt …) by
-                         //    either party, subject to the pins below.
-                         (request.resource.data.status == resource.data.status
-                            && (isSellerOwner(resource.data.sellerId) || isOwner(resource.data.buyerId)))
-                       ) &&
-                       // 'delivered' is only reachable from active work
-                       (request.resource.data.status != 'delivered' ||
-                        resource.data.status in ['payment_held','in_progress','revision']) &&
-                       // escrow + money fields are server-owned
-                       (!('escrowHeld' in resource.data)   || request.resource.data.escrowHeld   == resource.data.escrowHeld) &&
-                       (!('escrowAmount' in resource.data) || request.resource.data.escrowAmount == resource.data.escrowAmount) &&
-                       (!('paymentId' in resource.data)    || request.resource.data.paymentId    == resource.data.paymentId) &&
-                       (!('paymentStatus' in resource.data) || request.resource.data.paymentStatus == resource.data.paymentStatus) &&
-                       // ⚠️ SECURITY FIX: 'reviewed' was completely unpinned,
-                       // so a buyer could flip it back to false and submit a
-                       // fresh review against the same completed order — an
-                       // unbounded rating-forgery loop that also corrupted the
-                       // seller quality score computed from these reviews
-                       // (functions/api/quality-score.js averages all of them
-                       // with no per-order dedup). It is now write-once: only
-                       // a false -> true flip is ever allowed.
-                       (!('reviewed' in resource.data) ||
-                        (resource.data.reviewed != true && request.resource.data.reviewed == true)) &&
-                       request.resource.data.price    == resource.data.price &&
-                       request.resource.data.buyerId  == resource.data.buyerId &&
-                       request.resource.data.sellerId == resource.data.sellerId
-                     );
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.buyerId  ||
+                        request.auth.uid == resource.data.sellerId ||
+                        isAdmin()) &&
+                       (isAdmin() || (
+                         // ⚠️ SECURITY FIX (critical): the old check only froze
+                         // escrowHeld/escrowAmount/paymentId when they ALREADY
+                         // existed on the doc — on an unpaid order they don't, so
+                         // a buyer could add escrowHeld:true + paymentStatus:'paid'
+                         // + status:'payment_held' from the browser console and the
+                         // seller would see a "paid" order and deliver for free.
+                         // Every payment field is now immutable for buyer/seller
+                         // (get(..., null) treats "absent" as a value too), and the
+                         // status can only move along legitimate client edges.
+                         // 'payment_held', 'completed', 'refunded' are written ONLY
+                         // by functions/api/payment.js (service account bypasses
+                         // rules), so they can never be forged from here.
+                         request.resource.data.get('paymentStatus', null) == resource.data.get('paymentStatus', null) &&
+                         request.resource.data.get('escrowHeld', null)    == resource.data.get('escrowHeld', null) &&
+                         request.resource.data.get('escrowAmount', null)  == resource.data.get('escrowAmount', null) &&
+                         request.resource.data.get('escrowReleased', null) == resource.data.get('escrowReleased', null) &&
+                         request.resource.data.get('paymentId', null)     == resource.data.get('paymentId', null) &&
+                         request.resource.data.get('paymentMethod', null) == resource.data.get('paymentMethod', null) &&
+                         request.resource.data.get('merchantOrderId', null) == resource.data.get('merchantOrderId', null) &&
+                         request.resource.data.get('digitalDelivery', null) == resource.data.get('digitalDelivery', null) &&
+                         request.resource.data.get('serviceId', null)     == resource.data.get('serviceId', null) &&
+                         request.resource.data.price == resource.data.price &&
+                         request.resource.data.buyerId == resource.data.buyerId &&
+                         request.resource.data.sellerId == resource.data.sellerId &&
+                         (
+                           request.resource.data.status == resource.data.status ||
+                           // seller answers a request (or buyer withdraws it)
+                           (resource.data.status == 'pending' &&
+                            request.resource.data.status in ['accepted','cancelled']) ||
+                           // buyer sends brief after payment; revision loop
+                           (resource.data.status in ['payment_held','revision'] &&
+                            request.resource.data.status == 'in_progress') ||
+                           // seller delivers — only ever on a paid order
+                           (resource.data.status in ['payment_held','in_progress','revision'] &&
+                            resource.data.get('escrowHeld', false) == true &&
+                            request.resource.data.status == 'delivered') ||
+                           // buyer asks for changes
+                           (resource.data.status in ['payment_held','in_progress','delivered'] &&
+                            resource.data.get('escrowHeld', false) == true &&
+                            request.resource.data.status == 'revision') ||
+                           // either side opens a dispute (escrow.js / returns.js)
+                           (resource.data.status in ['payment_held','in_progress','revision','delivered'] &&
+                            resource.data.get('escrowHeld', false) == true &&
+                            request.resource.data.status == 'disputed')
+                         )
+                       ));
       allow delete: if isAdmin();
     }
 
     // ── payments ──────────────────────────────────────────────────────────────
-    // ⚠️ CHANGED (audit finding): `create` used to be
-    // `isSignedIn() && request.resource.data.userId == request.auth.uid`, i.e.
-    // ANY signed-in user could create unlimited payment rows claiming to be
-    // their own — which is why the admin "Payments" tab's Total In / Net
-    // figures (js/dashboard.js sums this collection) could be poisoned at will
-    // by any registered account, and why storage/quotacost was free to abuse.
-    // The collection is now server-only: payment.js writes one row per
-    // confirmed payment (with the service account, which bypasses these rules),
-    // and no client write is legitimate. See the _recordPayment() note in
-    // functions/api/payment.js for the other half of this fix — before it, the
-    // collection was never written by anything, so this admin tab always showed
-    // Total In = 0.
     match /payments/{paymentId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.userId ||
                         request.auth.uid == resource.data.sellerId || isAdmin());
-      allow create: if false;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // ── wallets ───────────────────────────────────────────────────────────────
+    // ⚠️ FIXED: js/auth.js creates users/{uid}, users/{uid}/private/contact AND
+    // wallets/{uid} in ONE batch at signup. With `write: if isAdmin()` the
+    // wallet write was always denied, and a denied write fails the WHOLE batch
+    // — so the user doc was never created either. A user may now create ONLY
+    // their own wallet, with balance exactly 0 and no extra fields. Every
+    // later change (credit/debit) stays admin/service-account only.
     match /wallets/{userId} {
       allow read:   if isOwner(userId) || isAdmin();
-      allow write:  if isAdmin();
+      allow create: if isOwner(userId)
+                    && request.resource.data.balance == 0
+                    && request.resource.data.keys().hasOnly(['balance','currency','createdAt']);
+      allow update, delete: if isAdmin();
     }
     // ── transactions ──────────────────────────────────────────────────────────
     match /transactions/{txId} {
@@ -371,6 +279,7 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       allow read:   if true;
       allow create: if isSignedIn()
+                    && reviewId.matches('[A-Za-z0-9_-]{1,64}')
                     && request.resource.data.reviewerId == request.auth.uid
                     && request.resource.data.orderId is string
                     && _order(request.resource.data.orderId).buyerId    == request.auth.uid
@@ -389,39 +298,22 @@ service cloud.firestore {
     }
 
     // ── articles / blog_posts ─────────────────────────────────────────────────
-    // ⚠️ CHANGED (audit finding): `allow write: if isAdmin()` also covered
-    // update, which made the per-article view counter impossible: every
-    // visitor's `update({views: increment(1)})` from js/blog-engine.js was
-    // rejected with permission-denied and swallowed by its empty .catch(), so
-    // the stored count of every article stayed at 0 forever. A public counter
-    // is public information, so a single bounded increment is now allowed from
-    // anyone — but ONLY a `views` change of exactly +1 and nothing else, which
-    // keeps the document otherwise admin-only (a caller still cannot republish
-    // an article, rewrite its content, or inflate the counter by more than 1).
     match /articles/{articleId} {
       allow read: if true;
-      allow delete: if isAdmin();
-      allow create, update: if isAdmin() || _isViewBump();
+      allow write: if isAdmin();
     }
     match /blog_posts/{postId} {
       allow read: if true;
-      allow delete: if isAdmin();
-      allow create, update: if isAdmin() || _isViewBump();
+      allow write: if isAdmin();
     }
 
     // ── analytics ─────────────────────────────────────────────────────────────
-    // ⚠️ CLOSED (audit finding): nothing in js/ or functions/ reads or writes
-    // this collection — the seller "Analytics" tab (js/seller-dashboard.js
-    // renderAnalytics) computes its numbers from orders/escrow instead. So the
-    // previous `read: if isSignedIn()` + `create: if isSignedIn()` was purely an
-    // attack surface: any signed-in user could both read every analytics row
-    // (whatever business figures end up there) and write unlimited garbage rows
-    // at no cost. Made admin-only rather than deleted, so the collection can be
-    // populated later through the admin panel / server without reopening the
-    // write path to clients.
     match /analytics/{docId} {
-      allow read:   if isAdmin();
-      allow write:  if isAdmin();
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() &&
+                       (request.auth.uid == resource.data.userId || isAdmin());
+      allow delete: if isAdmin();
     }
 
     // ── subscriptions ─────────────────────────────────────────────────────────
@@ -448,18 +340,12 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read:   if isOwner(resource.data.userId) || isAdmin();
       allow create: if isAdmin() || (
-        isSignedIn() && request.resource.data.orderId is string && (
+        isSignedIn() && notifId.matches('[A-Za-z0-9_-]{1,64}') && request.resource.data.orderId is string && (
           ((request.resource.data.type == 'new_request' || request.resource.data.type == 'new_order') &&
            request.auth.uid == _order(request.resource.data.orderId).buyerId &&
            request.resource.data.userId == _order(request.resource.data.orderId).sellerId) ||
           ((request.resource.data.type == 'request_accepted' || request.resource.data.type == 'payment_reminder' ||
-            request.resource.data.type == 'delivery' || request.resource.data.type == 'stage_update' ||
-            // FIXED: 'shipping' (markProductShipped in js/order-workspace.js) was
-            // never listed here, so every product-shipment notification was
-            // rejected by security rules. The seller updates the order doc
-            // first and writes the notification after, so the failure left the
-            // order marked shipped with the buyer never told.
-            request.resource.data.type == 'shipping') &&
+            request.resource.data.type == 'delivery' || request.resource.data.type == 'stage_update') &&
            request.auth.uid == _order(request.resource.data.orderId).sellerId &&
            request.resource.data.userId == _order(request.resource.data.orderId).buyerId) ||
           (request.resource.data.type == 'buyer_instructions' &&
@@ -478,16 +364,7 @@ service cloud.firestore {
            request.resource.data.userId == _order(request.resource.data.orderId).buyerId)
         )
       );
-      // FIXED: the owner could previously rewrite ANY field of their own
-      // notification — including userId, which re-targets the row into another
-      // account's list, along with type/title/message to inject arbitrary
-      // content. The only legitimate client update is marking it read
-      // (js/notifications.js line 99), so restrict the diff to that.
-      allow update: if isAdmin() || (
-                      isOwner(resource.data.userId) &&
-                      request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['read','readAt','archived'])
-                    );
+      allow update: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
@@ -510,34 +387,14 @@ service cloud.firestore {
     }
 
     // ── disputes ──────────────────────────────────────────────────────────────
-    // ⚠️ SECURITY FIX (audit finding): create used to be
-    // `isSignedIn() && (newData.buyerId == auth.uid || newData.sellerId == auth.uid)`
-    // — which reads like it proves the caller is a party to the dispute, but it
-    // only proves they typed their OWN uid into one of the two fields. They
-    // could set the other field to any victim and `orderId` to anything at all
-    // (or omit it entirely), producing a dispute row that reads as genuine,
-    // shows up in the admin panel's open-disputes queue (js/dashboard.js) and
-    // in admin-dispute-detail, and blocks the escrow-resolution path with its
-    // 409 guard. The dispute document is also what functions/api/payment.js's
-    // handleResolveDispute() acts on. Now the whole document is bound to a real
-    // order and to the caller's actual role in it.
     match /disputes/{disputeId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId  ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
-      allow create: if isSignedIn()
-                       && request.resource.data.orderId is string
-                       && request.resource.data.buyerId  == _order(request.resource.data.orderId).buyerId
-                       && request.resource.data.sellerId == _order(request.resource.data.orderId).sellerId
-                       && request.auth.uid in [_order(request.resource.data.orderId).buyerId,
-                                               _order(request.resource.data.orderId).sellerId]
-                       && request.resource.data.raisedBy == request.auth.uid
-                       // A dispute may only be raised against an order that has
-                       // money in it — otherwise there is nothing to dispute.
-                       && _order(request.resource.data.orderId).status in ['payment_held','in_progress','delivered','revision']
-                       && request.resource.data.status == 'open'
-                       && request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','raisedBy','reason','status','createdAt']);
+      allow create: if isSignedIn() && disputeId.matches('[A-Za-z0-9_-]{1,64}') &&
+                       (request.resource.data.buyerId == request.auth.uid ||
+                        request.resource.data.sellerId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -546,33 +403,15 @@ service cloud.firestore {
     // Mirrors the /disputes pattern above: buyer creates, only the seller on
     // that order (or admin) can move it forward, and only while it's still
     // 'pending' (a decided return can't be flipped back by the seller).
-    //
-    // ⚠️ SECURITY FIX (audit finding): create only ever compared the client's
-    // own `buyerId` to the caller's uid. `sellerId`, `price`, `serviceTitle`
-    // and `orderStatusAtRequest` were entirely client-supplied and never
-    // checked against anything, so a buyer could file a return against ANY
-    // order id — at any time, including an order that was never delivered —
-    // while naming an arbitrary `sellerId`. That matters well beyond this
-    // collection: js/returns.js copies ret.buyerId / ret.sellerId verbatim into
-    // the dispute document it creates when the seller approves, and an admin
-    // then resolves that dispute against real escrow in
-    // functions/api/payment.js. Every identity-bearing field is now bound to
-    // the live order document.
     match /returns/{returnId} {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId ||
                         request.auth.uid == resource.data.sellerId ||
                         isAdmin());
-      allow create: if isSignedIn()
-                       && request.resource.data.orderId is string
-                       && request.resource.data.buyerId  == _order(request.resource.data.orderId).buyerId
-                       && request.resource.data.sellerId == _order(request.resource.data.orderId).sellerId
-                       && request.resource.data.buyerId  == request.auth.uid
-                       && request.resource.data.status   == 'pending'
-                       && request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt'])
-                       // A return only makes sense against a paid, delivered
-                       // order — otherwise there is nothing to send back.
-                       && _order(request.resource.data.orderId).status == 'delivered';
+      allow create: if isSignedIn() && returnId.matches('[A-Za-z0-9_-]{1,64}') &&
+                       request.resource.data.buyerId  == request.auth.uid &&
+                       request.resource.data.status   == 'pending' &&
+                       request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt']);
       allow update: if isAdmin() || (
                        isSignedIn() &&
                        request.auth.uid == resource.data.sellerId &&
@@ -607,36 +446,13 @@ service cloud.firestore {
     // ── reports ───────────────────────────────────────────────────────────────
     match /reports/{reportId} {
       allow read, update, delete: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.reportedBy == request.auth.uid;
+      allow create: if isSignedIn() && reportId.matches('[A-Za-z0-9_-]{1,64}') && request.resource.data.reportedBy == request.auth.uid;
     }
 
     // ── fraud_flags ───────────────────────────────────────────────────────────
-    // ⚠️ PARTIALLY FIXED — please read (audit finding, still open by design):
-    // the auto-flagging helper flagSuspiciousContent() in js/constants.js writes
-    // here whenever the contact-leak scanner trips (phone number / email /
-    // "DM me on…" in a listing, a request brief, a product order's notes, or a
-    // chat message). But NOTHING IN THE PROJECT EVER READS THIS COLLECTION —
-    // not the admin panel, not any Cloudflare Function. So the automatic
-    // anti-fraud reporting feature is currently a no-op: it burns a write per
-    // detection and the flags are invisible to operators. Wiring an admin UI
-    // (or an alert) for this collection is a product decision, not a security
-    // fix, so it was left alone rather than guessed at.
-    //
-    // What WAS fixed here: `create` accepted any field set, so a user could
-    // attach unbounded junk (and try to spoof `textSample`/`userId` values for
-    // someone else) at no cost. The shape is now pinned to exactly what
-    // flagSuspiciousContent() sends, with the sample length bounded.
     match /fraud_flags/{flagId} {
-      allow read: if isAdmin();
-      allow update, delete: if isAdmin();
-      allow create: if isSignedIn()
-                       && request.resource.data.userId == request.auth.uid
-                       && request.resource.data.kind is string
-                       && request.resource.data.textSample is string
-                       && request.resource.data.textSample.size() <= 200
-                       && request.resource.data.keys().hasAll(['userId','kind','textSample','createdAt'])
-                       && request.resource.data.keys().hasOnly(
-                            ['userId','kind','textSample','createdAt','source','orderId','serviceId','listingId']);
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn() && flagId.matches('[A-Za-z0-9_-]{1,64}') && request.resource.data.userId == request.auth.uid;
     }
 
     // ── settings ──────────────────────────────────────────────────────────────
@@ -652,6 +468,35 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read:  if true;
       allow write: if isAdmin();
+    }
+
+    // ── category_requests (seller suggests a category → admin reviews) ───────
+    // ⚠️ ADDED: js/services.js writes here and the admin "categories" tab reads
+    // it inside a Promise.all — with NO rule, Firestore denied every access
+    // (even the admin's), so suggestions silently vanished AND the whole admin
+    // categories tab failed to load.
+    match /category_requests/{reqId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSeller()
+                    && reqId.matches('[A-Za-z0-9_-]{1,64}')
+                    && request.resource.data.requestedBy == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100;
+    }
+
+    // ── newsletter_subscribers (homepage + blog sign-up forms) ──────────────
+    // ⚠️ ADDED: was written by index.html / blog-engine.js with no rule at all,
+    // so every subscription was silently dropped. Public create (visitors are
+    // signed out) but shape-checked so it can't be used as free storage.
+    match /newsletter_subscribers/{subId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if request.resource.data.keys().hasOnly(['email','createdAt','source'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() <= 200
+                    && request.resource.data.email.matches('[^@ ]+@[^@ ]+[.][^@ ]+')
+                    && (!('source' in request.resource.data) || (request.resource.data.source is string && request.resource.data.source.size() <= 40));
     }
 
     // ── pending_payments (server-only) ───────────────────────────────────────

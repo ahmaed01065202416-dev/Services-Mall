@@ -10,9 +10,8 @@ module.exports = {
     './contact/**/*.html',
     './blog/**/*.html',
     './js/**/*.js',
-    // NOTE: ./privacy.html and ./terms.html used to be listed here. They were
-    // duplicate, shorter (2026) versions of ./privacy/index.html and
-    // ./terms/index.html and have been deleted — see the note in _redirects.
+    './privacy.html',
+    './terms.html',
     './refund-policy.html',
     './privacy/**/*.html',
     './terms/**/*.html',

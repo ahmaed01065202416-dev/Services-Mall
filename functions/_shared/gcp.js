@@ -62,7 +62,11 @@ async function getAccessToken(env) {
     const header = { alg: 'RS256', typ: 'JWT' };
     const claim = {
         iss: sa.client_email,
-        scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.database',
+        // ⚠️ FIXED: Realtime Database's REST API rejects service-account tokens
+        // with 401 unless BOTH firebase.database AND userinfo.email are granted.
+        // Without userinfo.email every rtdbUpdate/rtdbGet/rtdbDelete failed with
+        // 401 (this broke link-chat-participant → chat PERMISSION_DENIED).
+        scope: 'https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email',
         aud: 'https://oauth2.googleapis.com/token',
         iat: now,
         exp: now + 3600,
@@ -210,11 +214,8 @@ async function fsCommit(env, writes) {
 
 function writeIncrement(env, path, field, amount, precondition) {
     const w = { transform: { document: fsName(env, path), fieldTransforms: [{ fieldPath: field, increment: toValue(amount) }] } };
-    // Optional optimistic-concurrency guard. Without it, a read-then-increment
-    // pair is a TOCTOU race: two concurrent requests can both read the same
-    // balance, both pass a `amount <= balance` check, and both decrement —
-    // driving the account negative. Pass the `_updateTime` of the document that
-    // was read and Firestore rejects the whole commit if it moved in between.
+    // Optional optimistic-concurrency guard, e.g. { updateTime: doc._updateTime }
+    // — the commit is rejected if the doc changed since it was read.
     if (precondition) w.currentDocument = precondition;
     return w;
 }
@@ -288,13 +289,13 @@ function rtdbBase(env) {
 async function rtdbGet(env, path) {
     const token = await getAccessToken(env);
     const resp = await fetch(`${rtdbBase(env)}/${path}.json`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!resp.ok) throw new Error(`RTDB GET ${path} failed: ${resp.status}`);
+    if (!resp.ok) throw new Error(`RTDB GET ${path} failed: ${resp.status} ${(await resp.text().catch(() => '')).slice(0, 200)}`);
     return await resp.json();
 }
 async function rtdbDelete(env, path) {
     const token = await getAccessToken(env);
     const resp = await fetch(`${rtdbBase(env)}/${path}.json`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-    if (!resp.ok) throw new Error(`RTDB DELETE ${path} failed: ${resp.status}`);
+    if (!resp.ok) throw new Error(`RTDB DELETE ${path} failed: ${resp.status} ${(await resp.text().catch(() => '')).slice(0, 200)}`);
     return true;
 }
 // PATCH does a shallow merge at `path` — sibling keys already there (e.g.
@@ -307,75 +308,11 @@ async function rtdbUpdate(env, path, data) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
-    if (!resp.ok) throw new Error(`RTDB PATCH ${path} failed: ${resp.status}`);
+    if (!resp.ok) throw new Error(`RTDB PATCH ${path} failed: ${resp.status} ${(await resp.text().catch(() => '')).slice(0, 200)}`);
     return await resp.json().catch(() => true);
 }
 
-// ── Origin / CORS helpers ─────────────────────────────────────────────────────
-// ALLOWED_ORIGINS is a COMMA-SEPARATED LIST of origins. Eight endpoints used to
-// emit `env.ALLOWED_ORIGINS` as the raw Access-Control-Allow-Origin value, so
-// with more than one origin configured the header became
-// `https://a.com,https://b.com` — which browsers reject outright, silently
-// breaking every client fetch to those endpoints. And payment.js /
-// subscription.js interpolated the same variable into gateway return/webhook
-// URLs, producing invalid URLs (no order ever confirmed) and, when SITE_URL was
-// unset, no webhook delivery at all.
-//
-// Two separate concepts, two separate variables:
-//   SITE_URL        — the site's own base URL, used to BUILD urls
-//   ALLOWED_ORIGINS — a list, used only to CHECK an incoming Origin header
-function siteOrigin(env) {
-    return String((env && env.SITE_URL) || '').replace(/\/+$/, '');
-}
-
-function allowedOriginList(env) {
-    return String((env && env.ALLOWED_ORIGINS) || '')
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-}
-
-function corsHeaders(request, env, extraHeaders) {
-    const origin = (request && (request.headers.get('origin') || request.headers.get('Origin'))) || '';
-    const allowed = allowedOriginList(env);
-    return {
-        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : (allowed[0] || '*'),
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Content-Type': 'application/json',
-        'Vary': 'Origin',
-        ...(extraHeaders || {}),
-    };
-}
-
-// ── Document-id guard ─────────────────────────────────────────────────────────
-// Several endpoints take a document id straight from the URL or query string and
-// interpolate it into a Firestore/RTDB path (`disputes/${disputeId}`,
-// `orders/${orderId}`, `chats/${orderId}/messages`). A `/` in that value walks
-// the path, so `orderId=../users/uid` turns a read scoped to one collection into
-// an arbitrary-document read/write. Validate BEFORE building any path.
-//
-// Deliberately permissive: real ids in this project look like
-// `ord_1750000000000_k3f9xz` or a Firestore auto-id, i.e. `[A-Za-z0-9_-]`.
-// What's rejected is only what can't appear in a legitimate Firestore document
-// id and would be suspicious in a path: path separators, traversal segments,
-// control characters, whitespace, and over-long values (Firestore's own limit is
-// 1500 bytes; the cap here is far below it to also bound URL/path size).
-function isSafeDocId(id) {
-    if (typeof id !== 'string') return false;
-    if (!id.length || id.length > 128) return false;
-    if (id === '.' || id === '..') return false;
-    for (let i = 0; i < id.length; i++) {
-        const c = id.charCodeAt(i);
-        if (c <= 32) return false;        // space or control character
-        if (c === 47) return false;       // '/'  — path traversal
-        if (c === 92) return false;       // backslash
-    }
-    return true;
-}
-
 export {
-    siteOrigin, allowedOriginList, corsHeaders, isSafeDocId,
     getAccessToken, verifyIdToken,
     fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount,
     writeIncrement, writeUpdate, writeCreate,

@@ -25,50 +25,29 @@
  */
 import { verifyIdToken, fsGet, fsSet, fsQuery } from '../_shared/gcp.js';
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-// FIXED: this was the only endpoint in functions/ with NO CORS headers at all.
-// The caller sends the non-simple `X-Admin-Token` header, which forces a CORS
-// preflight, and this handler answered OPTIONS with a bare 405 and no
-// Access-Control-Allow-Origin — so a browser could never call it at all, even
-// though the file's own header comment advertises manual/browser use. It works
-// today only because cron-worker/index.js calls it server-to-server.
-function _cors(request, env) {
-    const origin = request.headers.get('origin') || '';
-    const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-    return {
-        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : (allowed[0] || '*'),
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
-        'Content-Type': 'application/json',
-        'Vary': 'Origin',
-    };
+function _tsEqual(a, b) {
+  a = String(a || ''); b = String(b || '');
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
 }
 
-function json(status, obj, headers) {
-    return new Response(JSON.stringify(obj), { status, headers: headers || { 'Content-Type': 'application/json' } });
+
+function json(status, obj) {
+    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
 async function _isAuthorized(request, env) {
-    // FIXED: `===` on a shared secret leaks it through response timing. payment.js
-    // already ships a constant-time comparator; use the same one here.
     const adminToken = request.headers.get('X-Admin-Token');
-    if (env.ADMIN_SECRET && _timingSafeEqual(adminToken, String(env.ADMIN_SECRET))) return true;
+    if (env.ADMIN_SECRET && _tsEqual(adminToken, env.ADMIN_SECRET)) return true;
     const authHeader = request.headers.get('Authorization') || '';
-    const idToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const idToken = authHeader.replace(/^Bearer\s+/i, '');
     if (!idToken) return false;
     const auth = await verifyIdToken(idToken, env);
     if (!auth) return false;
     const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
     return !!(user && user.role === 'admin');
-}
-
-function _timingSafeEqual(a, b) {
-    const sa = String(a == null ? '' : a);
-    const sb = String(b == null ? '' : b);
-    if (sa.length !== sb.length) return false;
-    let diff = 0;
-    for (let i = 0; i < sa.length; i++) diff |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
-    return diff === 0;
 }
 
 function _computeScore({ avgRating, completionRate, completedCount }) {
@@ -110,12 +89,10 @@ async function _recomputeSeller(env, sellerId) {
 
 export async function onRequest(context) {
     const { request, env } = context;
-    const CORS = _cors(request, env);
-    if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
-    if (request.method !== 'POST') return json(405, { error: 'Method not allowed' }, CORS);
-    if (!(await _isAuthorized(request, env))) return json(401, { error: 'Unauthorized' }, CORS);
+    if (request.method !== 'POST') return json(405, { error: 'Method not allowed' });
+    if (!(await _isAuthorized(request, env))) return json(401, { error: 'Unauthorized' });
     if (!env.FIREBASE_SERVICE_ACCOUNT || !env.FIREBASE_PROJECT_ID) {
-        return json(500, { error: 'Server not configured' }, CORS);
+        return json(500, { error: 'FIREBASE_SERVICE_ACCOUNT / FIREBASE_PROJECT_ID not configured' });
     }
 
     let body = {};
@@ -124,18 +101,16 @@ export async function onRequest(context) {
     try {
         if (body.sellerId) {
             const result = await _recomputeSeller(env, body.sellerId);
-            return json(200, { ok: true, result }, CORS);
+            return json(200, { ok: true, result });
         }
         const sellers = await fsQuery(env, { from: [{ collectionId: 'users' }], where: _eqFilter('role', 'seller') });
         const results = [];
         for (const s of sellers) { // sequential — runs off-peak via cron, no rush
             results.push(await _recomputeSeller(env, s.id));
         }
-        return json(200, { ok: true, sellersProcessed: results.length, results }, CORS);
+        return json(200, { ok: true, sellersProcessed: results.length, results });
     } catch (err) {
-        // Log the real error; return a fixed message. err.message from the
-        // Firestore REST layer leaks the project id and internal paths.
-        console.error('[QualityScore] error:', err && err.message);
-        return json(500, { error: 'Failed to recompute quality score' }, CORS);
+        console.error('[QualityScore] error:', err.message);
+        return json(500, { error: err.message });
     }
 }

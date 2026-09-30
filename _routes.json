@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/sitemap-live.xml",
+    "/functions/*",
+    "/cron-worker/*",
+    "/.firebaserc",
+    "/firebase.json",
+    "/firestore.rules",
+    "/firestore.indexes.json",
+    "/database.rules.json",
+    "/package.json",
+    "/package-lock.json",
+    "/wrangler.toml",
+    "/tailwind.config.js",
+    "/seed.js",
+    "/seed-blog.js",
+    "/README.md",
+    "/SETUP.md",
+    "/DEPLOY_CLOUDFLARE.md",
+    "/DEPLOY_RULES.md",
+    "/FIXES_APPLIED.md",
+    "/SECURITY_FIX_PAYMENT.md"
+  ],
+  "exclude": []
+}

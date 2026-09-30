@@ -156,7 +156,7 @@
                     const editData = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||''}).replace(/"/g,'&quot;');
                     return `
                     <div class="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0" data-service-id="${s.id}">
-                      <img src="${s.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
+                      <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                       <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(s.title||'—')}</p><p class="text-sm text-gray-500">${formatCurrency(s.price||0)} · ${s.orderCount||0} ${isAr?'طلب':'orders'}</p></div>
                       <div class="flex gap-2">
                         <button onclick="navigateTo('add-service', ${editData})" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
@@ -625,7 +625,7 @@
                 </div>
                 <div class="space-y-2">${services.map(s=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" data-service-id="${s.id}">
-                    <img src="${s.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
+                    <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0">
                       <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(s.title||'—')}</p>
                       <p class="text-xs text-gray-400">${escapeHtml(s.sellerName||'')} · ${formatCurrency(s.price||0)}</p>
@@ -1039,16 +1039,16 @@
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold ${r.status==='resolved'?'text-green-700 bg-green-100':'text-red-700 bg-red-100'} px-2 py-0.5 rounded-lg">${r.status==='resolved'?(isAr?'محلول':'Resolved'):(isAr?'جديد':'New')}</span>
-                        <span class="text-xs text-gray-500">${escapeHtml(r.type||'—')}</span>
+                        <span class="text-xs text-gray-500">${r.type||'—'}</span>
                       </div>
-                      <p class="text-sm font-bold text-gray-900">${isAr?'البلاغ على:':'Reported:'} ${escapeHtml(r.targetName||r.targetId||'—')}</p>
+                      <p class="text-sm font-bold text-gray-900">${isAr?'البلاغ على:':'Reported:'} ${r.targetName||r.targetId||'—'}</p>
                       <p class="text-sm text-gray-600 mt-1">${escapeHtml(r.reason||'—')}</p>
-                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${escapeHtml(r.reporterName||'—')} · ${formatDateAr(r.createdAt)}</p>
+                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${r.reporterName||'—'} · ${formatDateAr(r.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-1 flex-shrink-0">
-                      ${r.orderId ? `<button onclick="openWorkspace('${_safeId(r.orderId)}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
-                      ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${_safeId(r.id)}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
-                      <button onclick="window._adminDeleteReport('${_safeId(r.id)}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                      ${r.orderId ? `<button onclick="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
+                      ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${r.id}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
+                      <button onclick="window._adminDeleteReport('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                   </div>`).join('')}
                 </div>`}`;
@@ -1213,8 +1213,10 @@
                 ];
                 let statuses = {};
                 try {
+                    // checkKeys is admin-only now — send the admin's ID token.
+                    const _tok = await window.auth.currentUser.getIdToken();
                     const r = await fetch('/api/payment', {
-                        method:'POST', headers:{'Content-Type':'application/json'},
+                        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_tok},
                         body: JSON.stringify({action:'checkKeys'})
                     });
                     if (r.ok) statuses = await r.json();

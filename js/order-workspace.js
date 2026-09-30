@@ -663,14 +663,32 @@
     // could only check "is the value being written equal to my own uid" —
     // it had no way to also confirm this uid is genuinely this order's real
     // buyer/seller (RTDB rules can't read Firestore), so anyone who knew an
-    // orderId could claim an unclaimed chat slot as themselves. The actual
-    // work now lives in the shared linkChatParticipant() helper (js/constants.js)
-    // so every call site — this workspace, and the two in request-system.js —
-    // goes through functions/api/link-chat-participant.js, which checks the
-    // real order in Firestore first and writes with the service account.
+    // orderId could claim an unclaimed chat slot as themselves. Now this
+    // calls functions/api/link-chat-participant.js, which checks the real
+    // order in Firestore first and writes with the service account — the
+    // client `.write` for these two fields is now simply `false`. The retry
+    // loop is kept for the same reason it existed before: transient network
+    // hiccups right as the workspace opens shouldn't silently leave a chat
+    // unlinked.
     async function _linkChatParticipant(orderId, order, userId) {
         if (order.buyerId !== userId && order.sellerId !== userId) return;
-        await linkChatParticipant(orderId, 5);
+        const delays = [0, 400, 1000, 2000, 3500];
+        let lastErr = null;
+        for (let i = 0; i < delays.length; i++) {
+            if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
+            try {
+                const idToken = await window.auth.currentUser.getIdToken();
+                const resp = await fetch('/api/link-chat-participant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ orderId }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+                return;
+            } catch (err) { lastErr = err; }
+        }
+        console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message);
     }
 
     // ── Real-time Chat Listener (Realtime Database) ───────────────────────────
@@ -684,11 +702,6 @@
         // before _loadFiles() has a chance to subscribe — see the note there)
         let _gotAnyMessage = false;
         let _emptyCheckTimer = null;
-        // Stops onErr() from re-calling the link endpoint forever if the chat
-        // can never be linked (e.g. env vars genuinely missing). Reset to
-        // false whenever a link attempt succeeds, so a later genuine failure
-        // can still self-heal.
-        let _relinkAttempted = false;
 
         const renderSafely = (m) => {
             try { return _renderMessage(m, m.id); }
@@ -734,52 +747,15 @@
             if (wasAtBottom) container.scrollTop = container.scrollHeight;
         };
         const onErr = err => {
-            const code = err.code || err.message || '';
-            console.error('[Chat] RTDB listener error:', code, err);
-
-            // FIXED: a PERMISSION_DENIED here is almost never "the rules are
-            // broken". The .read rule needs chats/{orderId}/buyerId (or
-            // /sellerId) to equal auth.uid, and that node is only ever written
-            // by functions/api/link-chat-participant.js. If that call failed
-            // (most often because the env vars are missing on the Preview
-            // environment rather than Production), the node does not exist, the
-            // rule evaluates null === auth.uid === false, and the chat renders
-            // empty with no explanation - which is the reported symptom.
-            //
-            // So: retry the link once, then let the SDK re-evaluate rules on its
-            // next sync. If the link succeeds, the existing 'child_added'
-            // listener starts delivering without being torn down. Guarded so a
-            // persistent failure can't become an infinite retry loop.
-            const isUnlinked = String(code).toLowerCase().includes('permission_denied');
-            if (isUnlinked && !_relinkAttempted) {
-                _relinkAttempted = true;
-                console.warn('[Chat] permission denied - chat not linked yet, retrying the link...');
-                linkChatParticipant(orderId, 5).then(ok => {
-                    if (ok) {
-                        _relinkAttempted = false; // allow one more recovery attempt later
-                        console.info('[Chat] chat linked, waiting for the database to re-sync');
-                    }
-                });
-                return; // keep the current UI; messages stream in once rules re-evaluate
+            console.error('[Chat] RTDB listener error:', err.code || err.message, err);
+            if (container) {
+                container.innerHTML = `
+                  <div class="text-center text-red-400 py-10 px-4">
+                    <i class="fa-solid fa-triangle-exclamation text-4xl mb-3 opacity-60"></i>
+                    <p class="font-bold">${isAr ? 'تعذّر تحميل المحادثة' : 'Could not load the conversation'}</p>
+                    <p class="text-xs mt-1 text-gray-400">${_escapeHtml(err.code || err.message || '')}</p>
+                  </div>`;
             }
-
-            // Explain WHY, using the reason the link call actually reported.
-            const linkErr = (typeof getLinkChatLastError === 'function') ? getLinkChatLastError() : null;
-            const notConfigured = !!(linkErr && linkErr.code === 'SERVER_NOT_CONFIGURED');
-            if (!container) return;
-            const hintAr = isUnlinked
-                ? 'الرسائل بتظهر بعد ما يتم ربط أطراف الطلب. لو ده طلب قديم ومحاولات الربط فشلت، ابعت رقم الطلب للأدمن ليظبطه.'
-                : '';
-            const hintEn = isUnlinked
-                ? 'Messages unlock once the order parties are linked. If this is an older order and linking failed, send the order id to an admin.'
-                : '';
-            container.innerHTML = `
-              <div class="text-center ${notConfigured ? 'text-amber-500' : 'text-red-400'} py-10 px-4">
-                <i class="fa-solid ${notConfigured ? 'fa-screwdriver-wrench' : 'fa-triangle-exclamation'} text-4xl mb-3 opacity-60"></i>
-                <p class="font-bold">${isAr ? 'تعذّر تحميل المحادثة' : 'Could not load the conversation'}</p>
-                <p class="text-xs mt-1 text-gray-400">${_escapeHtml(code)}</p>
-                ${isUnlinked ? `<p class="text-xs mt-3 text-gray-500 max-w-sm mx-auto leading-relaxed">${isAr ? hintAr : hintEn}</p>` : ''}
-              </div>`;
         };
         ref.on('child_added', onAdded, onErr);
         // Only 'child_added' fires when data streams in; if the chat is
@@ -924,8 +900,8 @@
               <div>
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-1">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
                 <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
-                  <a href="${_safeUrl(msg.file?.url)}" target="_blank" rel="noopener">
-                    <img src="${_safeUrl(msg.file?.url)}" alt="${_escapeHtml(msg.file?.name || 'image')}"
+                  <a href="${msg.file?.url}" target="_blank" rel="noopener">
+                    <img src="${msg.file?.url}" alt="${_escapeHtml(msg.file?.name || 'image')}"
                       class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
                       loading="lazy" style="max-height:200px;object-fit:cover">
                   </a>
@@ -1000,7 +976,7 @@
         const icon = isImg ? 'fa-file-image text-blue-500' : (iconMap[ext] || 'fa-file text-gray-500');
 
         return `
-        <a href="${_safeUrl(file.url)}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
+        <a href="${file.url}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">

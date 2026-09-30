@@ -1,26 +1,6 @@
 # ============================================================================
 # _headers — Cloudflare Pages headers config
 # ============================================================================
-#
-# CSP notes (audit pass — read before tightening further):
-#
-# ⚠️ FIXED: script-src used to also contain 'unsafe-eval'. 'unsafe-eval' lets
-# any injected string run as code, which defeats the point of a CSP against
-# XSS outright. It was verified unnecessary: a grep across every .js file in the
-# project found ZERO uses of eval() or new Function(), and none of the
-# externally loaded libraries need it — Firebase compat SDK 10.14.1
-# (index.html) / 9.23.0 (blog/index.html), DOMPurify 3.1.7, Chart.js 4.4.1 and
-# gtag.js are all eval-free. Removed.
-#
-# ⚠️ 'unsafe-inline' is still REQUIRED in script-src and is NOT a loose end.
-# It is what allows (a) 36 inline <script> blocks and (b) 138 inline on*
-# handler attributes (onclick="…") across the HTML files — 109 of the handlers
-# are in index.html alone. Inline event-handler attributes are blocked
-# outright without 'unsafe-inline', so removing it means converting every one of
-# those to addEventListener and every inline script to a nonce or an external
-# file. That is a large refactor with real breakage risk, deliberately left out
-# of this pass rather than shipped untested. See AUDIT_REPORT.md.
-# ============================================================================
 
 /*
   X-Frame-Options: SAMEORIGIN
@@ -29,7 +9,7 @@
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Cross-Origin-Resource-Policy: cross-origin
   Permissions-Policy: accelerometer=(), gyroscope=(), camera=(), microphone=(), geolocation=(), payment=(self "https://app.fawaterk.com")
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https://firebasestorage.googleapis.com; connect-src 'self' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://apis.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.cloudfunctions.net wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://app.fawaterk.com https://fawaterk.com; frame-src 'self' https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://*.firebaseio.com https://app.fawaterk.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://app.fawaterk.com
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.gstatic.com https://apis.google.com https://accounts.google.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https://firebasestorage.googleapis.com; connect-src 'self' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://apis.google.com https://*.googleapis.com https://*.googleusercontent.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.cloudfunctions.net wss://*.firebaseio.com wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://app.fawaterk.com https://fawaterk.com; frame-src 'self' https://accounts.google.com https://apis.google.com https://*.firebaseapp.com https://*.firebaseio.com https://app.fawaterk.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://app.fawaterk.com
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate

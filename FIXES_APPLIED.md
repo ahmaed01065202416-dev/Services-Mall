@@ -1,28 +1,15 @@
 # ✅ Mall Services — Security & Feature Fixes Applied
 *Version 3.4 — All fixes production-ready*
 
-> # ⛔ الملف ده DEPRECATED — اقرأ `AUDIT_REPORT.md` بدله
->
-> الملف ده قديم، وفيه أوصاف لأشياء مش موجودة أصلاً في المشروع. اتأكد قبل ما
-> تنفّذ أي خطوة فيه:
->
-> | الملف ده يقول | الواقع |
-> |---|---|
-> | الإعدادات في `netlify.toml` (أقسام 1، 3، 4، 5) | **`netlify.toml` مش موجود.** المشروع على Cloudflare Pages، والـ headers والـ CSP في **`_headers`** |
-> | Paymob و Payoneer (قسم 4، ومثال `payoneerPending` في قسم 2) | **مفيش أي كود تكامل معاهم.** البوابة الوحيدة المستخدمة هي **Fawaterak** (`functions/api/payment.js` + `functions/api/fawaterak-webhook.js`). وكلمة Paymob موجودة بس في محتوى مقال تعليمي |
-> | `_safeCreateOrder()` و `_finalizeOrders()` و `MS_${ts}_${rand}` (قسم 2) | **مفيش دالة منهم بالاسم ده في `js/payment-system.js`.** الملف ده عملياً pipeline بيستدعي `/api/payment` وخلاص — إنشاء الطلبات بيتم بالكامل في `functions/api/payment.js` على السيرفر |
-> | `js/chat.js` كـ "module جديد" (قسم 6) | **`js/chat.js` مش موجود.** الشات كله جوه `js/order-workspace.js` + Realtime Database |
-> | "NEXT STEPS": استبدل `G-XXXXXXXXXX` | **اتحلّ.** GA4 مربوط فعلاً بـ `G-20SMHQMQ1G` ومقروء من `FIREBASE_CONFIG.measurementId` في `index.html` |
->
-> 👉 **التقرير الحقيقي والأحدث: `AUDIT_REPORT.md`** — فيه كل المشكلة اللي
-> اتلقطت واتصلحت، مع شرح كل واحدة وسبب كل قرار.
->
-> الملف اللي قدامك يفضل كخلفية تاريخية بس.
+> ⚠️ **قديم/جزئيًا غير دقيق:** الملف ده بيتكلم عن `netlify.toml` و Paymob —
+> المشروع دلوقتي على Cloudflare Pages (CSP/headers في `_headers`) والبوابة
+> الوحيدة هي Fawaterak (`functions/api/fawaterak-webhook.js`). خد اللي فيه
+> كخلفية تاريخية بس، مش كحالة حالية للمشروع.
 
 ---
 
 ## 1. Content Security Policy (CSP) — FIXED ✅
-**File:** ~~`netlify.toml`~~ → **`_headers`** (المسار المذكور في الأصل غلط)
+**File:** `netlify.toml`
 
 ### What was wrong:
 - `https://www.googletagmanager.com/gtag/js` was blocked (missing from `script-src`)
@@ -76,9 +63,7 @@ Additional fixes:
 ---
 
 ## 3. Google Auth Popup COOP Issue — FIXED ✅
-**File:** ~~`netlify.toml`~~ → **`_headers`**
-> المسار الأصلي غلط. الإعداد ده **صحيح فعلاً** وموجود في `_headers`:
-> `Cross-Origin-Opener-Policy: same-origin-allow-popups` (سطر 30).
+**File:** `netlify.toml`
 
 ### What was wrong:
 ```

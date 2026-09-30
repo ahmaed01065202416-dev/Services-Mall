@@ -384,7 +384,7 @@
             <div class="service-card card group cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
               <!-- Thumbnail -->
               <div class="relative overflow-hidden">
-                <img src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
+                <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
                   class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
@@ -397,11 +397,11 @@
                     <i class="fa-solid fa-eye text-navy-700"></i>
                   </button>
                   ${s.listingType === 'product' ? `
-                  <button onclick="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                  <button onclick="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 bg-turquoise-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-cart-plus text-white"></i>
                   </button>` : `
-                  <button onclick="event.stopPropagation();${s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                  <button onclick="event.stopPropagation();${s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 ${s.orderMode==='instant'?'bg-secondary':'bg-navy-800'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-white"></i>
                   </button>`}
@@ -454,8 +454,8 @@
                     var isOwnService = uid && uid === s.sellerId;
                     var isAdm = AppState.currentUser && AppState.currentUser.role === 'admin';
                     var editDataStr = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||'',listingType:s.listingType||'service',orderMode:s.orderMode||'request_first',digitalDelivery:s.digitalDelivery||null,stockLimit:s.stockLimit ?? null,expiryDate:s.expiryDate||null,orderRules:s.orderRules||''}).replace(/"/g,'&quot;');
-                    var serviceDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
-                    var cartDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||''}).replace(/"/g,'&quot;');
+                    var serviceDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
+                    var cartDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||''}).replace(/"/g,'&quot;');
                     var lang = AppState.language;
                     if (isOwnService || isAdm) {
                       return '<button onclick="event.stopPropagation();ServicesManager.deleteService(\'' + s.id + '\')" class="flex-1 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-trash text-xs\"></i>' + (lang !== 'en' ? 'حذف الإعلان' : 'Delete') + '</button>'
@@ -492,7 +492,7 @@
                     <div>
                       <!-- Cover image -->
                       <div class="relative">
-                        <img id="serviceDetailMainImg" src="${s.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'}"
+                        <img id="serviceDetailMainImg" src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'}"
                           class="w-full h-72 object-cover"
                           onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
                         <button onclick="closeModal('serviceModal')"
@@ -506,8 +506,8 @@
                            in the add-listing form). -->
                       ${Array.isArray(s.images) && s.images.length ? `
                       <div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto">
-                        <img src="${s.image || ''}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
-                          class="w-16 h-16 object-cover rounded-lg border-2 border-navy-500 cursor-pointer flex-shrink-0">
+                        ${s.image ? `<img src="${s.image}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
+                          class="w-16 h-16 object-cover rounded-lg border-2 border-navy-500 cursor-pointer flex-shrink-0">` : ''}
                         ${s.images.map(url => `
                           <img src="${url}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
                             class="w-16 h-16 object-cover rounded-lg border-2 border-transparent hover:border-navy-400 cursor-pointer flex-shrink-0">
@@ -574,19 +574,19 @@
                           </div>
                           <div class="flex gap-3">
                             ${s.listingType === 'product' ? `
-                            <button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                            <button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>
-                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other'}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other'}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
-                            <button onclick="closeModal('serviceModal');RequestSystem.openInstantModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openInstantModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-lock"></i>${AppState.language === 'en' ? 'Pay & Request' : 'اطلب وادفع الآن'}
                             </button>` : `
-                            <button onclick="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:s.image||'',sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-paper-plane"></i>${AppState.language === 'en' ? 'Request Service' : 'طلب الخدمة'}
                             </button>`}

@@ -80,7 +80,7 @@
 
                 return `
                 <div class="flex gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer ${n.read ? 'opacity-70' : ''}"
-                  onclick="NotificationsManager.markRead('${n.id}','${n.orderId||''}')">
+                  onclick="NotificationsManager.markRead(${escapeHtml(JSON.stringify(String(n.id)))},${escapeHtml(JSON.stringify(String(n.orderId || '')))})">
                   <div class="w-9 h-9 ${style.bg} rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                     <i class="fa-solid ${style.icon} ${style.color} text-sm"></i>
                   </div>

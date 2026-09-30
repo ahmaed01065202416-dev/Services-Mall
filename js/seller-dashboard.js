@@ -527,7 +527,7 @@
             return `
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition" data-service-id="${s.id}">
               <div class="flex gap-4">
-                <img src="${s.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
+                <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
                   class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
                 <div class="flex-1 min-w-0">

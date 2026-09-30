@@ -34,54 +34,18 @@ npx wrangler pages deploy . --project-name=mall-services
 
 ## 3. متغيرات البيئة (Environment Variables)
 Cloudflare Dashboard → مشروعك → **Settings** → **Environment Variables**.
-
-⚠️ **مهم:** حطّ نفس المتغيرات في تبويب **Production** و **Preview**، أو على الأقل
-في الـ environment اللي بتنشر عليه. والمتغيرات متحطّيش في ملف `.env` جوه المشروع —
-Cloudflare Pages بيقراها من الـ dashboard بس.
-
-القائمة الكاملة بالشرح وشكل كل قيمة في **`.env.example`** (الملف ده موجود فعلاً
-دلوقتي). أهم المتغيرات:
+القايمة الكاملة مع الشرح في `.env.example` — أهمهم:
 
 ```
-FIREBASE_PROJECT_ID         ← services-mall  (مش mall-services! دومين الموقع
-                               اسمه mall-services.pages.dev والكلمتين معكوستين،
-                               وده أشهر غلطة — بتخلي كل قراءة Firestore من
-                               السيرفر ترجع "not found" بصمت)
-FIREBASE_SERVICE_ACCOUNT    ← ★ الأهم: JSON كامل لمفتاح service account في سطر
-                               واحد (Firebase Console → Service accounts →
-                               Generate new private key). من غيره مفيش أي
-                               function يقدر يقرأ أو يكتب في Firestore.
-FIREBASE_WEB_API_KEY        ← اختياري، عنده قيمة افتراضية مدمجة في gcp.js
-SITE_URL                    ← دومين واحد بس، بدون slash أخير
-                               https://mall-services.pages.dev
-ALLOWED_ORIGINS             ← قائمة origins مفصولة بفاصلة (مش دومين واحد)
-                               https://mall-services.pages.dev
-ADMIN_SECRET                ← سر عشوائي طويل (ولّده بالأمر:
-                               node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-                               من غيره الـ cron كله بيرجع 401)
-ADMIN_UIDS                  ← UIDs الأدمن مفصولة بفاصلة (اختياري لو role=='admin')
+FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, ...
+FIREBASE_SERVICE_ACCOUNT   ← الـ service account JSON كامل على سطر واحد
 GEMINI_API_KEY              ← لتوليد المقالات + مساعد كتابة الطلب بالـ AI
-OPENAI_API_KEY              ← بديل Gemini (اختياري)
 UNSPLASH_ACCESS_KEY         ← اختياري، لصور المقالات
 FAWATERAK_API_KEY           ← بوابة الدفع الوحيدة في الموقع
-FAWATERAK_BASE_URL          ← اختياري، افتراضي https://app.fawaterk.com
-ALLOW_SIMULATED_PAYMENTS    ← false في production. قيمة true معناها دفع وهمية
-                               بتتسجّل كأنها نجحت من غير فلوس حقيقية — متحطّهاش
-                               غير على بيانات تجريبية.
-FIREBASE_DATABASE_URL       ← اختياري، له افتراضي مبني من project id
+SITE_URL / ALLOWED_ORIGINS  ← دومين موقعك على Cloudflare (مثال: https://mall-services.pages.dev)
+ADMIN_SECRET                ← سر عشوائي قوي لحماية /api/ai-generate و /api/quality-score و /api/subscription
 ```
-
-**مش متغيرات بيئة:** إعدادات Firebase العميلة (`apiKey`, `authDomain`,
-`projectId`, `storageBucket`, `messagingSenderId`, `appId`, `databaseURL`).
-دي مكتوبة جوه كود `index.html` في الكائن `FIREBASE_CONFIG` (سطر ~1579) لأن
-المتصفح محتاج يقراها وقت التشغيل.
-
-**مش مستخدم:** `FIREBASE_ACCESS_TOKEN` — كان الخطأ القديم في `ai-generate.js`
-(متغير ماكانش متظبط أبداً، فكل مقال بيتولّد كان الـ rules بيرفض كتابته بصمت).
-اتشال بالكامل. و`KASHIER_API_KEY` متاح بس الـ endpoint بيرمي استثناء لحد ما
-تكمل `handleKashier()` من توثيق لوحة التاجر.
-
-⚠️ لازم تعمل **redeploy** بعد إضافة/تعديل أي متغير عشان تتفعل.
+لازم تعمل **redeploy** بعد إضافة/تعديل المتغيرات عشان تتفعل.
 
 ## 4. نشر الـ Cron Worker (الجدولة اليومية)
 ```bash
