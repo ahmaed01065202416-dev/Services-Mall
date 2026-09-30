@@ -486,6 +486,16 @@ async function secureApiCall(endpoint, action, data = {}) {
 //
 // Best-effort by design: a failure here must never block the caller, because
 // the order itself is already saved by the time any of this runs.
+//
+// The failure reason is kept in a module-level variable because the caller only
+// gets a boolean back. order-workspace.js reads it to explain a
+// PERMISSION_DENIED instead of showing a bare red error box: a chat that is
+// empty because its participants were never linked is indistinguishable from a
+// broken deployment otherwise, and the client has no other way to tell them
+// apart.
+let linkChatLastError = null;
+function getLinkChatLastError() { return linkChatLastError; }
+
 async function linkChatParticipant(orderId, retries = 3) {
     const user = window.auth?.currentUser;
     if (!user || !orderId) return false;
@@ -501,11 +511,18 @@ async function linkChatParticipant(orderId, retries = 3) {
                 body: JSON.stringify({ orderId }),
             });
             const data = await resp.json().catch(() => ({}));
-            if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+            if (!resp.ok || !data.success) {
+                const e = new Error(data.error || `HTTP ${resp.status}`);
+                e.code = data.code || `HTTP_${resp.status}`;
+                throw e;
+            }
+            linkChatLastError = null;
             return true;
         } catch (err) { lastErr = err; }
     }
-    console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message);
+    linkChatLastError = lastErr;
+    console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message,
+                lastErr && lastErr.code ? `(${lastErr.code})` : '');
     return false;
 }
 
@@ -728,7 +745,7 @@ Object.assign(window, {
     generateId, formatDateAr, formatTimeAgo, formatCurrency, convertCurrency,
     updateCartCount, getStatusText, getStatusClass,
     openModal, closeModal, showToast, showLoading, hideLoading,
-    secureApiCall, sanitizeInput, escapeHtml, previewImage, linkChatParticipant,
+    secureApiCall, sanitizeInput, escapeHtml, previewImage, linkChatParticipant, getLinkChatLastError,
     scanForContactLeak, scanFieldsForContactLeak, flagSuspiciousContent, contactLeakWarning,
     calcPlatformFee, addToCart, removeFromCart, clearCart, getCartTotals,
     navigateTo,

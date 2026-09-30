@@ -181,17 +181,34 @@
                     // `chats/${orderId}/buyerId` write is denied by
                     // database.rules.json (.write:false), which used to abort
                     // this whole try block and silently drop the brief card.
-                    await linkChatParticipant(orderId);
-                    await window.rtdb.ref(`chats/${orderId}/messages`).push({
-                        senderId:   user.uid,
-                        senderName: user.displayName || user.email || 'عميل',
-                        type:       'request_brief',
-                        details,
-                        deadline:   deadline || '',
-                        budget:     budget || '',
-                        readBy:     { [user.uid]: true },
-                        createdAt:  firebase.database.ServerValue.TIMESTAMP,
-                    });
+                    //
+                    // FIXED: the result of the link is now checked. Previously
+                    // the push was attempted unconditionally, so when the link
+                    // failed the push was denied too and the brief card was
+                    // lost with only a bare 'permission_denied' in the console.
+                    // Now we don't send a message we know will be rejected, we
+                    // say so explicitly, and — because the order itself is
+                    // already saved — the order still succeeds. The brief is
+                    // not retried here because the buyer's own workspace will
+                    // re-run the link (and now write BOTH parties) the moment
+                    // they open it, which is where the retry belongs.
+                    const linked = await linkChatParticipant(orderId);
+                    if (!linked) {
+                        const linkErr = (typeof getLinkChatLastError === 'function') ? getLinkChatLastError() : null;
+                        console.error('[RequestSystem] chat not linked, the request-brief card was NOT saved. Reason:',
+                            linkErr && linkErr.message, linkErr && linkErr.code ? `(${linkErr.code})` : '');
+                    } else {
+                        await window.rtdb.ref(`chats/${orderId}/messages`).push({
+                            senderId:   user.uid,
+                            senderName: user.displayName || user.email || 'عميل',
+                            type:       'request_brief',
+                            details,
+                            deadline:   deadline || '',
+                            budget:     budget || '',
+                            readBy:     { [user.uid]: true },
+                            createdAt:  firebase.database.ServerValue.TIMESTAMP,
+                        });
+                    }
                 }
             } catch (chatErr) {
                 console.error('[RequestSystem] Chat message failed (order was still created):', chatErr);

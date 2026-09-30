@@ -103,7 +103,7 @@
 
 | الملف | التغيير |
 |---|---|
-| `_redirects` | شلنا `/*  /index.html  200` **catch-all** بالكامل. ده خلا **`404.html`** يشتغل فعلاً ويظهر 404 حقيقي. (آمن: الـ SPA routing hash-based، ولم يتأكد أي كود بيقرأ `location.pathname`) |
+| `_redirects` | شلنا `/* /index.html 200` **catch-all** بالكامل. ده خلا **`404.html`** يشتغل فعلاً ويظهر 404 حقيقي. (آمن: الـ SPA routing hash-based، ولم يتأكد أي كود بيقرأ `location.pathname`) |
 | `_redirects` | أعيد كتابة قسم صفحات الشروط/الخصوصية. **`terms.html` و `privacy.html` اتحذفوا**، وحطينا **301 redirects** للـ bookmarks القديمة. وحدثنا `tailwind.config.js` content list عشان يتطابق |
 | `_headers` | شلنا `'unsafe-eval'` من `script-src`. **تم التحقق بالكامل:** مفيش `eval()` ولا `new Function()` في أي `.js` في المشروع، وكل Libraries (Firebase compat 10.14.1/9.23.0، DOMPurify 3.1.7، Chart.js 4.4.1، gtag.js) eval-free. **ملاحظة موثقة:** `'unsafe-inline'` لسه موجود في `script-src` **عن قصد** — لأنه بيسمح بـ 36 `<script>` inline + 138 `on*` attributes (109 في `index.html`). تحويلهم لـ `addEventListener`/external files هو refactor كبير جدًا ومخاطرة شحنته، فتم تركه في هذا Pass مع توثيق كامل |
 | `blog/افضل-خدمات-رقمية-في-مصر-2025/index.html` | **Fixed** — اسم الأنيميشن `pwa` كان مكتوب بحرف **سيريلي (U+0430)** بدل اللاتيني `a`، في تعريف `@keyframes` وفي `animation:` مع بعض. الأنيميشن كان شغّال لأن الغلطة مكرّرة في الاتنين، بس أي تعديل يعيد كتابة الاسم بحرف لاتيني عادي هيقتل الأنيميشن بصمت. اتصلّح لـ ASCII (تفصيلة: بند 8b) |
@@ -157,6 +157,23 @@
 
 11. **Java unavailable for emulator tests:** Validation اقتصر على structural checker + cross-check ضد مسارات العميل (وكلهم نجحوا). مفيش blocker للنشر.
 
+11b. **الشات بيطلع فاضي + `PERMISSION_DENIED`** (اتحلّ — بلاغ من ميدان الاستخدام):
+```
+POST /api/link-chat-participant 500
+[Chat] RTDB listener error: PERMISSION_DENIED at /chats/{orderId}/messages
+```
+**السبب:** الـ RTDB `.read` على `messages` بيشترط `chats/{orderId}/buyerId === auth.uid`، وغيره من الـ nodes هو **مش** إلا `link-chat-participant.js` اللي بيكتبه (بـ service account، لأن قواعد RTDB ماتقدرش تقرا Firestore أصلاً). الـ function رجّع 500 ← الـ node مش موجود ← `null === auth.uid` = false ← الشات فارغ.
+
+سبب الـ 500 في الغالب **متغيرات البيئة ناقصة في تبويب Preview** مش Production — دومين `9ffa5049.mall-services.pages.dev` دومين preview deployment، وPreview environment عنده متغيرات منفصلة تماماً عن Production.
+
+**الإصلاحات:**
+- `link-chat-participant.js` بقى بيرجّع `code` واضح (`SERVER_NOT_CONFIGURED` / `CHAT_WRITE_FAILED` / `NO_PARTICIPANTS` / `INTERNAL`) بدل `Internal error` اللي كان بيخفي السبب تماماً، وبيكتب في الـ logs أي متغيّر ناقص بالاسم (من غير ما يسرّب أي مسار أو توكن).
+- **بيكتب الطرفين مع بعض** (كان بيكتب جهة واحدة فقط) — فمكالمة واحدة بقت تربط الشات للطرفين. قبل كده لو المشتري هو الوحيد اللي فتح الشات، جهة البائع كانت مقفولة على طول.
+- `order-workspace.js` — لو حصل `PERMISSION_DENIED` بيعيد محاولة الربط تلقائياً (مرة واحدة، من غير infinite loop)، ولو فشل بيقول السبب الحقيقي بدل صندوق أحمر فاضي.
+- `request-system.js` — مبعتش كارت `request_brief` وهو عارف إنه هيترفض؛ بيسجّل السبب بوضوح، والطلب نفسه بيتحفظ عادي.
+
+**⚠️ الخطوة اللي محتاجة تعملها:** انشر نفس المتغيرات في **Preview** كمان. من غير `FIREBASE_SERVICE_ACCOUNT` + `FIREBASE_PROJECT_ID` مفيش أي function يقدر يقرا أو يكتب Firestore، والشات مش هيشتغل. (.env.example و DEPLOY_CLOUDFLARE.md بيقولوا نفس الكلام من بدري.)
+
 ---
 
 ## 9. النتيجة
@@ -169,6 +186,7 @@
 | الملف | الوصف |
 |---|---|
 | `F:\شغل اوبن كود\mall-services-fixed-v2.zip` | **الأصلية — ما اتعدّلتش أبداً** (1,141,770 بايت، 28/09/2026). اتسابت لو حبيت ترجع لها |
-| `F:\شغل اوبن كود\mall-services-fixed-v3-AUDITED.zip` | **النسخة المُدقَّقة والمُصلَحة** (1,181,457 بايت، 30/09/2026) — 88 ملف، جوه مجلد `project/` عشان تفك الضغط بنفس بنية الأصلية |
+| `F:\شغل اوبن كود\mall-services-fixed-v3-AUDITED.zip` | النسخة المُدقَّقة (1,182,057 بايت، 30/09 9:18 م) — 88 ملف، فيها كل إصلاحات التدقيق |
+| `F:\شغل اوبن كود\mall-services-fixed-v4.zip` | **النسخة الحالية** — الـ v3 + إصلاح الشات الفارغ (بند 11b) |
 
-**أول حاجة تعملها بعد ما تفك الضغط:** اقرأ `.env.example` وحط المتغيرات في Cloudflare Dashboard، وبعدين اقرأ `AUDIT_REPORT.md` (خصوصاً القسمين 4 و 5 — هم أهم حاجة تفهمها قبل ما تعدّل حاجة).
+**أول حاجة تعملها بعد ما تفك الضغط:** انشر المتغيرات في **Production و Preview** مع بعض، وبعدين اقرأ `AUDIT_REPORT.md` — خصوصاً البندين 4 و 5 و 11b.
