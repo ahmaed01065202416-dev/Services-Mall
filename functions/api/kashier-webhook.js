@@ -15,14 +15,16 @@
  *      which header or body field carries the signature?).
  *   2. Replace the TODO block below with the real verification, following
  *      the exact pattern fawaterak-webhook.js uses (hmacHex + timingSafeEqual
- *      are already available, imported from payment.js).
+ *      are exported by payment.js — re-add `import { hmacHex,
+ *      finalizePendingPayment } from './payment.js';` at that point; it was
+ *      removed because this endpoint finalizes nothing today, so importing it
+ *      would be dead code).
  *   3. Replace `data.TODO_*` field reads with Kashier's real payload shape —
  *      set this URL in the Kashier dashboard's webhook config once confirmed.
  * Until step 2 is done, do NOT rely on this endpoint for real money — anyone
  * could POST a fake "paid" event to it.
  * ============================================================================
  */
-import { finalizePendingPayment } from './payment.js';
 
 export async function onRequest(context) {
     const { request, env } = context;

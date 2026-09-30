@@ -25,7 +25,7 @@
  * ADMIN_UIDS (comma-separated Firebase uids), FIREBASE_DATABASE_URL (optional
  * override — see rtdbBase() in _shared/gcp.js).
  */
-import { verifyIdToken, fsGet, fsDelete, fsCreate, rtdbDelete } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsDelete, fsCreate, rtdbDelete, corsHeaders, isSafeDocId } from '../_shared/gcp.js';
 
 function json(statusCode, headers, obj) {
   return new Response(JSON.stringify(obj), { status: statusCode, headers });
@@ -33,12 +33,10 @@ function json(statusCode, headers, obj) {
 
 export async function onRequest(context) {
   const { request, env } = context;
-  const CORS = {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  };
+  // FIXED: emitted the raw env var, so with more than one origin configured the
+  // header became "https://a.com,https://b.com" and browsers rejected every
+  // request. ALLOWED_ORIGINS is a comma-separated LIST.
+  const CORS = corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
 
   if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
@@ -63,6 +61,9 @@ export async function onRequest(context) {
     const body = await request.json().catch(() => ({}));
     const { type, orderId } = body;
     if (!orderId) return json(400, CORS, { error: 'orderId is required' });
+    // `orderId` is interpolated into Firestore and RTDB paths below; validate it
+    // so it cannot walk out of the intended node.
+    if (!isSafeDocId(orderId)) return json(400, CORS, { error: 'Invalid orderId' });
     if (!['order', 'chat'].includes(type)) {
       return json(400, CORS, { error: 'Invalid type — expected "order" or "chat"' });
     }
@@ -101,6 +102,8 @@ export async function onRequest(context) {
     return json(200, CORS, { success: true, deleted: type, orderId });
   } catch (err) {
     console.error('[admin-delete] error:', err);
-    return json(500, CORS, { error: err.message || 'Internal error' });
+    // Fixed message only — err.message from the Firestore/Google layers embeds
+    // the project id, collection paths and internal rule detail.
+    return json(500, CORS, { error: 'Internal error' });
   }
 }

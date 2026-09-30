@@ -36,12 +36,23 @@
 # the bottom of that file) — it just never used to be reached for these URLs.
 /blog/:slug /blog/index.html 200
 
-# Legacy standalone legal pages — superseded by the redesigned /terms and
-# /privacy folders below. Kept as 301s (not deleted) so old bookmarks/backlinks
-# and any URL already indexed by Google land on the current page instead of
-# a stale duplicate with an outdated design (was previously reachable and
-# linked from index.html's footer/signup-modal by mistake — now fixed to
-# point at /terms and /privacy directly, this redirect is the safety net).
+# Legacy standalone legal pages.
+#
+# ⚠️ FIXED (audit finding): the project shipped TWO different policies for the
+# same document, and the redirect pointed the newer one at the older one:
+#     terms.html   (standalone, "آخر تحديث: أغسطس 2026",  8 sections)
+#     privacy.html (standalone, "آخر تحديث: أغسطس 2026",  7 sections)
+#     terms/index.html   (folder, "آخر تحديث: 21 مايو 2025", 13 sections)
+#     privacy/index.html (folder, "آخر تحديث: 21 мая 2025", 10 sections)
+# So the 2026 text was unreachable, and two contradicting legal documents sat in
+# the same deploy with no way for anyone to tell which one governs.
+#
+# Resolved by keeping the folder versions as the single canonical source — they
+# are the more complete of the two — and DELETING the two standalone duplicates.
+# Nothing in the project ever linked to /terms.html or /privacy.html: every
+# footer, the signup modal and all blog pages link to /terms and /privacy
+# directly. These two 301s are kept purely so old bookmarks, backlinks and URLs
+# already indexed by Google still land on the live policy instead of a 404.
 /terms.html /terms 301
 /privacy.html /privacy 301
 
@@ -55,5 +66,25 @@
 /terms /terms/index.html 200
 /terms/ /terms/index.html 200
 
-# SPA fallback for main app
-/* /index.html 200
+# ── SPA fallback — REMOVED (fixed in audit) ──────────────────────────────────
+# This used to be:
+#   /* /index.html 200
+# which meant EVERY path that matched no file — /foo, /blog/typo, /js/missing.js,
+# /admin/secrets, /wp-login.php — was answered with the main app's index.html and
+# a 200 OK status. Three problems with that:
+#   1. The project ships a proper, well-designed 404.html (Arabic RTL, links back
+#      to / and /#services). It was 100% unreachable, because nothing ever 404'd.
+#   2. Soft-404s: Google treats a 200 response for a non-existent URL as a real
+#      page, so any URL in the infinite space under /* can be indexed, and the
+#      site looks like it has infinite duplicate content.
+#   3. Typos in /blog/<slug> silently showed the homepage instead of an error.
+#
+# Removing it is SAFE for this app: routing is hash-based, not path-based — every
+# in-app deep link is `/#orders`, `/#workspace-<orderId>` etc. (see handleHash()
+# in index.html), so the server only ever receives `/` for the app itself. All the
+# real paths (/blog/*, /about, /contact, /terms, /privacy) are handled by the
+# explicit rules above, and static assets are served directly by Pages.
+# Cloudflare now serves 404.html with a genuine 404 status.
+#
+# To restore the old behaviour instead, uncomment this line:
+# /* /index.html 200

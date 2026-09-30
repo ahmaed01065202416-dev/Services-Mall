@@ -25,7 +25,7 @@
  * Required env vars: same as admin-delete.js (FIREBASE_PROJECT_ID,
  * FIREBASE_SERVICE_ACCOUNT, ADMIN_UIDS, FIREBASE_DATABASE_URL optional).
  */
-import { verifyIdToken, fsGet, fsQuery, rtdbGet } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsQuery, rtdbGet, corsHeaders, isSafeDocId } from '../_shared/gcp.js';
 
 function json(statusCode, headers, obj) {
   return new Response(JSON.stringify(obj), { status: statusCode, headers });
@@ -58,12 +58,10 @@ function publicPick(u, priv) {
 
 export async function onRequest(context) {
   const { request, env } = context;
-  const CORS = {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  };
+  // FIXED: emitted the raw env var, so with more than one origin configured the
+  // header became "https://a.com,https://b.com" and browsers rejected every
+  // request. ALLOWED_ORIGINS is a comma-separated LIST.
+  const CORS = corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'GET, OPTIONS' });
 
   if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
   if (request.method !== 'GET') return json(405, CORS, { error: 'Method not allowed' });
@@ -82,6 +80,9 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const disputeId = url.searchParams.get('disputeId');
     if (!disputeId) return json(400, CORS, { error: 'disputeId is required' });
+    // A `/` here would walk out of the `disputes/` path (e.g. disputeId
+    // `../users/<uid>` reads an arbitrary user document), so validate first.
+    if (!isSafeDocId(disputeId)) return json(400, CORS, { error: 'Invalid disputeId' });
 
     const dispute = await fsGet(env, `disputes/${disputeId}`);
     if (!dispute) return json(404, CORS, { error: 'Dispute not found' });
@@ -123,6 +124,8 @@ export async function onRequest(context) {
     });
   } catch (err) {
     console.error('[admin-dispute-detail] error:', err);
-    return json(500, CORS, { error: err.message || 'Internal error' });
+    // Fixed message only — err.message from the Firestore/Google layers embeds
+    // the project id, collection paths and internal rule detail.
+    return json(500, CORS, { error: 'Internal error' });
   }
 }

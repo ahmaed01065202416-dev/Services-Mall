@@ -18,7 +18,7 @@
  * `.write` for these two fields is now `false`; js/order-workspace.js's
  * _linkChatParticipant() calls this endpoint instead of writing directly.
  */
-import { verifyIdToken, fsGet, rtdbUpdate } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, rtdbUpdate, corsHeaders, isSafeDocId } from '../_shared/gcp.js';
 
 function json(statusCode, headers, obj) {
   return new Response(JSON.stringify(obj), { status: statusCode, headers });
@@ -26,12 +26,10 @@ function json(statusCode, headers, obj) {
 
 export async function onRequest(context) {
   const { request, env } = context;
-  const CORS = {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  };
+  // FIXED: emitted the raw env var, so with more than one origin configured the
+  // header became "https://a.com,https://b.com" and browsers rejected every
+  // request. ALLOWED_ORIGINS is a comma-separated LIST.
+  const CORS = corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
   if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
 
@@ -44,6 +42,9 @@ export async function onRequest(context) {
     const body = await request.json().catch(() => ({}));
     const orderId = body.orderId;
     if (!orderId || typeof orderId !== 'string') return json(400, CORS, { error: 'orderId is required' });
+    // `orderId` goes straight into the Firestore and RTDB paths below; a `/`
+    // in it (e.g. `../users/<uid>`) would walk out of the intended node.
+    if (!isSafeDocId(orderId)) return json(400, CORS, { error: 'Invalid orderId' });
 
     const order = await fsGet(env, `orders/${orderId}`);
     if (!order) return json(404, CORS, { error: 'Order not found' });
@@ -60,6 +61,8 @@ export async function onRequest(context) {
     return json(200, CORS, { success: true });
   } catch (err) {
     console.error('[link-chat-participant] error:', err);
-    return json(500, CORS, { error: err.message || 'Internal error' });
+    // Fixed message only — err.message from the RTDB layer embeds the database
+    // URL and internal path detail.
+    return json(500, CORS, { error: 'Internal error' });
   }
 }

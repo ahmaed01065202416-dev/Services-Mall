@@ -1039,16 +1039,16 @@
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold ${r.status==='resolved'?'text-green-700 bg-green-100':'text-red-700 bg-red-100'} px-2 py-0.5 rounded-lg">${r.status==='resolved'?(isAr?'محلول':'Resolved'):(isAr?'جديد':'New')}</span>
-                        <span class="text-xs text-gray-500">${r.type||'—'}</span>
+                        <span class="text-xs text-gray-500">${escapeHtml(r.type||'—')}</span>
                       </div>
-                      <p class="text-sm font-bold text-gray-900">${isAr?'البلاغ على:':'Reported:'} ${r.targetName||r.targetId||'—'}</p>
+                      <p class="text-sm font-bold text-gray-900">${isAr?'البلاغ على:':'Reported:'} ${escapeHtml(r.targetName||r.targetId||'—')}</p>
                       <p class="text-sm text-gray-600 mt-1">${escapeHtml(r.reason||'—')}</p>
-                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${r.reporterName||'—'} · ${formatDateAr(r.createdAt)}</p>
+                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${escapeHtml(r.reporterName||'—')} · ${formatDateAr(r.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-1 flex-shrink-0">
-                      ${r.orderId ? `<button onclick="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
-                      ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${r.id}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
-                      <button onclick="window._adminDeleteReport('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                      ${r.orderId ? `<button onclick="openWorkspace('${_safeId(r.orderId)}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
+                      ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${_safeId(r.id)}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
+                      <button onclick="window._adminDeleteReport('${_safeId(r.id)}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                   </div>`).join('')}
                 </div>`}`;

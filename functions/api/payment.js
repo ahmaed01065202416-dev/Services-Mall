@@ -17,7 +17,7 @@
  * Route: /api/payment
  * ============================================================================
  */
-import { verifyIdToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate, siteOrigin, corsHeaders, isSafeDocId } from '../_shared/gcp.js';
 
 // ── Web Crypto helpers (Node's `crypto`/`https` don't exist in Workers) ──────
 async function hmacHex(secret, message, hash = 'SHA-512') {
@@ -46,18 +46,15 @@ async function apiPost(url, bodyData, extraHeaders = {}) {
 }
 
 // ── CORS ───────────────────────────────────────────────────────────────────
+// Uses the shared helper from _shared/gcp.js so ALLOWED_ORIGINS is parsed the
+// same way in every endpoint. It used to be duplicated per-file, which is how
+// eight of them ended up emitting the raw comma-joined value into the header.
 function getCORS(request, env) {
-    const origin = request.headers.get('origin') || request.headers.get('Origin') || '';
-    const allowedOrigins = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-    const allowedOrigin = allowedOrigins.includes(origin) ? origin : (allowedOrigins[0] || '*');
-    return {
-        'Access-Control-Allow-Origin': allowedOrigin,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Content-Type': 'application/json',
-        'Vary': 'Origin',
-    };
+    return corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
 }
+
+// SITE_URL is the single source of truth for building return/webhook URLs.
+const _siteOrigin = siteOrigin;
 
 function json(statusCode, headers, obj) {
     return new Response(JSON.stringify(obj), { status: statusCode, headers });
@@ -120,6 +117,18 @@ export async function onRequest(context) {
         }
     }
 
+    // Every handler below interpolates client-supplied ids straight into a
+    // Firestore path (`orders/${orderId}`, `services/${serviceId}`,
+    // `pending_payments/${pendingId}`, `escrow/${orderId}`). A `/` in one of
+    // those walks the path, so `orderId: "../users/<uid>"` would read or write
+    // a document outside the collection the action is scoped to. Validate the
+    // shape of every id in the body once, here, before dispatch.
+    for (const key of ['orderId', 'disputeId', 'serviceId', 'pendingId', 'returnId']) {
+        if (body[key] !== undefined && !isSafeDocId(body[key])) {
+            return json(400, CORS, { error: `Invalid ${key}` });
+        }
+    }
+
     try {
         switch (action) {
             case 'fawaterakPay':   return await handleFawaterak(body, env, CORS, auth);
@@ -127,12 +136,13 @@ export async function onRequest(context) {
             case 'releaseEscrow':  return await handleReleaseEscrow(body, env, CORS, auth);
             case 'resolveDispute': return await handleResolveDispute(body, env, CORS, auth);
             case 'requestWithdrawal': return await handleRequestWithdrawal(body, env, CORS, auth);
-            case 'checkKeys':      return await handleCheckKeys(env, CORS);
+            case 'checkKeys':      return await handleCheckKeys(env, CORS, request);
             case 'autoFlagStaleDeliveries': {
                 // Cron-only (mirrors subscription.js chargeDue) — not in AUTH_REQUIRED
                 // because cron has no Firebase user, just the admin secret.
                 const adminToken = request.headers.get('X-Admin-Token');
-                if (!env.ADMIN_SECRET || adminToken !== env.ADMIN_SECRET) return json(401, CORS, { error: 'Unauthorized' });
+                // constant-time compare (this gate opens disputes and freezes escrow)
+                if (!env.ADMIN_SECRET || !timingSafeEqual(adminToken, String(env.ADMIN_SECRET))) return json(401, CORS, { error: 'Unauthorized' });
                 return await handleAutoFlagStaleDeliveries(env, CORS);
             }
             default:
@@ -140,7 +150,9 @@ export async function onRequest(context) {
         }
     } catch (err) {
         console.error(`[Payment] Error in ${action}:`, err.message);
-        return json(500, CORS, { error: err.message || 'Internal server error' });
+        // Fixed message — err.message from the Firestore/Google layers embeds
+        // the project id, the failing REST path, and sometimes doc ids.
+        return json(500, CORS, { error: 'Internal server error' });
     }
 }
 
@@ -273,6 +285,39 @@ function genOrderId() {
     return 'MS_' + Date.now().toString(36).toUpperCase() + '_' + crypto.randomUUID().slice(0, 8).toUpperCase();
 }
 
+// ⚠️ FIXED (audit finding): the admin dashboard's "Payments" tab
+// (js/dashboard.js — Total In / Net / Payment Records) reads the `payments`
+// collection, but NOTHING in the entire project ever wrote to it — not the
+// client, not the server. Every admin revenue figure was therefore permanently
+// wrong: `payments` was always empty, so "Total In" was always 0 and "Net" was
+// always exactly minus "Total Out". Now written here, once per confirmed
+// payment, from the only place a payment is ever considered real.
+//
+// Idempotent: finalizePendingPayment() returns early above when the pending doc
+// is already 'processed', so a repeated webhook cannot double-count.
+// Best-effort: a failure here must not roll back a real, already-finalized
+// payment — hence the catch.
+async function _recordPayment(pendingId, pending, env, { paymentId, method, orderIds }) {
+    try {
+        const item = pending.item || (Array.isArray(pending.items) ? pending.items[0] : null);
+        await fsSet(env, `payments/${pendingId}`, {
+            userId: pending.uid || '',
+            sellerId: item ? (item.sellerId || '') : '',
+            amount: Number(pending.total) || Number(pending.subtotal) || 0,
+            fees: Number(pending.fees) || 0,
+            currency: pending.currency || 'EGP',
+            method: String(method || ''),
+            status: 'success',
+            paymentId: String(paymentId || ''),
+            merchantOrderId: pendingId,
+            orderIds: orderIds || [],
+            createdAt: new Date(),
+        }, true);
+    } catch (e) {
+        console.error('[Payment] payments-record write failed (payment itself unaffected):', e.message);
+    }
+}
+
 // Once a real payment is confirmed (webhook), this is the ONLY place that
 // creates the actual paid `orders` documents. Idempotent.
 async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
@@ -353,6 +398,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         });
 
         await fsSet(env, `pending_payments/${pendingId}`, { status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds: [orderId] }, true);
+        await _recordPayment(pendingId, pending, env, { paymentId, method, orderIds: [orderId] });
         return { ok: true, orderIds: [orderId] };
     }
 
@@ -431,6 +477,8 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds,
     }, true);
 
+    await _recordPayment(pendingId, pending, env, { paymentId, method, orderIds });
+
     return { ok: true, orderIds };
 }
 
@@ -460,7 +508,7 @@ async function handleFawaterak(body, env, CORS, auth) {
             throw new Error('Payment gateway is not configured (FAWATERAK_API_KEY missing). Refusing to simulate a real charge.');
         }
         const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'fawaterak' });
-        return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`, simulated: true, orderId, orderIds: result.orderIds });
+        return json(200, CORS, { redirectUrl: `${_siteOrigin(env)}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`, simulated: true, orderId, orderIds: result.orderIds });
     }
 
     const base = env.FAWATERAK_BASE_URL || 'https://app.fawaterk.com';
@@ -474,10 +522,18 @@ async function handleFawaterak(body, env, CORS, auth) {
         cartItems: [{ name: 'Mall Services Order', price: total, quantity: 1 }],
         payLoad: { orderId },
         redirectionUrls: {
-            successUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`,
-            failUrl:    `${env.ALLOWED_ORIGINS}?payment_success=false&order_id=${orderId}&method=fawaterak#payment`,
-            pendingUrl: `${env.ALLOWED_ORIGINS}?payment_success=pending&order_id=${orderId}&method=fawaterak#orders`,
-            webhookUrl: `${env.SITE_URL || env.ALLOWED_ORIGINS}/api/fawaterak-webhook`,
+            // FIXED: these were built from ALLOWED_ORIGINS, which is a
+            // comma-separated LIST. With more than one origin configured the
+            // gateway received the invalid URL
+            // "https://a.com,https://b.com?payment_success=true…" (so the buyer
+            // was never returned to the app), and webhookUrl fell back to that
+            // same garbage whenever SITE_URL was unset — meaning Fawaterak never
+            // delivered a webhook and NO order was ever created server-side.
+            // A return/webhook URL must come from SITE_URL only.
+            successUrl: `${_siteOrigin(env)}?payment_success=true&order_id=${orderId}&method=fawaterak#orders`,
+            failUrl:    `${_siteOrigin(env)}?payment_success=false&order_id=${orderId}&method=fawaterak#payment`,
+            pendingUrl: `${_siteOrigin(env)}?payment_success=pending&order_id=${orderId}&method=fawaterak#orders`,
+            webhookUrl: `${_siteOrigin(env)}/api/fawaterak-webhook`,
         },
         sendEmail: false, sendSMS: false,
     }, { 'Authorization': `Bearer ${env.FAWATERAK_API_KEY}` });
@@ -518,7 +574,7 @@ async function handleKashier(body, env, CORS, auth) {
             throw new Error('Payment gateway is not configured (KASHIER_API_KEY missing). Refusing to simulate a real charge.');
         }
         const result = await finalizePendingPayment(orderId, env, { paymentId: 'DEMO_' + orderId, method: 'kashier' });
-        return json(200, CORS, { redirectUrl: `${env.ALLOWED_ORIGINS}?payment_success=true&order_id=${orderId}&method=kashier#orders`, simulated: true, orderId, orderIds: result.orderIds });
+        return json(200, CORS, { redirectUrl: `${_siteOrigin(env)}?payment_success=true&order_id=${orderId}&method=kashier#orders`, simulated: true, orderId, orderIds: result.orderIds });
     }
 
     throw new Error(
@@ -732,6 +788,17 @@ async function handleResolveDispute(body, env, CORS, auth) {
     const dispute = await fsGet(env, `disputes/${disputeId}`);
     if (!dispute) return json(404, CORS, { error: 'النزاع غير موجود' });
     if (dispute.status !== 'open') return json(409, CORS, { error: 'تم حل هذا النزاع بالفعل' });
+    // ⚠️ SECURITY FIX (audit finding): `orderId` used to be taken from the
+    // request body and used INDEPENDENTLY of the dispute document — the escrow
+    // that actually gets refunded or released was whichever order the caller
+    // named, not the order the dispute is about. Any caller holding a valid
+    // disputeId could therefore settle an unrelated order's escrow (real
+    // money moves: writeIncrement on a wallet) while closing a dispute that had
+    // nothing to do with it. The dispute document already records the order it
+    // belongs to, so trust that and ignore the client's copy.
+    if (!dispute.orderId || dispute.orderId !== orderId) {
+        return json(409, CORS, { error: 'الطلب المحدد لا يطابق النزاع' });
+    }
 
     const escrow = await fsGet(env, `escrow/${orderId}`);
     if (!escrow || (escrow.status !== 'frozen' && escrow.status !== 'held')) {
@@ -803,6 +870,20 @@ async function handleRequestWithdrawal(body, env, CORS, auth) {
     const wallet = await fsGet(env, `wallets/${auth.uid}`);
     const balance = Number(wallet && wallet.balance) || 0;
     if (amt > balance) return json(400, CORS, { error: 'رصيدك غير كافٍ لهذا المبلغ' });
+    if (!wallet) return json(400, CORS, { error: 'لا يوجد محفظة لهذا الحساب' });
+
+    // ⚠️ SECURITY FIX (financial): the balance read above and the decrement in
+    // the commit below used to be two independent round-trips with no
+    // precondition, so two concurrent withdrawal requests could both read the
+    // same balance, both pass `amt > balance`, and both decrement — paying out
+    // more than the seller ever earned. The 20/min rate limit does not prevent
+    // concurrency. Every other money path in this file already guards this way
+    // (escrow release at line ~602, auto-dispute at ~691, dispute resolution at
+    // ~744); the withdrawal path was the lone outlier. The commit now carries a
+    // `currentDocument.updateTime` precondition taken from the document that was
+    // actually read, so if the wallet moved in between, Firestore rejects the
+    // whole commit (no debit, no withdrawal row) and the client retries.
+    const walletPrecondition = wallet._updateTime ? { updateTime: wallet._updateTime } : undefined;
 
     // ⚠️ ADDED: net amount after the payout provider's transfer fee (e.g.
     // Kashier's cost to move money out), separate from the platform commission
@@ -817,25 +898,51 @@ async function handleRequestWithdrawal(body, env, CORS, auth) {
     const user = await fsGet(env, `users/${auth.uid}`);
     const reqId = crypto.randomUUID();
 
-    await fsCommit(env, [
-        writeIncrement(env, `wallets/${auth.uid}`, 'balance', -amt),
-        writeCreate(env, `withdrawals/${reqId}`, {
-            userId: auth.uid, userName: (user && user.displayName) || '', userEmail: (user && user.email) || auth.email || '',
-            amount: amt, feePercent, feeAmount, netAmount,
-            method: method || 'bank', accountInfo: String(accountInfo || '').slice(0, 300),
-            status: 'pending', createdAt: new Date(),
-        }),
-    ]);
+    try {
+        await fsCommit(env, [
+            writeIncrement(env, `wallets/${auth.uid}`, 'balance', -amt, walletPrecondition),
+            writeCreate(env, `withdrawals/${reqId}`, {
+                userId: auth.uid, userName: (user && user.displayName) || '', userEmail: (user && user.email) || auth.email || '',
+                amount: amt, feePercent, feeAmount, netAmount,
+                method: method || 'bank', accountInfo: String(accountInfo || '').slice(0, 300),
+                status: 'pending', createdAt: new Date(),
+            }),
+        ]);
+    } catch (e) {
+        // fsCommit throws a plain Error whose message embeds the Firestore REST
+        // error, so match on the message. Firestore answers a failed
+        // `currentDocument` precondition with ABORTED (409). Nothing was
+        // debited and no withdrawal row was written — the commit is atomic.
+        const msg = String((e && e.message) || '');
+        if (e && e.status === 409 || /ABORTED|FAILED_PRECONDITION|condition.*fail/i.test(msg)) {
+            return json(409, CORS, { error: 'تم تنفيذ عملية سحب أخرى للتو — راجع رصيدك وحاول مرة أخرى' });
+        }
+        throw e;
+    }
 
     return json(200, CORS, { success: true, requestId: reqId, netAmount, feeAmount, newBalance: Number((balance - amt).toFixed(2)) });
 }
 
 // ── Check Which Keys Are Configured (no secrets returned) ────────────────────
-async function handleCheckKeys(env, CORS) {
+async function handleCheckKeys(env, CORS, request) {
+    // ⚠️ SECURITY FIX: this used to be dispatched BEFORE the AUTH_REQUIRED gate
+    // and required no credential of any kind, while returning the Firebase
+    // project id, which integrations are configured, and the raw error strings
+    // from Google OAuth / Firestore REST (which embed the failing project id and
+    // endpoint). That is a free reconnaissance endpoint for anyone on the
+    // internet. It now requires the admin secret (constant-time compared), and
+    // never returns the project id or a raw error message.
+    const sent = request.headers.get('x-admin-secret') || '';
+    if (!env.ADMIN_SECRET) {
+        return json(503, CORS, { error: 'checkKeys is disabled: ADMIN_SECRET is not configured' });
+    }
+    if (!timingSafeEqual(sent, String(env.ADMIN_SECRET))) {
+        return json(401, CORS, { error: 'Unauthorized' });
+    }
+
     const out = {
         fawaterak_configured: !!env.FAWATERAK_API_KEY,
         firebase_admin_configured: !!(env.FIREBASE_SERVICE_ACCOUNT && env.FIREBASE_PROJECT_ID),
-        firebase_project_id: env.FIREBASE_PROJECT_ID || null,
     };
     // Try to actually reach Firestore with the service account so a
     // misconfigured/expired key or wrong project ID shows up here instead of
@@ -849,11 +956,13 @@ async function handleCheckKeys(env, CORS) {
                 out.firestore_reachable = true;
             } catch (e) {
                 out.firestore_reachable = false;
-                out.firestore_error = e.message;
+                // Fixed string, not e.message — the raw text embeds the project
+                // id and the failing REST path.
+                console.error('[checkKeys] firestore unreachable:', e && e.message);
             }
         } catch (e) {
             out.firebase_auth_ok = false;
-            out.firebase_auth_error = e.message;
+            console.error('[checkKeys] firebase auth failed:', e && e.message);
         }
     }
     return json(200, CORS, out);

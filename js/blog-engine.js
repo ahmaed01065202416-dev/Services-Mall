@@ -46,15 +46,25 @@
     return (html || '').replace(/<[^>]*>/g,'').trim().slice(0, n || 155) + '…';
   }
 
+  // ⚠️ SECURITY FIX (was fail-OPEN): this used to `return html` untouched when
+  // the DOMPurify global was missing, so every caller silently got raw,
+  // unsanitized HTML injected into the DOM. DOMPurify is only <script>-included
+  // in blog/index.html — index.html (the main app shell) never loaded it, and
+  // BlogEngine runs from both — so the moment an AI/admin-authored post body was
+  // rendered outside /blog, the whole post body was injected raw. A sanitizer
+  // that returns its input unchanged when the sanitizer is absent is worse than
+  // no sanitizer at all, because it *reads* as protected. It now fails CLOSED:
+  // if DOMPurify isn't there, no markup survives.
   function _sanitize(html) {
-    if (typeof DOMPurify !== 'undefined') {
-      return DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['p','h2','h3','h4','ul','ol','li','strong','em','a','table',
-          'thead','tbody','tr','th','td','blockquote','br','img','span','div','code','pre'],
-        ALLOWED_ATTR: ['href','src','alt','class','id','target','rel'],
-      });
+    if (typeof DOMPurify === 'undefined') {
+      console.error('[BlogEngine] DOMPurify is not loaded — refusing to render article HTML. Load dompurify before BlogEngine.');
+      return _escapeHtml(html || '');
     }
-    return html;
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['p','h2','h3','h4','ul','ol','li','strong','em','a','table',
+        'thead','tbody','tr','th','td','blockquote','br','img','span','div','code','pre'],
+      ALLOWED_ATTR: ['href','src','alt','class','id','target','rel'],
+    });
   }
 
   const CAT_COLORS = {
@@ -65,19 +75,31 @@
     'استثمار':         '#eab308', 'سياحة-وحجوزات':'#0ea5e9',
   };
 
-  function _catBadge(cat) {
-    const c = CAT_COLORS[cat] || '#6b7280';
-    return `<span style="background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${(cat||'').replace(/-/g,' ')}</span>`;
+  // Holds the dispose() handle of the currently-rendered article view so its
+  // window scroll listener and reading-progress bar can be torn down before
+  // the next article replaces them (see renderPost).
+  let _activePostView = null;
+
+  function _catBadge(cat) {    const c = CAT_COLORS[cat] || '#6b7280';
+    return `<span style="background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${escapeHtml(String(cat||'').replace(/-/g,' '))}</span>`;
   }
+
+  // ── URL guard ─────────────────────────────────────────────────────────────
+  // A value that reaches src=/href= is attacker-controlled (image URL, share
+  // URL) and can either break out of the attribute with a quote or smuggle a
+  // `javascript:` / `data:text/html` scheme. Uses the shared _safeUrl() from
+  // js/constants.js (loaded before this file) rather than keeping a second
+  // copy here, so the two can't drift apart.
 
   // ── Card HTML ──────────────────────────────────────────────────────────────
   function _card(post) {
+    const slug = String(post.slug || '').replace(/[^A-Za-z0-9_-]/g, '');
     return `
-    <article class="blog-card-item" onclick="BlogEngine.openPost('${post.slug}')"
+    <article class="blog-card-item" onclick="BlogEngine.openPost('${escapeHtml(slug)}')"
       style="cursor:pointer;background:#fff;border-radius:18px;border:1px solid #e5e7eb;overflow:hidden;
              transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column">
       <div style="height:180px;overflow:hidden;position:relative">
-        <img src="${post.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'}"
+        <img src="${_safeUrl(post.image, 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70')}"
           alt="${escapeHtml(post.title||'')}" loading="lazy"
           style="width:100%;height:100%;object-fit:cover;transition:transform .4s"
           onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'" />
@@ -91,7 +113,7 @@
         </h3>
         <p style="font-size:13px;color:#6b7280;line-height:1.6;flex:1;margin-bottom:12px;
                   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
-          ${post.excerpt || _excerpt(post.content)}
+          ${escapeHtml(post.excerpt || _excerpt(post.content))}
         </p>
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:10px">
           <span><i class="fa-regular fa-calendar" style="margin-left:4px"></i>${_fmtDate(post.createdAt)}</span>
@@ -198,10 +220,22 @@
       const doc  = snap.docs[0];
       const post = { id: doc.id, ...doc.data() };
 
-      // Increment views
-      doc.ref.update({ views: (window.firebase?.firestore?.FieldValue?.increment(1) || (post.views||0)+1) }).catch(()=>{});
+      // ⚠️ FIXED (audit finding): this used to fire-and-forget and the view
+      // count STILL never went anywhere — blog_posts is `allow write: if
+      // isAdmin()` in firestore.rules, so every single visitor's increment was
+      // rejected with permission-denied and swallowed by the empty .catch().
+      // The stored count was permanently 0 for every article, forever. The
+      // rule now permits exactly one bounded `views + 1` write from anyone
+      // (a public counter is public information; the rule still refuses any
+      // other field, any jump larger than 1, and any non-integer value). The
+      // local copy is updated optimistically so the number shown on this page
+      // matches the value just persisted.
+      doc.ref.update({
+          views: window.firebase?.firestore?.FieldValue?.increment(1) || ((post.views || 0) + 1)
+      }).catch(() => {});
+      post.views = (post.views || 0) + 1;
 
-      const shareURL = `${window.location.origin}/blog/${post.slug}`;
+      const shareURL = `${window.location.origin}/blog/${encodeURIComponent(String(post.slug||''))}`;
       const cleanContent = _sanitize(post.content || '');
 
       // ── Render reading progress bar ──────────────────────────
@@ -216,18 +250,35 @@
         const el  = document.getElementById('post-article-body');
         if (!el) return;
         const { top, height } = el.getBoundingClientRect();
+        // FIXED: height can be 0 while the body is collapsed/hidden, which made
+        // this compute 0/0 = NaN; Math.min/max propagate NaN and the CSSOM then
+        // silently discards the whole transform.
+        if (!height) return;
         const start = window.scrollY + top;
         const pct   = Math.max(0, Math.min(1, (window.scrollY - start + window.innerHeight) / height));
         progressBar.style.transform = `scaleX(${pct})`;
       };
       window.addEventListener('scroll', onScroll, { passive:true });
+      // FIXED (listener leak): onScroll is a fresh closure per renderPost() and
+      // was never removed, so browsing N articles left N live listeners on
+      // window, each doing a getBoundingClientRect() on every scroll event. Tear
+      // down the previous view's listener and progress bar when re-rendering.
+      if (_activePostView && typeof _activePostView.dispose === 'function') {
+        try { _activePostView.dispose(); } catch (_) { /* no-op */ }
+      }
+      _activePostView = {
+        dispose() {
+          window.removeEventListener('scroll', onScroll);
+          progressBar.remove();
+        },
+      };
 
       // ── Render post ────────────────────────────────────────────
       container.innerHTML = `
       <div>
         <!-- Hero image -->
         <div style="position:relative;height:420px;overflow:hidden">
-          <img src="${post.image}" alt="${escapeHtml(post.title||'')}"
+          <img src="${_safeUrl(post.image, 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80')}" alt="${escapeHtml(post.title||'')}"
             style="width:100%;height:100%;object-fit:cover"
             onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80'" />
           <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 60%,transparent 100%)"></div>
@@ -243,7 +294,7 @@
               <div style="display:flex;gap:16px;margin-top:12px;font-size:13px;color:rgba(255,255,255,.75);flex-wrap:wrap">
                 <span><i class="fa-regular fa-calendar" style="margin-left:5px"></i>${_fmtDate(post.createdAt)}</span>
                 <span><i class="fa-regular fa-clock" style="margin-left:5px"></i>${_readTime(post.content)}</span>
-                <span><i class="fa-regular fa-eye" style="margin-left:5px"></i>${((post.views||0)+1).toLocaleString('ar-EG')} مشاهدة</span>
+                <span><i class="fa-regular fa-eye" style="margin-left:5px"></i>${(post.views||0).toLocaleString('ar-EG')} مشاهدة</span>
               </div>
             </div>
           </div>
@@ -268,7 +319,7 @@
             <!-- Keywords -->
             ${post.keywords?.length ? `
             <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
-              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#0F172A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
+              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#0F172A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${escapeHtml(String(k))}</span>`).join('')}
             </div>` : ''}
 
             <!-- Share -->
@@ -286,7 +337,8 @@
                 <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(shareURL)}&text=${encodeURIComponent(post.title)}" target="_blank" rel="noopener"
                   style="display:flex;align-items:center;gap:6px;background:#000;color:#fff;padding:9px 16px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700">
                   <i class="fa-brands fa-x-twitter"></i>تويتر</a>
-                <button onclick="navigator.clipboard.writeText('${shareURL}').then(()=>this.textContent='✅ تم النسخ')"
+                <button onclick="navigator.clipboard.writeText(this.dataset.shareUrl).then(()=>this.textContent='✅ تم النسخ')"
+                  data-share-url="${_safeUrl(shareURL, location.origin)}"
                   style="display:flex;align-items:center;gap:6px;background:#e5e7eb;color:#374151;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">
                   <i class="fa-solid fa-link"></i>نسخ الرابط</button>
               </div>

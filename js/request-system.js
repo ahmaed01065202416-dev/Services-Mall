@@ -151,7 +151,14 @@
                 updatedAt:     now,
                 lastMessageAt: now,
             };
-            if (!instant) orderData.paymentStatus = 'no_payment';
+            // FIXED: firestore.rules requires paymentStatus == 'no_payment' on
+            // EVERY order create (it is the guard that stops a client from
+            // forging a paid order). It used to be set only on the non-instant
+            // branch below, so an "instant" order omitted the field entirely,
+            // `null == 'no_payment'` evaluated false, and the whole instant-pay
+            // order mode was rejected by security rules before it could ever
+            // reach payment. Always set it.
+            orderData.paymentStatus = 'no_payment';
 
             // Write order to Firestore
             await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).set(orderData);
@@ -170,7 +177,11 @@
                 // (not a plain-text emoji blob) so it renders professionally,
                 // consistent with the delivery-message card style.
                 if (window.rtdb) {
-                    await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
+                    // Link the chat through the server first — a direct
+                    // `chats/${orderId}/buyerId` write is denied by
+                    // database.rules.json (.write:false), which used to abort
+                    // this whole try block and silently drop the brief card.
+                    await linkChatParticipant(orderId);
                     await window.rtdb.ref(`chats/${orderId}/messages`).push({
                         senderId:   user.uid,
                         senderName: user.displayName || user.email || 'عميل',
@@ -561,7 +572,10 @@
             if (!isDigital) {
                 try {
                     if (window.rtdb) {
-                        await window.rtdb.ref(`chats/${orderId}/buyerId`).set(user.uid);
+                        // Server-side link (see linkChatParticipant) — a direct
+                        // buyerId write is denied by database.rules.json and used
+                        // to silently drop this first message.
+                        await linkChatParticipant(orderId);
                         await window.rtdb.ref(`chats/${orderId}/messages`).push({
                             senderId:   user.uid,
                             senderName: user.displayName || user.email || (isAr ? 'عميل' : 'Customer'),

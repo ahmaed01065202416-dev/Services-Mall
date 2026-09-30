@@ -7,14 +7,14 @@
       "$orderId": {
 
         "buyerId": {
-          ".read": "auth != null",
+          ".read": "auth != null && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
           ".write": false,
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,128}$/)"
         },
         "sellerId": {
-          ".read": "auth != null",
+          ".read": "auth != null && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
           ".write": false,
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{1,128}$/)"
         },
 
         "messages": {
@@ -23,12 +23,13 @@
 
           "$messageId": {
             ".write": "auth != null && ((!data.exists() && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid) && newData.child('senderId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('senderId').val() === auth.uid))",
-            ".validate": "newData.hasChildren(['senderId','senderName','type','createdAt'])",
+
+            ".validate": "newData.hasChildren(['senderId','senderName','type','createdAt']) && newData.hasOnly(['senderId','senderName','type','createdAt','text','file','files','note','details','deadline','budget','fullName','phone','address','notes','selectedFields','readBy']) && newData.child('senderId').isString() && newData.child('senderId').val().matches(/^[A-Za-z0-9_-]{1,128}$/) && newData.child('senderName').isString() && newData.child('senderName').val().matches(/^[\\s\\S]{1,120}$/) && newData.child('type').isString() && newData.child('type').val().matches(/^(text|image|file|delivery|buyer_instructions|shipping_update|request_brief|product_order_brief)$/) && newData.child('createdAt').isNumber() && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().matches(/^[\\s\\S]{0,5000}$/))) && (!newData.child('details').exists() || (newData.child('details').isString() && newData.child('details').val().matches(/^[\\s\\S]{0,5000}$/))) && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().matches(/^[\\s\\S]{0,5000}$/))) && (!newData.child('notes').exists() || (newData.child('notes').isString() && newData.child('notes').val().matches(/^[\\s\\S]{0,2000}$/))) && (!newData.child('address').exists() || (newData.child('address').isString() && newData.child('address').val().matches(/^[\\s\\S]{0,500}$/))) && (!newData.child('fullName').exists() || (newData.child('fullName').isString() && newData.child('fullName').val().matches(/^[\\s\\S]{1,120}$/))) && (!newData.child('phone').exists() || (newData.child('phone').isString() && newData.child('phone').val().matches(/^[0-9+()\\s-]{0,40}$/))) && (!newData.child('selectedFields').exists() || (newData.child('selectedFields').isString() && newData.child('selectedFields').val().matches(/^[\\s\\S]{0,2000}$/))) && (!newData.child('deadline').exists() || (newData.child('deadline').isString() && newData.child('deadline').val().matches(/^[\\s\\S]{0,120}$/))) && (!newData.child('budget').exists() || (newData.child('budget').isString() && newData.child('budget').val().matches(/^[\\s\\S]{0,120}$/)))",
 
             "readBy": {
               "$uid": {
                 ".write": "auth != null && auth.uid === $uid && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
-                ".validate": "newData.isBoolean()"
+                ".validate": "newData.isBoolean() && (root.child('chats/'+$orderId+'/buyerId').val() === $uid || root.child('chats/'+$orderId+'/sellerId').val() === $uid)"
               }
             }
           }
@@ -37,7 +38,8 @@
         "typing": {
           "$uid": {
             ".read": "auth != null && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && auth.uid === $uid && (root.child('chats/'+$orderId+'/buyerId').val() === auth.uid || root.child('chats/'+$orderId+'/sellerId').val() === auth.uid)",
+            ".validate": "newData.isBoolean()"
           }
         }
       }

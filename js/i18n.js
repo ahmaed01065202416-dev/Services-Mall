@@ -442,7 +442,12 @@
 
     function toggleTheme() {
         const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        const theme = isDark ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+        // Keep the global state in step with the DOM class and with storage —
+        // AppState.theme is initialised from the same key in js/constants.js,
+        // and was previously never updated after boot.
+        AppState.theme = theme;
     }
 
     // ── Expose ────────────────────────────────────────────────────────────────

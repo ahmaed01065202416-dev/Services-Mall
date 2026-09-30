@@ -53,6 +53,9 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ success: true, services, sellers, completedOrders, avgRating }), { status: 200, headers: CORS });
     } catch (err) {
         console.error('[home-stats]', err.message);
-        return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: CORS });
+        // This endpoint is unauthenticated and public, so it must not echo the
+        // raw error — err.message from the Firestore layer embeds the project
+        // id and collection paths.
+        return new Response(JSON.stringify({ success: false, error: 'Stats unavailable' }), { status: 500, headers: CORS });
     }
 }

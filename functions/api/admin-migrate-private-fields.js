@@ -18,7 +18,7 @@
  * than once — already-migrated users (no phone/payoutMethod/payoutAccount
  * left on the main doc) are simply skipped.
  */
-import { verifyIdToken, getAccessToken, fsGet, fsSet, fsQuery } from '../_shared/gcp.js';
+import { verifyIdToken, getAccessToken, fsGet, fsSet, fsQuery, corsHeaders } from '../_shared/gcp.js';
 
 function json(statusCode, headers, obj) {
   return new Response(JSON.stringify(obj), { status: statusCode, headers });
@@ -44,12 +44,10 @@ async function deleteFields(env, path, fieldNames) {
 
 export async function onRequest(context) {
   const { request, env } = context;
-  const CORS = {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  };
+  // FIXED: emitted the raw env var, so with more than one origin configured the
+  // header became "https://a.com,https://b.com" and browsers rejected every
+  // request. ALLOWED_ORIGINS is a comma-separated LIST.
+  const CORS = corsHeaders(request, env, { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
   if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
 
@@ -87,7 +85,10 @@ export async function onRequest(context) {
           await deleteFields(env, `users/${u.id}`, ['phone', 'payoutMethod', 'payoutAccount']);
           migrated++;
         } catch (e) {
-          errors.push({ uid: u.id, error: e.message });
+          // Keep the uid (the operator needs to know which document failed) but
+          // not the raw Firestore error text — it embeds paths and project id.
+          console.error('[admin-migrate-private-fields] doc failed:', u.id, e.message);
+          errors.push({ uid: u.id, error: 'Write failed' });
         }
       }
 
@@ -97,6 +98,8 @@ export async function onRequest(context) {
     return json(200, CORS, { scanned, migrated, skipped, errors });
   } catch (err) {
     console.error('[admin-migrate-private-fields] error:', err);
-    return json(500, CORS, { error: err.message || 'Internal error' });
+    // Fixed message only — err.message from the Firestore layer embeds the
+    // project id, collection paths and internal rule detail.
+    return json(500, CORS, { error: 'Internal error' });
   }
 }

@@ -193,6 +193,33 @@
       "fields": [
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "_comment": "Required by js/blog-engine.js renderPost: where(slug == x).where(published == true). Two equality filters on different fields need a composite index; without it EVERY blog article view failed with failed-precondition.",
+      "collectionGroup": "blog_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "slug",      "order": "ASCENDING" },
+        { "fieldPath": "published", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "_comment": "Required by js/payment-system.js _waitForOrderConfirmation: where(buyerId == uid).where(merchantOrderId == id). The poller's error handler swallows the failure, so a missing index silently showed 'payment received, still confirming' for 25s and then dropped the buyer on an empty orders page.",
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "buyerId",        "order": "ASCENDING" },
+        { "fieldPath": "merchantOrderId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "_comment": "Required by functions/api/subscription.js handleChargeDue: where(status == 'active') AND where(nextBillingDate <= now). Equality filter + range filter across two different fields needs a composite index; without it the daily cron query fails with FAILED_PRECONDITION and NO subscriber is ever billed.",
+      "collectionGroup": "subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",          "order": "ASCENDING" },
+        { "fieldPath": "nextBillingDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

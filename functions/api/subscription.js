@@ -33,17 +33,15 @@
  * Route: /api/subscription
  * ============================================================================
  */
-import { verifyIdToken, fsGet, fsCreate, fsSet, fsQuery, fsCommit, writeIncrement, writeCreate } from '../_shared/gcp.js';
-import { hmacHex } from './payment.js';
+import { verifyIdToken, fsGet, fsCreate, fsSet, fsQuery, fsCommit, writeIncrement, writeCreate, siteOrigin, corsHeaders, isSafeDocId } from '../_shared/gcp.js';
+import { hmacHex, timingSafeEqual } from './payment.js';
 
 function json(status, headers, obj) { return new Response(JSON.stringify(obj), { status, headers }); }
-function getCORS(env) {
-    return {
-        'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
-        'Content-Type': 'application/json',
-    };
+// FIXED: emitted the raw env var, so with more than one origin configured the
+// header became "https://a.com,https://b.com" and browsers rejected every
+// request. ALLOWED_ORIGINS is a list — use the shared helper.
+function getCORS(request, env) {
+    return corsHeaders(request, env, { 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token' });
 }
 async function apiPost(url, body, headers = {}) {
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
@@ -72,6 +70,17 @@ async function handleSubscribe(body, env, CORS, auth) {
     }, subId);
 
     if (!env.FAWATERAK_API_KEY) {
+        // ⚠️ SECURITY FIX: this used to silently "activate immediately, no real
+        // card on file" whenever FAWATERAK_API_KEY was missing, creating
+        // orders + escrow rows in `payment_held` with no money ever collected.
+        // payment.js (handleFawaterak) deliberately refuses to simulate a
+        // charge unless ALLOW_SIMULATED_PAYMENTS === 'true', and
+        // fawaterak-webhook.js enforces the same opt-in — this path was the one
+        // place that skipped it. Same guard here, so a missing/typo'd gateway
+        // key can no longer manufacture free orders + escrow.
+        if (env.ALLOW_SIMULATED_PAYMENTS !== 'true') {
+            return json(503, CORS, { error: 'Payment gateway is not configured (FAWATERAK_API_KEY missing).' });
+        }
         // Demo mode — activate immediately, no real card on file.
         await fsSet(env, `subscriptions/${subId}`, {
             status: 'active', customerToken: 'DEMO_TOKEN',
@@ -106,9 +115,13 @@ async function handleSubscribe(body, env, CORS, auth) {
         cartItems: [{ name: `اشتراك شهري: ${svc.title || ''}`, price: amount, quantity: 1 }],
         payLoad: { subscriptionId: subId },
         redirectionUrls: {
-            successUrl: `${env.ALLOWED_ORIGINS}?subscription_success=true&sub_id=${subId}#wallet`,
-            failUrl:    `${env.ALLOWED_ORIGINS}?subscription_success=false&sub_id=${subId}#wallet`,
-            webhookUrl: `${env.SITE_URL || env.ALLOWED_ORIGINS}/api/fawaterak-webhook`,
+            // FIXED: built from ALLOWED_ORIGINS (a comma-separated LIST), which
+            // produced an invalid URL for the gateway with >1 origin configured,
+            // and a dead webhook URL whenever SITE_URL was unset. Return and
+            // webhook URLs must come from SITE_URL only.
+            successUrl: `${siteOrigin(env)}?subscription_success=true&sub_id=${subId}#wallet`,
+            failUrl:    `${siteOrigin(env)}?subscription_success=false&sub_id=${subId}#wallet`,
+            webhookUrl: `${siteOrigin(env)}/api/fawaterak-webhook`,
         },
     }, { Authorization: `Bearer ${env.FAWATERAK_API_KEY}` });
 
@@ -215,7 +228,7 @@ async function handleChargeDue(env, CORS) {
 
 export async function onRequest(context) {
     const { request, env } = context;
-    const CORS = getCORS(env);
+    const CORS = getCORS(request, env);
     if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
     if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
 
@@ -225,7 +238,8 @@ export async function onRequest(context) {
 
     if (action === 'chargeDue') {
         const adminToken = request.headers.get('X-Admin-Token');
-        if (!env.ADMIN_SECRET || adminToken !== env.ADMIN_SECRET) return json(401, CORS, { error: 'Unauthorized' });
+        // constant-time compare — this gate charges real recurring cards
+        if (!env.ADMIN_SECRET || !timingSafeEqual(adminToken, String(env.ADMIN_SECRET))) return json(401, CORS, { error: 'Unauthorized' });
         return handleChargeDue(env, CORS);
     }
 
@@ -233,6 +247,15 @@ export async function onRequest(context) {
     const idToken = authHeader.replace(/^Bearer\s+/i, '');
     const auth = await verifyIdToken(idToken, env);
     if (!auth) return json(401, CORS, { error: 'يجب تسجيل الدخول' });
+
+    // Client-supplied ids are interpolated into Firestore paths below
+    // (`services/${serviceId}`, `subscriptions/${subscriptionId}`); validate
+    // their shape once, before dispatch.
+    for (const key of ['serviceId', 'subscriptionId']) {
+        if (body[key] !== undefined && !isSafeDocId(body[key])) {
+            return json(400, CORS, { error: `Invalid ${key}` });
+        }
+    }
 
     if (action === 'subscribe') return handleSubscribe(body, env, CORS, auth);
     if (action === 'cancel')    return handleCancel(body, env, CORS, auth);

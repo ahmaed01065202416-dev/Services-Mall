@@ -40,9 +40,16 @@ Cloudflare dashboard → مشروع الـ Pages بتاعك → Settings → Env
 - Sitemap يتحدّث تلقائياً للمقالات المنشورة فقط.
 - Google يُبلَّغ بالمحتوى الجديد بعد النشر.
 
-## الخطوة 4: ربط Google Analytics
+## الخطوة 4: Google Analytics
 
-في `index.html` ابحث عن `G-XXXXXXXXXX` واستبدله بـ ID الحقيقي من analytics.google.com
+✅ **جاهز شغّال — مفيش خطوة مطلوبة.** الـ GA4 مربوط فعلاً بالـ ID
+`G-20SMHQMQ1G`، ومقروء من `FIREBASE_CONFIG.measurementId` في `index.html`
+(سطر ~1587) مع `anonymize_ip: true`.
+
+لو عايز تستخدم property تاني: غيّر `measurementId` بس في `FIREBASE_CONFIG`.
+لو `measurementId` فاضي، الـ snippet بيتشال تلقائياً من غير أخطاء في الـ console.
+
+جرّب من: analytics.google.com → Real-time.
 
 ## الخطوة 5: AdSense
 

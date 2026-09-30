@@ -208,8 +208,15 @@ async function fsCommit(env, writes) {
     return out;
 }
 
-function writeIncrement(env, path, field, amount) {
-    return { transform: { document: fsName(env, path), fieldTransforms: [{ fieldPath: field, increment: toValue(amount) }] } };
+function writeIncrement(env, path, field, amount, precondition) {
+    const w = { transform: { document: fsName(env, path), fieldTransforms: [{ fieldPath: field, increment: toValue(amount) }] } };
+    // Optional optimistic-concurrency guard. Without it, a read-then-increment
+    // pair is a TOCTOU race: two concurrent requests can both read the same
+    // balance, both pass a `amount <= balance` check, and both decrement —
+    // driving the account negative. Pass the `_updateTime` of the document that
+    // was read and Firestore rejects the whole commit if it moved in between.
+    if (precondition) w.currentDocument = precondition;
+    return w;
 }
 function writeUpdate(env, path, data, precondition) {
     const w = { update: { name: fsName(env, path), fields: toFields(data) }, updateMask: { fieldPaths: Object.keys(data) } };
@@ -304,7 +311,71 @@ async function rtdbUpdate(env, path, data) {
     return await resp.json().catch(() => true);
 }
 
+// ── Origin / CORS helpers ─────────────────────────────────────────────────────
+// ALLOWED_ORIGINS is a COMMA-SEPARATED LIST of origins. Eight endpoints used to
+// emit `env.ALLOWED_ORIGINS` as the raw Access-Control-Allow-Origin value, so
+// with more than one origin configured the header became
+// `https://a.com,https://b.com` — which browsers reject outright, silently
+// breaking every client fetch to those endpoints. And payment.js /
+// subscription.js interpolated the same variable into gateway return/webhook
+// URLs, producing invalid URLs (no order ever confirmed) and, when SITE_URL was
+// unset, no webhook delivery at all.
+//
+// Two separate concepts, two separate variables:
+//   SITE_URL        — the site's own base URL, used to BUILD urls
+//   ALLOWED_ORIGINS — a list, used only to CHECK an incoming Origin header
+function siteOrigin(env) {
+    return String((env && env.SITE_URL) || '').replace(/\/+$/, '');
+}
+
+function allowedOriginList(env) {
+    return String((env && env.ALLOWED_ORIGINS) || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+}
+
+function corsHeaders(request, env, extraHeaders) {
+    const origin = (request && (request.headers.get('origin') || request.headers.get('Origin'))) || '';
+    const allowed = allowedOriginList(env);
+    return {
+        'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : (allowed[0] || '*'),
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Content-Type': 'application/json',
+        'Vary': 'Origin',
+        ...(extraHeaders || {}),
+    };
+}
+
+// ── Document-id guard ─────────────────────────────────────────────────────────
+// Several endpoints take a document id straight from the URL or query string and
+// interpolate it into a Firestore/RTDB path (`disputes/${disputeId}`,
+// `orders/${orderId}`, `chats/${orderId}/messages`). A `/` in that value walks
+// the path, so `orderId=../users/uid` turns a read scoped to one collection into
+// an arbitrary-document read/write. Validate BEFORE building any path.
+//
+// Deliberately permissive: real ids in this project look like
+// `ord_1750000000000_k3f9xz` or a Firestore auto-id, i.e. `[A-Za-z0-9_-]`.
+// What's rejected is only what can't appear in a legitimate Firestore document
+// id and would be suspicious in a path: path separators, traversal segments,
+// control characters, whitespace, and over-long values (Firestore's own limit is
+// 1500 bytes; the cap here is far below it to also bound URL/path size).
+function isSafeDocId(id) {
+    if (typeof id !== 'string') return false;
+    if (!id.length || id.length > 128) return false;
+    if (id === '.' || id === '..') return false;
+    for (let i = 0; i < id.length; i++) {
+        const c = id.charCodeAt(i);
+        if (c <= 32) return false;        // space or control character
+        if (c === 47) return false;       // '/'  — path traversal
+        if (c === 92) return false;       // backslash
+    }
+    return true;
+}
+
 export {
+    siteOrigin, allowedOriginList, corsHeaders, isSafeDocId,
     getAccessToken, verifyIdToken,
     fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount,
     writeIncrement, writeUpdate, writeCreate,

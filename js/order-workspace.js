@@ -663,32 +663,14 @@
     // could only check "is the value being written equal to my own uid" —
     // it had no way to also confirm this uid is genuinely this order's real
     // buyer/seller (RTDB rules can't read Firestore), so anyone who knew an
-    // orderId could claim an unclaimed chat slot as themselves. Now this
-    // calls functions/api/link-chat-participant.js, which checks the real
-    // order in Firestore first and writes with the service account — the
-    // client `.write` for these two fields is now simply `false`. The retry
-    // loop is kept for the same reason it existed before: transient network
-    // hiccups right as the workspace opens shouldn't silently leave a chat
-    // unlinked.
+    // orderId could claim an unclaimed chat slot as themselves. The actual
+    // work now lives in the shared linkChatParticipant() helper (js/constants.js)
+    // so every call site — this workspace, and the two in request-system.js —
+    // goes through functions/api/link-chat-participant.js, which checks the
+    // real order in Firestore first and writes with the service account.
     async function _linkChatParticipant(orderId, order, userId) {
         if (order.buyerId !== userId && order.sellerId !== userId) return;
-        const delays = [0, 400, 1000, 2000, 3500];
-        let lastErr = null;
-        for (let i = 0; i < delays.length; i++) {
-            if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
-            try {
-                const idToken = await window.auth.currentUser.getIdToken();
-                const resp = await fetch('/api/link-chat-participant', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                    body: JSON.stringify({ orderId }),
-                });
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
-                return;
-            } catch (err) { lastErr = err; }
-        }
-        console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message);
+        await linkChatParticipant(orderId, 5);
     }
 
     // ── Real-time Chat Listener (Realtime Database) ───────────────────────────
@@ -900,8 +882,8 @@
               <div>
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-1">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
                 <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
-                  <a href="${msg.file?.url}" target="_blank" rel="noopener">
-                    <img src="${msg.file?.url}" alt="${_escapeHtml(msg.file?.name || 'image')}"
+                  <a href="${_safeUrl(msg.file?.url)}" target="_blank" rel="noopener">
+                    <img src="${_safeUrl(msg.file?.url)}" alt="${_escapeHtml(msg.file?.name || 'image')}"
                       class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
                       loading="lazy" style="max-height:200px;object-fit:cover">
                   </a>
@@ -976,7 +958,7 @@
         const icon = isImg ? 'fa-file-image text-blue-500' : (iconMap[ext] || 'fa-file text-gray-500');
 
         return `
-        <a href="${file.url}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
+        <a href="${_safeUrl(file.url)}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">

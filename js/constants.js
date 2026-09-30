@@ -170,7 +170,12 @@ window.AppState = window.AppState || {
     currentOrder:         null,
     language:             localStorage.getItem('ms_lang') || 'ar',
     currency:             localStorage.getItem('ms_currency') || 'EGP',
-    theme:                localStorage.getItem('ms_theme') || 'light',
+    // ⚠️ FIXED: this read the 'ms_theme' key, but nothing in the project ever
+    // wrote it — toggleTheme() in js/i18n.js and the inline boot script in
+    // index.html both use plain 'theme'. So AppState.theme was permanently
+    // 'light' no matter what the user picked, and this field disagreed with
+    // the actual <html class="dark"> state.
+    theme:                localStorage.getItem('theme') || 'light',
 };
 
 // Restore cart from storage
@@ -464,6 +469,46 @@ async function secureApiCall(endpoint, action, data = {}) {
     return resp.json();
 }
 
+// ── Chat participant linking ───────────────────────────────────────────────────
+// chats/{orderId}/buyerId and .../sellerId are `.write: false` in
+// database.rules.json on purpose: an RTDB rule can only check
+// `newData.val() === auth.uid`, never whether that uid really is this order's
+// buyer/seller (RTDB rules cannot read Firestore). Writing them from the
+// browser therefore does two bad things at once — it always gets rejected, and
+// if it ever didn't, anyone who knew an orderId could claim an unclaimed chat.
+//
+// So the client must go through /api/link-chat-participant, which checks the
+// real order in Firestore first and writes with the service account. Two
+// call sites were still writing directly (and silently losing the first chat
+// message on every service request and every product order) — they now call
+// this. Retries are kept because a transient blip right as the workspace opens
+// would otherwise leave the chat unlinked and the message unreadable.
+//
+// Best-effort by design: a failure here must never block the caller, because
+// the order itself is already saved by the time any of this runs.
+async function linkChatParticipant(orderId, retries = 3) {
+    const user = window.auth?.currentUser;
+    if (!user || !orderId) return false;
+    const delays = [0, 400, 1200, 2400, 4000].slice(0, Math.max(1, retries));
+    let lastErr = null;
+    for (let i = 0; i < delays.length; i++) {
+        if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
+        try {
+            const idToken = await user.getIdToken();
+            const resp = await fetch('/api/link-chat-participant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ orderId }),
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+            return true;
+        } catch (err) { lastErr = err; }
+    }
+    console.warn('[Chat] link participant failed after retries:', lastErr && lastErr.message);
+    return false;
+}
+
 // ── Input Sanitizer ───────────────────────────────────────────────────────────
 function sanitizeInput(value, maxLength = 1000) {
     if (typeof value !== 'string') return value;
@@ -485,6 +530,30 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// ── Safe identifier (for interpolating a Firestore doc id into an inline
+//    onclick="fn('…')" attribute) ──────────────────────────────────────────────
+// A doc id read from the database is attacker-influenceable: a `'` in the value
+// terminates the JS string inside the attribute and everything after it becomes
+// executable markup. Strip everything that is not a legal id character.
+function _safeId(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[^A-Za-z0-9_-]/g, '');
+}
+
+// ── Safe URL (for any value that lands in href="" or src="") ─────────────────
+// A chat attachment URL, uploaded image URL, or payment redirect target is
+// attacker-influenceable. Escaping alone is not enough: a `javascript:` or
+// `data:text/html` scheme executes on click, and an unescaped `"` breaks out
+// of the attribute entirely. Allow only same-origin relative paths, blob:, and
+// plain http(s); escape on the way out.
+function _safeUrl(value, fallback = '') {
+    const raw = String(value == null ? '' : value).trim();
+    if (!raw) return escapeHtml(fallback);
+    if (/^\/(?!\/)/.test(raw) || /^\.\//.test(raw) || /^blob:/i.test(raw)) return escapeHtml(raw);
+    if (!/^https?:\/\//i.test(raw)) return escapeHtml(fallback);
+    return escapeHtml(raw);
 }
 
 // ── Off-platform contact/payment leak scanner ─────────────────────────────────
@@ -659,7 +728,7 @@ Object.assign(window, {
     generateId, formatDateAr, formatTimeAgo, formatCurrency, convertCurrency,
     updateCartCount, getStatusText, getStatusClass,
     openModal, closeModal, showToast, showLoading, hideLoading,
-    secureApiCall, sanitizeInput, escapeHtml, previewImage,
+    secureApiCall, sanitizeInput, escapeHtml, previewImage, linkChatParticipant,
     scanForContactLeak, scanFieldsForContactLeak, flagSuspiciousContent, contactLeakWarning,
     calcPlatformFee, addToCart, removeFromCart, clearCart, getCartTotals,
     navigateTo,

@@ -11,7 +11,7 @@
 // single write — articles were generated (burning Gemini/OpenAI credits)
 // and then thrown away. Now reuses the same service-account auth as every
 // other function (`_shared/gcp.js`), same pattern as payment.js/quality-score.js.
-import { getAccessToken } from '../_shared/gcp.js';
+import { getAccessToken, verifyIdToken, fsGet, fsCreate } from '../_shared/gcp.js';
 
 // ── Topic bank ─────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -251,37 +251,117 @@ function json(statusCode, headers, obj) {
   return new Response(JSON.stringify(obj), { status: statusCode, headers });
 }
 
+// Constant-time string compare — a plain `===` on a shared secret leaks its
+// length and prefix through response timing. payment.js already ships this;
+// kept local here to avoid a cross-route import cycle.
+function _timingSafeEqual(a, b) {
+  const sa = String(a == null ? '' : a);
+  const sb = String(b == null ? '' : b);
+  if (sa.length !== sb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < sa.length; i++) diff |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
+  return diff === 0;
+}
+
+// Fixed-window rate limiter (1-minute buckets) backed by Firestore. Fails OPEN
+// on error, matching payment.js — a rate-limit bug must never block a real
+// admin action.
+async function _checkRateLimit(env, key, maxPerMinute) {
+  const bucket = Math.floor(Date.now() / 60000);
+  const docId = `${key}_${bucket}`;
+  try {
+    const existing = await fsGet(env, `rate_limits/${docId}`);
+    if (!existing) {
+      await fsCreate(env, 'rate_limits', { count: 1, createdAt: new Date() }, docId);
+      return true;
+    }
+    if ((existing.count || 0) >= maxPerMinute) return false;
+    return true;
+  } catch (e) {
+    console.warn('[ai-generate] rate limit check failed, allowing:', e && e.message);
+    return true;
+  }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function onRequest(context) {
   const { request, env } = context;
+  // FIXED: ALLOWED_ORIGINS is a COMMA-SEPARATED LIST (that is how payment.js
+  // parses it). Emitting the raw env value produced the header
+  // `https://a.com,https://b.com` whenever more than one origin was set, which
+  // browsers reject outright — silently breaking every fetch to this endpoint.
+  // Now the origin is reflected only when it is actually on the list.
+  const reqOrigin = request.headers.get('origin') || '';
+  const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
   const CORS = {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
+    'Access-Control-Allow-Origin': allowed.includes(reqOrigin) ? reqOrigin : (allowed[0] || '*'),
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Secret',
     'Content-Type': 'application/json',
+    'Vary': 'Origin',
   };
 
   if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, CORS, { error: 'Method not allowed' });
 
-  // ⚠️ FIXED: this used to be "if ADMIN_SECRET is set, ONLY the secret is
-  // accepted — ADMIN_UIDS is only checked when ADMIN_SECRET is unset". But
-  // the dashboard button (index.html AdminAI._fetchAI) always sends the
-  // logged-in admin's Firebase uid as X-Admin-Token, never the secret — so
-  // setting ADMIN_SECRET (which the docs call "highly recommended", for the
-  // cron job) silently 403'd the dashboard button. Now: EITHER a matching
-  // secret OR a whitelisted admin uid is accepted, independently.
+  // ═══════════════════════════════════════════════════════════════════════
+  // ⚠️ SECURITY FIX (critical) — this used to accept a bare Firebase uid as
+  // proof of admin identity:
+  //
+  //     const okByUid = adminUids.length > 0 && adminUids.includes(sentToken);
+  //
+  // A uid is not a secret. firestore.rules lets ANY signed-in user read every
+  // users/{uid} document, so an attacker could simply read role == 'admin',
+  // copy that uid, and call this endpoint with it — and because the writes here
+  // go through the SERVICE ACCOUNT, they bypass the isAdmin() rule that
+  // firestore.rules enforces on blog_posts. There was also no rate limit and
+  // `action: 'bulk'` allows 5 generations per request, each burning Gemini
+  // credits, so the endpoint was an open wallet for anyone who knew a uid.
+  //
+  // Now: a real, signature-verified Firebase ID token is required, and the uid
+  // it carries must either be in ADMIN_UIDS or belong to a users doc with
+  // role == 'admin'. The ADMIN_SECRET path is kept for cron/CLI use but
+  // compared in constant time, and the endpoint is rate limited.
+  // ═══════════════════════════════════════════════════════════════════════
   const adminSecret = env.ADMIN_SECRET;
   const adminUids = (env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
-  const sentToken = request.headers.get('x-admin-token') || '';
 
-  const okBySecret = !!adminSecret && sentToken === adminSecret;
-  const okByUid     = adminUids.length > 0 && adminUids.includes(sentToken);
+  const sentSecret = request.headers.get('x-admin-secret') || '';
+  const secretOk = !!adminSecret && _timingSafeEqual(sentSecret, String(adminSecret));
+  const secretProvided = sentSecret.length > 0;
 
-  if (!okBySecret && !okByUid) {
-    // If neither mechanism is configured at all, fail closed (deny) rather
-    // than silently allowing anyone — this endpoint spends AI API credits.
+  let isAdminCaller = secretOk;
+
+  if (!isAdminCaller) {
+    const authHeader = request.headers.get('authorization') || '';
+    const idToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (idToken) {
+      const user = await verifyIdToken(idToken, env);
+      if (user) {
+        if (adminUids.includes(user.uid)) {
+          isAdminCaller = true;
+        } else {
+          try {
+            const profile = await fsGet(env, `users/${user.uid}`);
+            if (profile && profile.role === 'admin') isAdminCaller = true;
+          } catch (e) {
+            console.warn('[ai-generate] admin role lookup failed:', e && e.message);
+          }
+        }
+      }
+    }
+  }
+
+  if (!isAdminCaller) {
+    // Fail closed — this endpoint spends AI API credits and writes as admin.
     return json(403, CORS, { error: 'Forbidden: Admin access only' });
+  }
+
+  // Rate limit: this endpoint has a real per-call cost. Key on the secret when
+  // one was supplied, otherwise on the verified identity.
+  const rlKey = secretOk ? 'secret' : 'uid';
+  if (!(await _checkRateLimit(env, `ai_generate_${rlKey}`, 20))) {
+    return json(429, CORS, { error: 'Too many requests — slow down' });
   }
 
   try {
@@ -301,7 +381,10 @@ export async function onRequest(context) {
           results.push(await generateOne({ action: 'generate' }, env));
           if (i < count - 1) await new Promise(r => setTimeout(r, 3000));
         } catch (e) {
-          results.push({ error: e.message });
+          // Log the real cause (it embeds the Gemini/OpenAI response body),
+          // return a fixed string.
+          console.error('[AI] bulk item failed:', e.message);
+          results.push({ error: 'Generation failed' });
         }
       }
       return json(200, CORS, { success: true, results, count: results.filter(r => r.success).length });
@@ -315,6 +398,8 @@ export async function onRequest(context) {
 
   } catch (err) {
     console.error('[AI] Error:', err.message);
-    return json(500, CORS, { error: err.message });
+    // Fixed message — the raw error from the model provider embeds the request
+    // body, prompt text and API response detail.
+    return json(500, CORS, { error: 'AI request failed' });
   }
 }
