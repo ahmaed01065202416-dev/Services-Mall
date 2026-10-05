@@ -1347,6 +1347,18 @@
             });
 
             await batch.commit();
+            // Re-derive the service's rating/reviewCount from the REAL reviews on the server
+            // (the browser can't write them — firestore.rules protects the listing). Fire-and-forget:
+            // the daily cron heals it if this single call is missed.
+            try {
+                if (order?.serviceId && window.auth && window.auth.currentUser) {
+                    window.auth.currentUser.getIdToken().then(tok => fetch('/api/ratings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+                        body: JSON.stringify({ action: 'sync', serviceId: order.serviceId }),
+                    })).catch(() => {});
+                }
+            } catch (_) {}
             hideLoading();
             showToast(isAr ? 'شكراً على تقييمك!' : 'Thank you for your review!', 'success');
             openWorkspace(orderId);
@@ -1633,7 +1645,19 @@
                   ${i === current ? `<span class="text-xs text-turquoise-600 font-bold mr-auto">${isAr?'الحالة الآن':'Current'}</span>` : ''}
                 </div>`).join('')}
             </div>
-            ${isSeller && status !== 'delivered' ? `
+            ${order.trackingNumber ? `
+            <div class="flex items-center gap-2 text-sm bg-turquoise-50 border border-turquoise-100 rounded-xl p-3 mb-3">
+              <i class="fa-solid fa-barcode text-turquoise-600"></i>
+              <span class="font-bold text-gray-800">${escapeHtml(order.carrier || '')}</span>
+              <span class="text-gray-500" dir="ltr">${escapeHtml(order.trackingNumber)}</span>
+            </div>` : ''}
+            ${order.dropship ? `
+            <p class="text-xs text-gray-500 bg-gray-50 rounded-xl p-3 border-t border-gray-100">
+              <i class="fa-solid fa-circle-info me-1"></i>${isAr
+                ? `الشحن بيتم من المورد${order.supplierName ? ' (' + escapeHtml(order.supplierName) + ')' : ''} وهو اللي بيحدّث حالة الشحن ورقم التتبع.`
+                : `Shipping is handled by the supplier${order.supplierName ? ' (' + escapeHtml(order.supplierName) + ')' : ''}, who updates the status and tracking number.`}
+            </p>` : ''}
+            ${isSeller && !order.dropship && status !== 'delivered' ? `
             <div class="flex gap-2 border-t border-gray-100 pt-3">
               ${status === 'processing' ? `
               <button onclick="OrderWorkspace.markProductShipped('${order.id}')"

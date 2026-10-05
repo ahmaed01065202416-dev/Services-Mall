@@ -14,8 +14,8 @@
             const isAr = AppState.language !== 'en';
             const confirmed = await _showConfirmDialog(
                 isAr ? 'تأكيد استلام الخدمة' : 'Confirm Service Delivery',
-                isAr ? 'بعد التأكيد، سيتم تحويل الأموال للبائع ولا يمكن الاسترداد بعدها. هل تأكدت من استلام الخدمة كاملاً؟'
-                     : 'After confirmation, funds will be released to the seller and cannot be refunded. Have you fully received the service?',
+                isAr ? 'بعد التأكيد، سيتم تحويل الأموال للبائع نهائياً ولا يمكن الاسترداد أو إرجاع المنتج بعدها. هل استلمت الطلب كاملاً وتأكدت منه؟'
+                     : 'After confirmation the funds go to the seller for good — no refund or product return is possible afterwards. Have you received and checked everything?',
                 isAr ? 'نعم، تأكيد الاستلام' : 'Yes, Confirm Delivery'
             );
             if (!confirmed) return;

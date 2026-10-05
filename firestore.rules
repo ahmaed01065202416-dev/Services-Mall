@@ -76,7 +76,11 @@ service cloud.firestore {
                     && request.resource.data.get('orderCount', 0) == 0
                     && request.resource.data.get('ordersCount', 0) == 0
                     && request.resource.data.get('featured', false) == false
-                    && request.resource.data.get('sellerVerified', false) == false;
+                    && request.resource.data.get('sellerVerified', false) == false
+                    // dropship listings are created ONLY by functions/api/dropship.js (importProduct)
+                    && request.resource.data.get('dropship', false) == false
+                    && !('supplierProductId' in request.resource.data)
+                    && !('supplierId' in request.resource.data);
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.sellerId) && isSeller() &&
                       request.resource.data.diff(resource.data).affectedKeys()
@@ -86,6 +90,8 @@ service cloud.firestore {
                                   'orderMode','orderRules','structuredFields',
                                   'sellerName','sellerAvatar'])
                       && request.resource.data.price is number && request.resource.data.price > 0
+                      // a dropship listing can never be priced below wholesale + minimum margin (floor kept in sync by the server)
+                      && (!resource.data.get('dropship', false) || request.resource.data.price >= resource.data.get('dropshipFloorPrice', 0))
                     );
       allow delete: if isSellerOwner(resource.data.sellerId) || isAdmin();
     }
@@ -122,6 +128,8 @@ service cloud.firestore {
                     && request.resource.data.sellerId != request.auth.uid
                     && request.resource.data.paymentStatus == 'no_payment'
                     && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true)
+                    && !('dropship' in request.resource.data) && !('supplierId' in request.resource.data)
+                    && !('trackingNumber' in request.resource.data) && !('carrier' in request.resource.data)
                     && (
                          !('serviceId' in request.resource.data) ||
                          (
@@ -161,6 +169,17 @@ service cloud.firestore {
                          request.resource.data.get('merchantOrderId', null) == resource.data.get('merchantOrderId', null) &&
                          request.resource.data.get('digitalDelivery', null) == resource.data.get('digitalDelivery', null) &&
                          request.resource.data.get('serviceId', null)     == resource.data.get('serviceId', null) &&
+                         // dropshipping: marker/supplier/tracking are written by the server only
+                         request.resource.data.get('dropship', null)      == resource.data.get('dropship', null) &&
+                         request.resource.data.get('supplierId', null)    == resource.data.get('supplierId', null) &&
+                         request.resource.data.get('supplierName', null)  == resource.data.get('supplierName', null) &&
+                         request.resource.data.get('trackingNumber', null) == resource.data.get('trackingNumber', null) &&
+                         request.resource.data.get('carrier', null)       == resource.data.get('carrier', null) &&
+                         (!resource.data.get('dropship', false) || (
+                           request.resource.data.get('shippingStatus', null) == resource.data.get('shippingStatus', null) &&
+                           request.resource.data.get('shippedAt', null)      == resource.data.get('shippedAt', null) &&
+                           request.resource.data.get('deliveredAt', null)    == resource.data.get('deliveredAt', null)
+                         )) &&
                          request.resource.data.price == resource.data.price &&
                          request.resource.data.buyerId == resource.data.buyerId &&
                          request.resource.data.sellerId == resource.data.sellerId &&
@@ -175,6 +194,7 @@ service cloud.firestore {
                            // seller delivers — only ever on a paid order
                            (resource.data.status in ['payment_held','in_progress','revision'] &&
                             resource.data.get('escrowHeld', false) == true &&
+                            resource.data.get('dropship', false) == false &&
                             request.resource.data.status == 'delivered') ||
                            // buyer asks for changes
                            (resource.data.status in ['payment_held','in_progress','delivered'] &&
@@ -411,7 +431,9 @@ service cloud.firestore {
       allow create: if isSignedIn() && returnId.matches('[A-Za-z0-9_-]{1,64}') &&
                        request.resource.data.buyerId  == request.auth.uid &&
                        request.resource.data.status   == 'pending' &&
-                       request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt']);
+                       request.resource.data.keys().hasAll(['orderId','buyerId','sellerId','reasonCode','status','createdAt']) &&
+                       // no returns once the buyer confirmed receipt: the order is 'completed' and the money has left escrow
+                       get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == 'delivered';
       allow update: if isAdmin() || (
                        isSignedIn() &&
                        request.auth.uid == resource.data.sellerId &&
@@ -502,6 +524,42 @@ service cloud.firestore {
     // ── pending_payments (server-only) ───────────────────────────────────────
     match /pending_payments/{id} {
       allow read, write: if false;
+    }
+
+    // ── Dropshipping (all WRITES go through functions/api/dropship.js + payment.js) ──
+    // suppliers/{uid}: a supplier profile. Readable by signed-in users (name shown on listings).
+    match /suppliers/{uid} {
+      allow read:  if isSignedIn();
+      allow write: if false;
+    }
+    // supplier_products/{id}: the wholesale CATALOGUE. Holds the cost price, so it is readable
+    // only by sellers (resellers need it) and admins — never by plain buyers.
+    match /supplier_products/{id} {
+      allow read:  if isSeller();
+      allow write: if false;
+    }
+    // dropship_orders/{orderId}: what the supplier must ship (carries the buyer's shipping
+    // details). Readable only by the supplier, the reseller and admins.
+    match /dropship_orders/{orderId} {
+      allow read:  if isSignedIn() && (request.auth.uid == resource.data.supplierId ||
+                                       request.auth.uid == resource.data.resellerId || isAdmin());
+      allow write: if false;
+    }
+
+    // ── ad_placements (admin-managed: where ads may appear, price list, slots) ─
+    // Visitors never read this directly — they get the enabled subset through
+    // GET /api/ads-feed. Only the admin panel reads/writes the raw docs.
+    match /ad_placements/{key} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── ads (a seller's ad request / running ad) ──────────────────────────────
+    // Sellers can READ their own ads (dashboard list) but never write: status,
+    // paid, startAt/endAt are all set by functions/api/ads.js, so a seller can
+    // not approve/extend/mark-paid their own ad from the browser.
+    match /ads/{adId} {
+      allow read:  if isSignedIn() && (request.auth.uid == resource.data.sellerId || isAdmin());
+      allow write: if false;
     }
 
     // ── rate_limits (server-only) ─────────────────────────────────────────────

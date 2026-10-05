@@ -14,6 +14,7 @@
  */
 import { finalizePendingPayment, hmacHex, timingSafeEqual } from './payment.js';
 import { activateSubscriptionToken } from './subscription.js';
+import { activateAdPayment } from './ads.js';
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -68,6 +69,14 @@ export async function onRequest(context) {
             const token = data.customer_token || data.customerToken || data.card_token || data.token || null;
             console.log('[FawaterakWebhook] subscription first payment for', payLoad.subscriptionId, '— token present:', !!token, token ? '' : JSON.stringify(data));
             await activateSubscriptionToken(env, payLoad.subscriptionId, token || 'UNCONFIRMED_NO_TOKEN_RECEIVED');
+            return new Response('OK', { status: 200 });
+        }
+
+        // Seller paid for an ad placement (see functions/api/ads.js) — moves it
+        // from pending_payment to pending_review. Signature already verified above.
+        if (payLoad && payLoad.adId) {
+            const r = await activateAdPayment(env, payLoad.adId, data.invoice_id);
+            console.log('[FawaterakWebhook] ad payment:', payLoad.adId, JSON.stringify(r));
             return new Response('OK', { status: 200 });
         }
 

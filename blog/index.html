@@ -122,11 +122,8 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
       <button class="cat-btn" onclick="BlogEngine.filterCat('تحسين-بحث',this)"><i class="fa-solid fa-magnifying-glass" style="font-size:11px"></i> تحسين البحث</button>
     </div>
 
-    <!-- Ad Top -->
-    <div class="ad-slot" style="margin-bottom:28px">
-      <i class="fa-solid fa-rectangle-ad" style="font-size:28px;opacity:.25"></i>
-      <span>إعلان — Google AdSense</span>
-    </div>
+    <!-- Ad Top (managed from the admin "Ads" tab — placement key: blog_top) -->
+    <div data-ad-slot="blog_top" style="display:none;margin-bottom:28px"></div>
 
     <!-- Posts Grid -->
     <div class="blog-grid" id="blog-grid">
@@ -143,11 +140,8 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
       </button>
     </div>
 
-    <!-- Ad Bottom -->
-    <div class="ad-slot" style="margin-top:32px">
-      <i class="fa-solid fa-rectangle-ad" style="font-size:28px;opacity:.25"></i>
-      <span>إعلان — Google AdSense</span>
-    </div>
+    <!-- Ad Bottom (placement key: blog_bottom) -->
+    <div data-ad-slot="blog_bottom" style="display:none;margin-top:32px"></div>
 
   </div>
 </div>
@@ -385,5 +379,6 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
 </nav>
 <div class="ms-bottom-nav-spacer"></div>
 
+<script src="/js/ads-embed.js" defer></script>
 </body>
 </html>

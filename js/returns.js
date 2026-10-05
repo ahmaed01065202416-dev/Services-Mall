@@ -59,7 +59,10 @@
             if (!order || order.listingType !== 'product' || !order.shippingInfo) {
                 return { ok: false, reasonAr: 'الاسترجاع متاح للمنتجات المشحونة فعليًا فقط', reasonEn: 'Returns are only available for physically-shipped products' };
             }
-            if (![ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(order.status)) {
+            if (order.status === ORDER_STATUS.COMPLETED) {
+                return { ok: false, reasonAr: 'لا يمكن الاسترجاع بعد تأكيد الاستلام — تم تحويل المبلغ للبائع', reasonEn: 'Returns are closed once receipt is confirmed — the funds were released to the seller' };
+            }
+            if (order.status !== ORDER_STATUS.DELIVERED) {
                 return { ok: false, reasonAr: 'الاسترجاع متاح بعد استلام المنتج فقط', reasonEn: 'Returns are only available after the product is delivered' };
             }
             if (activeReturn && [RETURN_STATUS.PENDING, RETURN_STATUS.APPROVED].includes(activeReturn.status)) {
@@ -244,24 +247,17 @@
                         orderId: ret.orderId, read: false, createdAt: serverTimestamp(),
                     });
                 } else {
-                    // Escrow already released to the seller's wallet — needs a
-                    // manual admin adjustment, there is no automated path for it.
+                    // The buyer confirmed receipt in the meantime → the money already left escrow and the order can't be
+                    // returned any more (policy: no returns after confirmation). Close the request instead of approving it.
                     await window.db.collection(COLLECTIONS.RETURNS).doc(returnId).update({
-                        status: RETURN_STATUS.APPROVED, sellerNote: '',
-                        needsManualRefund: true, updatedAt: serverTimestamp(), resolvedAt: serverTimestamp(),
+                        status: RETURN_STATUS.REJECTED,
+                        sellerNote: isAr ? 'تم إغلاق الطلب: العميل أكّد الاستلام وتم تحويل المبلغ' : 'Closed: the buyer confirmed receipt and the funds were released',
+                        updatedAt: serverTimestamp(), resolvedAt: serverTimestamp(),
                     });
-                    await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
-                        userId: 'ADMIN', type: 'return_manual_refund',
-                        title: isAr ? '⚠️ استرجاع منتج يحتاج استرداد يدوي' : '⚠️ Product return needs a manual refund',
-                        message: `${isAr ? 'الطلب' : 'Order'} #${ret.orderId.substr(-8)} — ${isAr ? 'الأموال كانت اتحولت للبائع بالفعل، محتاجة تعديل يدوي في محفظة العميل' : "Funds were already released to the seller — needs a manual buyer-wallet adjustment"}`,
-                        orderId: ret.orderId, read: false, createdAt: serverTimestamp(),
-                    });
-                    await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
-                        userId: ret.buyerId, type: 'return_approved',
-                        title: isAr ? '✅ تمت الموافقة على طلب الاسترجاع' : '✅ Your return request was approved',
-                        message: isAr ? 'هيتم التواصل معك لإتمام الاسترداد من فريق الإدارة' : 'Our admin team will contact you to complete the refund',
-                        orderId: ret.orderId, read: false, createdAt: serverTimestamp(),
-                    });
+                    hideLoading();
+                    showToast(isAr ? 'لا يمكن الاسترجاع — العميل أكّد الاستلام وتم تحويل المبلغ' : 'Cannot approve — receipt was already confirmed', 'warning');
+                    if (typeof window.SellerDash?.tab === 'function') window.SellerDash.tab('returns');
+                    return;
                 }
 
                 hideLoading();

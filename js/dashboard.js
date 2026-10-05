@@ -263,7 +263,7 @@
                   <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-purple-600 to-indigo-600"></div>
                     <p class="text-xs font-bold text-gray-500 mb-2">${isAr?'إيرادات المنصة المحققة':'Platform Revenue'}</p>
-                    <p class="text-2xl font-black text-purple-700">${formatCurrency(calcPlatformFee(totalRevenue))}</p>
+                    <p class="text-2xl font-black text-purple-700">${formatCurrency(calcBuyerFee(totalRevenue) + calcSellerFee(totalRevenue))}</p>
                     <p class="text-[11px] text-gray-400 mt-2">${isAr?'من إجمالي':'of'} ${formatCurrency(totalRevenue)}</p>
                   </div>
                   <div class="stat-card-glow bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
@@ -382,7 +382,7 @@
                 ${orders.length===0 ? `<p class="text-gray-400 text-center py-8">${t('orders.empty')}</p>` : `
                 <div class="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">${orders.map(o=>{
                   const ic = _iconFor(o);
-                  const commission = calcPlatformFee(o.price||0);
+                  const commission = calcSellerFee(o.price||0);
                   return `
                   <div class="p-4 hover:bg-gray-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer" onclick="openWorkspace('${o.id}')">
@@ -889,8 +889,8 @@
                 const allOrders = ordersSnap.docs.map(d=>({id:d.id,...d.data()}));
                 const completed = allOrders.filter(o=>o.status==='completed');
                 const totalRev  = completed.reduce((s,o)=>s+(o.price||0),0);
-                const platRev   = calcPlatformFee(totalRev);
-                const sellerRev = totalRev - platRev;
+                const platRev   = calcBuyerFee(totalRev) + calcSellerFee(totalRev);   // both sides' fees
+                const sellerRev = totalRev - calcSellerFee(totalRev);
 
                 // Top sellers
                 const sellerMap = {};
@@ -1019,7 +1019,17 @@
                 window._adminDeleteReview = async (id) => {
                     if (!confirm(isAr?'حذف هذا التقييم نهائياً؟':'Delete this review permanently?')) return;
                     try {
+                        const _revDoc = await window.db.collection(COLLECTIONS.REVIEWS).doc(id).get();
+                        const _revServiceId = _revDoc.exists ? _revDoc.data().serviceId : null;
                         await window.db.collection(COLLECTIONS.REVIEWS).doc(id).delete();
+                        // Keep the listing's rating/reviewCount equal to the remaining real reviews.
+                        if (_revServiceId && window.auth && window.auth.currentUser) {
+                            window.auth.currentUser.getIdToken().then(tok => fetch('/api/ratings', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+                                body: JSON.stringify({ action: 'sync', serviceId: _revServiceId }),
+                            })).catch(() => {});
+                        }
                         document.getElementById(`rev_${id}`)?.remove();
                         showToast(isAr?'✅ تم حذف التقييم':'✅ Review deleted','success');
                     } catch(e) { showToast(e.message,'error'); }
@@ -1231,6 +1241,12 @@
                 }).join('');
             })();
 
+            } else if (tab === 'dropship') {
+                if (window.DropshipUI) await window.DropshipUI.renderAdminTab(container);
+                else container.innerHTML = '<p class="text-red-500 text-center py-6">dropship.js not loaded</p>';
+            } else if (tab === 'ads') {
+                if (window.AdsSystem) await window.AdsSystem.renderAdminTab(container);
+                else container.innerHTML = '<p class="text-red-500 text-center py-6">ads-system.js not loaded</p>';
             } else if (tab === 'settings') {
                 const settingsSnap = await window.db.collection('settings').doc('platform').get();
                 const cfg  = settingsSnap.exists ? settingsSnap.data() : PLATFORM;
@@ -1238,8 +1254,28 @@
                 <div class="max-w-2xl mx-auto space-y-5">
                   <!-- ── Commission ──────────────────────────────────── -->
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-1 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-navy-500"></i>${isAr?'على مين تُحسب العمولة؟':'Who pays the commission?'}</h3>
+                    <p class="text-xs text-gray-400 mb-4">${isAr?'اختار المشتري لوحده، البائع لوحده، أو الاتنين. لو تركت النسبة الخاصة فاضية بتتحسب بإعدادات العمولة الأساسية تحت.':'Charge the buyer only, the seller only, or both. If an own percentage is left empty the main commission settings below are used.'}</p>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                      <div class="border border-gray-100 rounded-xl p-4">
+                        <label class="flex items-center gap-2 font-bold text-sm text-gray-800 cursor-pointer"><input type="checkbox" id="cfg_fee_buyer_on" ${cfg.FEE_BUYER_ENABLED===false?'':'checked'} class="w-4 h-4">${isAr?'رسوم على المشتري':'Buyer fee'}</label>
+                        <p class="text-[11px] text-gray-400 mt-1 mb-3">${isAr?'بتتضاف فوق السعر وقت الدفع.':'Added on top of the price at checkout.'}</p>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'نسبة خاصة بالمشتري % (اختياري)':'Own buyer % (optional)'}</label>
+                        <input type="number" id="cfg_fee_buyer_pct" min="0" max="100" step="0.1" placeholder="${isAr?'افتراضي':'default'}" value="${cfg.BUYER_FEE_PERCENT ?? ''}" class="form-input w-full">
+                      </div>
+                      <div class="border border-gray-100 rounded-xl p-4">
+                        <label class="flex items-center gap-2 font-bold text-sm text-gray-800 cursor-pointer"><input type="checkbox" id="cfg_fee_seller_on" ${cfg.FEE_SELLER_ENABLED===false?'':'checked'} class="w-4 h-4">${isAr?'عمولة على البائع':'Seller commission'}</label>
+                        <p class="text-[11px] text-gray-400 mt-1 mb-3">${isAr?'بتتخصم من مبلغ البائع بعد تأكيد المشتري للاستلام فقط.':'Deducted from the seller payout only after the buyer confirms receipt.'}</p>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'نسبة خاصة بالبائع % (اختياري)':'Own seller % (optional)'}</label>
+                        <input type="number" id="cfg_fee_seller_pct" min="0" max="100" step="0.1" placeholder="${isAr?'افتراضي':'default'}" value="${cfg.SELLER_FEE_PERCENT ?? ''}" class="form-input w-full">
+                      </div>
+                    </div>
+                    <p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2.5 mt-3"><i class="fa-solid fa-circle-info me-1"></i>${isAr?'عمولة المسوّقين (الإحالات) بتتحسب من عمولة البائع فقط.':'Affiliate commission is calculated from the seller commission only.'}</p>
+                  </div>
+
+                  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-percent text-navy-500"></i>${isAr?'العمولة':'Commission'}</h3>
-                    <p class="text-xs text-gray-400 mb-4">${isAr?'تُخصم من كل دفعة يستلمها البائع':'Deducted from every seller payout'}</p>
+                    <p class="text-xs text-gray-400 mb-4">${isAr?'الإعدادات الأساسية للعمولة (بتتطبق على الجهة اللي مفعّلة فوق وملهاش نسبة خاصة)':'Main commission settings (used by every enabled side that has no own percentage)'}</p>
 
                     <!-- Fee Type selector -->
                     <div class="mb-4">
@@ -1423,7 +1459,11 @@
                     try {
                         const newCfg = {
                             FEE_TYPE:        document.getElementById('feeTypeBtn_percent')?.classList.contains('bg-navy-600')?'percent':document.getElementById('feeTypeBtn_fixed')?.classList.contains('bg-navy-600')?'fixed':'both',
-                            FEE_PERCENT:     parseFloat(document.getElementById('cfg_fee')?.value)||5,
+                            FEE_PERCENT:     (() => { const v = parseFloat(document.getElementById('cfg_fee')?.value); return Number.isFinite(v) && v >= 0 ? v : 5; })(),
+                            FEE_BUYER_ENABLED:  document.getElementById('cfg_fee_buyer_on')?.checked !== false,
+                            FEE_SELLER_ENABLED: document.getElementById('cfg_fee_seller_on')?.checked !== false,
+                            BUYER_FEE_PERCENT:  (() => { const r = document.getElementById('cfg_fee_buyer_pct')?.value; const v = parseFloat(r); return r !== '' && r != null && Number.isFinite(v) && v >= 0 && v <= 100 ? v : null; })(),
+                            SELLER_FEE_PERCENT: (() => { const r = document.getElementById('cfg_fee_seller_pct')?.value; const v = parseFloat(r); return r !== '' && r != null && Number.isFinite(v) && v >= 0 && v <= 100 ? v : null; })(),
                             FEE_FIXED:       parseFloat(document.getElementById('cfg_fee_fixed')?.value)||0,
                             FEE_MIN:         parseFloat(document.getElementById('cfg_fee_min')?.value)||0,
                             FEE_MAX:         parseFloat(document.getElementById('cfg_fee_max')?.value)||0,
@@ -1845,6 +1885,8 @@
               <button onclick="adminTab('reports')"    class="tab-btn admin-pill-tab" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation"></i>${isAr?'البلاغات':'Reports'}</button>
               <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
               <button onclick="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
+              <button onclick="adminTab('dropship')"   class="tab-btn admin-pill-tab" id="adminTab_dropship"><i class="fa-solid fa-boxes-packing text-turquoise-500"></i>${isAr?'دروبشيبنج':'Dropshipping'}</button>
+              <button onclick="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
               <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
             </nav>
             <div class="p-5" id="adminTabContent"></div>

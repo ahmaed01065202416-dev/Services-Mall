@@ -30,6 +30,8 @@
                 ['returns', 'fa-rotate-left', isAr ? 'المرتجعات' : 'Returns'],
                 ['analytics', 'fa-chart-line', isAr ? 'الإحصائيات والتحليلات' : 'Analytics'],
                 ['escrow', 'fa-shield-halved', isAr ? 'سجل الضمان' : 'Escrow Log'],
+                ['dropship', 'fa-boxes-packing', isAr ? 'دروبشيبنج' : 'Dropshipping'],
+                ['ads', 'fa-bullhorn', isAr ? 'الإعلانات' : 'Ads'],
             ];
 
             container.innerHTML = `
@@ -49,7 +51,7 @@
             </div>`;
 
             // Load first tab
-            await this.tab('overview');
+            await this.tab(new URLSearchParams(location.search).get('ad_payment') ? 'ads' : 'overview');
         },
 
         // ── Tab Switcher ──────────────────────────────────────────────────────
@@ -75,6 +77,8 @@
             else if (name === 'returns')   await this.renderReturns(container);
             else if (name === 'analytics') await this.renderAnalytics(container);
             else if (name === 'escrow')    await this.renderEscrowLedger(container);
+            else if (name === 'ads')       { if (window.AdsSystem) await window.AdsSystem.renderSellerTab(container); }
+            else if (name === 'dropship')  { if (window.DropshipUI) await window.DropshipUI.renderSellerTab(container); }
             // Back-compat: some older links may still call 'my-services'/'activity'
             else if (name === 'my-services') await this.renderServices(container);
             else if (name === 'activity')    await this.renderOrdersTab(container);
@@ -555,6 +559,10 @@
                       class="flex items-center gap-1.5 text-xs px-3 py-2 ${isPaused ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} rounded-xl font-bold transition">
                       <i class="fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}"></i>
                       ${isPaused ? (isAr?'إعادة تفعيل':'Activate') : (isAr?'إيقاف مؤقت':'Pause')}
+                    </button>
+                    <button onclick="AdsSystem.openPromote('${s.id}')"
+                      class="flex items-center gap-1.5 text-xs px-3 py-2 bg-turquoise-50 text-turquoise-700 rounded-xl font-bold hover:bg-turquoise-100 transition">
+                      <i class="fa-solid fa-bullhorn"></i>${isAr?'روّج':'Promote'}
                     </button>
                     <button onclick="SellerDash.confirmDeleteService('${s.id}', '${escapeHtml((s.title||'').replace(/'/g,"\\'"))}', '${s.sellerId||''}')"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition">

@@ -42,6 +42,12 @@ const PLATFORM = {
     FEE_FIXED:        0,           // fixed amount in EGP (used when type=fixed or both)
     FEE_MIN:          0,           // minimum commission amount (0 = no minimum)
     FEE_MAX:          0,           // maximum commission amount (0 = no maximum)
+    // Who pays the commission — each side switchable from the admin panel, each with an optional own percentage
+    // (null = use the main fee settings above). Mirrors getPlatformConfig() in functions/api/payment.js.
+    FEE_BUYER_ENABLED:  true,     // fee added on top of the price at checkout
+    FEE_SELLER_ENABLED: true,     // commission deducted from the seller's payout
+    BUYER_FEE_PERCENT:  null,
+    SELLER_FEE_PERCENT: null,
     // ── Commission Tiers (optional) ───────────────────────────────────
     // If enabled, overrides FEE_PERCENT/FEE_FIXED based on order amount
     TIERS_ENABLED:    false,
@@ -203,7 +209,7 @@ function saveToStorage() {
     } catch(e) { console.warn('Storage save failed:', e); }
 }
 
-async function uploadFile(file, folder, filename) {
+async function uploadFile(file, folder, filename, opts = {}) {
     // ── Non-image files (PDF, ZIP, DOCX, video...) ────────────────────────
     // ⚠️ FIXED: this function used to force EVERY file — images and non-images
     // alike — through `new Image()` to compress it as a JPEG. For any file
@@ -248,8 +254,9 @@ async function uploadFile(file, folder, filename) {
     // entirely. Resizes image to max 900px, converts to JPEG @0.78 quality
     // → base64 data URL, stored directly in Firestore/RTDB. ─────────────
     return new Promise((resolve, reject) => {
-        const MAX_PX = 900;
-        const QUALITY = 0.78;
+        const MAX_PX = opts.maxPx || 900;
+        const QUALITY = opts.quality || 0.78;
+        const MAX_LEN = opts.maxLen || 0;   // optional hard budget (chars of the data URL) — used when several photos share one Firestore doc
         const reader = new FileReader();
         reader.onerror = () => reject(new Error('Failed to read file'));
         reader.onload = (e) => {
@@ -267,7 +274,22 @@ async function uploadFile(file, folder, filename) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+                let dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+                if (MAX_LEN) {
+                    // Several photos live inside ONE Firestore document (hard limit 1 MiB), so each one gets a
+                    // budget: lower quality first, then shrink the pixels, until it fits.
+                    let q = QUALITY, w = width, h = height, guard = 0;
+                    while (dataUrl.length > MAX_LEN && guard++ < 14) {
+                        if (q > 0.46) q = Math.max(0.4, q - 0.1);
+                        else { w = Math.round(w * 0.85); h = Math.round(h * 0.85); }
+                        canvas.width = w; canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        dataUrl = canvas.toDataURL('image/jpeg', q);
+                    }
+                    if (dataUrl.length > MAX_LEN) { reject(new Error(AppState.language === 'en' ? 'Image is too detailed to fit — choose a smaller photo' : 'الصورة كبيرة جداً — اختار صورة أصغر')); return; }
+                    resolve(dataUrl);
+                    return;
+                }
                 // Guard: Firestore doc limit ~900KB for image field
                 if (dataUrl.length > 900_000) {
                     // Re-compress at lower quality
@@ -597,9 +619,11 @@ function clearCart() {
 }
 
 // ── Calculate platform fee ───────────────────────────────────────────────────
-function calcPlatformFee(amount) {
+// Same rules as calcFee()/sideFee() in functions/api/payment.js (the server is what actually charges):
+// tiers → type (fixed / percent / both) → FEE_MIN → FEE_MAX, per side, side can be off or have its own %.
+function _baseFee(amount) {
     if (PLATFORM.TIERS_ENABLED && PLATFORM.TIERS && PLATFORM.TIERS.length) {
-        const tier = PLATFORM.TIERS.find(t => amount >= (t.minAmount||0) && amount <= (t.maxAmount||Infinity));
+        const tier = PLATFORM.TIERS.find(t => amount >= (t.minAmount||0) && amount <= (t.maxAmount != null && t.maxAmount !== 0 ? t.maxAmount : Infinity));
         if (tier) {
             const pct   = Number(((tier.feePercent||0) * amount / 100).toFixed(2));
             const fixed = Number((tier.feeFixed||0).toFixed(2));
@@ -607,13 +631,24 @@ function calcPlatformFee(amount) {
         }
     }
     const type = PLATFORM.FEE_TYPE || 'percent';
-    if (type === 'fixed')   return Number((PLATFORM.FEE_FIXED || 0).toFixed(2));
-    if (type === 'percent') return Number(((PLATFORM.FEE_PERCENT || 0) * amount / 100).toFixed(2));
-    // 'both': percentage + fixed
-    const pct   = Number(((PLATFORM.FEE_PERCENT || 0) * amount / 100).toFixed(2));
-    const fixed = Number((PLATFORM.FEE_FIXED || 0).toFixed(2));
-    return Number((pct + fixed).toFixed(2));
+    let fee;
+    if (type === 'fixed')        fee = Number(PLATFORM.FEE_FIXED || 0);
+    else if (type === 'percent') fee = (PLATFORM.FEE_PERCENT || 0) * amount / 100;
+    else                         fee = (PLATFORM.FEE_PERCENT || 0) * amount / 100 + Number(PLATFORM.FEE_FIXED || 0);
+    if (PLATFORM.FEE_MIN) fee = Math.max(fee, PLATFORM.FEE_MIN);
+    if (PLATFORM.FEE_MAX && PLATFORM.FEE_MAX > 0) fee = Math.min(fee, PLATFORM.FEE_MAX);
+    return Number(fee.toFixed(2));
 }
+function _sideFee(amount, side) {
+    const on  = side === 'buyer' ? PLATFORM.FEE_BUYER_ENABLED : PLATFORM.FEE_SELLER_ENABLED;
+    if (on === false) return 0;
+    const raw = side === 'buyer' ? PLATFORM.BUYER_FEE_PERCENT : PLATFORM.SELLER_FEE_PERCENT;
+    if (raw !== null && raw !== undefined && raw !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) return Number((Number(raw) * amount / 100).toFixed(2));
+    return _baseFee(amount);
+}
+function calcBuyerFee(amount)  { return _sideFee(amount, 'buyer'); }    // added on top of the price at checkout
+function calcSellerFee(amount) { return _sideFee(amount, 'seller'); }   // deducted from the seller's payout
+function calcPlatformFee(amount) { return calcBuyerFee(amount); }       // kept for existing callers: the checkout fee
 
 function getCartTotals() {
     const cart = AppState.cart || [];
@@ -657,6 +692,9 @@ function navigateTo(page, data = null) {
 
 // ── Fee label for display ─────────────────────────────────────────────────────
 window._feeLabel = function() {
+    if (PLATFORM.FEE_BUYER_ENABLED === false) return formatCurrency(0);
+    const own = PLATFORM.BUYER_FEE_PERCENT;
+    if (own !== null && own !== undefined && own !== '' && Number.isFinite(Number(own))) return Number(own) + '%';
     const type = PLATFORM.FEE_TYPE || 'percent';
     if (type === 'fixed')   return formatCurrency(PLATFORM.FEE_FIXED || 0);
     if (type === 'percent') return (PLATFORM.FEE_PERCENT || 0) + '%';
@@ -672,7 +710,7 @@ Object.assign(window, {
     openModal, closeModal, showToast, showLoading, hideLoading,
     secureApiCall, sanitizeInput, escapeHtml, previewImage,
     scanForContactLeak, scanFieldsForContactLeak, flagSuspiciousContent, contactLeakWarning,
-    calcPlatformFee, addToCart, removeFromCart, clearCart, getCartTotals,
+    calcPlatformFee, calcBuyerFee, calcSellerFee, addToCart, removeFromCart, clearCart, getCartTotals,
     navigateTo,
 });
 

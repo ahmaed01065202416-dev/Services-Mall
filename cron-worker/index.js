@@ -95,7 +95,58 @@ async function runDailyJob(env) {
       console.error('[CRON] Auto-flag job failed:', arErr.message);
     }
 
-    return { ok: true, generated: result.count, qualityScores: qualityResult && qualityResult.sellersProcessed, subscriptionsCharged: subsResult && subsResult.processed, autoFlagged: autoDisputeResult && autoDisputeResult.flagged };
+    // Ads: end finished ads, send the "ending soon" reminder, drop abandoned
+    // unpaid requests (see functions/api/ads.js expireSweep). The public feed
+    // also filters by endAt, so ads vanish at their exact end time regardless.
+    let adsResult = null;
+    try {
+      const adRes = await fetch(`${baseUrl}/api/ads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(env.ADMIN_SECRET ? { 'X-Admin-Token': env.ADMIN_SECRET } : {}),
+        },
+        body: JSON.stringify({ action: 'expireSweep' }),
+      });
+      adsResult = await adRes.json();
+      console.log('[CRON] Ads sweep:', JSON.stringify(adsResult));
+    } catch (adErr) {
+      console.error('[CRON] Ads sweep failed:', adErr.message);
+    }
+
+    // Ratings: re-derive every service's rating/reviewCount from the real
+    // reviews (heals anything missed + reviews deleted by admin).
+    let ratingsResult = null;
+    try {
+      const rtRes = await fetch(`${baseUrl}/api/ratings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(env.ADMIN_SECRET ? { 'X-Admin-Token': env.ADMIN_SECRET } : {}),
+        },
+        body: JSON.stringify({ action: 'syncAll' }),
+      });
+      ratingsResult = await rtRes.json();
+      console.log('[CRON] Ratings synced:', JSON.stringify(ratingsResult));
+    } catch (rtErr) {
+      console.error('[CRON] Ratings sync failed:', rtErr.message);
+    }
+
+    // Dropshipping: remind suppliers (and resellers) about orders not shipped within the SLA.
+    let dropshipResult = null;
+    try {
+      const dsRes = await fetch(`${baseUrl}/api/dropship`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(env.ADMIN_SECRET ? { 'X-Admin-Token': env.ADMIN_SECRET } : {}) },
+        body: JSON.stringify({ action: 'slaSweep' }),
+      });
+      dropshipResult = await dsRes.json();
+      console.log('[CRON] Dropship SLA sweep:', JSON.stringify(dropshipResult));
+    } catch (dsErr) {
+      console.error('[CRON] Dropship SLA sweep failed:', dsErr.message);
+    }
+
+    return { ok: true, dropship: dropshipResult, ads: adsResult, ratings: ratingsResult, generated: result.count, qualityScores: qualityResult && qualityResult.sellersProcessed, subscriptionsCharged: subsResult && subsResult.processed, autoFlagged: autoDisputeResult && autoDisputeResult.flagged };
   } catch (err) {
     console.error('[CRON] Failed:', err.message);
     return { error: err.message };

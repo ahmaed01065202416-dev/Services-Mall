@@ -595,11 +595,15 @@
           <i class="fa-solid fa-rocket"></i><span data-i18n="home.hero.sell">ابدأ البيع</span>
         </button>
 
-        <!-- Live stats — real counts, loaded by loadHomeStats() -->
-        <div class="grid grid-cols-3 gap-4 mt-10 pt-8 border-t border-gray-100 max-w-md mx-auto md:mx-0">
+        <!-- Live stats — real counts, loaded by loadHomeStats() (refreshes every 60s) -->
+        <div class="grid grid-cols-4 gap-3 mt-10 pt-8 border-t border-gray-100 max-w-md mx-auto md:mx-0">
           <div>
             <p class="text-xl md:text-2xl font-black text-navy-900" id="statServices">—</p>
             <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
+          </div>
+          <div>
+            <p class="text-xl md:text-2xl font-black text-navy-700" id="statUsers">—</p>
+            <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.users">مستخدم</p>
           </div>
           <div>
             <p class="text-xl md:text-2xl font-black text-turquoise-600" id="statOrders">—</p>
@@ -607,7 +611,7 @@
           </div>
           <div>
             <p class="text-xl md:text-2xl font-black text-secondary"><span id="statRating">—</span> <i class="fa-solid fa-star text-yellow-400 text-sm align-middle"></i></p>
-            <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.rating">تقييم المستخدمين</p>
+            <p class="text-gray-400 text-xs mt-1"><span data-i18n="home.stats.rating">تقييم المستخدمين</span> <span id="statReviews"></span></p>
           </div>
         </div>
       </div>
@@ -642,6 +646,8 @@
       </div>
     </div>
   </section>
+
+  <div data-ad-slot="home_top" class="max-w-7xl mx-auto px-4 mb-10" style="display:none"></div>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        VALUE PROPS — 4 trust cards
@@ -791,6 +797,8 @@
     </div>
   </section>
 
+  <div data-ad-slot="home_mid" class="max-w-7xl mx-auto px-4 mb-10" style="display:none"></div>
+
   <!-- ── Blog Teaser Section (Dynamic from Firestore) ─────────────────────── -->
   <section class="py-14 px-4 bg-gray-50 -mx-4">
     <div class="max-w-7xl mx-auto">
@@ -872,7 +880,7 @@
         <p class="text-navy-200/60 text-xs">© 2026 مول الخدمات. جميع الحقوق محفوظة</p>
         <div class="flex items-center gap-4 text-xs text-navy-200/60">
           <span class="flex items-center gap-1.5"><i class="fa-solid fa-lock text-turquoise-400"></i> دفع آمن 100%</span>
-          <span class="flex items-center gap-1.5"><i class="fa-solid fa-star text-yellow-400"></i> تقييم 4.9/5</span>
+          <span id="footerRatingWrap" class="items-center gap-1.5" style="display:none"><i class="fa-solid fa-star text-yellow-400"></i> <span><span data-i18n="home.stats.rating">تقييم المستخدمين</span> <span id="footerRating"></span></span></span>
         </div>
       </div>
     </div>
@@ -923,6 +931,8 @@
       </button>
     </div>
 
+    <div data-ad-slot="express_top" data-ad-when="express" class="mb-6" style="display:none"></div>
+    <div data-ad-slot="search_top" class="mb-6" style="display:none"></div>
     <div id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
     <div id="servicesEmpty" class="hidden text-center py-20">
       <i class="fa-solid fa-search text-gray-300 text-5xl mb-4"></i>
@@ -1665,6 +1675,9 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 <!-- 9. Services -->
 <script src="js/services.js"></script>
+<script src="js/ads-embed.js"></script>
+<script src="js/ads-system.js"></script>
+<script src="js/dropship.js"></script>
 
 <!-- 10. Notifications -->
 <script src="js/notifications.js"></script>
@@ -1726,10 +1739,10 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                 <span data-i18n="cart.subtotal">${t('cart.subtotal')}</span>
                 <span class="font-bold">${formatCurrency(subtotal)}</span>
               </div>
-              <div class="flex justify-between text-sm text-gray-600">
-                <span>${t('cart.fees')} (${PLATFORM.FEE_PERCENT}%)</span>
+              ${fees > 0 ? `<div class="flex justify-between text-sm text-gray-600">
+                <span>${t('cart.fees')} (${window._feeLabel()})</span>
                 <span class="font-bold">${formatCurrency(fees)}</span>
-              </div>
+              </div>` : ''}
               <hr class="border-gray-100">
               <div class="flex justify-between text-lg font-black text-navy-700">
                 <span data-i18n="cart.total">${t('cart.total')}</span>
@@ -1833,7 +1846,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         const isAr = AppState.language !== 'en';
         container.innerHTML = docs.map(doc => {
             const s = { id: doc.id, ...doc.data() };
-            const stars = Math.round(s.rating || 5);
+            const stars = Math.round(s.rating || 0);
             const isInstant = s.orderMode === 'instant';
             const requestData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;');
             return `
@@ -1853,7 +1866,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                     <span class="text-xs font-bold text-gray-700">${escapeHtml(s.sellerName || '—')}</span>
                   </div>
                   <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                    <i class="fa-solid fa-star"></i><span class="text-gray-900">${stars.toFixed ? s.rating||5 : stars}</span><span class="text-gray-400 font-normal">(${s.reviewCount||0})</span>
+                    ${(s.reviewCount||0) > 0 ? `<i class="fa-solid fa-star"></i><span class="text-gray-900">${Number(s.rating||0).toFixed(1)}</span><span class="text-gray-400 font-normal">(${s.reviewCount})</span>` : `<span class="text-gray-400 font-bold">${AppState.language !== 'en' ? 'جديد' : 'New'}</span>`}
                   </div>
                 </div>
                 <h3 class="font-black text-gray-900 text-sm leading-snug line-clamp-2">${escapeHtml(s.title || '—')}</h3>
@@ -1905,7 +1918,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
                   <div class="p-4 flex flex-col gap-2 flex-1">
                     <div class="flex items-center justify-between">
                       <span class="text-xs text-gray-400 font-bold">${escapeHtml(s.sellerName||'—')}</span>
-                      <div class="flex items-center gap-1 text-amber-500 text-xs font-bold"><i class="fa-solid fa-star"></i><span class="text-gray-900">${s.rating||5}</span><span class="text-gray-400 font-normal">(${s.reviewCount||0})</span></div>
+                      <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">${(s.reviewCount||0) > 0 ? `<i class="fa-solid fa-star"></i><span class="text-gray-900">${Number(s.rating||0).toFixed(1)}</span><span class="text-gray-400 font-normal">(${s.reviewCount})</span>` : `<span class="text-gray-400 font-bold">${AppState.language !== 'en' ? 'جديد' : 'New'}</span>`}</div>
                     </div>
                     <h3 class="font-black text-gray-900 text-sm leading-snug line-clamp-2">${escapeHtml(s.title||'—')}</h3>
                   </div>
@@ -2010,31 +2023,39 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     //    but only actually fetches once). ─────────────────────────────────────
     function _formatStatNumber(n) {
         if (n == null) return '—';
-        return '+' + n.toLocaleString('en-US');
+        return Number(n).toLocaleString('en-US');          // exact real number, no fake "+"
     }
     window.initHomePage = function() { loadHomeStats(); loadFeaturedServices(); loadHomeProducts(); };
     window.loadHomeStats = async function() {
-        if (window._homeStatsLoaded) return;
-        window._homeStatsLoaded = true;
         try {
             const resp = await fetch('/api/home-stats');
             const data = await resp.json();
             if (!data.success) throw new Error(data.error || 'failed');
 
-            const elServices = document.getElementById('statServices');
-            const elSellers  = document.getElementById('statSellers');
-            const elOrders   = document.getElementById('statOrders');
-            const elRating   = document.getElementById('statRating');
-
-            if (elServices) elServices.textContent = _formatStatNumber(data.services);
-            if (elSellers)  elSellers.textContent  = _formatStatNumber(data.sellers);
-            if (elOrders)   elOrders.textContent   = _formatStatNumber(data.completedOrders);
-            if (elRating)   elRating.textContent   = (data.avgRating != null ? data.avgRating.toFixed(1) : '—');
+            const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+            set('statServices', _formatStatNumber(data.services));
+            set('statUsers',    _formatStatNumber(data.users));
+            set('statOrders',   _formatStatNumber(data.completedOrders));
+            // Rating comes ONLY from real reviews — no reviews yet means "—", never a made-up 5.0
+            const hasRating = data.reviews > 0 && data.avgRating != null;
+            set('statRating',  hasRating ? data.avgRating.toFixed(1) : '—');
+            set('statReviews', hasRating ? '(' + _formatStatNumber(data.reviews) + ')' : '');
+            const fw = document.getElementById('footerRatingWrap');
+            if (fw) {
+                fw.style.display = hasRating ? 'flex' : 'none';
+                set('footerRating', hasRating ? data.avgRating.toFixed(1) + '/5' : '');
+            }
         } catch (err) {
             console.error('[loadHomeStats]', err);
-            window._homeStatsLoaded = false; // allow a retry on next visit
         }
     };
+    // Keep the counters live: re-fetch every 60s, but only while the home page is on screen.
+    if (!window._homeStatsTimer) {
+        window._homeStatsTimer = setInterval(function () {
+            const home = document.getElementById('page-home');
+            if (home && home.classList.contains('active') && !document.hidden) window.loadHomeStats();
+        }, 60000);
+    }
 
     // ⚠️ ADDED: "Trending Offers" horizontal carousel — most recent active
     // listings (services + products mixed), compact card style.
@@ -2054,7 +2075,9 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             row.innerHTML = snap.docs.map(d => {
                 const s = { id: d.id, ...d.data() };
                 const isProduct = s.listingType === 'product';
-                const actionBtn = isProduct
+                const actionBtn = s.dropship
+                    ? `<button onclick="ServicesManager.openServiceDetail('${s.id}')" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">${AppState.language !== 'en' ? 'اشترِ الآن' : 'Buy now'}</button>`
+                    : isProduct
                     ? `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})" class="w-full bg-turquoise-600 text-white text-xs font-bold py-2 rounded-xl hover:bg-turquoise-700 transition">أضف للسلة</button>`
                     : `<button onclick="RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})" class="w-full bg-secondary text-white text-xs font-bold py-2 rounded-xl hover:bg-secondary-600 transition">اطلب الآن</button>`;
                 return `
@@ -2386,7 +2409,10 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
           }, 800);
         });
 
-        window.navigateTo = function(page) {
+        // ⚠️ FIXED: this wrapper only forwarded `page` — the 2nd argument (the listing being edited,
+        // see navigateTo('add-service', editData) in the dashboards) was silently dropped, so the edit
+        // form always opened blank as "add new". `data` is now passed through.
+        window.navigateTo = function(page, data) {
           // ── Guard: admin page is admin-only ──────────────────────────────
           if (page === 'admin') {
             if (!AppState.currentUser || AppState.currentUser.role !== 'admin') {
@@ -2395,7 +2421,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
               return; // block navigation entirely
             }
           }
-          _origNavigateHome(page);
+          _origNavigateHome(page, data);
           if (page === 'home' && window.BlogEngine && window.db) {
             setTimeout(() => BlogEngine.renderBlogList('home-blog-grid', { limit: 3 }), 300);
           }

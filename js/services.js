@@ -17,8 +17,9 @@
     let _searchQuery   = ''; // ⚠️ ADDED: search text is now part of the one shared filter pipeline (_applyFilters)
     let _hasMore       = false; // ⚠️ ADDED: last page came back full → more listings exist server-side
     let _sortBy        = 'newest'; // ⚠️ ADDED: remembered so a filter change doesn't silently undo the chosen sort
-    let _pendingGalleryFiles = []; // new gallery photos chosen but not yet uploaded
-    let _keptExistingGallery = [];  // existing gallery URLs kept when editing (minus any removed)
+    // All of a listing's photos in display order — the FIRST one is the cover. Items are either
+    // { kind:'existing', url } (already saved) or { kind:'new', file } (chosen, uploaded on save).
+    let _photos = [];
     let _digitalProducts = []; // ⚠️ ADDED: cache for the dedicated Digital Products page
     const PAGE_SIZE    = 12;
 
@@ -287,6 +288,7 @@
         // ── Toggle Express Delivery Hub (services deliverable in ≤1 day) ──────
         toggleExpress() {
             _expressOnly = !_expressOnly;
+            if (window.AdsEmbed) window.AdsEmbed.setExpress(_expressOnly && _activeType !== 'product');
             const btn = document.getElementById('expressToggleBtn');
             if (btn) {
                 btn.classList.toggle('bg-orange-500', _expressOnly);
@@ -396,7 +398,7 @@
                     class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-eye text-navy-700"></i>
                   </button>
-                  ${s.listingType === 'product' ? `
+                  ${s.dropship ? '' : s.listingType === 'product' ? `
                   <button onclick="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 bg-turquoise-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-cart-plus text-white"></i>
@@ -461,6 +463,9 @@
                       return '<button onclick="event.stopPropagation();ServicesManager.deleteService(\'' + s.id + '\')" class="flex-1 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-trash text-xs\"></i>' + (lang !== 'en' ? 'حذف الإعلان' : 'Delete') + '</button>'
                            + '<button onclick="event.stopPropagation();navigateTo(\'add-service\', ' + editDataStr + ')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
                     }
+                    if (s.dropship) {
+                      return '<button onclick="event.stopPropagation();ServicesManager.openServiceDetail(\'' + s.id + '\')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class="fa-solid fa-bolt text-xs"></i>' + (lang !== 'en' ? 'اشترِ الآن' : 'Buy now') + '</button>';
+                    }
                     if (s.listingType === 'product') {
                       return '<button onclick="event.stopPropagation();addToCart(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-plus text-xs\"></i>' + (lang !== 'en' ? 'أضف للسلة' : 'Add to Cart') + '</button>';
                     }
@@ -518,6 +523,7 @@
                         <!-- Title & Category -->
                         <div>
                           <span class="text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">${s.category || ''}</span>
+                          ${s.dropship ? `<span class="text-xs bg-turquoise-50 text-turquoise-700 font-bold px-3 py-1 rounded-full ms-1"><i class="fa-solid fa-truck-fast me-1"></i>${isAr ? 'يُشحن من المورد' : 'Ships from supplier'}${s.deliveryDays ? (isAr ? ` • خلال ${s.deliveryDays} أيام` : ` • within ${s.deliveryDays} days`) : ''}</span>` : ''}
                           <h2 class="text-2xl font-black text-gray-900 mt-2">${escapeHtml(s.title || '—')}</h2>
                           <div class="flex items-center gap-2 mt-2">
                             ${Array.from({length:5},(_,i)=>`<i class="fa-solid fa-star text-sm ${i<stars?'text-yellow-400':'text-gray-200'}"></i>`).join('')}
@@ -557,7 +563,7 @@
                           <div class="bg-amber-50 rounded-xl p-3 text-center">
                             <i class="fa-solid fa-star text-amber-500 text-xl mb-1"></i>
                             <p class="text-xs text-gray-500">${isAr ? 'التقييم' : 'Rating'}</p>
-                            <p class="font-black text-gray-900 text-sm">${(s.rating || 5).toFixed(1)}</p>
+                            <p class="font-black text-gray-900 text-sm">${(s.reviewCount || 0) > 0 ? Number(s.rating || 0).toFixed(1) : (isAr ? 'جديد' : 'New')}</p>
                           </div>
                         </div>
 
@@ -574,10 +580,10 @@
                           </div>
                           <div class="flex gap-3">
                             ${s.listingType === 'product' ? `
-                            <button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                            ${s.dropship ? '' : `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
-                            </button>
+                            </button>`}
                             <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other'}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
@@ -667,8 +673,8 @@
 
             // Reset per-form-open state (gallery photos, structured fields),
             // then pre-load from the existing listing when editing.
-            _pendingGalleryFiles = [];
-            _keptExistingGallery = isEdit ? [...(service.images || [])] : [];
+            // Cover first, then the extra photos — de-duplicated (older docs/imports could repeat the cover).
+            _photos = isEdit ? [...new Set([service.image, ...(Array.isArray(service.images) ? service.images : [])].filter(Boolean))].slice(0, 5).map(url => ({ kind: 'existing', url })) : [];
             this._editingStructuredFields = isEdit ? (service.structuredFields || []) : [];
 
             const categories = _getServiceCategories();
@@ -819,22 +825,6 @@
                         placeholder="${isAr?'مثال: لازم تحدد المقاس واللون في الملاحظات، مفيش استرجاع بعد فتح المنتج...':'e.g. must specify size/color, no returns after opening...'}">${escapeHtml(service?.orderRules||'')}</textarea>
                     </div>
 
-                    <!-- ⚠️ ADDED: extra gallery photos — the cover image above
-                         stays the single thumbnail used everywhere in the app
-                         (cards, cart, etc.); these are additional angles shown
-                         only inside the product's own detail view so buyers
-                         can actually browse photos before ordering. -->
-                    <div>
-                      <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'صور إضافية للمنتج (اختياري، حتى 5 صور)':'Additional product photos (optional, up to 5)'}</label>
-                      <div class="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-navy-400 transition cursor-pointer" onclick="document.getElementById('svcGalleryFiles').click()">
-                        <i class="fa-solid fa-images text-2xl text-gray-300 mb-1"></i>
-                        <p class="text-xs text-gray-400">${isAr?'انقر لاختيار صور إضافية':'Click to add more photos'}</p>
-                        <input type="file" id="svcGalleryFiles" accept="image/*" multiple class="hidden" onchange="ServicesManager.onGalleryFilesChosen(this)">
-                      </div>
-                      <div id="svcGalleryPreview" class="grid grid-cols-5 gap-2 mt-3"></div>
-                      <input type="hidden" id="svcExistingGallery" value="${escapeHtml(JSON.stringify(service?.images||[]))}">
-                    </div>
-
                     <!-- ⚠️ CHANGED: this used to be shown+required for EVERY
                          product regardless of category — a t-shirt seller had
                          to supply an "instant delivery link" that made no
@@ -890,16 +880,13 @@
                   </div>
 
                   <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'صورة الإعلان':'Listing Image'}</label>
-                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-navy-400 transition cursor-pointer" onclick="document.getElementById('svcImageFile').click()">
-                      <i id="uploadZoneText" class="fa-solid fa-cloud-arrow-up text-3xl text-gray-300 mb-2"></i>
-                      <p class="text-sm text-gray-400">${isAr?'انقر لاختيار صورة أو اسحب وأفلت':'Click to upload or drag & drop'}</p>
-                      <input type="file" id="svcImageFile" accept="image/*" class="hidden"
-                        onchange="previewImage(this,'serviceImagePreview')">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'صور الإعلان':'Listing photos'} <span id="svcPhotoCount" class="text-xs font-normal text-gray-400"></span></label>
+                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-navy-400 transition cursor-pointer" onclick="document.getElementById('svcPhotoFiles').click()">
+                      <i class="fa-solid fa-images text-3xl text-gray-300 mb-2"></i>
+                      <p id="svcPhotoHint" class="text-sm text-gray-400"></p>
                     </div>
-                    <!-- hidden: stores existing image URL so saveService() can keep it when no new file chosen -->
-                    <input type="hidden" id="svcExistingImage" value="${service?.image || ''}">
-                    ${service?.image ? `<img src="${service.image}" class="image-upload-preview show mt-3" id="serviceImagePreview">` : '<img id="serviceImagePreview" class="image-upload-preview">'}
+                    <input type="file" id="svcPhotoFiles" accept="image/*" multiple class="hidden" onchange="ServicesManager.onPhotosChosen(this)">
+                    <div id="svcPhotoPreview" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3"></div>
                   </div>
 
                 </div>
@@ -911,7 +898,7 @@
             </div>`;
 
             this.toggleListingType();
-            this._renderGalleryPreview();
+            this._renderPhotos();
             this._restoreCustomFields();
         },
 
@@ -934,6 +921,7 @@
         // the selected radio — called on load and on every change.
         toggleListingType() {
             const isProduct = document.getElementById('svcTypeProduct')?.checked;
+            setTimeout(() => this._renderPhotos(), 0);   // photo limit differs: product 5, service 1
             document.getElementById('svcServiceFields')?.classList.toggle('hidden', !!isProduct);
             document.getElementById('svcProductFields')?.classList.toggle('hidden', !isProduct);
             // ⚠️ ADDED: swap the category dropdown's options to match — a
@@ -1036,42 +1024,55 @@
         // used everywhere else — cards, cart, checkout — for backward
         // compatibility with every other part of the app that expects one
         // image per listing).
-        onGalleryFilesChosen(input) {
+        // Product: up to 5 photos (first = cover). Service: 1 photo. Several files can be picked at once.
+        _maxPhotos() { return document.getElementById('svcTypeProduct')?.checked ? 5 : 1; },
+
+        onPhotosChosen(input) {
             const isAr = AppState.language !== 'en';
-            const files = Array.from(input.files || []);
-            const totalAfter = _keptExistingGallery.length + _pendingGalleryFiles.length + files.length;
-            if (totalAfter > 5) {
-                showToast(isAr ? 'الحد الأقصى 5 صور في المعرض' : 'Maximum 5 gallery photos', 'warning');
-                input.value = '';
-                return;
+            const max = this._maxPhotos();
+            const all = Array.from(input.files || []);
+            input.value = '';                                   // allow picking the same file again later
+            const files = all.filter(f => f.type && f.type.startsWith('image/'));
+            if (files.length < all.length) showToast(isAr ? 'تم تجاهل ملفات مش صور' : 'Non-image files were ignored', 'warning');
+            if (!files.length) return;
+            if (max === 1) {
+                _photos = [{ kind: 'new', file: files[0] }];
+            } else {
+                const room = max - _photos.length;
+                if (room <= 0) { showToast(isAr ? `الحد الأقصى ${max} صور — احذف صورة الأول` : `Maximum ${max} photos — remove one first`, 'warning'); return; }
+                if (files.length > room) showToast(isAr ? `الحد الأقصى ${max} صور — تمت إضافة ${room} فقط` : `Maximum ${max} photos — only ${room} added`, 'warning');
+                files.slice(0, room).forEach(f => _photos.push({ kind: 'new', file: f }));
             }
-            _pendingGalleryFiles.push(...files);
-            input.value = ''; // allow re-selecting the same file again later
-            this._renderGalleryPreview();
+            this._renderPhotos();
         },
 
-        removeGalleryImage(kind, index) {
-            if (kind === 'existing') _keptExistingGallery.splice(index, 1);
-            else _pendingGalleryFiles.splice(index, 1);
-            this._renderGalleryPreview();
-        },
+        removePhoto(index) { _photos.splice(index, 1); this._renderPhotos(); },
 
-        _renderGalleryPreview() {
-            const container = document.getElementById('svcGalleryPreview');
+        makeCoverPhoto(index) { const [p] = _photos.splice(index, 1); if (p) _photos.unshift(p); this._renderPhotos(); },
+
+        _renderPhotos() {
+            const container = document.getElementById('svcPhotoPreview');
             if (!container) return;
-            const existingThumbs = _keptExistingGallery.map((url, i) => `
-              <div class="relative">
-                <img src="${url}" class="w-full h-16 object-cover rounded-lg border border-gray-200">
-                <button type="button" onclick="ServicesManager.removeGalleryImage('existing',${i})"
-                  class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
-              </div>`);
-            const newThumbs = _pendingGalleryFiles.map((file, i) => `
-              <div class="relative">
-                <img src="${URL.createObjectURL(file)}" class="w-full h-16 object-cover rounded-lg border border-turquoise-300">
-                <button type="button" onclick="ServicesManager.removeGalleryImage('new',${i})"
-                  class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
-              </div>`);
-            container.innerHTML = existingThumbs.concat(newThumbs).join('');
+            const isAr = AppState.language !== 'en';
+            const max = this._maxPhotos();
+            container.innerHTML = _photos.map((p, i) => {
+                if (p.kind === 'new' && !p.preview) p.preview = URL.createObjectURL(p.file);
+                const src = p.kind === 'new' ? p.preview : p.url;
+                const unused = i >= max;                         // a service only uses its first photo
+                return `
+                <div class="relative ${unused ? 'opacity-40' : ''}">
+                  <img src="${escapeHtml(src)}" class="w-full h-20 object-cover rounded-lg border-2 ${i === 0 ? 'border-turquoise-500' : 'border-gray-200'}">
+                  ${i === 0 ? `<span class="absolute bottom-1 start-1 text-[10px] font-black bg-turquoise-600 text-white px-1.5 py-0.5 rounded">${isAr ? 'الغلاف' : 'Cover'}</span>`
+                            : `<button type="button" onclick="ServicesManager.makeCoverPhoto(${i})" title="${isAr ? 'اجعلها الغلاف' : 'Make cover'}" class="absolute bottom-1 start-1 text-[10px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">★</button>`}
+                  <button type="button" onclick="ServicesManager.removePhoto(${i})" class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
+                </div>`;
+            }).join('');
+            const hint = document.getElementById('svcPhotoHint');
+            if (hint) hint.textContent = max === 1
+                ? (isAr ? 'انقر لاختيار صورة الخدمة' : 'Click to choose the listing photo')
+                : (isAr ? 'انقر لاختيار حتى 5 صور مرة واحدة — أول صورة هي الغلاف' : 'Click to choose up to 5 photos at once — the first is the cover');
+            const cnt = document.getElementById('svcPhotoCount');
+            if (cnt) cnt.textContent = `(${Math.min(_photos.length, max)}/${max})`;
         },
 
         async saveService(editId = '') {
@@ -1087,7 +1088,6 @@
             const deliveryDays= parseInt(document.getElementById('svcDelivery')?.value) || 3;
             const revisions   = parseInt(document.getElementById('svcRevisions')?.value) || 2;
             const recurring   = document.getElementById('svcRecurring')?.checked || false;
-            const imageFile   = document.getElementById('svcImageFile')?.files[0];
             // ⚠️ ADDED: optional stock/expiry limits for products — empty means unlimited/no-expiry
             const stockLimitRaw = document.getElementById('svcStockLimit')?.value;
             const stockLimit    = stockLimitRaw === '' || stockLimitRaw == null ? null : Math.max(0, parseInt(stockLimitRaw) || 0);
@@ -1097,6 +1097,11 @@
             if (!title)     { showToast(AppState.language==='en'?'Enter a title':'أدخل عنوان الإعلان', 'warning'); return; }
             if (!description){ showToast(AppState.language==='en'?'Enter a description':'أدخل الوصف', 'warning'); return; }
             if (price < 5)  { showToast(AppState.language==='en'?'Min price is 5 EGP':'الحد الأدنى للسعر 5 ج.م', 'warning'); return; }
+            // Dropship listings: the supplier's wholesale price + minimum margin is a hard floor (also enforced by firestore.rules).
+            const _editing = editId ? (AppState._editingListing || null) : null;
+            if (_editing && _editing.dropship && price < (Number(_editing.dropshipFloorPrice) || 0)) {
+                showToast(AppState.language==='en' ? `Minimum selling price for this supplier product is ${_editing.dropshipFloorPrice}` : `أقل سعر بيع لمنتج المورد ده ${_editing.dropshipFloorPrice} ج.م`, 'warning'); return;
+            }
 
             // ⚠️ CHANGED: only digital-category products require an instant
             // delivery link/file now. Other product categories are physical
@@ -1134,30 +1139,33 @@
                 }
             }
 
+            // Photos are stored inside the listing document itself (Firestore hard limit: 1 MiB), so all of them
+            // must fit one shared budget. Already-saved photos keep their size; new ones are compressed to fit.
+            const chosenPhotos = _photos.slice(0, listingType === 'product' ? 5 : 1);
+            const PHOTO_BUDGET = 880000;
+            const keptChars = chosenPhotos.filter(p => p.kind === 'existing').reduce((n, p) => n + String(p.url || '').length, 0);
+            const newPhotos = chosenPhotos.filter(p => p.kind === 'new').length;
+            const perNewPhoto = newPhotos ? Math.floor((PHOTO_BUDGET - keptChars) / newPhotos) : 0;
+            if (keptChars > PHOTO_BUDGET || (newPhotos && perNewPhoto < 45000)) {
+                showToast(AppState.language==='en' ? 'Photos are too large together — remove one or use smaller photos' : 'حجم الصور كبير — احذف صورة أو استخدم صور أصغر', 'warning');
+                return;
+            }
+
             showLoading(AppState.language==='en'?'Publishing...':'جاري النشر...');
             try {
-                let imageUrl = editId
-                    ? (document.getElementById('svcExistingImage')?.value || AppState.currentService?.image || '')
-                    : '';
-                if (imageFile) {
-                    imageUrl = await uploadFile(imageFile, 'services', `svc_${user.uid}_${Date.now()}`);
+                // Upload new photos IN ORDER and keep saved ones as they are → the first one is the cover.
+                const photoUrls = [];
+                for (let i = 0; i < chosenPhotos.length; i++) {
+                    const p = chosenPhotos[i];
+                    photoUrls.push(p.kind === 'existing' ? p.url
+                        : await uploadFile(p.file, 'services', `svc_${user.uid}_${Date.now()}_${i}`, { maxPx: 900, maxLen: Math.min(perNewPhoto, 330000) }));
                 }
+                const imageUrl = photoUrls[0] || '';
 
                 if (listingType === 'product' && digitalDelivery?.type === 'file') {
                     const deliveryFile = document.getElementById('svcDeliveryFile')?.files[0];
                     if (deliveryFile) {
                         digitalDelivery.value = await uploadFile(deliveryFile, 'product-deliveries', `del_${user.uid}_${Date.now()}`);
-                    }
-                }
-
-                // ⚠️ ADDED: upload any newly-chosen gallery photos, then combine
-                // with whatever existing gallery URLs the seller kept (removed
-                // ones were already spliced out by removeGalleryImage()).
-                let galleryUrls = [..._keptExistingGallery];
-                if (listingType === 'product' && _pendingGalleryFiles.length) {
-                    for (let i = 0; i < _pendingGalleryFiles.length; i++) {
-                        const url = await uploadFile(_pendingGalleryFiles[i], 'services', `svc_${user.uid}_gallery_${Date.now()}_${i}`);
-                        galleryUrls.push(url);
                     }
                 }
 
@@ -1174,10 +1182,10 @@
                 };
                 if (listingType === 'product') {
                     data.digitalDelivery = digitalDelivery;
-                    data.stockLimit = stockLimit;   // null = unlimited
+                    if (!(_editing && _editing.dropship)) data.stockLimit = stockLimit;   // null = unlimited — dropship stock belongs to the supplier (kept in sync by the server)
                     data.expiryDate = expiryDate;   // null = no expiry
                     data.orderRules = sanitizeInput(document.getElementById('svcOrderRules')?.value?.trim() || '', 1000);
-                    data.images = galleryUrls.slice(0, 5);
+                    data.images = photoUrls.slice(1, 5);   // extras only — the cover lives in `image` (the detail view shows image + images)
                     // ⚠️ ADDED: read the enabled suggested-field toggles into a
                     // structured list the buyer's order form can render as real
                     // dropdowns/inputs (see request-system.js openProductOrderModal).
@@ -1392,7 +1400,35 @@
             // pre-filled with someone's old edit.
             const editingService = AppState.pageData;
             AppState.pageData = null;
-            this._renderAddServiceForm(editingService || null);
+            AppState._editingListing = null;
+            if (!editingService) { this._renderAddServiceForm(null); return; }
+
+            // ⚠️ FIXED: the edit buttons pass only a handful of fields (no photos, stock, expiry, order rules,
+            // custom attributes…), so the form used to open half-empty and saving it wiped those values. Load
+            // the real, complete document by id; fall back to what was passed only if the read fails.
+            const c = document.getElementById('addServiceContent');
+            if (c) c.innerHTML = `<div class="text-center py-16"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-3xl"></i></div>`;
+            (async () => {
+                let full = editingService;
+                try {
+                    if (editingService.id) {
+                        const snap = await window.db.collection(COLLECTIONS.SERVICES).doc(editingService.id).get();
+                        if (snap.exists) full = { id: snap.id, ...snap.data() };
+                    }
+                } catch (e) { console.warn('[Edit] could not load full listing, using partial data:', e.message); }
+                if (full.sellerId && full.sellerId !== user.uid && user.role !== 'admin') {
+                    showToast(isAr ? 'مش مسموح لك تعدل الإعلان ده' : 'You cannot edit this listing', 'error');
+                    navigateTo('dashboard'); return;
+                }
+                AppState._editingListing = full;
+                this._renderAddServiceForm(full);
+                if (full.dropship) {
+                    const stockEl = document.getElementById('svcStockLimit');
+                    if (stockEl) { stockEl.value = full.stockLimit ?? ''; stockEl.disabled = true; stockEl.title = isAr ? 'المخزون يتحدد من المورد' : 'Stock is managed by the supplier'; }
+                    const priceEl = document.getElementById('svcPrice');
+                    if (priceEl && full.dropshipFloorPrice) priceEl.min = full.dropshipFloorPrice;
+                }
+            })();
         }
     };
 

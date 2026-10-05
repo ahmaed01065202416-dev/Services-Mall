@@ -265,6 +265,29 @@ async function fsCount(env, structuredQuery) {
     return row ? Number(row.result.aggregateFields.count.integerValue || 0) : 0;
 }
 
+// ── General aggregation — COUNT / AVG / SUM in one request.
+// aggregations: [{ alias:'avg', avg:{ field:{ fieldPath:'rating' } } }, ...]
+// Returns { alias: number|null }. AVG over zero docs comes back as null.
+async function fsAggregate(env, structuredQuery, aggregations) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${fsBase(env)}:runAggregationQuery`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredAggregationQuery: { structuredQuery, aggregations } }),
+    });
+    const rows = await resp.json();
+    const row = Array.isArray(rows) ? rows.find(r => r.result) : null;
+    const out = {};
+    for (const a of aggregations) {
+        const v = row && row.result.aggregateFields ? row.result.aggregateFields[a.alias] : null;
+        if (!v) { out[a.alias] = null; continue; }
+        if ('integerValue' in v) out[a.alias] = parseInt(v.integerValue, 10);
+        else if ('doubleValue' in v) out[a.alias] = v.doubleValue;
+        else out[a.alias] = null;
+    }
+    return out;
+}
+
 // ── Realtime Database REST helpers (Admin-SDK style, bypasses RTDB rules) ────
 // RTDB security rules have no concept of "admin" at all (see
 // database.rules.json — every rule only checks "is this the buyer/seller of
@@ -314,7 +337,7 @@ async function rtdbUpdate(env, path, data) {
 
 export {
     getAccessToken, verifyIdToken,
-    fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount,
+    fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount, fsAggregate,
     writeIncrement, writeUpdate, writeCreate,
     rtdbGet, rtdbDelete, rtdbUpdate,
 };

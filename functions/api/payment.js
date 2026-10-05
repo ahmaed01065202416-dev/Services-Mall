@@ -17,7 +17,8 @@
  * Route: /api/payment
  * ============================================================================
  */
-import { verifyIdToken, getAccessToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js';
+import { verifyIdToken, getAccessToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js'
+import { assertDropshipPurchasable, computeSplit, getDropshipSettings, syncListings } from '../_shared/dropship.js';
 
 // IDs coming from the browser are interpolated into Firestore REST paths
 // (`services/${id}`) — without validation an id like "../users/xyz" or one
@@ -190,6 +191,8 @@ async function resolveOrderItems(items, env, auth) {
         if (!svc) throw new Error('الخدمة غير موجودة');
         if (svc.active === false || svc.status === 'inactive' || svc.status === 'deleted') throw new Error('الخدمة دي مش متاحة حالياً');
         if (auth && svc.sellerId === auth.uid) throw new Error('مينفعش تشتري خدمتك أنت');
+        // Dropship products need the buyer's shipping address, which only the direct "buy now" flow collects.
+        if (svc.dropship) throw new Error('منتجات الدروبشيبنج بتتشترى مباشرة من صفحة المنتج (اضغط اشتري الآن)');
         // Orders/escrow are created one-per-item at `price` (no quantity
         // concept anywhere downstream). Honouring quantity>1 here charged the
         // buyer price×qty but only ever escrowed/delivered ONE unit.
@@ -207,7 +210,7 @@ async function resolveOrderItems(items, env, auth) {
         });
     }
     const cfg = await getPlatformConfig(env);
-    const fees = calcFee(subtotal, cfg);
+    const fees = buyerFee(subtotal, cfg);
     const total = Number((subtotal + fees).toFixed(2));
     if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
     return { resolved, subtotal, fees, total };
@@ -227,9 +230,14 @@ async function resolveExistingOrder(orderId, auth, env) {
     const svc = svcId ? await fsGet(env, `services/${svcId}`) : null;
     if (!svc) throw new Error('الخدمة غير موجودة');
     if (svc.sellerId === auth.uid) throw new Error('مينفعش تشتري خدمتك أنت');
+    if (svc.dropship) {
+        // Re-checked on the server at payment time: supplier active, in stock, price still above wholesale + minimum margin.
+        await assertDropshipPurchasable(env, svc);
+        if (!order.shippingInfo || !order.shippingInfo.address) throw new Error('عنوان الشحن مطلوب لمنتجات الدروبشيبنج');
+    }
     const price = Number(svc.price) || 0;
     const cfg = await getPlatformConfig(env);
-    const fees = calcFee(price, cfg);
+    const fees = buyerFee(price, cfg);
     const total = Number((price + fees).toFixed(2));
     if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
 
@@ -265,6 +273,7 @@ async function resolveExistingOrder(orderId, auth, env) {
             image: svc.image || (svc.images && svc.images[0]) || order.image || '',
             price, deliveryDays: svc.deliveryDays || order.deliveryDays || 3,
             sellerId: svc.sellerId || '', sellerName: svc.sellerName || order.sellerName || '',
+            ...(svc.dropship ? { dropship: true } : {}),
         },
         subtotal: price, fees, total,
     };
@@ -286,7 +295,10 @@ function buildPendingPaymentDoc(target, auth, currency, method) {
 
 async function getPlatformConfig(env) {
     const doc = await fsGet(env, 'settings/platform').catch(() => null);
-    return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0, TIERS_ENABLED: false, TIERS: [] }, doc || {});
+    return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0, TIERS_ENABLED: false, TIERS: [],
+        // Who pays the platform fee — each side can be switched on/off from the admin panel, and each can have its own
+        // percentage (null = use the main fee settings above). Defaults keep the previous behaviour (both sides charged).
+        FEE_BUYER_ENABLED: true, FEE_SELLER_ENABLED: true, BUYER_FEE_PERCENT: null, SELLER_FEE_PERCENT: null }, doc || {});
 }
 // ⚠️ FIXED (found in audit): the client's calcPlatformFee() (js/constants.js)
 // has supported commission Tiers for a while — but this server function,
@@ -312,6 +324,23 @@ function calcFee(amount, cfg) {
     if (cfg.FEE_MAX && cfg.FEE_MAX > 0) fee = Math.min(fee, cfg.FEE_MAX);
     return Number(fee.toFixed(2));
 }
+
+// Platform fee for ONE side of a deal.
+//   buyer  → added on top of the price at checkout
+//   seller → deducted from the seller's payout when the escrow is released
+// A side that is switched off pays 0. A side with its own percentage (BUYER_FEE_PERCENT / SELLER_FEE_PERCENT) uses
+// that percentage only; otherwise it uses the main fee settings (type / percent / fixed / min / max / tiers).
+function sideFee(amount, cfg, side) {
+    const on = side === 'buyer' ? cfg.FEE_BUYER_ENABLED : cfg.FEE_SELLER_ENABLED;
+    if (on === false) return 0;
+    const raw = side === 'buyer' ? cfg.BUYER_FEE_PERCENT : cfg.SELLER_FEE_PERCENT;
+    if (raw !== null && raw !== undefined && raw !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
+        return Number(((Number(raw) * amount) / 100).toFixed(2));
+    }
+    return calcFee(amount, cfg);
+}
+const buyerFee  = (amount, cfg) => sideFee(amount, cfg, 'buyer');
+const sellerFee = (amount, cfg) => sideFee(amount, cfg, 'seller');
 
 function genOrderId() {
     return 'MS_' + Date.now().toString(36).toUpperCase() + '_' + crypto.randomUUID().slice(0, 8).toUpperCase();
@@ -385,12 +414,47 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             };
         await fsSet(env, `orders/${orderId}`, orderUpdate, true);
 
+        // Dropshipping: the supplier + cost of record come from supplier_products (server-side), NEVER from the order doc.
+        let dsInfo = null;
+        if (item.dropship) {
+            const dsSvc = await fsGet(env, `services/${item.serviceId}`);
+            const live = await assertDropshipPurchasable(env, dsSvc).catch(e => { console.error('[dropship] finalize check failed (paid anyway — flagged):', e.message); return null; });
+            const sp = live ? live.sp : (dsSvc && dsSvc.supplierProductId ? await fsGet(env, `supplier_products/${dsSvc.supplierProductId}`) : null);
+            if (sp) dsInfo = { sp, svc: dsSvc, flagged: !live };
+        }
+
         const escrowAlready = !!(await fsGet(env, `escrow/${orderId}`));
         if (!escrowAlready) await fsCreate(env, 'escrow', {
             orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
             status: 'held', paymentId: String(paymentId), method, currency: pending.currency,
             createdAt: new Date(),
+            ...(dsInfo ? { supplierId: dsInfo.sp.supplierId, supplierAmount: Number(dsInfo.sp.wholesalePrice) || 0 } : {}),
         }, orderId);
+
+        if (dsInfo && !escrowAlready) {
+            const ordDoc = await fsGet(env, `orders/${orderId}`).catch(() => null);
+            await fsCreate(env, 'dropship_orders', {
+                orderId, supplierId: dsInfo.sp.supplierId, resellerId: item.sellerId, buyerId: pending.uid,
+                supplierProductId: dsInfo.sp.id, serviceId: item.serviceId, title: item.title,
+                image: item.image || '', unitCost: Number(dsInfo.sp.wholesalePrice) || 0, sellingPrice: item.price, quantity: 1,
+                shippingInfo: (ordDoc && ordDoc.shippingInfo) || null, selectedFields: (ordDoc && ordDoc.selectedFields) || null,
+                status: 'processing', createdAt: new Date(),
+                ...(dsInfo.flagged ? { needsAttention: true } : {}),
+            }, orderId);
+            await fsSet(env, `orders/${orderId}`, { dropship: true, supplierId: dsInfo.sp.supplierId, supplierName: dsInfo.sp.supplierName || '' }, true);
+            // stock: decrement the supplier's real stock and mirror it to every reseller listing (best effort, like the existing stockLimit logic)
+            const newStock = Math.max(0, (Number(dsInfo.sp.stock) || 0) - 1);
+            await fsSet(env, `supplier_products/${dsInfo.sp.id}`, { stock: newStock, soldCount: (Number(dsInfo.sp.soldCount) || 0) + 1 }, true);
+            try {
+                const dsCfg = await getDropshipSettings(env);
+                await syncListings(env, dsInfo.sp.id, { ...dsInfo.sp, stock: newStock }, dsCfg, (uid, title, message, extra) =>
+                    fsCreate(env, 'notifications', { userId: uid, type: 'dropship', title, message, read: false, createdAt: new Date(), ...extra }).catch(() => {}));
+            } catch (e) { console.error('[dropship] listing sync failed:', e.message); }
+            await fsCreate(env, 'notifications', {
+                userId: dsInfo.sp.supplierId, type: 'dropship_order', title: '📦 طلب جديد للشحن',
+                message: `اشحن "${item.title}" للمشتري وسجّل رقم التتبع من تبويب الدروبشيبنج.`, orderId, read: false, createdAt: new Date(),
+            });
+        }
 
         // ⚠️ ADDED: decrement stock for a stock-limited product. Best-effort,
         // not a transaction — under a genuine race between two simultaneous
@@ -661,13 +725,38 @@ async function _creditAffiliateCommission(env, cfg, platformFee, buyerId, seller
 // branch) — one guarded path for every way money can leave escrow to a seller.
 // (The stale-delivery timeout, handleAutoFlagStaleDeliveries below, does NOT
 // use this — it opens a dispute instead of paying automatically.)
+// The buyer confirmed receipt and the money went out → the order can no longer be returned. A return request that was
+// still waiting for the seller is closed so nobody approves a refund that can't be paid from escrow any more.
+async function _closePendingReturns(env, orderId) {
+    try {
+        const rows = await fsQuery(env, { from: [{ collectionId: 'returns' }], where: { compositeFilter: { op: 'AND', filters: [
+            { fieldFilter: { field: { fieldPath: 'orderId' }, op: 'EQUAL', value: { stringValue: orderId } } },
+            { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'pending' } } } ] } }, limit: 20 });
+        for (const r of rows) {
+            await fsSet(env, `returns/${r.id}`, { status: 'rejected', autoClosed: true, sellerNote: 'تم إغلاق الطلب تلقائياً: العميل أكّد الاستلام وتم تحويل المبلغ', updatedAt: new Date(), resolvedAt: new Date() }, true);
+        }
+    } catch (e) { console.error('[payment] closing pending returns failed:', e.message); }
+}
+
 async function _releaseEscrowToSeller(env, orderId, order, escrow, cfg, buildNotice) {
-    const platformFee = calcFee(escrow.amount, cfg);
-    const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
+    const dsCfg = escrow.supplierId ? await getDropshipSettings(env) : null;
+    const { platformFee, sellerAmount, supplierAmount } = computeSplit(escrow, cfg, dsCfg, sellerFee);
     const { title, message, description } = buildNotice(sellerAmount);
     const txId = crypto.randomUUID();
 
     await fsCommit(env, [
+        ...(supplierAmount > 0 ? [
+            writeIncrement(env, `wallets/${escrow.supplierId}`, 'balance', supplierAmount),
+            writeCreate(env, `transactions/${crypto.randomUUID()}`, {
+                userId: escrow.supplierId, type: 'earning', amount: supplierAmount, platformFee: 0, orderId,
+                description: 'سعر الجملة — طلب دروبشيبنج مكتمل', status: 'completed', createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: escrow.supplierId, type: 'payment_received', title: '💰 وصلك سعر الجملة',
+                message: `تم تحويل ${supplierAmount} لمحفظتك`, orderId, read: false, createdAt: new Date(),
+            }),
+            writeUpdate(env, `dropship_orders/${orderId}`, { status: 'completed', completedAt: new Date() }),
+        ] : []),
         writeIncrement(env, `wallets/${escrow.sellerId}`, 'balance', sellerAmount),
         writeUpdate(env, `escrow/${orderId}`, { status: 'released', releasedAt: new Date() }, { updateTime: escrow._updateTime }),
         writeUpdate(env, `orders/${orderId}`, { status: 'completed', completedAt: new Date(), escrowReleased: true, updatedAt: new Date() }),
@@ -681,7 +770,8 @@ async function _releaseEscrowToSeller(env, orderId, order, escrow, cfg, buildNot
     ]);
 
     await _creditAffiliateCommission(env, cfg, platformFee, order.buyerId, escrow.sellerId, orderId);
-    return { sellerAmount, platformFee };
+    await _closePendingReturns(env, orderId);
+    return { sellerAmount, platformFee, supplierAmount };
 }
 
 async function handleReleaseEscrow(body, env, CORS, auth) {
@@ -701,13 +791,13 @@ async function handleReleaseEscrow(body, env, CORS, auth) {
     }
 
     const cfg = await getPlatformConfig(env);
-    const { sellerAmount, platformFee } = await _releaseEscrowToSeller(env, orderId, order, escrow, cfg, (amount) => ({
+    const { sellerAmount, platformFee, supplierAmount } = await _releaseEscrowToSeller(env, orderId, order, escrow, cfg, (amount) => ({
         title: 'تم استلام الأموال!',
         message: `تم تحويل ${amount} لمحفظتك`,
         description: 'أرباح من طلب مكتمل',
     }));
 
-    return json(200, CORS, { success: true, sellerAmount, platformFee });
+    return json(200, CORS, { success: true, sellerAmount, platformFee, supplierAmount });
 }
 
 // ── Auto-flag stale deliveries → opens a DISPUTE, does NOT auto-pay ──────────
@@ -838,11 +928,19 @@ async function handleResolveDispute(body, env, CORS, auth) {
         responsePayload = { refundedAmount: escrow.amount };
     } else {
         const cfg = await getPlatformConfig(env);
-        const platformFee = calcFee(escrow.amount, cfg);
-        const sellerAmount = Number((escrow.amount - platformFee).toFixed(2));
+        const dsCfg = escrow.supplierId ? await getDropshipSettings(env) : null;
+        const { platformFee, sellerAmount, supplierAmount } = computeSplit(escrow, cfg, dsCfg, sellerFee);
         const txId = crypto.randomUUID();
         await fsCommit(env, [
             ...disputeWrites,
+            ...(supplierAmount > 0 ? [
+                writeIncrement(env, `wallets/${escrow.supplierId}`, 'balance', supplierAmount),
+                writeCreate(env, `transactions/${crypto.randomUUID()}`, {
+                    userId: escrow.supplierId, type: 'earning', amount: supplierAmount, platformFee: 0, orderId,
+                    description: 'سعر الجملة بعد حل نزاع', status: 'completed', createdAt: new Date(),
+                }),
+                writeUpdate(env, `dropship_orders/${orderId}`, { status: 'completed', completedAt: new Date() }),
+            ] : []),
             writeIncrement(env, `wallets/${escrow.sellerId}`, 'balance', sellerAmount),
             writeUpdate(env, `escrow/${orderId}`, { status: 'released', resolvedAt: new Date() }, { updateTime: escrow._updateTime }),
             writeUpdate(env, `orders/${orderId}`, { status: 'completed', completedAt: new Date(), escrowReleased: true, updatedAt: new Date() }),
@@ -856,7 +954,7 @@ async function handleResolveDispute(body, env, CORS, auth) {
             }),
         ]);
         await _creditAffiliateCommission(env, cfg, platformFee, escrow.buyerId, escrow.sellerId, orderId);
-        responsePayload = { sellerAmount, platformFee };
+        responsePayload = { sellerAmount, platformFee, supplierAmount };
     }
 
     return json(200, CORS, { success: true, resolution, ...responsePayload });

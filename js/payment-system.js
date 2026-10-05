@@ -225,10 +225,10 @@
                       <span>${isAr ? 'المجموع الفرعي' : 'Subtotal'}</span>
                       <span>${formatCurrency(subtotal)}</span>
                     </div>
-                    <div class="flex justify-between text-sm text-gray-600">
-                      <span>${isAr ? 'رسوم المنصة' : 'Platform Fee'} (${PLATFORM.FEE_PERCENT}%)</span>
+                    ${fees > 0 ? `<div class="flex justify-between text-sm text-gray-600">
+                      <span>${isAr ? 'رسوم المنصة' : 'Platform Fee'} (${window._feeLabel()})</span>
                       <span>${formatCurrency(fees)}</span>
-                    </div>
+                    </div>` : ''}
                     <div class="flex justify-between font-black text-gray-900 text-xl border-t border-gray-100 pt-2 mt-2">
                       <span>${isAr ? 'الإجمالي' : 'Total'}</span>
                       <span class="text-navy-600" id="total-display">${formatCurrency(total)}</span>
