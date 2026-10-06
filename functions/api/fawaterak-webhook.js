@@ -15,6 +15,7 @@
 import { finalizePendingPayment, hmacHex, timingSafeEqual } from './payment.js';
 import { activateSubscriptionToken } from './subscription.js';
 import { activateAdPayment } from './ads.js';
+import { activateStorePayment } from './stores.js';
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -77,6 +78,13 @@ export async function onRequest(context) {
         if (payLoad && payLoad.adId) {
             const r = await activateAdPayment(env, payLoad.adId, data.invoice_id);
             console.log('[FawaterakWebhook] ad payment:', payLoad.adId, JSON.stringify(r));
+            return new Response('OK', { status: 200 });
+        }
+
+        // Seller paid for a featured-store package (see functions/api/stores.js).
+        if (payLoad && payLoad.storeSubId) {
+            const r = await activateStorePayment(env, payLoad.storeSubId, data.invoice_id);
+            console.log('[FawaterakWebhook] store plan payment:', payLoad.storeSubId, JSON.stringify(r));
             return new Response('OK', { status: 200 });
         }
 

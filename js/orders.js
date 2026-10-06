@@ -166,7 +166,8 @@
                   <button onclick="EscrowManager.confirmDelivery('${order.id}')"
                     class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-check"></i>${t('escrow.confirm')}
-                  </button>` : ''}
+                  </button>
+                  ${window.NonReceipt ? NonReceipt.buttonHtml(order, 'text-sm px-4 py-2 border-2 border-red-400 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition flex items-center gap-2') : ''}` : ''}
 
                   ${needsShipping ? `
                   <button onclick="OrdersManager.quickMarkShipped('${order.id}', event)"

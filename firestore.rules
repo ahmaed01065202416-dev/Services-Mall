@@ -16,6 +16,12 @@ service cloud.firestore {
     function isSellerOwner(sellerId) {
       return isSignedIn() && request.auth.uid == sellerId;
     }
+    // Set ONLY by functions/_shared/trust.js after repeated disputes ruled against the seller.
+    function sellerBlocked() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/trust/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/trust/$(request.auth.uid)).data.get('sellerBlocked', false) == true;
+    }
     function _order(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
@@ -66,7 +72,7 @@ service cloud.firestore {
       // featured / verified straight from the browser console. They must now
       // start at their neutral defaults (js/services.js already sends exactly
       // these); the server/admin changes them later.
-      allow create: if isSeller()
+      allow create: if isSeller() && !sellerBlocked()
                     && serviceId.matches('[A-Za-z0-9_-]{1,64}')
                     && request.resource.data.sellerId == request.auth.uid
                     && request.resource.data.keys().hasAll(['title','price','sellerId','createdAt'])
@@ -82,7 +88,7 @@ service cloud.firestore {
                     && !('supplierProductId' in request.resource.data)
                     && !('supplierId' in request.resource.data);
       allow update: if isAdmin() || (
-                      isSellerOwner(resource.data.sellerId) && isSeller() &&
+                      isSellerOwner(resource.data.sellerId) && isSeller() && !sellerBlocked() &&
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['title','description','category','price','deliveryDays',
                                   'revisions','image','images','tags','active','status','recurring','updatedAt',
@@ -195,7 +201,11 @@ service cloud.firestore {
                            (resource.data.status in ['payment_held','in_progress','revision'] &&
                             resource.data.get('escrowHeld', false) == true &&
                             resource.data.get('dropship', false) == false &&
-                            request.resource.data.status == 'delivered') ||
+                            request.resource.data.status == 'delivered' &&
+                            // STRICT: a physical product can only be marked delivered after it was shipped WITH a tracking number
+                            // (the tracking fields are written by /api/disputes markShipped only)
+                            (resource.data.get('listingType', '') != 'product' || resource.data.get('shippingInfo', null) == null ||
+                             (resource.data.get('shippingStatus', '') == 'shipped' && resource.data.get('trackingNumber', '') != ''))) ||
                            // buyer asks for changes
                            (resource.data.status in ['payment_held','in_progress','delivered'] &&
                             resource.data.get('escrowHeld', false) == true &&
@@ -203,7 +213,10 @@ service cloud.firestore {
                            // either side opens a dispute (escrow.js / returns.js)
                            (resource.data.status in ['payment_held','in_progress','revision','delivered'] &&
                             resource.data.get('escrowHeld', false) == true &&
-                            request.resource.data.status == 'disputed')
+                            request.resource.data.status == 'disputed' &&
+                            // a DELIVERED physical product is disputed ONLY through /api/disputes (evidence, one report, deadlines)
+                            !(resource.data.status == 'delivered' && resource.data.get('listingType', '') == 'product' &&
+                              resource.data.get('shippingInfo', null) != null))
                          )
                        ));
       allow delete: if isAdmin();
@@ -570,6 +583,44 @@ service cloud.firestore {
     // ── admin_actions (audit log — server-write only via admin-delete.js) ───
     match /admin_actions/{id} {
       allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+
+    // ── trust (dispute record per user) — written ONLY by the server ───────────
+    match /trust/{uid} {
+      allow read:  if isOwner(uid) || isAdmin();
+      allow write: if isAdmin();    // admin can lift a block; clients can never write
+    }
+
+    // ── stores: one per seller, doc id == seller uid ───────────────────────────
+    // The seller edits the storefront fields only. featuredUntil / planId / planName / planRank / verified / rating
+    // are written by functions/api/stores.js (service account) or the admin.
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create: if isSeller() && !sellerBlocked()
+                    && storeId == request.auth.uid
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','country','city','status','createdAt','updatedAt'])
+                    && request.resource.data.keys().hasAll(['ownerId','name','createdAt'])
+                    && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
+                    && request.resource.data.get('status', 'active') in ['active','paused'];
+      allow update: if isAdmin() || (
+                      isSellerOwner(resource.data.ownerId) && isSeller() && !sellerBlocked()
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['name','description','logo','country','city','status','updatedAt'])
+                      && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
+                      && request.resource.data.get('status', 'active') in ['active','paused']);
+      allow delete: if isAdmin() || isSellerOwner(resource.data.ownerId);
+    }
+    // ── store packages (admin-defined) ────────────────────────────────────────
+    match /store_plans/{planId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+    // ── a seller's purchase of a package — server-written ────────────────────
+    match /store_subscriptions/{subId} {
+      allow read:  if isSignedIn() && (request.auth.uid == resource.data.sellerId || isAdmin());
       allow write: if false;
     }
   }

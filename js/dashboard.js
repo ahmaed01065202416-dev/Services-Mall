@@ -439,6 +439,7 @@
                         <div>
                           <p class="font-black text-gray-900">${isAr?'نزاع على الطلب':'Dispute on order'} #${(d.orderId||'').substr(-8).toUpperCase()}</p>
                           <p class="text-sm text-gray-600 mt-1">${escapeHtml(d.reason||'—')}</p>
+                          ${d.type==='non_receipt' ? `<p class="text-xs mt-1 font-bold"><span class="px-2 py-0.5 rounded-full ${d.faultHint==='buyer'?'bg-amber-100 text-amber-800':d.faultHint==='seller'?'bg-blue-100 text-blue-800':'bg-gray-100 text-gray-700'}">${isAr?'الخطأ المحتمل: ':'Likely fault: '}${d.faultHint==='buyer'?(isAr?'المشتري':'buyer'):d.faultHint==='seller'?(isAr?'البائع':'seller'):(isAr?'غير واضح':'unclear')}</span> ${d.sellerResponse?`<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-800">${isAr?'البائع رد':'Seller replied'}</span>`:`<span class="px-2 py-0.5 rounded-full ${(d.sellerDeadline&&Date.now()>(d.sellerDeadline.seconds?d.sellerDeadline.seconds*1000:new Date(d.sellerDeadline).getTime()))?'bg-red-200 text-red-800':'bg-gray-100 text-gray-600'}">${(d.sellerDeadline&&Date.now()>(d.sellerDeadline.seconds?d.sellerDeadline.seconds*1000:new Date(d.sellerDeadline).getTime()))?(isAr?'⏰ انتهت مهلة البائع بدون رد':'⏰ seller window expired'):(isAr?'في انتظار البائع':'waiting for seller')}</span>`}</p>` : ''}
                           <p class="text-xs text-gray-400 mt-1">${isAr?'رُفع بواسطة:':'Raised by:'} ${escapeHtml(d.raisedByName||d.raisedBy||'—')}${d.raisedByRole ? ` <span class="font-bold">(${d.raisedByRole==='seller' ? (isAr?'بائع':'seller') : d.raisedByRole==='system' ? (isAr?'⏱️ تلقائي — لا رد من العميل':'⏱️ automatic — no buyer response') : (isAr?'مشتري':'buyer')})</span>` : ''}</p>
                         </div>
                         <span class="text-xs bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full flex-shrink-0">${isAr?'مفتوح':'Open'}</span>
@@ -446,6 +447,7 @@
                       <div class="flex gap-2 flex-wrap">
                         <button onclick="window._adminViewDisputeDetail('${d.id}')" class="text-sm px-4 py-2 bg-navy-800 text-white rounded-xl font-bold hover:bg-navy-900 transition"><i class="fa-solid fa-magnifying-glass"></i> ${isAr?'عرض كل التفاصيل':'View full details'}</button>
                         <button onclick="EscrowManager.resolveDispute('${d.id}','refund_buyer','${d.orderId}')" class="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
+                        <button onclick="EscrowManager.resolveDispute('${d.id}','refund_minus_shipping','${d.orderId}')" class="text-sm px-4 py-2 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition" title="${isAr?'الخطأ على المشتري: استرداد بعد خصم الشحن':'Buyer at fault: refund minus shipping'}">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}${d.shippingDeduction?` (${formatCurrency(d.shippingDeduction)})`:''}</button>
                         <button onclick="EscrowManager.resolveDispute('${d.id}','pay_seller','${d.orderId}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                       </div>
                     </div>`).join('')}</div>`}
@@ -514,6 +516,14 @@
                             <p class="text-sm text-gray-800">${escapeHtml(dp.description || dp.reason || '—')}</p>
                           </div>
 
+                          ${dp.type==='non_receipt' ? `
+                          <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 text-sm space-y-2">
+                            <p><b>${isAr?'السبب:':'Reason:'}</b> ${escapeHtml(window.NonReceipt ? NonReceipt.reasonLabel(dp.reasonCode) : dp.reasonCode)} — <span class="font-bold ${dp.faultHint==='buyer'?'text-amber-700':'text-blue-700'}">${isAr?'الخطأ المحتمل: ':'likely fault: '}${dp.faultHint==='buyer'?(isAr?'المشتري':'buyer'):dp.faultHint==='seller'?(isAr?'البائع':'seller'):(isAr?'غير واضح':'unclear')}</span></p>
+                            <p class="text-xs text-gray-500">${isAr?'مصاريف الشحن لو الخطأ على المشتري:':'Shipping if buyer at fault:'} ${formatCurrency(dp.shippingDeduction||0)}${dp.shipmentLate?` · ${isAr?'شحنة متأخرة':'late shipment'}`:''}${o?.trackingNumber?` · ${escapeHtml(o.carrier||'')} ${escapeHtml(o.trackingNumber)}`:` · <span class="text-red-600 font-bold">${isAr?'بدون رقم تتبع':'no tracking'}</span>`}</p>
+                            ${(dp.evidence||[]).length?`<div><p class="text-xs font-bold text-gray-500 mb-1">${isAr?'إثبات المشتري':'Buyer proof'}</p><div class="flex gap-2 flex-wrap">${dp.evidence.map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div></div>`:''}
+                            ${dp.sellerResponse?`<div class="bg-green-50 border border-green-200 rounded-xl p-3"><p class="text-xs font-bold text-green-700 mb-1">${isAr?'رد البائع':'Seller reply'}${dp.sellerResponse.late?(isAr?' (متأخر)':' (late)'):''}</p><p>${escapeHtml(dp.sellerResponse.text||'')}</p>${(dp.sellerResponse.evidence||[]).length?`<div class="flex gap-2 flex-wrap mt-2">${dp.sellerResponse.evidence.map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div>`:''}</div>`:`<p class="text-xs text-red-600 font-bold">${isAr?'البائع لم يرد حتى الآن':'The seller has not replied yet'}</p>`}
+                          </div>` : ''}
+
                           ${rr ? `
                           <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
                             <p class="text-xs font-bold text-amber-600 mb-1">${isAr?'طلب استرجاع منتج مرتبط':'Linked product return request'}</p>
@@ -540,6 +550,7 @@
                           ${dp.status === 'open' ? `
                           <div class="flex gap-3">
                             <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_buyer','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
+                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_minus_shipping','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}</button>
                             <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','pay_seller','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                           </div>` : `<p class="text-center text-xs text-gray-400">${isAr?'تم الفصل في هذا النزاع بالفعل':'This dispute was already resolved'}</p>`}
                         </div>`;
@@ -547,6 +558,10 @@
                         overlay.querySelector('div').innerHTML = `<p class="text-red-500 py-6">${escapeHtml(e.message||(isAr?'تعذّر تحميل بيانات النزاع':'Could not load dispute data'))}</p><button onclick="this.closest('.fixed').remove()" class="btn-secondary px-6 py-2 mt-2">${isAr?'إغلاق':'Close'}</button>`;
                     }
                 };
+
+            // ── STORES (packages + featured placement) ──────────────────────────
+            } else if (tab === 'stores') {
+                await window.StoresAdmin.render(container);
 
             // ── USERS ─────────────────────────────────────────────────────────
             } else if (tab === 'users') {
@@ -1362,6 +1377,18 @@
                     </div>
                   </div>
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-1 flex items-center gap-2"><i class="fa-solid fa-gavel text-red-500"></i>${isAr?'عدم الاستلام والنزاعات (قواعد صارمة)':'Non-receipt & disputes (strict rules)'}</h3>
+                    <p class="text-xs text-gray-400 mb-4">${isAr?'بلاغ واحد لكل طلب، إثبات بالصور إجباري، تتبع الشحن إجباري، وعقوبات تلقائية للمتكرر.':'One report per order, mandatory photo proof and tracking, automatic penalties for repeat offenders.'}</p>
+                    <label class="flex items-center gap-3 cursor-pointer mb-4"><input type="checkbox" id="cfg_nr_enabled" ${cfg.NONRECEIPT_ENABLED!==false?'checked':''}><span class="text-sm font-bold text-gray-700">${isAr?'تفعيل زرار «عدم استلام»':'Enable the "Not received" button'}</span></label>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'مصاريف الشحن المخصومة لو الخطأ على المشتري (ج.م)':'Shipping deducted when buyer is at fault (EGP)'}</label><input type="number" id="cfg_nr_ship" min="0" step="1" class="form-input w-full" value="${cfg.RETURN_SHIPPING_FEE ?? 0}"></div>
+                      <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'مهلة رد البائع (ساعات)':'Seller reply window (hours)'}</label><input type="number" id="cfg_nr_hours" min="1" step="1" class="form-input w-full" value="${cfg.SELLER_RESPONSE_HOURS ?? 48}"></div>
+                      <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'نزاعات ضد البائع قبل إيقاف منتجاته':'Seller faults before auto-pause'}</label><input type="number" id="cfg_nr_sfaults" min="1" step="1" class="form-input w-full" value="${cfg.SELLER_MAX_FAULTS ?? 3}"></div>
+                      <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'بلاغات خطأ المشتري قبل منعه من البلاغات':'Buyer faults before reports are blocked'}</label><input type="number" id="cfg_nr_bfaults" min="1" step="1" class="form-input w-full" value="${cfg.BUYER_MAX_FAULTS ?? 3}"></div>
+                      <div class="col-span-2"><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'أيام بعد الشحن قبل ما يحق للمشتري يبلّغ عن شحنة متأخرة':'Days after shipping before a late-shipment report is allowed'}</label><input type="number" id="cfg_nr_late" min="1" step="1" class="form-input w-full" value="${cfg.SHIPPED_LATE_DAYS ?? 7}"></div>
+                    </div>
+                  </div>
+                  <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-teal-600"></i>${isAr?'خصوصية بيانات المستخدمين':'User data privacy'}</h3>
                     <p class="text-xs text-gray-400 mb-4">${isAr?'رقم الهاتف ووسيلة استلام الأرباح بقوا مخزّنين في مكان خاص محدود الوصول (المالك والأدمن بس) بدل الملف العام. الحسابات الجديدة بتتخزن صح من الأول — الزرار ده لترحيل الحسابات القديمة (لو موجودة) مرة واحدة بس. آمن تضغطه أكتر من مرة.':"Phone numbers and payout details now live in a restricted, owner+admin-only place instead of the public profile. New accounts are stored correctly automatically — this button migrates any older accounts (if any) once. Safe to click more than once."}</p>
                     <button onclick="window._adminRunPrivacyMigration()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"><i class="fa-solid fa-lock"></i> ${isAr?'ترحيل بيانات الحسابات القديمة':'Migrate older accounts\' data'}</button>
@@ -1478,6 +1505,12 @@
                             MAX_WITHDRAWAL:  parseFloat(document.getElementById('cfg_max_wd').value)||50000,
                             WITHDRAWAL_NOTE: document.getElementById('cfg_wd_note').value.trim(),
                             RETURNS_ENABLED:    document.getElementById('cfg_returns_enabled')?.checked ?? true,
+                            NONRECEIPT_ENABLED:    document.getElementById('cfg_nr_enabled')?.checked ?? true,
+                            RETURN_SHIPPING_FEE:   Math.max(0, parseFloat(document.getElementById('cfg_nr_ship')?.value) || 0),
+                            SELLER_RESPONSE_HOURS: Math.max(1, parseInt(document.getElementById('cfg_nr_hours')?.value, 10) || 48),
+                            SELLER_MAX_FAULTS:     Math.max(1, parseInt(document.getElementById('cfg_nr_sfaults')?.value, 10) || 3),
+                            BUYER_MAX_FAULTS:      Math.max(1, parseInt(document.getElementById('cfg_nr_bfaults')?.value, 10) || 3),
+                            SHIPPED_LATE_DAYS:     Math.max(1, parseInt(document.getElementById('cfg_nr_late')?.value, 10) || 7),
                             RETURN_WINDOW_DAYS: (() => { const v = parseInt(document.getElementById('cfg_returns_window')?.value, 10); return Number.isFinite(v) && v >= 0 ? v : 14; })(),
                             AFFILIATE_ENABLED: document.getElementById('cfg_affiliate_enabled')?.checked || false,
                             AFFILIATE_COMMISSION_PERCENT: parseFloat(document.getElementById('cfg_affiliate_pct')?.value) || 0,
@@ -1886,6 +1919,7 @@
               <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
               <button onclick="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
               <button onclick="adminTab('dropship')"   class="tab-btn admin-pill-tab" id="adminTab_dropship"><i class="fa-solid fa-boxes-packing text-turquoise-500"></i>${isAr?'دروبشيبنج':'Dropshipping'}</button>
+              <button onclick="adminTab('stores')"     class="tab-btn admin-pill-tab" id="adminTab_stores"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'المتاجر':'Stores'}</button>
               <button onclick="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
               <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
             </nav>

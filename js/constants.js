@@ -32,6 +32,10 @@ const COLLECTIONS = {
     SUBSCRIPTIONS: 'subscriptions',
     DELIVERIES:    'deliveries',
     RETURNS:       'returns', // ⚠️ ADDED: product-return requests (buyer → seller → admin refund)
+    STORES:        'stores',              // one store per seller (doc id = seller uid)
+    STORE_PLANS:   'store_plans',         // admin-defined paid packages for top-of-page placement
+    STORE_SUBS:    'store_subscriptions', // a seller's purchase of a package (server-written)
+    TRUST:         'trust',               // per-user dispute record (server-written, read-only for clients)
 };
 
 // ── Platform Config (defaults — overridden by Firestore settings/platform) ────
@@ -68,6 +72,14 @@ const PLATFORM = {
     // ── Product Returns ─────────────────────────────────────────────────
     RETURNS_ENABLED:     true, // master on/off switch for the whole feature
     RETURN_WINDOW_DAYS:  14,   // days after delivery a buyer may request a return
+    // ── «عدم استلام» + strict dispute rules (enforced server-side in functions/api/disputes.js) ──
+    NONRECEIPT_ENABLED:    true,
+    RETURN_SHIPPING_FEE:   0,   // EGP deducted from the refund when the BUYER is at fault — SET THIS in admin → الإعدادات
+    SELLER_RESPONSE_HOURS: 48,  // time the seller has to answer a dispute
+    SELLER_MAX_FAULTS:     3,   // disputes ruled against a seller before his listings are paused automatically
+    BUYER_MAX_FAULTS:      3,   // at-fault reports before a buyer can no longer open reports
+    SHIPPED_LATE_DAYS:     7,   // days after "shipped" before a buyer may report a missing shipment
+    STORES_ENABLED:        true,
     // ── Platform Info ─────────────────────────────────────────────────
     CURRENCY:         'ج.م',
     CURRENCY_CODE:    'EGP',
@@ -162,6 +174,9 @@ const PAYMENT_METHODS = {
 // See functions/api/payment.js (autoFlagStaleDeliveries) + cron-worker.
 // Keep this in sync with AUTO_DISPUTE_DAYS in functions/api/payment.js.
 const AUTO_DISPUTE_DAYS = 7;
+
+// Visible build stamp (footer + console) — lets you verify which version is actually live.
+window.BUILD_ID = '2026-10-05-v9';
 
 // ── Global AppState ───────────────────────────────────────────────────────────
 window.AppState = window.AppState || {

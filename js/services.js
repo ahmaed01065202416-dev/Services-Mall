@@ -413,7 +413,7 @@
               <!-- Body -->
               <div class="p-4">
                 <!-- Seller -->
-                <div class="flex items-center gap-2 mb-3">
+                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${s.sellerId||''}')" title="${isAr?'زيارة المتجر':'Visit store'}">
                   <img src="${s.sellerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.sellerName||'U')}&background=0284c7&color=fff`}"
                     class="w-7 h-7 rounded-full object-cover flex-shrink-0" loading="lazy"
                     onerror="this.src='https://ui-avatars.com/api/?name=U&background=0284c7&color=fff'">
@@ -1174,12 +1174,16 @@
                     title, description, category, listingType,
                     price, deliveryDays, revisions, recurring,
                     image:         imageUrl,
-                    sellerId:      user.uid,
                     sellerName:    user.displayName || '',
                     sellerAvatar:  user.photoURL || '',
-                    sellerVerified: user.verified || false,
                     updatedAt:     serverTimestamp(),
                 };
+                // 🔒 FIX (this is why "تعديل الإعلان" failed with a permission error): sellerId / sellerVerified
+                // used to be sent on EVERY save. firestore.rules only lets a seller change a fixed list of keys —
+                // sellerVerified is not in it, so as soon as the account was verified (or the stored value differed)
+                // the whole update was rejected. And on create the rules require sellerVerified == false, so a
+                // verified seller couldn't even publish. Trust fields are now never sent from the browser.
+                if (!editId) data.sellerId = user.uid;
                 if (listingType === 'product') {
                     data.digitalDelivery = digitalDelivery;
                     if (!(_editing && _editing.dropship)) data.stockLimit = stockLimit;   // null = unlimited — dropship stock belongs to the supplier (kept in sync by the server)
@@ -1227,6 +1231,7 @@
                     // server/trust data now — never touched here.
                     await window.db.collection(COLLECTIONS.SERVICES).doc(editId).update(data);
                 } else {
+                    data.sellerVerified = false;     // rules require the neutral default on create; admin/server sets it later
                     data.active        = true;
                     data.status        = 'active';   // ← required by SellerDash
                     data.featured      = false;
@@ -1258,7 +1263,7 @@
                 }
 
                 hideLoading();
-                showToast(AppState.language==='en'?'Service published!':'تم نشر الخدمة!', 'success');
+                showToast(editId ? (AppState.language==='en'?'Changes saved!':'تم حفظ التعديلات!') : (AppState.language==='en'?'Service published!':'تم نشر الخدمة!'), 'success');
                 navigateTo('dashboard');
             } catch (err) {
                 hideLoading();

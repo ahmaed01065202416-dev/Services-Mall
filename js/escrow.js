@@ -55,6 +55,12 @@
         // ── Open Dispute (Buyer or Seller) ────────────────────────────────────
         async openDispute(orderId) {
             const isAr = AppState.language !== 'en';
+            // Physical products use the strict «عدم استلام» flow (server-side, evidence required, one report per order).
+            try {
+                const ps = await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).get();
+                const po = ps.exists ? ps.data() : null;
+                if (po && window.NonReceipt && NonReceipt.isPhysical(po) && po.buyerId === AppState.currentUser?.uid) return NonReceipt.open(orderId);
+            } catch (_) { /* fall through to the generic dialog */ }
             const input = await _showDisputeDialog(orderId);
             if (!input) return;
 
@@ -212,6 +218,7 @@
                     icon: 'fa-triangle-exclamation text-red-500',
                     text: isAr ? 'النزاع قيد المراجعة — الأموال مجمدة' : 'Dispute under review — funds frozen',
                     showConfirm: false,
+                    sellerReply: !isBuyer,
                 },
             };
 
@@ -232,10 +239,11 @@
                       </button>
                       <button onclick="EscrowManager.openDispute('${order.id}')"
                         class="btn-secondary text-sm px-4 py-2 border-red-400 text-red-600 hover:bg-red-600 hover:text-white">
-                        <i class="fa-solid fa-flag ml-1"></i>${t('escrow.dispute')}
+                        <i class="fa-solid fa-flag ml-1"></i>${(window.NonReceipt && NonReceipt.isPhysical(order)) ? (isAr ? 'عدم استلام' : 'Not received') : t('escrow.dispute')}
                       </button>
                     </div>
                   ` : ''}
+                  ${info.sellerReply && window.NonReceipt ? `<button onclick="NonReceipt.respond('${order.id}')" class="mt-3 text-sm px-4 py-2 bg-navy-800 text-white rounded-xl font-bold">${isAr ? 'رد على النزاع وإرفاق إثبات' : 'Reply with proof'}</button>` : ''}
                 </div>
               </div>`;
         }

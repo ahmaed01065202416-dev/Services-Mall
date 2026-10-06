@@ -531,14 +531,15 @@
                     class="btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-rotate-left"></i>${t('orders.revision')}
                   </button>
-                  <button onclick="EscrowManager.openDispute('${orderId}')"
+                  ${window.NonReceipt && NonReceipt.isPhysical(order) ? NonReceipt.buttonHtml(order) : `<button onclick="EscrowManager.openDispute('${orderId}')"
                     class="w-full py-3 text-sm border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-flag"></i>${t('escrow.dispute')}
-                  </button>
+                  </button>`}
                 </div>
               </div>
               ` : ''}
               </div>
+              <div id="disputeInfoSlot"></div>
 
               <!-- ── Auto-dispute notice — visible to both parties while DELIVERED ──
                    ⚠️ CHANGED (per Ahmed's feedback): originally this window ended in
@@ -582,7 +583,12 @@
               ` : ''}
 
               <!-- ── SELLER: delivered, waiting on buyer — dispute option ─ -->
-              ${isSeller && order.status === ORDER_STATUS.DELIVERED ? `
+              ${isSeller && order.status === ORDER_STATUS.DELIVERED && window.NonReceipt && NonReceipt.isPhysical(order) ? `
+              <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-black text-gray-900 mb-2 flex items-center gap-2"><i class="fa-solid fa-hourglass-half text-amber-500"></i>${isAr ? 'في انتظار تأكيد العميل' : 'Waiting for buyer confirmation'}</h3>
+                <p class="text-gray-500 text-sm">${isAr ? `الفلوس في الضمان لحد ما العميل يأكد الاستلام. لو العميل مردش خلال ${AUTO_DISPUTE_DAYS} أيام هيتفتح نزاع تلقائي وتراجعه الإدارة. رقم التتبع المسجّل هو إثباتك الأساسي.` : `Funds stay in escrow until the buyer confirms. If the buyer is silent for ${AUTO_DISPUTE_DAYS} days a dispute opens automatically. Your tracking number is your main proof.`}</p>
+              </div>
+              ` : (isSeller && order.status === ORDER_STATUS.DELIVERED ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-2 flex items-center gap-2">
                   <i class="fa-solid fa-hourglass-half text-amber-500"></i>
@@ -594,7 +600,7 @@
                   <i class="fa-solid fa-flag"></i>${isAr ? 'فتح نزاع' : 'Open Dispute'}
                 </button>
               </div>
-              ` : ''}
+              ` : '')}
               ${isBuyer && order.status === ORDER_STATUS.COMPLETED && !order.reviewed ? `
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-black text-gray-900 mb-4 flex items-center gap-2">
@@ -1659,7 +1665,7 @@
             </p>` : ''}
             ${isSeller && !order.dropship && status !== 'delivered' ? `
             <div class="flex gap-2 border-t border-gray-100 pt-3">
-              ${status === 'processing' ? `
+              ${(status === 'processing' || !order.trackingNumber) ? `
               <button onclick="OrderWorkspace.markProductShipped('${order.id}')"
                 class="flex-1 text-sm font-bold bg-navy-700 text-white py-2.5 rounded-xl hover:bg-navy-800 transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-truck"></i>${isAr ? 'تحديد كـ: تم الشحن' : 'Mark as shipped'}
@@ -1672,45 +1678,10 @@
           </div>`;
     }
 
+    // Shipping now REQUIRES carrier + tracking number and is recorded by the server (see js/non-receipt.js,
+    // functions/api/disputes.js markShipped). firestore.rules refuse "delivered" without them.
     async function markProductShipped(orderId, orderDataOverride) {
-        const isAr = AppState.language !== 'en';
-        showLoading();
-        try {
-            const order = orderDataOverride || AppState.currentOrder;
-            await window.db.collection(COLLECTIONS.ORDERS).doc(orderId).update({
-                shippingStatus: 'shipped',
-                updatedAt: _ts(),
-            });
-            if (order?.buyerId) {
-                await window.db.collection(COLLECTIONS.NOTIFICATIONS).add({
-                    userId: order.buyerId, type: 'shipping',
-                    title: isAr ? 'تم شحن طلبك!' : 'Your order has shipped!',
-                    message: `"${order.serviceTitle || ''}" ${isAr ? 'في الطريق إليك' : 'is on its way'}`,
-                    orderId, read: false, createdAt: _ts(),
-                });
-            }
-            if (window.rtdb) {
-                await window.rtdb.ref(`chats/${orderId}/messages`).push({
-                    senderId: AppState.currentUser.uid,
-                    senderName: AppState.currentUser.displayName || AppState.currentUser.email || 'Seller',
-                    type: 'shipping_update', shippingStatus: 'shipped',
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                });
-            }
-            hideLoading();
-            showToast(isAr ? '✅ تم تحديث حالة الشحن' : '✅ Shipping status updated', 'success');
-            // Only jump into the workspace view if this was called FROM the
-            // workspace itself (no override passed); the "Mark shipped"
-            // quick-action button on the orders list should just refresh
-            // that list in place, not yank the seller into a different page.
-            if (!orderDataOverride) openWorkspace(orderId);
-            return true;
-        } catch (err) {
-            hideLoading();
-            console.error('[Shipping] markProductShipped failed:', err);
-            showToast(isAr ? 'تعذّر تحديث حالة الشحن' : 'Could not update shipping status', 'error');
-            return false;
-        }
+        return window.NonReceipt ? window.NonReceipt.ship(orderId, orderDataOverride) : false;
     }
 
     async function markProductDelivered(orderId, orderDataOverride) {
@@ -1941,6 +1912,7 @@
     // request is open so the two flows can't be used against each other on
     // the same order at once. No-op for non-product orders.
     async function _loadReturnCard(order) {
+        if (window.NonReceipt) window.NonReceipt.renderDisputeCard(order);   // open dispute → report, seller reply, deadline
         if (!order || order.listingType !== 'product' || !order.shippingInfo) return; // digital products can't be "returned"
         if (!window.ReturnsManager) return;
         const slot = document.getElementById('returnCardSlot');

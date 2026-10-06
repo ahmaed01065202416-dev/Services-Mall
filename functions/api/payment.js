@@ -19,6 +19,7 @@
  */
 import { verifyIdToken, getAccessToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js'
 import { assertDropshipPurchasable, computeSplit, getDropshipSettings, syncListings } from '../_shared/dropship.js';
+import { getDisputeCfg, recordFault } from '../_shared/trust.js';
 
 // IDs coming from the browser are interpolated into Firestore REST paths
 // (`services/${id}`) — without validation an id like "../users/xyz" or one
@@ -883,8 +884,8 @@ async function handleResolveDispute(body, env, CORS, auth) {
     const { resolution } = body;
     const disputeId = safeId(body.disputeId), orderId = safeId(body.orderId);
     if (!disputeId || !orderId) return json(400, CORS, { error: 'disputeId و orderId مطلوبين' });
-    if (resolution !== 'refund_buyer' && resolution !== 'pay_seller') {
-        return json(400, CORS, { error: 'resolution لازم يكون refund_buyer أو pay_seller' });
+    if (!['refund_buyer', 'refund_minus_shipping', 'pay_seller'].includes(resolution)) {
+        return json(400, CORS, { error: 'resolution لازم يكون refund_buyer أو refund_minus_shipping أو pay_seller' });
     }
 
     const user = await fsGet(env, `users/${auth.uid}`);
@@ -908,8 +909,44 @@ async function handleResolveDispute(body, env, CORS, auth) {
     ];
 
     let responsePayload;
+    const dcfg = await getDisputeCfg(env);
 
-    if (resolution === 'refund_buyer') {
+    if (resolution === 'refund_minus_shipping') {
+        // Buyer at fault (changed mind / no real defect): the buyer gets the money back minus the shipping cost,
+        // and the shipping amount goes to whoever shipped (the supplier on dropship orders, otherwise the seller).
+        const fee = Math.min(Number(dispute.shippingDeduction) || dcfg.RETURN_SHIPPING_FEE, Number(escrow.amount) || 0);
+        const refund = Number(((Number(escrow.amount) || 0) - fee).toFixed(2));
+        const shipperId = escrow.supplierId || escrow.sellerId;
+        disputeWrites[0] = writeUpdate(env, `disputes/${disputeId}`, {
+            status: 'resolved', resolution, resolvedAt: new Date(), resolvedBy: auth.uid,
+            shippingCharged: fee, refundedAmount: refund, faultParty: 'buyer',
+        }, { updateTime: dispute._updateTime });
+        await fsCommit(env, [
+            ...disputeWrites,
+            ...(refund > 0 ? [writeIncrement(env, `wallets/${escrow.buyerId}`, 'balance', refund)] : []),
+            ...(fee > 0 && shipperId ? [
+                writeIncrement(env, `wallets/${shipperId}`, 'balance', fee),
+                writeCreate(env, `transactions/${crypto.randomUUID()}`, { userId: shipperId, type: 'earning', amount: fee, platformFee: 0, orderId,
+                    description: 'تعويض مصاريف الشحن — مرتجع الخطأ فيه على المشتري', status: 'completed', createdAt: new Date() }),
+            ] : []),
+            writeUpdate(env, `escrow/${orderId}`, { status: 'refunded', resolvedAt: new Date() }, { updateTime: escrow._updateTime }),
+            writeUpdate(env, `orders/${orderId}`, { status: 'refunded', updatedAt: new Date() }),
+            writeCreate(env, `transactions/${crypto.randomUUID()}`, {
+                userId: escrow.buyerId, type: 'refund', amount: refund, orderId,
+                description: `استرداد بعد حل نزاع (بعد خصم الشحن ${fee})`, status: 'completed', createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: escrow.buyerId, type: 'dispute_resolved', title: '↩️ تم استرداد جزء من أموالك',
+                message: `تم استرداد ${refund} بعد خصم مصاريف الشحن (${fee}) لأن الخطأ على المشتري`, orderId, read: false, createdAt: new Date(),
+            }),
+            writeCreate(env, `notifications/${crypto.randomUUID()}`, {
+                userId: escrow.sellerId, type: 'dispute_resolved', title: '✅ تم حل النزاع',
+                message: `المنتج رجع والمشتري اتحمّل مصاريف الشحن (${fee})`, orderId, read: false, createdAt: new Date(),
+            }),
+        ]);
+        await recordFault(env, dcfg, { outcome: 'buyer_fault', buyerId: escrow.buyerId, sellerId: escrow.sellerId });
+        responsePayload = { refundedAmount: refund, shippingCharged: fee };
+    } else if (resolution === 'refund_buyer') {
         const txId = crypto.randomUUID();
         await fsCommit(env, [
             ...disputeWrites,
@@ -925,6 +962,7 @@ async function handleResolveDispute(body, env, CORS, auth) {
                 message: `تم حل النزاع لصالحك واسترداد ${escrow.amount}`, orderId, read: false, createdAt: new Date(),
             }),
         ]);
+        await recordFault(env, dcfg, { outcome: 'seller_fault', buyerId: escrow.buyerId, sellerId: escrow.sellerId });
         responsePayload = { refundedAmount: escrow.amount };
     } else {
         const cfg = await getPlatformConfig(env);
@@ -954,6 +992,8 @@ async function handleResolveDispute(body, env, CORS, auth) {
             }),
         ]);
         await _creditAffiliateCommission(env, cfg, platformFee, escrow.buyerId, escrow.sellerId, orderId);
+        // the buyer's claim was not upheld → counts against the buyer (only for non-receipt reports)
+        if (dispute.type === 'non_receipt') await recordFault(env, dcfg, { outcome: 'buyer_fault', buyerId: escrow.buyerId, sellerId: escrow.sellerId });
         responsePayload = { sellerAmount, platformFee, supplierAmount };
     }
 

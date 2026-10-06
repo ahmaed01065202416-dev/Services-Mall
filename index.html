@@ -429,6 +429,7 @@
     <div class="hidden md:flex items-center gap-1">
       <button onclick="navigateTo('home')"     data-nav="home"     class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.home">الرئيسية</button>
       <button onclick="filterByType('service')" data-nav="services" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.services">الخدمات</button>
+      <button onclick="navigateTo('stores')" data-nav="stores" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition"><i class="fa-solid fa-store me-1"></i>المتاجر</button>
       <button onclick="filterByType('product')" data-nav="products" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition">المنتجات</button>
       <button onclick="navigateTo('digital-products')" data-nav="digital-products" class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition"><i class="fa-solid fa-download me-1 text-turquoise-500"></i>منتجات رقمية</button>
       <button onclick="navigateTo('orders')"   data-nav="orders"   class="nav-link px-3 py-2 text-sm font-semibold text-textsecondary hover:text-textprimary rounded-lg hover:bg-navy-50 transition" data-i18n="nav.orders">طلباتي</button>
@@ -494,6 +495,7 @@
           <button onclick="navigateTo('dashboard');toggleUserMenu()" data-i18n="nav.dashboard">لوحة التحكم</button>
           <button onclick="navigateTo('profile');toggleUserMenu()"   data-i18n="nav.profile">الملف الشخصي</button>
           <button onclick="navigateTo('wallet');toggleUserMenu()"    data-i18n="nav.wallet">المحفظة</button>
+          <button onclick="navigateTo('my-store');toggleUserMenu()">متجري</button>
           <button id="adminNavBtn" onclick="navigateTo('admin');toggleUserMenu()" class="hidden" data-i18n="nav.admin">الإدارة</button>
           <hr class="my-1 border-gray-100">
           <button onclick="AuthManager.logout();toggleUserMenu()" class="text-red-500 hover:bg-red-50" data-i18n="nav.logout">تسجيل الخروج</button>
@@ -537,6 +539,14 @@
 
 <!-- ─── HOME ──────────────────────────────────────────────── -->
 <div id="page-home" class="page">
+  <!-- ══ Featured (paid) stores — always first ══ -->
+  <section id="homeStoresSection" class="hidden max-w-7xl mx-auto mt-6 px-1">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-black text-lg text-navy-900 flex items-center gap-2"><i class="fa-solid fa-star text-amber-500"></i> متاجر مميزة</h2>
+      <button onclick="navigateTo('stores')" class="text-sm font-bold text-secondary hover:underline">كل المتاجر</button>
+    </div>
+    <div id="homeStoresGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+  </section>
   <!-- ══════════════════════════════════════════════════════════════════════
        HERO — dual segmented search (خدمات مخصصة / منتجات جاهزة) + live stats
        ══════════════════════════════════════════════════════════════════════ -->
@@ -848,6 +858,7 @@
 
   <!-- ── Footer ───────────────────────────────────────────────────────────── -->
   <footer style="background:#0B1220" class="py-14 px-4 -mx-4">
+    <p id="buildStamp" class="text-center text-[10px] text-gray-600 mb-2" dir="ltr"></p>
     <div class="max-w-6xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
         <div class="lg:col-span-2">
@@ -1329,6 +1340,33 @@
 </div>
 
 <!-- ─── ADD SERVICE ──────────────────────────────────────────── -->
+<!-- ══ STORES ══ -->
+<div id="page-stores" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-store text-secondary"></i><span>المتاجر</span></h1>
+    <p class="text-sm text-gray-500 mb-5">تصفّح متاجر البائعين — المتاجر المميزة بتظهر الأول</p>
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <input id="storesSearch" oninput="StoresManager.filterStores()" class="form-input flex-1" placeholder="ابحث باسم المتجر...">
+      <select id="storesCountry" onchange="StoresManager.filterStores()" class="form-input sm:w-56"></select>
+    </div>
+    <div id="storesGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+  </div>
+</div>
+<div id="page-store" class="page">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <button onclick="navigateTo('stores')" class="text-sm font-bold text-navy-700 mb-4 hover:underline"><i class="fa-solid fa-arrow-right"></i> كل المتاجر</button>
+    <div id="storeHeader" class="mb-8"></div>
+    <div id="storeProductsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+    <p id="storeProductsEmpty" class="hidden text-center text-gray-400 py-12">مفيش منتجات في المتجر ده لسه</p>
+  </div>
+</div>
+<div id="page-my-store" class="page">
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-black text-gray-900 mb-5 flex items-center gap-2"><i class="fa-solid fa-shop text-secondary"></i><span>متجري</span></h1>
+    <div id="myStoreContent"></div>
+  </div>
+</div>
+
 <div id="page-add-service" class="page">
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div id="addServiceContent">
@@ -1624,7 +1662,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 2. Constants & Utilities -->
-<script src="js/constants.js"></script>
+<script src="js/constants.js?v=2026-10-05-v9"></script>
 
 <script>
 // Load live platform settings BEFORE any page renders
@@ -1640,47 +1678,49 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 3. i18n -->
-<script src="js/i18n.js"></script>
+<script src="js/i18n.js?v=2026-10-05-v9"></script>
 
 <!-- 4. Payment System -->
-<script src="js/request-system.js"></script>
-<script src="js/subscription-system.js"></script>
+<script src="js/request-system.js?v=2026-10-05-v9"></script>
+<script src="js/subscription-system.js?v=2026-10-05-v9"></script>
 
 <!-- 5. Escrow -->
-<script src="js/escrow.js"></script>
+<script src="js/escrow.js?v=2026-10-05-v9"></script>
 
 <!-- 5b. Payment (⚠️ ADDED — this tag was missing entirely, so window.PaymentSystem
      was never defined and every "ادفع الآن" click threw "PaymentSystem is not
      defined" instead of opening the payment gateway. The file itself was
      always complete and correct — it just never got wired into the page.) -->
-<script src="js/payment-system.js"></script>
+<script src="js/payment-system.js?v=2026-10-05-v9"></script>
 
 <!-- 6. Orders Manager -->
-<script src="js/orders.js"></script>
+<script src="js/orders.js?v=2026-10-05-v9"></script>
 
 <!-- 7. Order Workspace (chat + delivery) -->
-<script src="js/order-workspace.js"></script>
+<script src="js/order-workspace.js?v=2026-10-05-v9"></script>
 
 <!-- 7d. Product Returns (buyer request → seller approve/reject → admin refund) -->
-<script src="js/returns.js"></script>
+<script src="js/returns.js?v=2026-10-05-v9"></script>
+<script src="js/non-receipt.js?v=2026-10-05-v9"></script>
+<script src="js/stores.js?v=2026-10-05-v9"></script>
 
 <!-- 7b. Dedicated Chat Module -->
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
-<script src="js/blog-engine.js"></script>
+<script src="js/blog-engine.js?v=2026-10-05-v9"></script>
 
 <!-- 8. Auth -->
-<script src="js/auth.js"></script>
+<script src="js/auth.js?v=2026-10-05-v9"></script>
 
 <!-- 9. Services -->
-<script src="js/services.js"></script>
-<script src="js/ads-embed.js"></script>
-<script src="js/ads-system.js"></script>
-<script src="js/dropship.js"></script>
+<script src="js/services.js?v=2026-10-05-v9"></script>
+<script src="js/ads-embed.js?v=2026-10-05-v9"></script>
+<script src="js/ads-system.js?v=2026-10-05-v9"></script>
+<script src="js/dropship.js?v=2026-10-05-v9"></script>
 
 <!-- 10. Notifications -->
-<script src="js/notifications.js"></script>
+<script src="js/notifications.js?v=2026-10-05-v9"></script>
 
 <!-- 11. Dashboard -->
 <script defer src="js/dashboard.js"></script>
@@ -1808,8 +1848,10 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             });
             return;
         }
+        const stMatch = raw.match(/^store-(.+)$/);
+        if (stMatch) { navigateTo('store'); if (window.StoresManager) StoresManager.openStore(stMatch[1]); return; }
         if (raw === 'workspace') { navigateTo('home'); return; }
-        const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service'];
+        const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service','stores','my-store'];
         navigateTo(validPages.includes(raw) ? raw : 'home');
     }
     window.addEventListener('popstate', handleHash);
@@ -2025,7 +2067,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         if (n == null) return '—';
         return Number(n).toLocaleString('en-US');          // exact real number, no fake "+"
     }
-    window.initHomePage = function() { loadHomeStats(); loadFeaturedServices(); loadHomeProducts(); };
+    window.initHomePage = function() { loadHomeStats(); loadFeaturedServices(); loadHomeProducts(); if (window.StoresManager) StoresManager.loadHomeStrip(); const bs=document.getElementById('buildStamp'); if (bs && window.BUILD_ID) bs.textContent='build '+window.BUILD_ID; };
     window.loadHomeStats = async function() {
         try {
             const resp = await fetch('/api/home-stats');

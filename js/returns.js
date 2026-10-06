@@ -100,6 +100,13 @@
 
         // ── BUYER: open the request dialog and submit ───────────────────────────
         async requestReturn(orderId) {
+            // Unified: every "I don't want it / didn't get it" case now goes through the strict non-receipt report
+            // (structured reason + photo proof + frozen escrow + seller reply + admin ruling). See js/non-receipt.js.
+            if (window.NonReceipt) return window.NonReceipt.open(orderId);
+            return this._legacyRequestReturn(orderId);
+        },
+
+        async _legacyRequestReturn(orderId) {
             const isAr = AppState.language !== 'en';
             const user = AppState.currentUser;
             if (!user) { showToast(t('general.login_req'), 'warning'); return; }
