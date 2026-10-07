@@ -59,7 +59,12 @@ export async function onRequest(context) {
         const ads = [];
         for (const a of running) {
             const base = { id: a.id, placementKey: a.placementKey, kind: a.kind || 'service', endAtMs: Date.parse(a.endAt), startMs: Date.parse(a.startAt || 0) };
-            if (a.kind === 'banner') {
+            if (a.kind === 'media') {
+                const img = a.imageData ? `/api/ad-image?a=${encodeURIComponent(a.id)}` : (a.imageUrl || '');
+                if (a.mediaType === 'video' ? !a.videoUrl : !img) continue;
+                ads.push({ ...base, mediaType: a.mediaType || 'image', title: a.title || '', imageUrl: img, linkUrl: a.linkUrl || '',
+                    videoKind: a.videoKind || '', videoUrl: a.videoKind === 'file' ? a.videoUrl : '', embedUrl: a.embedUrl || '' });
+            } else if (a.kind === 'banner') {
                 if (!a.imageUrl) continue;
                 ads.push({ ...base, title: a.title || '', imageUrl: a.imageUrl, linkUrl: a.linkUrl || '' });
             } else {

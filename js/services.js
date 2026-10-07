@@ -413,7 +413,7 @@
               <!-- Body -->
               <div class="p-4">
                 <!-- Seller -->
-                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${s.sellerId||''}')" title="${isAr?'زيارة المتجر':'Visit store'}">
+                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${s.storeId||s.sellerId||''}')" title="${isAr?'زيارة المتجر':'Visit store'}">
                   <img src="${s.sellerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.sellerName||'U')}&background=0284c7&color=fff`}"
                     class="w-7 h-7 rounded-full object-cover flex-shrink-0" loading="lazy"
                     onerror="this.src='https://ui-avatars.com/api/?name=U&background=0284c7&color=fff'">
@@ -480,6 +480,75 @@
         },
 
         // ── Service Detail ────────────────────────────────────────────────────
+        // ── Product image gallery (detail view) ───────────────────────────────
+        // Whole image is shown (object-contain on a blurred copy of itself — no cropping), arrows + thumbnails,
+        // and a tap/click opens a full-screen lightbox with keyboard / swipe navigation.
+        _galList(s) {
+            const out = [];
+            const add = (u) => { if (u && typeof u === 'string' && !out.includes(u)) out.push(u); };
+            add(getServiceImage(s)); add(s.image); (Array.isArray(s.images) ? s.images : []).forEach(add);
+            return out.length ? out : ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'];
+        },
+        _galleryHtml(s) {
+            const list = this._galList(s);
+            this._gal = { list, i: 0 };
+            const many = list.length > 1;
+            return `
+            <div class="relative bg-gray-900 select-none" id="svcGallery">
+              <div class="absolute inset-0 overflow-hidden"><img id="svcGalBg" src="${list[0]}" class="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt=""></div>
+              <div class="relative h-80 sm:h-96 flex items-center justify-center cursor-zoom-in" onclick="ServicesManager.openLightbox()">
+                <img id="serviceDetailMainImg" src="${list[0]}" class="max-h-full max-w-full object-contain" alt=""
+                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
+              </div>
+              <button onclick="closeModal('serviceModal')" class="absolute top-4 end-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-black/70 transition z-10"><i class="fa-solid fa-xmark text-lg"></i></button>
+              <button onclick="ServicesManager.openLightbox()" class="absolute top-4 start-4 h-10 px-3 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center gap-2 text-xs font-bold hover:bg-black/70 transition z-10"><i class="fa-solid fa-expand"></i>${AppState.language==='en'?'Zoom':'تكبير'}</button>
+              ${many ? `
+              <button onclick="ServicesManager.galleryStep(-1)" class="absolute start-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-left"></i></button>
+              <button onclick="ServicesManager.galleryStep(1)" class="absolute end-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-right"></i></button>
+              <span id="svcGalCount" class="absolute bottom-3 end-3 bg-black/60 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">1 / ${list.length}</span>` : ''}
+            </div>
+            ${many ? `<div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto" id="svcGalThumbs">
+              ${list.map((u, i) => `<img src="${u}" onclick="ServicesManager.galleryGo(${i})" data-gi="${i}" class="w-16 h-16 object-cover rounded-lg border-2 ${i === 0 ? 'border-navy-500' : 'border-transparent'} cursor-pointer flex-shrink-0 hover:border-navy-400">`).join('')}
+            </div>` : ''}`;
+        },
+        galleryGo(i) {
+            const g = this._gal; if (!g) return;
+            g.i = (i + g.list.length) % g.list.length;
+            const u = g.list[g.i];
+            const m = document.getElementById('serviceDetailMainImg'); if (m) m.src = u;
+            const bg = document.getElementById('svcGalBg'); if (bg) bg.src = u;
+            const c = document.getElementById('svcGalCount'); if (c) c.textContent = (g.i + 1) + ' / ' + g.list.length;
+            document.querySelectorAll('#svcGalThumbs img').forEach(el => {
+                const on = Number(el.dataset.gi) === g.i;
+                el.classList.toggle('border-navy-500', on); el.classList.toggle('border-transparent', !on);
+            });
+            const lb = document.getElementById('svcLightboxImg'); if (lb) lb.src = u;
+        },
+        galleryStep(d) { if (this._gal) this.galleryGo(this._gal.i + d); },
+        openLightbox() {
+            const g = this._gal; if (!g) return;
+            document.getElementById('svcLightbox')?.remove();
+            const ov = document.createElement('div');
+            ov.id = 'svcLightbox';
+            ov.className = 'fixed inset-0 bg-black/95 z-[100000] flex items-center justify-center';
+            ov.innerHTML = `
+              <img id="svcLightboxImg" src="${g.list[g.i]}" class="max-w-[96vw] max-h-[92vh] object-contain">
+              <button class="absolute top-4 end-4 w-11 h-11 bg-white/15 text-white rounded-full text-xl hover:bg-white/30" id="svcLbClose"><i class="fa-solid fa-xmark"></i></button>
+              ${g.list.length > 1 ? `<button class="absolute start-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/15 text-white rounded-full hover:bg-white/30" id="svcLbPrev"><i class="fa-solid fa-chevron-left"></i></button>
+              <button class="absolute end-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/15 text-white rounded-full hover:bg-white/30" id="svcLbNext"><i class="fa-solid fa-chevron-right"></i></button>` : ''}`;
+            document.body.appendChild(ov);
+            const close = () => { ov.remove(); document.removeEventListener('keydown', key); };
+            const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') this.galleryStep(-1); else if (e.key === 'ArrowRight') this.galleryStep(1); };
+            document.addEventListener('keydown', key);
+            ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+            ov.querySelector('#svcLbClose').onclick = close;
+            ov.querySelector('#svcLbPrev')?.addEventListener('click', () => this.galleryStep(-1));
+            ov.querySelector('#svcLbNext')?.addEventListener('click', () => this.galleryStep(1));
+            let x0 = null;
+            ov.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+            ov.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) this.galleryStep(dx < 0 ? 1 : -1); x0 = null; }, { passive: true });
+        },
+
         async openServiceDetail(serviceId) {
             showLoading();
             try {
@@ -495,29 +564,7 @@
                 if (modal) {
                     modal.innerHTML = `
                     <div>
-                      <!-- Cover image -->
-                      <div class="relative">
-                        <img id="serviceDetailMainImg" src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'}"
-                          class="w-full h-72 object-cover"
-                          onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
-                        <button onclick="closeModal('serviceModal')"
-                          class="absolute top-4 end-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-black/70 transition">
-                          <i class="fa-solid fa-xmark text-lg"></i>
-                        </button>
-                      </div>
-                      <!-- ⚠️ ADDED: gallery thumbnails — clicking one swaps the
-                           cover image above so buyers can browse extra angles
-                           before ordering (products only; see svcGalleryFiles
-                           in the add-listing form). -->
-                      ${Array.isArray(s.images) && s.images.length ? `
-                      <div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto">
-                        ${s.image ? `<img src="${s.image}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
-                          class="w-16 h-16 object-cover rounded-lg border-2 border-navy-500 cursor-pointer flex-shrink-0">` : ''}
-                        ${s.images.map(url => `
-                          <img src="${url}" onclick="document.getElementById('serviceDetailMainImg').src=this.src"
-                            class="w-16 h-16 object-cover rounded-lg border-2 border-transparent hover:border-navy-400 cursor-pointer flex-shrink-0">
-                        `).join('')}
-                      </div>` : ''}
+                      ${this._galleryHtml(s)}
 
                       <div class="p-6 space-y-5">
                         <!-- Title & Category -->
@@ -573,6 +620,7 @@
                             <div>
                               <p class="text-navy-200 text-sm">${isAr ? 'السعر الإجمالي' : 'Total Price'}</p>
                               <p class="text-3xl font-black" data-price-egp="${s.price||0}">${formatCurrency(s.price || 0)}</p>
+                              ${s.listingType === 'product' && s.category !== 'digital' && !s.dropship ? `<p class="text-navy-100 text-xs mt-1"><i class="fa-solid fa-truck-fast me-1"></i>${Number(s.shippingFee) > 0 ? (isAr ? `الشحن ${formatCurrency(s.shippingFee)} — ${s.shippingMode === 'cod' ? 'عند الاستلام' : 'يتدفع مع المنتج'}` : `Shipping ${formatCurrency(s.shippingFee)} — ${s.shippingMode === 'cod' ? 'on delivery' : 'paid with the product'}`) : (isAr ? 'شحن مجاني' : 'Free shipping')}</p>` : ''}
                             </div>
                             <div class="bg-white/15 rounded-xl px-3 py-2 text-sm font-bold">
                               ${isAr ? 'مدفوع بأمان عبر Escrow' : 'Secured by Escrow'}
@@ -584,7 +632,7 @@
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>`}
-                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other'}).replace(/"/g,'&quot;')})"
+                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other',shippingFee:s.shippingFee||0,shippingMode:s.shippingMode||'online'}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
@@ -600,12 +648,13 @@
                         </div>
                       </div>
                     </div>`;
+                    modal.insertAdjacentHTML('beforeend', '<div id="serviceReviewsHost"></div>');
                     openModal('serviceModal');
                 }
                 hideLoading();
 
-                // Load reviews
-                this._loadServiceReviews(serviceId);
+                // Load reviews (summary + list)
+                if (window.ReviewsUI) ReviewsUI.renderForService(serviceId, s); else this._loadServiceReviews(serviceId);
             } catch (err) {
                 hideLoading();
                 showToast(t('general.error'), 'error');
@@ -664,7 +713,27 @@
             this._renderAddServiceForm(null, defaultType);
         },
 
+        // Wrapper: renders the form, then fills the "which store?" selector from the seller's own stores.
         _renderAddServiceForm(service = null, defaultType) {
+            this._renderAddServiceFormBase(service, defaultType);
+            this._populateStoreSelect(service);
+        },
+        async _populateStoreSelect(service) {
+            const box = document.getElementById('svcStoreBox'); const user = AppState.currentUser;
+            if (!box || !user) return;
+            try {
+                const snap = await window.db.collection(COLLECTIONS.STORES).where('ownerId', '==', user.uid).get();
+                const stores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (!stores.length) { box.classList.add('hidden'); return; }
+                const wanted = (service && service.storeId) || AppState.pendingStoreId || user.uid;
+                const sel = document.getElementById('svcStoreId');
+                sel.innerHTML = stores.map(x => `<option value="${x.id}" ${x.id === wanted ? 'selected' : ''}>${escapeHtml(x.name || x.id)}</option>`).join('');
+                box.classList.remove('hidden');
+            } catch (_) { box.classList.add('hidden'); }
+            AppState.pendingStoreId = null;
+        },
+
+        _renderAddServiceFormBase(service = null, defaultType) {
             const container = document.getElementById('addServiceContent');
             if (!container) return;
             const isAr  = AppState.language !== 'en';
@@ -857,6 +926,32 @@
                       <p class="text-xs text-amber-700 mt-1">${isAr?'العميل هيدخل عنوانه ورقم تليفونه وقت الطلب علشان توصله المنتج — مش محتاج تحط رابط تسليم هنا.':"The buyer will enter their delivery address and phone at checkout so you can ship it to them — no delivery link needed here."}</p>
                     </div>
 
+                    <!-- Shipping price + how it is paid — set by the seller per product (physical products only) -->
+                    <div id="svcShippingBox" class="bg-white border-2 border-amber-200 rounded-2xl p-4 hidden">
+                      <label class="block text-sm font-black text-gray-800 mb-1"><i class="fa-solid fa-truck-fast text-amber-600 me-1"></i>${isAr?'سعر الشحن':'Shipping price'}</label>
+                      <p class="text-xs text-gray-500 mb-3">${isAr?'اكتب تكلفة الشحن لهذا المنتج (0 = شحن مجاني) واختار طريقة دفعها.':'Enter the shipping cost for this product (0 = free) and choose how it is paid.'}</p>
+                      <input type="number" id="svcShippingFee" class="form-input mb-2" min="0" max="2000" step="1" value="${service?.shippingFee ?? 0}" placeholder="0">
+                      <div class="flex flex-wrap gap-2 mb-4">
+                        ${[0,30,50,70,100].map(v => `<button type="button" onclick="document.getElementById('svcShippingFee').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'مجاني':'Free'):v+' '+(isAr?'ج.م':'EGP')}</button>`).join('')}
+                      </div>
+                      <div class="space-y-2" id="svcShippingModeBox">
+                        <label class="flex items-start gap-2 p-3 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
+                          <input type="radio" name="svcShippingMode" value="online" class="mt-1" ${service?.shippingMode==='cod'?'':'checked'}>
+                          <span class="text-sm"><b>${isAr?'يتدفع أونلاين مع المنتج (موصى به)':'Paid online with the product (recommended)'}</b><br><span class="text-xs text-gray-500">${isAr?'بيدخل الضمان مع السعر وفلوسك مضمونة، وبيدعم النزاعات والاسترجاع بالكامل.':'Held in escrow with the price — fully covered by disputes and refunds.'}</span></span>
+                        </label>
+                        <label class="flex items-start gap-2 p-3 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
+                          <input type="radio" name="svcShippingMode" value="cod" class="mt-1" ${service?.shippingMode==='cod'?'checked':''}>
+                          <span class="text-sm"><b>${isAr?'عند الاستلام (كاش للمندوب)':'Cash on delivery'}</b><br><span class="text-xs text-gray-500">${isAr?'العميل يدفع الشحن للمندوب. ده برا الضمان — المنصة مش بتحصّله ولا بتحميه.':'Buyer pays the courier. Outside escrow — the platform neither collects nor protects it.'}</span></span>
+                        </label>
+                      </div>
+                    </div>
+
+
+                    <!-- Which of my stores shows this listing -->
+                    <div id="svcStoreBox" class="hidden bg-white border-2 border-navy-100 rounded-2xl p-4">
+                      <label class="block text-sm font-black text-gray-800 mb-1"><i class="fa-solid fa-store text-navy-600 me-1"></i>${isAr?'المتجر':'Store'}</label>
+                      <select id="svcStoreId" class="form-input w-full"></select>
+                    </div>
 
                     <!-- ⚠️ ADDED: optional availability limits — a stock count, an
                          expiry date, or both. Either one left empty/zero means
@@ -955,6 +1050,7 @@
             const isDigital = document.getElementById('svcCategory')?.value === 'digital';
             document.getElementById('svcDeliverySection')?.classList.toggle('hidden', !(isProduct && isDigital));
             document.getElementById('svcShippingNotice')?.classList.toggle('hidden', !(isProduct && !isDigital));
+            document.getElementById('svcShippingBox')?.classList.toggle('hidden', !(isProduct && !isDigital));
         },
 
         // ⚠️ ADDED: rebuilds the "suggested fields for this category" panel —
@@ -1188,6 +1284,12 @@
                     data.digitalDelivery = digitalDelivery;
                     if (!(_editing && _editing.dropship)) data.stockLimit = stockLimit;   // null = unlimited — dropship stock belongs to the supplier (kept in sync by the server)
                     data.expiryDate = expiryDate;   // null = no expiry
+                    { const ss = document.getElementById('svcStoreId'); if (ss && ss.value) data.storeId = ss.value; }
+                    if (category !== 'digital') {
+                        const fee = Math.max(0, Math.min(2000, parseFloat(document.getElementById('svcShippingFee')?.value) || 0));
+                        data.shippingFee  = Math.round(fee * 100) / 100;
+                        data.shippingMode = document.querySelector('input[name=svcShippingMode]:checked')?.value === 'cod' ? 'cod' : 'online';
+                    } else { data.shippingFee = 0; data.shippingMode = 'online'; }
                     data.orderRules = sanitizeInput(document.getElementById('svcOrderRules')?.value?.trim() || '', 1000);
                     data.images = photoUrls.slice(1, 5);   // extras only — the cover lives in `image` (the detail view shows image + images)
                     // ⚠️ ADDED: read the enabled suggested-field toggles into a

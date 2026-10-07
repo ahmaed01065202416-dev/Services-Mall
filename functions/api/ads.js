@@ -117,26 +117,83 @@ async function refundToWallet(env, ad, settings, reason) {
     return refund;
 }
 
+// ── Media ads (image upload / image URL / video link) ───────────────────────
+// Videos are LINKS (direct .mp4/.webm/.ogg, YouTube or Vimeo): there is no file storage behind this app
+// (photos live inside Firestore documents), so a video file cannot be uploaded — it must be hosted elsewhere.
+const IMG_DATA_RE = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+function parseVideo(url) {
+    const u = String(url || '').trim();
+    if (!isHttps(u)) return null;
+    let m = /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i.exec(u);
+    if (m) return { videoKind: 'youtube', videoUrl: u, embedUrl: `https://www.youtube-nocookie.com/embed/${m[1]}` };
+    m = /^https:\/\/(?:www\.)?vimeo\.com\/(?:video\/)?(\d{6,12})/i.exec(u);
+    if (m) return { videoKind: 'vimeo', videoUrl: u, embedUrl: `https://player.vimeo.com/video/${m[1]}` };
+    if (/\.(?:mp4|webm|ogg)$/i.test(u.split('?')[0].split('#')[0])) return { videoKind: 'file', videoUrl: u, embedUrl: '' };
+    return null;
+}
+// Returns { error } or { fields } — the creative of a media ad. `who` = 'admin' | { sellerId }.
+async function buildMedia(env, body, who) {
+    const mediaType = body.mediaType === 'video' ? 'video' : 'image';
+    const fields = { kind: 'media', mediaType, title: String(body.title || '').replace(/[<>]/g, '').slice(0, 120) };
+    if (mediaType === 'image') {
+        if (body.imageData) {
+            if (!IMG_DATA_RE.test(String(body.imageData)) || String(body.imageData).length > 260000) return { error: 'الصورة غير صالحة أو كبيرة جدًا (الحد 250KB بعد الضغط)' };
+            fields.imageData = String(body.imageData);
+        } else if (isHttps(body.imageUrl)) fields.imageUrl = String(body.imageUrl);
+        else return { error: 'ارفع صورة أو حط رابط صورة يبدأ بـ https://' };
+    } else {
+        const v = parseVideo(body.videoUrl);
+        if (!v) return { error: 'رابط الفيديو لازم يكون mp4/webm مباشر أو يوتيوب أو فيميو (https)' };
+        Object.assign(fields, v);
+        if (body.imageData && IMG_DATA_RE.test(String(body.imageData)) && String(body.imageData).length <= 260000) fields.imageData = String(body.imageData);   // optional poster
+    }
+    // Click target
+    const link = String(body.linkUrl || '').trim();
+    if (who === 'admin') {
+        if (link && !isHttps(link) && !link.startsWith('/') && !link.startsWith('#')) return { error: 'رابط الإعلان غير صالح' };
+        fields.linkUrl = link;
+    } else if (body.linkType === 'store' && safeId(body.linkId)) {
+        const st = await fsGet(env, `stores/${safeId(body.linkId)}`);
+        if (!st || st.ownerId !== who.sellerId) return { error: 'المتجر ده مش بتاعك' };
+        fields.linkUrl = `#store-${safeId(body.linkId)}`;
+    } else if (body.linkType === 'listing' && safeId(body.linkId)) {
+        const sv = await fsGet(env, `services/${safeId(body.linkId)}`);
+        if (!sv || sv.sellerId !== who.sellerId) return { error: 'المنتج ده مش بتاعك' };
+        fields.linkUrl = `#listing-${safeId(body.linkId)}`;
+    } else fields.linkUrl = '';
+    return { fields };
+}
+
 // ── Seller: request an ad ────────────────────────────────────────────────────
 async function handleCreate(body, env, CORS, auth) {
     const settings = await getSettings(env);
     if (!settings.ADS_ENABLED) return json(403, CORS, { error: 'نظام الإعلانات متوقف حالياً' });
 
-    const serviceId = safeId(body.serviceId), placementKey = safeId(body.placementKey), days = parseInt(body.days, 10);
-    if (!serviceId || !placementKey || !days) return json(400, CORS, { error: 'بيانات الإعلان ناقصة' });
+    const isMedia = body.kind === 'media';
+    const serviceId = isMedia ? null : safeId(body.serviceId), placementKey = safeId(body.placementKey), days = parseInt(body.days, 10);
+    if ((!isMedia && !serviceId) || !placementKey || !days) return json(400, CORS, { error: 'بيانات الإعلان ناقصة' });
 
     const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
     if (!user || !['seller', 'admin'].includes(user.role)) return json(403, CORS, { error: 'الإعلانات متاحة للبائعين فقط' });
+    const trust = await fsGet(env, `trust/${auth.uid}`).catch(() => null);
+    if (trust && trust.sellerBlocked) return json(403, CORS, { error: 'حسابك موقوف مؤقتًا بسبب نزاعات — تواصل مع الإدارة' });
 
-    const svc = await fsGet(env, `services/${serviceId}`);
-    if (!svc) return json(404, CORS, { error: 'الخدمة غير موجودة' });
-    if (svc.sellerId !== auth.uid) return json(403, CORS, { error: 'الخدمة دي مش بتاعتك' });
-    if (svc.active === false || svc.status === 'paused') return json(400, CORS, { error: 'فعّل الخدمة الأول قبل الإعلان عنها' });
+    let svc = null, media = null;
+    if (isMedia) {
+        const mb = await buildMedia(env, body, { sellerId: auth.uid });
+        if (mb.error) return json(400, CORS, { error: mb.error });
+        media = mb.fields;
+    } else {
+        svc = await fsGet(env, `services/${serviceId}`);
+        if (!svc) return json(404, CORS, { error: 'الخدمة غير موجودة' });
+        if (svc.sellerId !== auth.uid) return json(403, CORS, { error: 'الخدمة دي مش بتاعتك' });
+        if (svc.active === false || svc.status === 'paused') return json(400, CORS, { error: 'فعّل الخدمة الأول قبل الإعلان عنها' });
+    }
 
     const placement = await fsGet(env, `ad_placements/${placementKey}`);
     if (!placement || placement.enabled === false) return json(404, CORS, { error: 'مكان الإعلان غير متاح' });
     const kinds = Array.isArray(placement.allowedKinds) && placement.allowedKinds.length ? placement.allowedKinds : ['service'];
-    if (!kinds.includes('service')) return json(400, CORS, { error: 'المكان ده مش بيقبل إعلانات خدمات' });
+    if (isMedia ? !kinds.includes('banner') : !kinds.includes('service')) return json(400, CORS, { error: isMedia ? 'المكان ده مش بيقبل إعلانات صور/فيديو' : 'المكان ده مش بيقبل إعلانات خدمات' });
 
     const option = (Array.isArray(placement.pricing) ? placement.pricing : []).find(p => Number(p.days) === days);
     if (!option) return json(400, CORS, { error: 'مدة غير متاحة لهذا المكان' });
@@ -144,15 +201,19 @@ async function handleCreate(body, env, CORS, auth) {
 
     // One live request per (service, placement) — avoids paying twice for the same slot.
     const mine = await fsQuery(env, { from: [{ collectionId: 'ads' }], where: eq('sellerId', auth.uid), limit: 300 });
-    if (mine.some(a => a.serviceId === serviceId && a.placementKey === placementKey && ['pending_payment', 'pending_review', 'active'].includes(a.status) && (a.status !== 'active' || Date.parse(a.endAt || 0) > Date.now()))) {
+    if (!isMedia && mine.some(a => a.serviceId === serviceId && a.placementKey === placementKey && ['pending_payment', 'pending_review', 'active'].includes(a.status) && (a.status !== 'active' || Date.parse(a.endAt || 0) > Date.now()))) {
         return json(409, CORS, { error: 'عندك إعلان قائم لنفس الخدمة في نفس المكان' });
+    }
+    if (isMedia && mine.filter(a => a.kind === 'media' && ['pending_payment', 'pending_review'].includes(a.status)).length >= 3) {
+        return json(409, CORS, { error: 'عندك 3 طلبات إعلان وسائط قيد الانتظار — استنى المراجعة أو الغي واحد' });
     }
 
     const needsPayment = price > 0 && placement.requiresPayment !== false;
     const adId = crypto.randomUUID();
     const base = {
-        sellerId: auth.uid, sellerName: user.name || user.displayName || '', serviceId, serviceTitle: svc.title || '',
-        placementKey, placementName: placement.nameAr || placementKey, kind: 'service', days, price,
+        sellerId: auth.uid, sellerName: user.name || user.displayName || '',
+        ...(isMedia ? media : { serviceId, serviceTitle: svc.title || '', kind: 'service' }),
+        placementKey, placementName: placement.nameAr || placementKey, days, price,
         paid: false, paidAmount: 0, status: needsPayment ? 'pending_payment' : 'pending_review',
         startAt: null, endAt: null, reminderSent: false, views: 0, clicks: 0, createdAt: new Date(),
     };
@@ -195,7 +256,7 @@ async function handleCreate(body, env, CORS, auth) {
 }
 
 async function maybeAutoApprove(env, ad, placement, out) {
-    if (placement.autoApprove === true) {
+    if (placement.autoApprove === true && ad.kind !== 'media') {   // seller image/video creatives are ALWAYS reviewed by the admin
         try { await activateAd(env, ad, placement); return { ...out, status: 'active' }; }
         catch (e) { console.warn('[ads] auto-approve skipped:', e.message); }
     }
@@ -209,7 +270,7 @@ export async function activateAdPayment(env, adId, invoiceId) {
     await fsSet(env, `ads/${adId}`, { paid: true, paidAmount: Number(ad.price) || 0, paidAt: new Date(), invoiceId: String(invoiceId || ''), status: 'pending_review' }, true);
     const placement = await fsGet(env, `ad_placements/${ad.placementKey}`).catch(() => null);
     if (ad.sellerId) await notify(env, ad.sellerId, '💳 تم استلام دفع الإعلان', 'طلب إعلانك بيتراجع من الإدارة وهيتم إشعارك بالنتيجة.', { adId });
-    if (placement && placement.autoApprove === true) {
+    if (placement && placement.autoApprove === true && ad.kind !== 'media') {
         try { await activateAd(env, { ...ad, id: adId }, placement); } catch (e) { console.warn('[ads] auto-approve skipped:', e.message); }
     }
     return { ok: true };
@@ -275,7 +336,11 @@ async function handleAdminCreate(body, env, CORS, auth) {
         sellerId: null, sellerName: 'الإدارة', placementKey, placementName: placement.nameAr || placementKey, days, price: 0,
         paid: false, paidAmount: 0, status: 'pending_review', startAt: null, endAt: null, reminderSent: false, views: 0, clicks: 0, createdAt: new Date(), createdByAdmin: auth.uid,
     };
-    if (body.kind === 'banner') {
+    if (body.kind === 'media') {
+        const mb = await buildMedia(env, body, 'admin');
+        if (mb.error) return json(400, CORS, { error: mb.error });
+        Object.assign(doc, mb.fields);
+    } else if (body.kind === 'banner') {
         if (!isHttps(body.imageUrl)) return json(400, CORS, { error: 'رابط الصورة لازم يبدأ بـ https://' });
         if (body.linkUrl && !isHttps(body.linkUrl) && !String(body.linkUrl).startsWith('/') && !String(body.linkUrl).startsWith('#')) return json(400, CORS, { error: 'رابط الإعلان غير صالح' });
         Object.assign(doc, { kind: 'banner', title: String(body.title || '').slice(0, 120), imageUrl: String(body.imageUrl), linkUrl: String(body.linkUrl || '') });

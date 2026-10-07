@@ -39,6 +39,9 @@
                 hideLoading();
                 showToast(isAr ? 'تم تأكيد الاستلام وتحويل الأموال بنجاح!' : 'Delivery confirmed and funds released!', 'success');
 
+                // Ask for a rating right away (the review rules need a completed order)
+                setTimeout(() => { if (window.ReviewsUI) ReviewsUI.open(orderId); }, 900);
+
                 // Refresh orders
                 setTimeout(() => {
                     if (typeof OrdersManager?.loadOrders === 'function') OrdersManager.loadOrders();

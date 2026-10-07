@@ -116,7 +116,8 @@
         container.innerHTML = banner +
             '<div class="flex items-center justify-between mb-4 flex-wrap gap-3"><h3 class="font-black text-gray-900">' + (ar() ? 'إعلاناتي' : 'My ads') + ' (' + ads.length + ')</h3>' +
             '<div class="flex gap-2 items-center"><select id="adsPickService" class="input-field text-sm">' + (svcs.length ? svcs.map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.title || '—') + '</option>'; }).join('') : '<option value="">' + (ar() ? 'مفيش خدمات نشطة' : 'No active listings') + '</option>') + '</select>' +
-            '<button class="btn-primary text-sm px-4 py-2" id="adsNewBtn"><i class="fa-solid fa-bullhorn me-1"></i>' + (ar() ? 'إعلان جديد' : 'New ad') + '</button></div></div>' +
+            '<button class="btn-primary text-sm px-4 py-2" id="adsNewBtn"><i class="fa-solid fa-bullhorn me-1"></i>' + (ar() ? 'إعلان جديد' : 'New ad') + '</button>' +
+            '<button class="text-sm px-4 py-2 font-bold border-2 border-amber-300 text-amber-800 bg-amber-50 rounded-xl hover:bg-amber-100" id="adsMediaBtn"><i class="fa-solid fa-film me-1"></i>' + (ar() ? 'إعلان صورة / فيديو' : 'Image / video ad') + '</button></div></div>' +
             (ads.length ? '<div class="space-y-3">' + ads.map(function (a) {
                 var canCancel = a.status === 'pending_payment' || a.status === 'pending_review';
                 return '<div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm"><div class="flex items-start justify-between gap-3 flex-wrap">' +
@@ -130,6 +131,7 @@
                     (canCancel ? '<button data-cancel="' + esc(a.id) + '" class="mt-3 text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100">' + (ar() ? 'إلغاء الطلب' : 'Cancel request') + '</button>' : '') + '</div>';
             }).join('') + '</div>' : '<p class="text-gray-400 text-center py-10">' + (ar() ? 'لسه معندكش إعلانات' : 'No ads yet') + '</p>');
 
+        var mb = document.getElementById('adsMediaBtn'); if (mb) mb.onclick = openComposerModal;
         var nb = document.getElementById('adsNewBtn');
         if (nb) nb.onclick = function () { var sel = document.getElementById('adsPickService'); if (!sel || !sel.value) { toast(ar() ? 'مفيش خدمة تعلن عنها' : 'Nothing to promote', 'warning'); return; } openPromote(sel.value, sel.options[sel.selectedIndex].text); };
         container.querySelectorAll('[data-cancel]').forEach(function (b) {
@@ -174,10 +176,10 @@
 
     function adRow(a, actions) {
         return '<div class="p-4 bg-gray-50 rounded-xl"><div class="flex items-start justify-between gap-3 flex-wrap"><div class="min-w-0">' +
-            '<p class="font-black text-sm text-gray-900">' + esc(a.serviceTitle || a.title || (a.kind === 'banner' ? 'Banner' : '—')) + (a.kind === 'banner' ? ' <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">banner</span>' : '') + '</p>' +
+            '<p class="font-black text-sm text-gray-900">' + esc(a.serviceTitle || a.title || (a.kind === 'banner' ? 'Banner' : '—')) + (a.kind === 'banner' ? ' <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">banner</span>' : '') + (a.kind === 'media' ? ' <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">' + (a.mediaType === 'video' ? '🎬 video' : '🖼 image') + '</span>' : '') + '</p>' +
             '<p class="text-xs text-gray-500 mt-1">' + esc(a.sellerName || '—') + ' • ' + esc(a.placementName || a.placementKey) + ' • ' + (a.days || 0) + (ar() ? ' يوم' : 'd') + ' • ' + (a.paid ? '<b class="text-green-600">' + money(a.paidAmount) + (ar() ? ' مدفوع' : ' paid') + '</b>' : (ar() ? 'بدون دفع' : 'unpaid')) + '</p>' +
             (a.status === 'active' ? '<p class="text-xs text-gray-400 mt-1">' + dateStr(a.startAt) + ' → ' + dateStr(a.endAt) + ' • ' + (ar() ? 'باقي ' : '') + daysLeft(a.endAt) + (ar() ? ' يوم' : 'd left') + ' • 👁 ' + (a.views || 0) + ' • 👆 ' + (a.clicks || 0) + '</p>' : '') +
-            (a.reviewNote ? '<p class="text-xs text-red-500 mt-1">' + esc(a.reviewNote) + '</p>' : '') + '</div>' + chip(a.status) + '</div>' + (actions || '') + '</div>';
+            (a.reviewNote ? '<p class="text-xs text-red-500 mt-1">' + esc(a.reviewNote) + '</p>' : '') + '</div>' + chip(a.status) + '</div>' + creativeHtml(a) + (actions || '') + '</div>';
     }
 
     async function viewRequests(body, container) {
@@ -283,7 +285,7 @@
         var list = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).filter(function (p) { return p.enabled !== false; });
         if (!list.length) { body.innerHTML = '<p class="text-gray-400 text-center py-10">' + (ar() ? 'أضف مكان إعلان الأول من تبويب "الأماكن"' : 'Add a placement first') + '</p>'; return; }
         var opts = list.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.nameAr || p.id) + '</option>'; }).join('');
-        body.innerHTML = '<div class="max-w-xl space-y-3"><p class="text-xs text-gray-500 bg-blue-50 rounded-xl p-3">' + (ar() ? 'إعلان من الإدارة بدون دفع ويبدأ فوراً: بانر بصورة ورابط، أو ترويج خدمة بمعرّفها.' : 'A free house ad that starts immediately: a banner (image + link) or a listing promotion by its id.') + '</p>' +
+        body.innerHTML = '<div id="acHost"></div><div class="max-w-xl space-y-3 mt-8 pt-6 border-t border-gray-200"><h4 class="font-black text-gray-900">' + (ar() ? 'ترويج خدمة موجودة بمعرّفها' : 'Promote an existing listing by id') + '</h4><p class="text-xs text-gray-500 bg-blue-50 rounded-xl p-3">' + (ar() ? 'إعلان من الإدارة بدون دفع ويبدأ فوراً: بانر بصورة ورابط، أو ترويج خدمة بمعرّفها.' : 'A free house ad that starts immediately: a banner (image + link) or a listing promotion by its id.') + '</p>' +
             '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'المكان' : 'Placement') + '<select id="baPl" class="input-field w-full mt-1">' + opts + '</select></label>' +
             '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'المدة (أيام)' : 'Days') + '<input id="baDays" type="number" min="1" max="3650" value="7" class="input-field w-full mt-1"></label>' +
             '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'النوع' : 'Type') + '<select id="baKind" class="input-field w-full mt-1"><option value="banner">' + (ar() ? 'بانر' : 'Banner') + '</option><option value="service">' + (ar() ? 'ترويج خدمة' : 'Promote listing') + '</option></select></label>' +
@@ -292,6 +294,7 @@
             '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'عنوان (اختياري)' : 'Title (optional)') + '<input id="baTitle" class="input-field w-full mt-1"></label></div>' +
             '<div id="baSvc" class="hidden"><label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'معرّف الخدمة (ID)' : 'Listing ID') + '<input id="baSvcId" class="input-field w-full mt-1" dir="ltr"></label></div>' +
             '<button id="baGo" class="btn-primary px-6 py-2.5 text-sm">' + (ar() ? 'نشر الإعلان' : 'Publish ad') + '</button></div>';
+        renderComposer(document.getElementById('acHost'), 'admin', container, function () { adminView = 'running'; renderAdminTab(container); });
         var kindEl = document.getElementById('baKind');
         kindEl.onchange = function () { document.getElementById('baBanner').classList.toggle('hidden', kindEl.value !== 'banner'); document.getElementById('baSvc').classList.toggle('hidden', kindEl.value !== 'service'); };
         document.getElementById('baGo').onclick = async function () {
@@ -323,5 +326,211 @@
         };
     }
 
-    window.AdsSystem = { openPromote: openPromote, renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab };
+
+    // ══════════════════════ COMPOSER: image / video ad + placement preview ═════════════════
+    // One screen for both roles. Left: the form. Right: (1) the ad exactly as visitors will see it,
+    // (2) a page wireframe with the chosen slot highlighted, (3) "show it on the real page".
+    var C = null;   // composer state
+
+    function parseVideoClient(url) {
+        var u = String(url || '').trim(), m;
+        if (!/^https:\/\//i.test(u)) return null;
+        m = /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i.exec(u);
+        if (m) return { videoKind: 'youtube', videoUrl: u, embedUrl: 'https://www.youtube-nocookie.com/embed/' + m[1] };
+        m = /^https:\/\/(?:www\.)?vimeo\.com\/(?:video\/)?(\d{6,12})/i.exec(u);
+        if (m) return { videoKind: 'vimeo', videoUrl: u, embedUrl: 'https://player.vimeo.com/video/' + m[1] };
+        if (/\.(?:mp4|webm|ogg)$/i.test(u.split('?')[0].split('#')[0])) return { videoKind: 'file', videoUrl: u, embedUrl: '' };
+        return null;
+    }
+    function pageOf(p) {
+        var k = String(p.key || '');
+        if (/^home/.test(k)) return { id: 'home', nav: 'home', name: ar() ? 'الصفحة الرئيسية' : 'Home page', blocks: ['header', 'hero', 'slot:home_top', 'cards', 'slot:home_mid', 'cards'] };
+        if (/^(search|express)/.test(k)) return { id: 'services', nav: 'services', name: ar() ? 'صفحة الخدمات والبحث' : 'Services & search', blocks: ['header', 'filters', 'slot:express_top', 'slot:search_top', 'cards', 'cards'] };
+        if (/^blog/.test(k)) return { id: 'blog', nav: null, name: ar() ? 'صفحات المدونة' : 'Blog pages', blocks: ['header', 'title', 'slot:blog_top', 'text', 'slot:blog_article', 'text', 'slot:blog_bottom'] };
+        return { id: 'custom', nav: p.selector ? 'home' : null, name: ar() ? 'مكان مخصّص' : 'Custom spot', blocks: ['header', 'text', 'slot:' + k, 'cards'] };
+    }
+    function wireHtml(p) {
+        if (!p) return '';
+        var pg = pageOf(p), box = function (h, bg, label) { return '<div style="height:' + h + 'px;background:' + bg + ';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280">' + (label || '') + '</div>'; };
+        var rows = pg.blocks.map(function (b) {
+            if (b === 'header') return box(16, '#cbd5e1', '');
+            if (b === 'hero') return box(54, '#dbeafe', ar() ? 'قسم البداية' : 'Hero');
+            if (b === 'filters') return box(18, '#e5e7eb', ar() ? 'الفلاتر' : 'Filters');
+            if (b === 'title') return box(22, '#e5e7eb', ar() ? 'عنوان المقال' : 'Article title');
+            if (b === 'text') return '<div style="display:grid;gap:4px"><div style="height:6px;background:#e5e7eb;border-radius:3px"></div><div style="height:6px;background:#e5e7eb;border-radius:3px;width:80%"></div><div style="height:6px;background:#e5e7eb;border-radius:3px;width:90%"></div></div>';
+            if (b === 'cards') return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">' + [1, 2, 3, 4].map(function () { return '<div style="height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px"></div>'; }).join('') + '</div>';
+            var key = b.slice(5);
+            var mine = key === p.key;
+            if (!mine && pg.id !== 'custom') return '<div style="height:20px;border:1px dashed #cbd5e1;border-radius:6px;font-size:9px;color:#94a3b8;display:flex;align-items:center;justify-content:center">' + esc(key) + '</div>';
+            return '<div style="height:44px;border:2px dashed #f59e0b;background:#fffbeb;border-radius:8px;font-size:11px;font-weight:800;color:#b45309;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-bullhorn"></i>' + (ar() ? 'إعلانك هنا' : 'Your ad here') + '</div>';
+        });
+        var extra = pg.id === 'custom' ? '<p style="font-size:11px;color:#6b7280;margin-top:6px">' + (p.selector ? (ar() ? 'يُدرج ' + esc(p.position || 'after') + ' العنصر: ' : 'Inserted ' + esc(p.position || 'after') + ': ') + '<code dir="ltr">' + esc(p.selector) + '</code>' : (ar() ? 'مكان يحدده الأدمن' : 'Admin-defined')) + '</p>' : '';
+        return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;display:grid;gap:6px"><p style="font-size:11px;font-weight:800;color:#374151">' + esc(pg.name) + '</p>' + rows.join('') + '</div>' + extra;
+    }
+    function draftAd() {
+        var ad = { id: 'preview', kind: 'media', mediaType: C.mediaType, title: C.title, linkUrl: C.linkPreview || '' };
+        if (C.mediaType === 'video') { var v = parseVideoClient(C.videoUrl); if (v) Object.assign(ad, v); if (C.imageData) ad.imageUrl = C.imageData; }
+        else ad.imageUrl = C.imageData || C.imageUrl || '';
+        return ad;
+    }
+    function paintPreview() {
+        var host = document.getElementById('acCard'), wire = document.getElementById('acWire'); if (!host) return;
+        var ad = draftAd(), ok = ad.mediaType === 'video' ? !!(ad.embedUrl || ad.videoUrl) : !!ad.imageUrl;
+        host.innerHTML = '';
+        if (!ok) { host.innerHTML = '<div style="border:2px dashed #d1d5db;border-radius:16px;padding:34px 12px;text-align:center;color:#9ca3af;font-size:13px">' + (ar() ? 'ارفع صورة أو حط رابط الفيديو وهتشوف الإعلان هنا' : 'Add an image or a video link to preview it') + '</div>'; }
+        else if (window.AdsEmbed && window.AdsEmbed.mediaCard) { var card = window.AdsEmbed.mediaCard(ad, ar()); card.style.maxWidth = '100%'; host.appendChild(card); }
+        var p = C.placements.filter(function (x) { return x.key === C.pl; })[0];
+        if (wire) wire.innerHTML = wireHtml(p);
+        var real = document.getElementById('acReal'); if (real) { var pg = p ? pageOf(p) : null; real.style.display = pg && pg.nav ? '' : 'none'; }
+    }
+    function placementOptions() {
+        return C.placements.map(function (p) {
+            var full = p.used >= p.slots;
+            return '<option value="' + esc(p.key) + '" ' + (p.key === C.pl ? 'selected' : '') + (full && C.mode === 'seller' ? ' disabled' : '') + '>' + esc(ar() ? p.nameAr : p.nameEn) + (full ? (ar() ? ' (ممتلئ)' : ' (full)') : '') + '</option>';
+        }).join('');
+    }
+    function daysField() {
+        var p = C.placements.filter(function (x) { return x.key === C.pl; })[0];
+        if (C.mode === 'admin') return '<input id="acDays" type="number" min="1" max="3650" value="' + (C.days || 7) + '" class="input-field w-full">';
+        var opts = ((p && p.pricing) || []).map(function (o) { return '<option value="' + o.days + '">' + o.days + (ar() ? ' يوم — ' : ' days — ') + (o.price > 0 && p.requiresPayment ? money(o.price) : (ar() ? 'مجاناً' : 'Free')) + '</option>'; }).join('');
+        return '<select id="acDays" class="input-field w-full">' + opts + '</select>';
+    }
+
+    async function renderComposer(host, mode, adminContainer, onDone) {
+        host.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>';
+        var placements = [], stores = [], listings = [];
+        try {
+            if (mode === 'admin') {
+                var ps = await window.db.collection('ad_placements').get();
+                placements = ps.docs.map(function (d) { var x = d.data(); return { key: d.id, nameAr: x.nameAr || d.id, nameEn: x.nameEn || x.nameAr || d.id, slots: x.slots || 1, used: 0, selector: x.selector || '', position: x.position || '', page: x.page || '', pricing: [], enabled: x.enabled !== false }; }).filter(function (p) { return p.enabled; });
+            } else {
+                var feed = await loadPlacements();
+                placements = (feed.placements || []).filter(function (p) { return (p.allowedKinds || []).indexOf('banner') > -1 && p.pricing && p.pricing.length; });
+                var uid = window.AppState.currentUser.uid;
+                var r = await Promise.all([window.db.collection('stores').where('ownerId', '==', uid).get().catch(function () { return { docs: [] }; }), window.db.collection('services').where('sellerId', '==', uid).get().catch(function () { return { docs: [] }; })]);
+                stores = r[0].docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+                listings = r[1].docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).filter(function (s) { return s.active !== false && s.status !== 'paused'; });
+                if (!feed.enabled || !placements.length) { host.innerHTML = '<p class="text-center text-gray-500 py-8">' + (ar() ? 'إعلانات الصور والفيديو غير متاحة حالياً (لا توجد أماكن تقبلها)' : 'Image/video ads are not available right now') + '</p>'; return; }
+            }
+        } catch (e) { host.innerHTML = '<p class="text-red-500 text-center py-6">' + esc(e.message) + '</p>'; return; }
+        if (!placements.length) { host.innerHTML = '<p class="text-gray-400 text-center py-10">' + (ar() ? 'أضف مكان إعلان الأول من تبويب "الأماكن والأسعار"' : 'Add a placement first') + '</p>'; return; }
+
+        C = { mode: mode, placements: placements, pl: placements[0].key, mediaType: 'image', imageData: '', imageUrl: '', videoUrl: '', title: '', days: 7, linkPreview: '' };
+        var linkBlock = mode === 'admin'
+            ? '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'رابط عند الضغط (اختياري: https أو /مسار أو #صفحة أو #store-معرّف)' : 'Click link (optional)') + '<input id="acLink" class="input-field w-full mt-1" dir="ltr"></label>'
+            : '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'الضغط على الإعلان يفتح' : 'Clicking the ad opens') + '<select id="acLinkType" class="input-field w-full mt-1"><option value="">' + (ar() ? 'لا شيء' : 'Nothing') + '</option>' +
+              (stores.length ? '<option value="store">' + (ar() ? 'أحد متاجري' : 'One of my stores') + '</option>' : '') + (listings.length ? '<option value="listing">' + (ar() ? 'أحد منتجاتي' : 'One of my listings') + '</option>' : '') + '</select>' +
+              '<select id="acLinkId" class="input-field w-full mt-2 hidden"></select></label>';
+
+        host.innerHTML = '<div class="grid lg:grid-cols-2 gap-6"><div class="space-y-3">' +
+            '<h4 class="font-black text-gray-900">' + (mode === 'admin' ? (ar() ? 'إضافة إعلان صورة / فيديو (إداري — بدون دفع)' : 'Add an image / video ad (house — free)') : (ar() ? 'إعلان بصورة أو فيديو' : 'Image / video ad')) + '</h4>' +
+            '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'مكان الظهور' : 'Placement') + '<select id="acPl" class="input-field w-full mt-1">' + placementOptions() + '</select></label>' +
+            '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'المدة' : 'Duration') + '<div id="acDaysBox" class="mt-1">' + daysField() + '</div></label>' +
+            '<div class="flex gap-2"><button type="button" id="acTImg" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-navy-800 text-white"><i class="fa-solid fa-image me-1"></i>' + (ar() ? 'صورة' : 'Image') + '</button><button type="button" id="acTVid" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-gray-100 text-gray-700"><i class="fa-solid fa-film me-1"></i>' + (ar() ? 'فيديو' : 'Video') + '</button></div>' +
+            '<div id="acImgBox" class="space-y-2"><label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'ارفع صورة من جهازك' : 'Upload an image') + '<input id="acFile" type="file" accept="image/*" class="block mt-1 text-xs"></label>' +
+            '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'أو رابط صورة (https)' : 'or image URL (https)') + '<input id="acImgUrl" class="input-field w-full mt-1" dir="ltr"></label></div>' +
+            '<div id="acVidBox" class="space-y-2 hidden"><label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'رابط الفيديو (mp4/webm مباشر، يوتيوب، أو فيميو)' : 'Video link (direct mp4/webm, YouTube or Vimeo)') + '<input id="acVid" class="input-field w-full mt-1" dir="ltr" placeholder="https://www.youtube.com/watch?v=..."></label>' +
+            '<p class="text-[11px] text-gray-400">' + (ar() ? 'الفيديو بيتشغّل من الرابط — مفيش رفع ملفات فيديو على الموقع. ارفع الفيديو على يوتيوب (غير مدرج يكفي) وحط الرابط.' : 'Videos play from a link — video files cannot be uploaded here. Host it on YouTube (unlisted works).') + '</p>' +
+            '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'صورة غلاف للفيديو (اختياري، للملفات المباشرة)' : 'Poster image (optional, direct files)') + '<input id="acPoster" type="file" accept="image/*" class="block mt-1 text-xs"></label></div>' +
+            '<label class="text-xs font-bold text-gray-600 block">' + (ar() ? 'عنوان على الإعلان (اختياري)' : 'Caption (optional)') + '<input id="acTitle" maxlength="120" class="input-field w-full mt-1"></label>' + linkBlock +
+            (mode === 'seller' ? '<p class="text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-xl p-3">' + (ar() ? 'إعلانات الصور والفيديو بتتراجع من الإدارة قبل الظهور. لو اترفض، المبلغ بيرجع لمحفظتك بعد خصم رسوم البوابة فقط.' : 'Image/video ads are always reviewed first. If rejected, the amount returns to your wallet minus the gateway fee.') + '</p>' : '') +
+            '<button id="acGo" class="btn-primary w-full py-3">' + (mode === 'admin' ? (ar() ? 'نشر الإعلان الآن' : 'Publish now') : (ar() ? 'إرسال الطلب' : 'Submit request')) + '</button></div>' +
+            '<div class="space-y-4"><div><p class="text-xs font-black text-gray-500 mb-2">' + (ar() ? 'شكل الإعلان' : 'How it looks') + '</p><div id="acCard"></div></div>' +
+            '<div><p class="text-xs font-black text-gray-500 mb-2">' + (ar() ? 'مكانه في الصفحة' : 'Where it appears') + '</p><div id="acWire"></div>' +
+            '<button type="button" id="acReal" class="mt-3 w-full py-2.5 text-sm font-bold border-2 border-amber-300 text-amber-800 bg-amber-50 rounded-xl hover:bg-amber-100"><i class="fa-solid fa-eye me-1"></i>' + (ar() ? 'شاهده على الصفحة الحقيقية' : 'Preview on the real page') + '</button></div></div></div>';
+
+        var $ = function (id) { return document.getElementById(id); };
+        var setType = function (t) {
+            C.mediaType = t;
+            $('acImgBox').classList.toggle('hidden', t !== 'image'); $('acVidBox').classList.toggle('hidden', t !== 'video');
+            $('acTImg').className = 'flex-1 py-2.5 rounded-xl text-sm font-bold ' + (t === 'image' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-700');
+            $('acTVid').className = 'flex-1 py-2.5 rounded-xl text-sm font-bold ' + (t === 'video' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-700');
+            paintPreview();
+        };
+        $('acTImg').onclick = function () { setType('image'); }; $('acTVid').onclick = function () { setType('video'); };
+        $('acPl').onchange = function () { C.pl = this.value; $('acDaysBox').innerHTML = daysField(); paintPreview(); };
+        var upload = function (inputEl) {
+            inputEl.onchange = async function () {
+                var f = inputEl.files[0]; if (!f) return;
+                try { C.imageData = await window.uploadFile(f, 'ads', 'ad_' + Date.now(), { maxPx: 1400, maxLen: 200000 }); C.imageUrl = ''; paintPreview(); }
+                catch (e) { toast(e.message, 'error'); }
+            };
+        };
+        upload($('acFile')); upload($('acPoster'));
+        $('acImgUrl').oninput = function () { C.imageUrl = this.value.trim(); if (C.imageUrl) C.imageData = ''; paintPreview(); };
+        $('acVid').oninput = function () { C.videoUrl = this.value.trim(); paintPreview(); };
+        $('acTitle').oninput = function () { C.title = this.value; paintPreview(); };
+        if (mode === 'admin') $('acLink').oninput = function () { C.linkPreview = this.value.trim(); };
+        else {
+            var lt = $('acLinkType'), li = $('acLinkId');
+            li.onchange = function () { C.linkPreview = (lt.value === 'store' ? '#store-' : '#listing-') + li.value; };
+            lt.onchange = function () {
+                if (!lt.value) { li.classList.add('hidden'); C.linkPreview = ''; return; }
+                var list = lt.value === 'store' ? stores : listings;
+                li.innerHTML = list.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name || x.title || x.id) + '</option>'; }).join('');
+                li.classList.remove('hidden'); li.onchange();
+            };
+        }
+        // Real-page preview: hide the composer, show the ad in its real slot, floating bar to come back.
+        $('acReal').onclick = function () {
+            var p = C.placements.filter(function (x) { return x.key === C.pl; })[0], pg = pageOf(p), ad = draftAd();
+            if (!(ad.mediaType === 'video' ? (ad.embedUrl || ad.videoUrl) : ad.imageUrl)) { toast(ar() ? 'أضف الصورة أو الفيديو الأول' : 'Add the media first', 'warning'); return; }
+            var modal = document.getElementById('adsPromoteModal'); if (modal) modal.style.display = 'none';
+            if (pg.nav && typeof window.navigateTo === 'function') window.navigateTo(pg.nav);
+            setTimeout(function () {
+                var shown = window.AdsEmbed && window.AdsEmbed.previewIn({ key: p.key, ad: ad, selector: p.selector, position: p.position });
+                var bar = document.createElement('div');
+                bar.id = 'acPrevBar';
+                bar.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:100001;background:#111827;color:#fff;border-radius:999px;padding:10px 12px 10px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:13px;font-weight:700';
+                bar.innerHTML = '<span>' + (shown ? (ar() ? '👁 معاينة — ده مكان إعلانك الحقيقي' : '👁 Preview — your ad\'s real spot') : (ar() ? 'مش لاقي المكان ده في الصفحة دي' : 'Spot not found on this page')) + '</span><button style="background:#f59e0b;color:#111;border:0;border-radius:999px;padding:6px 14px;font-weight:800;cursor:pointer">' + (ar() ? 'رجوع للتعديل' : 'Back to editing') + '</button>';
+                bar.querySelector('button').onclick = function () {
+                    if (window.AdsEmbed) window.AdsEmbed.endPreview();
+                    bar.remove();
+                    if (modal) modal.style.display = 'flex';
+                    else if (mode === 'admin' && typeof window.navigateTo === 'function') { window.navigateTo('admin'); }
+                };
+                document.body.appendChild(bar);
+            }, 500);
+        };
+        $('acGo').onclick = async function () {
+            var b = this, payload = { kind: 'media', mediaType: C.mediaType, placementKey: C.pl, days: parseInt($('acDays').value, 10), title: $('acTitle').value.trim() };
+            if (C.mediaType === 'image') { if (C.imageData) payload.imageData = C.imageData; else payload.imageUrl = C.imageUrl; if (!payload.imageData && !payload.imageUrl) { toast(ar() ? 'ارفع صورة أو حط رابطها' : 'Add an image', 'warning'); return; } }
+            else { payload.videoUrl = C.videoUrl; if (!parseVideoClient(C.videoUrl)) { toast(ar() ? 'رابط الفيديو غير مدعوم' : 'Unsupported video link', 'warning'); return; } if (C.imageData) payload.imageData = C.imageData; }
+            if (mode === 'admin') payload.linkUrl = $('acLink').value.trim();
+            else { var t = $('acLinkType').value; if (t) { payload.linkType = t; payload.linkId = $('acLinkId').value; } }
+            b.disabled = true; var old = b.textContent; b.textContent = '...';
+            try {
+                var out = await api(mode === 'admin' ? 'adminCreate' : 'create', payload);
+                if (out.redirectUrl) { window.location.href = out.redirectUrl; return; }
+                toast(mode === 'admin' ? (ar() ? '✅ الإعلان شغّال' : '✅ Ad is live') : (ar() ? '✅ تم إرسال الطلب للمراجعة' : '✅ Request sent for review'), 'success');
+                refreshPublic();
+                if (onDone) onDone();
+            } catch (e) { b.disabled = false; b.textContent = old; toast(e.message, 'error'); }
+        };
+        paintPreview();
+    }
+
+    function openComposerModal() {
+        if (!window.AppState || !window.AppState.currentUser) { toast(ar() ? 'سجّل الدخول أولاً' : 'Please sign in', 'warning'); return; }
+        closeModal();
+        var wrap = document.createElement('div');
+        wrap.id = 'adsPromoteModal';
+        wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+        wrap.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:980px;width:100%;max-height:92vh;overflow:auto;padding:22px;position:relative"><button onclick="document.getElementById(\'adsPromoteModal\').remove()" style="position:absolute;top:10px;inset-inline-end:14px;font-size:24px;color:#9ca3af">&times;</button><div id="acModalHost"></div></div>';
+        wrap.addEventListener('click', function (e) { if (e.target === wrap) closeModal(); });
+        document.body.appendChild(wrap);
+        renderComposer(document.getElementById('acModalHost'), 'seller', null, function () { closeModal(); if (window.SellerDash && document.getElementById('sdTab_ads')) window.SellerDash.tab('ads'); });
+    }
+
+    // What the admin must SEE before approving: the uploaded image, or the video link.
+    function creativeHtml(a) {
+        if (a.kind !== 'media') return '';
+        var src = a.imageData || a.imageUrl || '';
+        if (a.mediaType === 'video') {
+            return '<div class="mt-3 text-xs bg-white border border-gray-200 rounded-xl p-3"><i class="fa-solid fa-film text-purple-500 me-1"></i>' + (ar() ? 'فيديو: ' : 'Video: ') + '<a href="' + esc(a.videoUrl) + '" target="_blank" rel="noopener" class="text-blue-600 underline break-all" dir="ltr">' + esc(a.videoUrl) + '</a>' + (a.linkUrl ? '<br>' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span>' : '') + '</div>';
+        }
+        return src ? '<div class="mt-3"><img src="' + esc(src) + '" style="max-height:160px;border-radius:12px;border:1px solid #e5e7eb">' + (a.linkUrl ? '<p class="text-xs text-gray-500 mt-1">' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span></p>' : '') + '</div>' : '';
+    }
+
+    window.AdsSystem = { openPromote: openPromote, openComposer: openComposerModal, renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab };
 })();

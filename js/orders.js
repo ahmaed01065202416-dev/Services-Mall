@@ -167,6 +167,7 @@
                     class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-check"></i>${t('escrow.confirm')}
                   </button>
+                  ${isBuyer && order.status === ORDER_STATUS.COMPLETED && !order.reviewed && window.ReviewsUI ? `<button onclick="ReviewsUI.open('${order.id}')" class="text-sm px-4 py-2 bg-amber-400 text-white rounded-xl font-bold hover:bg-amber-500 transition flex items-center gap-2"><i class="fa-solid fa-star"></i>${isAr?'قيّم':'Rate'}</button>` : ''}
                   ${window.NonReceipt ? NonReceipt.buttonHtml(order, 'text-sm px-4 py-2 border-2 border-red-400 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition flex items-center gap-2') : ''}` : ''}
 
                   ${needsShipping ? `

@@ -451,6 +451,7 @@
                         <button onclick="EscrowManager.resolveDispute('${d.id}','pay_seller','${d.orderId}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                       </div>
                     </div>`).join('')}</div>`}
+                <div id="trustPanel" class="mb-8"></div>
                 <h4 class="font-black text-gray-700 mb-3 text-sm">${isAr?'سجل النزاعات':'Dispute History'}</h4>
                 <div class="space-y-2">${all.map(d=>`
                   <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
@@ -459,6 +460,37 @@
                     <button onclick="window._adminViewDisputeDetail('${d.id}')" title="${isAr?'عرض التفاصيل':'View details'}" class="w-8 h-8 bg-navy-100 text-navy-700 rounded-lg flex items-center justify-center hover:bg-navy-200 transition flex-shrink-0"><i class="fa-solid fa-magnifying-glass text-xs"></i></button>
                   </div>`).join('')}
                 </div>`;
+
+                // ── Trust panel: users with recorded faults / blocks — admin can edit counters or lift a block ──
+                window._adminTrustLoad = async () => {
+                    const box = document.getElementById('trustPanel'); if (!box) return;
+                    try {
+                        const snap = await window.db.collection(COLLECTIONS.TRUST).get();
+                        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => (t.sellerFaults||0) || (t.buyerFaults||0) || t.sellerBlocked)
+                            .sort((a,b) => (b.sellerBlocked?1:0) - (a.sellerBlocked?1:0));
+                        box.innerHTML = `<h4 class="font-black text-gray-700 mb-1 text-sm">${isAr?'سجل الأخطاء والحظر (تحكم الأدمن)':'Fault record & blocks (admin control)'}</h4>
+                          <p class="text-xs text-gray-400 mb-3">${isAr?'الحدود (3 و3) تتغير من الإعدادات. من هنا تعدّل رقم أي مستخدم أو تفك الحظر.':'Thresholds are in Settings. Edit a user\'s counters or lift a block here.'}</p>
+                          ${rows.length ? `<div class="space-y-2">${rows.map(t => `
+                          <div class="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-xl text-xs">
+                            <span class="font-mono text-gray-500" dir="ltr">${t.id.slice(0,10)}…</span>
+                            <label>${isAr?'أخطاء كبائع':'seller faults'} <input type="number" min="0" id="tf_s_${t.id}" value="${t.sellerFaults||0}" class="w-14 border rounded px-1"></label>
+                            <label>${isAr?'أخطاء كمشتري':'buyer faults'} <input type="number" min="0" id="tf_b_${t.id}" value="${t.buyerFaults||0}" class="w-14 border rounded px-1"></label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="tf_k_${t.id}" ${t.sellerBlocked?'checked':''}> ${isAr?'البائع محظور':'seller blocked'}</label>
+                            <button onclick="window._adminTrustSave('${t.id}')" class="px-3 py-1.5 bg-navy-800 text-white rounded-lg font-bold">${isAr?'حفظ':'Save'}</button>
+                          </div>`).join('')}</div>` : `<p class="text-xs text-gray-400">${isAr?'لا توجد سجلات':'No records'}</p>`}`;
+                    } catch (e) { box.innerHTML = `<p class="text-xs text-red-500">${escapeHtml(e.message)}</p>`; }
+                };
+                window._adminTrustSave = async (uid) => {
+                    const n = (id) => Math.max(0, parseInt(document.getElementById(id)?.value, 10) || 0);
+                    try {
+                        await window.db.collection(COLLECTIONS.TRUST).doc(uid).set({
+                            sellerFaults: n('tf_s_'+uid), buyerFaults: n('tf_b_'+uid),
+                            sellerBlocked: !!document.getElementById('tf_k_'+uid)?.checked, updatedAt: serverTimestamp(),
+                        }, { merge: true });
+                        showToast(isAr?'✅ تم الحفظ':'✅ Saved','success');
+                    } catch (e) { showToast(e.message,'error'); }
+                };
+                window._adminTrustLoad();
 
                 // ── Full dispute detail modal (order + both parties + full chat) ────
                 // ⚠️ ADDED: goes through /api/admin-dispute-detail (server, service

@@ -1641,6 +1641,9 @@
               <i class="fa-solid fa-truck-fast text-turquoise-600"></i>
               ${isAr ? 'متابعة الشحن' : 'Shipping Tracker'}
             </h3>
+            ${Number(order.shippingFee) > 0 ? `<p class="text-xs mb-3 ${order.shippingMode === 'cod' ? 'text-amber-800 bg-amber-50 border border-amber-200' : 'text-gray-600 bg-gray-50'} rounded-lg p-2.5"><i class="fa-solid fa-money-bill-wave me-1"></i>${order.shippingMode === 'cod'
+              ? (isAr ? `الشحن ${formatCurrency(order.shippingFee)} — كاش للمندوب عند الاستلام (خارج الضمان)` : `Shipping ${formatCurrency(order.shippingFee)} — cash to the courier on delivery (outside escrow)`)
+              : (isAr ? `الشحن ${formatCurrency(order.shippingFee)} — مدفوع أونلاين ضمن المبلغ` : `Shipping ${formatCurrency(order.shippingFee)} — paid online, included in the amount`)}</p>` : ''}
             <div class="space-y-3 mb-4">
               ${steps.map((s, i) => `
                 <div class="flex items-center gap-3">

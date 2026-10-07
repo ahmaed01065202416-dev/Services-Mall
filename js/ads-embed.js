@@ -118,11 +118,51 @@
         var i = el('img', 'width:100%;display:block;max-height:240px;object-fit:cover');
         i.loading = 'lazy'; i.alt = ad.title || (ar ? 'إعلان' : 'Ad'); i.src = img;
         box.appendChild(i); box.appendChild(badge(ar));
-        if (link) box.onclick = function () {
-            track(ad.id, 'click');
-            if (link.charAt(0) === '#' && window.navigateTo) { try { window.navigateTo(link.slice(1)); return; } catch (e) {} }
-            window.open(link, link.charAt(0) === '/' ? '_self' : '_blank', 'noopener');
-        };
+        if (link) box.onclick = function () { track(ad.id, 'click'); goLink(link); };
+        return box;
+    }
+
+
+    // ── Click routing shared by banner / media cards ────────────────────────
+    function goLink(link) {
+        var m;
+        if ((m = /^#store-(.+)$/.exec(link)) && window.StoresManager) { window.StoresManager.openStore(m[1]); return; }
+        if ((m = /^#listing-(.+)$/.exec(link))) { openService(m[1]); return; }
+        if (link.charAt(0) === '#' && window.navigateTo) { try { window.navigateTo(link.slice(1)); return; } catch (e) {} }
+        window.open(link, link.charAt(0) === '/' ? '_self' : '_blank', 'noopener');
+    }
+    // Image or video creative (video = direct file, YouTube or Vimeo embed).
+    function mediaCard(ad, ar) {
+        var link = safeUrl(ad.linkUrl), box = el('div', 'position:relative;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;background:#0b1220');
+        box.setAttribute('data-ad-id', ad.id);
+        var isVideo = ad.mediaType === 'video';
+        if (isVideo && ad.embedUrl && /^https:\/\/(www\.youtube-nocookie\.com|player\.vimeo\.com)\//.test(ad.embedUrl)) {
+            var wrap = el('div', 'position:relative;width:100%;padding-top:56.25%');
+            var f = el('iframe', 'position:absolute;inset:0;width:100%;height:100%;border:0');
+            f.src = ad.embedUrl; f.loading = 'lazy'; f.title = ad.title || (ar ? 'إعلان' : 'Ad');
+            f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.allowFullscreen = true;
+            wrap.appendChild(f); box.appendChild(wrap);
+        } else if (isVideo && safeUrl(ad.videoUrl)) {
+            var v = el('video', 'width:100%;display:block;max-height:420px;background:#000');
+            v.src = safeUrl(ad.videoUrl); v.controls = true; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'metadata';
+            if (safeUrl(ad.imageUrl)) v.poster = safeUrl(ad.imageUrl);
+            if (io && 'IntersectionObserver' in window) {   // autoplay (muted) only while visible
+                new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); }); }, { threshold: 0.5 }).observe(v);
+            }
+            box.appendChild(v);
+        } else if (safeUrl(ad.imageUrl)) {
+            var i = el('img', 'width:100%;display:block;max-height:300px;object-fit:cover;' + (link ? 'cursor:pointer' : ''));
+            i.loading = 'lazy'; i.alt = ad.title || (ar ? 'إعلان' : 'Ad'); i.src = safeUrl(ad.imageUrl);
+            if (link) i.onclick = function () { track(ad.id, 'click'); goLink(link); };
+            box.appendChild(i);
+        }
+        box.appendChild(badge(ar));
+        if (ad.title) box.appendChild(el('div', 'position:absolute;bottom:0;left:0;right:0;padding:18px 14px 10px;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;font-weight:800;font-size:14px;pointer-events:none', ad.title));
+        if (link && isVideo) {
+            var b = el('button', 'position:absolute;top:10px;inset-inline-end:10px;background:#fff;color:#111827;border:0;border-radius:999px;padding:6px 14px;font-weight:800;font-size:12px;cursor:pointer;z-index:3', ar ? 'اعرف المزيد' : 'Learn more');
+            b.onclick = function (e) { e.stopPropagation(); track(ad.id, 'click'); goLink(link); };
+            box.appendChild(b);
+        }
         return box;
     }
 
@@ -156,10 +196,11 @@
             (feed.placements || []).forEach(function (p) { byKey[p.key] = p; });
 
             document.querySelectorAll('[data-ad-slot]').forEach(function (slot) {
+                if (slot.getAttribute('data-ad-preview')) return;       // a live preview is showing here — don't redraw
                 var key = slot.getAttribute('data-ad-slot'), p = byKey[key];
                 var need = slot.getAttribute('data-ad-when');
                 var blocked = !p || (need === 'express' && !state.expressOnly);
-                var ads = blocked ? [] : (feed.ads || []).filter(function (a) { return a.placementKey === key && a.endAtMs > now && (a.kind !== 'banner' || safeUrl(a.imageUrl)); }).slice(0, p.slots);
+                var ads = blocked ? [] : (feed.ads || []).filter(function (a) { return a.placementKey === key && a.endAtMs > now && (a.kind === 'service' || (a.kind === 'media' ? (a.mediaType === 'video' ? !!(a.embedUrl || safeUrl(a.videoUrl)) : !!safeUrl(a.imageUrl)) : !!safeUrl(a.imageUrl))); }).slice(0, p.slots);
                 ads.forEach(function (a) { if (a.endAtMs < nextEnd) nextEnd = a.endAtMs; });
 
                 var sig = ads.map(function (a) { return a.id; }).join(',') + '|' + (ar ? 'a' : 'e');
@@ -168,10 +209,10 @@
                 slot.textContent = '';
                 if (!ads.length) { slot.style.display = 'none'; return; }
                 slot.style.display = '';
-                var cols = p.layout === 'stack' || ads[0].kind === 'banner' ? '1fr' : 'repeat(auto-fill,minmax(220px,1fr))';
+                var cols = p.layout === 'stack' || ads[0].kind === 'banner' || ads[0].kind === 'media' ? '1fr' : 'repeat(auto-fill,minmax(220px,1fr))';
                 var grid = el('div', 'display:grid;gap:14px;grid-template-columns:' + cols);
                 ads.forEach(function (a) {
-                    var c = a.kind === 'banner' ? bannerCard(a, ar) : serviceCard(a, ar);
+                    var c = a.kind === 'media' ? mediaCard(a, ar) : a.kind === 'banner' ? bannerCard(a, ar) : serviceCard(a, ar);
                     grid.appendChild(c); if (io) io.observe(c);
                 });
                 slot.appendChild(grid);
@@ -182,7 +223,42 @@
     }
     function hideAll() { document.querySelectorAll('[data-ad-slot]').forEach(function (s) { s.style.display = 'none'; }); }
 
+    // ── Live preview: draws a draft ad into the REAL slot of the real page ──────
+    // opts: { key, ad, selector, position }. The slot is created from the selector when the placement is "anywhere".
+    function previewIn(opts) {
+        endPreview();
+        var slot = document.querySelector('[data-ad-slot="' + opts.key + '"]');
+        if (!slot && opts.selector && opts.position) {
+            var target = null; try { target = document.querySelector(opts.selector); } catch (e) {}
+            if (target) {
+                slot = document.createElement('div'); slot.setAttribute('data-ad-slot', opts.key); slot.setAttribute('data-ad-injected', '1'); slot.style.margin = '16px 0';
+                try {
+                    if (opts.position === 'before') target.parentNode.insertBefore(slot, target);
+                    else if (opts.position === 'after') target.parentNode.insertBefore(slot, target.nextSibling);
+                    else if (opts.position === 'prepend') target.insertBefore(slot, target.firstChild);
+                    else target.appendChild(slot);
+                } catch (e) { slot = null; }
+            }
+        }
+        if (!slot) return false;
+        slot.setAttribute('data-ad-preview', '1'); slot.removeAttribute('data-ad-sig');
+        slot.textContent = ''; slot.style.display = '';
+        slot.style.outline = '3px dashed #f59e0b'; slot.style.outlineOffset = '6px'; slot.style.borderRadius = '18px';
+        var a = Object.assign({ id: 'preview', kind: 'media' }, opts.ad);
+        slot.appendChild(a.kind === 'service' ? serviceCard(a, isAr()) : mediaCard(a, isAr()));
+        state.previewSlot = slot;
+        try { slot.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        return true;
+    }
+    function endPreview() {
+        var s = state.previewSlot; if (!s) return;
+        s.removeAttribute('data-ad-preview'); s.style.outline = ''; s.style.outlineOffset = ''; s.textContent = '';
+        if (s.getAttribute('data-ad-injected')) s.remove(); else { s.removeAttribute('data-ad-sig'); s.style.display = 'none'; }
+        state.previewSlot = null; render();
+    }
+
     window.AdsEmbed = {
+        previewIn: previewIn, endPreview: endPreview, mediaCard: mediaCard, serviceCard: serviceCard,
         render: render,
         refresh: function () { state.feed = null; try { sessionStorage.removeItem(CACHE_KEY); } catch (e) {} render(); },
         setExpress: function (on) { state.expressOnly = !!on; render(); },

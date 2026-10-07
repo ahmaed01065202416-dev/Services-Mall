@@ -237,9 +237,15 @@ async function resolveExistingOrder(orderId, auth, env) {
         if (!order.shippingInfo || !order.shippingInfo.address) throw new Error('عنوان الشحن مطلوب لمنتجات الدروبشيبنج');
     }
     const price = Number(svc.price) || 0;
+    // Shipping set by the SELLER on the listing (read from the service doc — never from the browser):
+    //   online → added to the amount paid now and held in escrow with the price
+    //   cod    → NOT charged here; the buyer pays the courier on delivery (outside escrow)
+    const shipFee = (svc.listingType === 'product' && svc.category !== 'digital') ? Math.max(0, Math.min(2000, Number(svc.shippingFee) || 0)) : 0;
+    const shipMode = svc.shippingMode === 'cod' ? 'cod' : 'online';
+    const shipOnline = shipMode === 'online' ? shipFee : 0;
     const cfg = await getPlatformConfig(env);
-    const fees = buyerFee(price, cfg);
-    const total = Number((price + fees).toFixed(2));
+    const fees = buyerFee(price, cfg);              // platform fee on the product price only
+    const total = Number((price + shipOnline + fees).toFixed(2));
     if (total <= 0) throw new Error('قيمة الطلب غير صحيحة');
 
     // ⚠️ SECURITY FIX (audit finding — critical): this used to trust
@@ -274,9 +280,10 @@ async function resolveExistingOrder(orderId, auth, env) {
             image: svc.image || (svc.images && svc.images[0]) || order.image || '',
             price, deliveryDays: svc.deliveryDays || order.deliveryDays || 3,
             sellerId: svc.sellerId || '', sellerName: svc.sellerName || order.sellerName || '',
+            shippingFee: shipFee, shippingMode: shipMode, shippingOnline: shipOnline,
             ...(svc.dropship ? { dropship: true } : {}),
         },
-        subtotal: price, fees, total,
+        subtotal: Number((price + shipOnline).toFixed(2)), fees, total,
     };
 }
 
@@ -398,11 +405,17 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             }
         } catch (_) { /* if this lookup fails, fall back to the normal service flow below */ }
 
+        // shipping chosen by the seller (server-resolved at payment time): the online part is escrowed with the price
+        const shipOnline = Number(item.shippingOnline) || 0;
+        const shipExtra = {
+            shippingFee: Number(item.shippingFee) || 0, shippingMode: item.shippingMode === 'cod' ? 'cod' : 'online',
+            codAmount: item.shippingMode === 'cod' ? (Number(item.shippingFee) || 0) : 0,
+        };
         const orderUpdate = productDelivery
             ? {
                 status: 'delivered', paymentMethod: method, paymentId: String(paymentId),
                 merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
-                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra,
                 chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
                 listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
                 digitalDelivery: productDelivery,
@@ -410,7 +423,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             : {
                 status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
                 merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
-                escrowHeld: true, escrowAmount: item.price, price: item.price,
+                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra,
                 chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
             };
         await fsSet(env, `orders/${orderId}`, orderUpdate, true);
@@ -426,7 +439,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
 
         const escrowAlready = !!(await fsGet(env, `escrow/${orderId}`));
         if (!escrowAlready) await fsCreate(env, 'escrow', {
-            orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
+            orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: Number((item.price + shipOnline).toFixed(2)),
             status: 'held', paymentId: String(paymentId), method, currency: pending.currency,
             createdAt: new Date(),
             ...(dsInfo ? { supplierId: dsInfo.sp.supplierId, supplierAmount: Number(dsInfo.sp.wholesalePrice) || 0 } : {}),

@@ -8,7 +8,22 @@ import { fsGet } from '../_shared/gcp.js';
 
 export async function onRequest(context) {
     const { request, env } = context;
-    const id = new URL(request.url).searchParams.get('s') || '';
+    const params = new URL(request.url).searchParams;
+    const adParam = params.get('a') || '';
+    const id = params.get('s') || '';
+    // ?a=<adId> → the uploaded image/poster of an ACTIVE media ad
+    if (adParam) {
+        if (!/^[A-Za-z0-9_\-]{1,128}$/.test(adParam)) return new Response('bad id', { status: 400 });
+        try {
+            const ad = await fsGet(env, `ads/${adParam}`);
+            const data = ad && ad.status === 'active' && Date.parse(ad.endAt || 0) > Date.now() ? ad.imageData : '';
+            const mm = data && /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(data);
+            if (!mm) return new Response('not found', { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } });
+            const bin = atob(mm[2]), bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new Response(bytes, { status: 200, headers: { 'Content-Type': mm[1], 'Cache-Control': 'public, max-age=600, s-maxage=600', 'X-Content-Type-Options': 'nosniff' } });
+        } catch (e) { return new Response('error', { status: 500, headers: { 'Cache-Control': 'no-store' } }); }
+    }
     if (!/^[A-Za-z0-9_\-]{1,128}$/.test(id)) return new Response('bad id', { status: 400 });
     try {
         const svc = await fsGet(env, `services/${id}`);

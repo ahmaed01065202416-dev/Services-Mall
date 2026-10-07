@@ -82,8 +82,10 @@ async function buyPlan(body, env, CORS, auth) {
     if (!planId) return json(400, CORS, { error: 'الباقة مطلوبة' });
     const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
     if (!user || !['seller', 'admin'].includes(user.role)) return json(403, CORS, { error: 'الباقات للبائعين فقط' });
-    const store = await fsGet(env, `stores/${auth.uid}`);
+    const storeId = safeId(body.storeId) || auth.uid;
+    const store = await fsGet(env, `stores/${storeId}`);
     if (!store) return json(400, CORS, { error: 'أنشئ متجرك الأول قبل شراء باقة' });
+    if (store.ownerId !== auth.uid) return json(403, CORS, { error: 'المتجر ده مش بتاعك' });
     if (store.status === 'paused') return json(400, CORS, { error: 'متجرك موقوف — فعّله الأول' });
     const trust = await fsGet(env, `trust/${auth.uid}`).catch(() => null);
     if (trust && trust.sellerBlocked) return json(403, CORS, { error: 'حسابك موقوف مؤقتًا بسبب نزاعات — تواصل مع الإدارة' });
@@ -93,12 +95,12 @@ async function buyPlan(body, env, CORS, auth) {
     if (!days) return json(400, CORS, { error: 'الباقة غير مضبوطة' });
 
     const subId = crypto.randomUUID();
-    const base = { sellerId: auth.uid, storeId: auth.uid, storeName: store.name || '', planId, planName: plan.nameAr || '', days, price, rank: Number(plan.rank) || 0,
+    const base = { sellerId: auth.uid, storeId, storeName: store.name || '', planId, planName: plan.nameAr || '', days, price, rank: Number(plan.rank) || 0,
         status: price > 0 ? 'pending_payment' : 'active', createdAt: new Date() };
     await fsCreate(env, 'store_subscriptions', base, subId);
 
     if (price <= 0) {
-        const until = await applyPlan(env, { id: auth.uid, ...store }, { id: planId, ...plan }, days);
+        const until = await applyPlan(env, { id: storeId, ...store }, { id: planId, ...plan }, days);
         await fsSet(env, `store_subscriptions/${subId}`, { paid: false, paidAmount: 0, activatedAt: new Date(), endAt: until }, true);
         return json(200, CORS, { status: 'active', featuredUntil: until.toISOString() });
     }

@@ -429,6 +429,16 @@
         // delivery is automatic right after payment (see saveService's
         // category-based digitalDelivery requirement in services.js).
         document.getElementById('productShippingFields')?.classList.toggle('hidden', isDigital);
+        // Seller-defined shipping: free / paid online with the product / cash on delivery
+        const shipBox = document.getElementById('productShippingNotice');
+        if (shipBox) {
+            const fee = Number(service.shippingFee) || 0, cod = service.shippingMode === 'cod';
+            shipBox.classList.toggle('hidden', isDigital);
+            shipBox.innerHTML = fee <= 0
+                ? `<i class="fa-solid fa-truck-fast me-1"></i>${isAr ? 'شحن مجاني' : 'Free shipping'}`
+                : cod ? `<i class="fa-solid fa-truck-fast me-1"></i>${isAr ? `الشحن ${formatCurrency(fee)} — بتدفعه كاش للمندوب عند الاستلام (مش داخل في الدفع الآن).` : `Shipping ${formatCurrency(fee)} — pay the courier in cash on delivery (not part of today's payment).`}`
+                      : `<i class="fa-solid fa-truck-fast me-1"></i>${isAr ? `الشحن ${formatCurrency(fee)} — بيتدفع أونلاين مع المنتج وبيتضاف للإجمالي.` : `Shipping ${formatCurrency(fee)} — paid online with the product and added to the total.`}`;
+        }
         document.getElementById('productDigitalNotice')?.classList.toggle('hidden', !isDigital);
 
         const rulesBox  = document.getElementById('productSellerRulesBox');
@@ -576,6 +586,8 @@
             if (!isDigital) {
                 orderDoc.shippingInfo   = { fullName: sanitizeInput(fullName, 120), phone: sanitizeInput(phone, 30), address: sanitizeInput(address, 500), notes };
                 orderDoc.shippingStatus = 'processing';
+                orderDoc.shippingFee  = Math.max(0, Number(svcData.shippingFee) || 0);      // display copy — the server re-reads it from the listing at payment
+                orderDoc.shippingMode = svcData.shippingMode === 'cod' ? 'cod' : 'online';
             } else if (notes) {
                 orderDoc.buyerNotes = notes;
             }

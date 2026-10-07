@@ -93,7 +93,7 @@ service cloud.firestore {
                         .hasOnly(['title','description','category','price','deliveryDays',
                                   'revisions','image','images','tags','active','status','recurring','updatedAt',
                                   'listingType','digitalDelivery','stockLimit','expiryDate',
-                                  'orderMode','orderRules','structuredFields',
+                                  'orderMode','orderRules','structuredFields','shippingFee','shippingMode','storeId',
                                   'sellerName','sellerAvatar'])
                       && request.resource.data.price is number && request.resource.data.price > 0
                       // a dropship listing can never be priced below wholesale + minimum margin (floor kept in sync by the server)
@@ -179,6 +179,9 @@ service cloud.firestore {
                          request.resource.data.get('dropship', null)      == resource.data.get('dropship', null) &&
                          request.resource.data.get('supplierId', null)    == resource.data.get('supplierId', null) &&
                          request.resource.data.get('supplierName', null)  == resource.data.get('supplierName', null) &&
+                         request.resource.data.get('shippingFee', null)   == resource.data.get('shippingFee', null) &&
+                         request.resource.data.get('shippingMode', null)  == resource.data.get('shippingMode', null) &&
+                         request.resource.data.get('codAmount', null)     == resource.data.get('codAmount', null) &&
                          request.resource.data.get('trackingNumber', null) == resource.data.get('trackingNumber', null) &&
                          request.resource.data.get('carrier', null)       == resource.data.get('carrier', null) &&
                          (!resource.data.get('dropship', false) || (
@@ -598,19 +601,24 @@ service cloud.firestore {
     // are written by functions/api/stores.js (service account) or the admin.
     match /stores/{storeId} {
       allow read: if true;
+      // A seller may own up to 5 stores: ids are  <uid>  (first store)  and  <uid>_2 … <uid>_5.
       allow create: if isSeller() && !sellerBlocked()
-                    && storeId == request.auth.uid
+                    && (storeId == request.auth.uid || storeId.matches(request.auth.uid + '_[2-5]'))
                     && request.resource.data.ownerId == request.auth.uid
-                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','country','city','status','createdAt','updatedAt'])
+                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','banner','tagline','themeColor','layout','announcement','shippingPolicy','returnPolicy','country','city','status','createdAt','updatedAt'])
                     && request.resource.data.keys().hasAll(['ownerId','name','createdAt'])
                     && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
-                    && request.resource.data.get('status', 'active') in ['active','paused'];
+                    && request.resource.data.get('status', 'active') in ['active','paused']
+                    && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']
+                    && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$'));
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.ownerId) && isSeller() && !sellerBlocked()
                       && request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['name','description','logo','country','city','status','updatedAt'])
+                           .hasOnly(['name','description','logo','banner','tagline','themeColor','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt'])
                       && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
-                      && request.resource.data.get('status', 'active') in ['active','paused']);
+                      && request.resource.data.get('status', 'active') in ['active','paused']
+                      && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']
+                      && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$')));
       allow delete: if isAdmin() || isSellerOwner(resource.data.ownerId);
     }
     // ── store packages (admin-defined) ────────────────────────────────────────

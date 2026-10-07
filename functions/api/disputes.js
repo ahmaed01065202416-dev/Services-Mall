@@ -123,7 +123,9 @@ async function reportNonReceipt(body, env, CORS, auth) {
     if (body.acceptRules !== true) return json(400, CORS, { error: 'لازم توافق على شروط البلاغ (خصم الشحن لو الخطأ منك)' });
 
     const faultHint = reason.fault;
-    const shippingDeduction = Math.min(cfg.RETURN_SHIPPING_FEE, Number(escrow.amount) || 0);
+    // buyer-at-fault deduction = this product's own shipping price (set by the seller, written by the server at payment); falls back to the platform default
+    const ownShip = Number(order.shippingFee) || 0;
+    const shippingDeduction = Math.min(ownShip > 0 ? ownShip : cfg.RETURN_SHIPPING_FEE, Number(escrow.amount) || 0);
     const buyerName = order.buyerName || auth.email || auth.uid;
     const disputeId = crypto.randomUUID();
     const deadline = new Date(now + cfg.SELLER_RESPONSE_HOURS * HOUR);

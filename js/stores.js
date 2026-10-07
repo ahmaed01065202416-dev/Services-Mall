@@ -86,7 +86,7 @@
             grid.innerHTML = list.length ? list.map(storeCard).join('') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
         },
 
-        // ── One store page ───────────────────────────────────────────────────
+        // ── One store page (public) — themed by the owner ───────────────────
         async openStore(storeId) {
             if (!storeId) return;
             navigateTo('store');
@@ -95,30 +95,62 @@
             if (head) head.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>';
             let store = null, items = [];
             try {
-                const [ss, ls] = await Promise.all([
-                    window.db.collection(COLLECTIONS.STORES).doc(storeId).get(),
-                    window.db.collection(COLLECTIONS.SERVICES).where('sellerId', '==', storeId).where('active', '==', true).limit(100).get(),
-                ]);
+                const ss = await window.db.collection(COLLECTIONS.STORES).doc(storeId).get();
                 store = ss.exists ? { id: ss.id, ...ss.data() } : null;
+                const ownerId = store ? store.ownerId : storeId;
+                const isFirst = !store || store.id === store.ownerId;      // the first store also owns listings that predate stores
+                const q = isFirst
+                    ? window.db.collection(COLLECTIONS.SERVICES).where('sellerId', '==', ownerId).where('active', '==', true).limit(200)
+                    : window.db.collection(COLLECTIONS.SERVICES).where('storeId', '==', storeId).where('active', '==', true).limit(200);
+                const ls = await q.get();
                 items = ls.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (isFirst) items = items.filter(x => !x.storeId || x.storeId === storeId);
             } catch (e) { if (head) head.innerHTML = `<p class="text-center text-red-500 py-8">${esc(e.message)}</p>`; return; }
             if (!store && !items.length) { if (head) head.innerHTML = `<p class="text-center text-gray-400 py-12">${isAr() ? 'المتجر غير موجود' : 'Store not found'}</p>`; return; }
+
             const name = store ? store.name : (items[0].sellerName || '—');
+            const color = (store && /^#[0-9a-fA-F]{6}$/.test(store.themeColor || '')) ? store.themeColor : '#0f172a';
             const f = store && isFeatured(store);
+            const rev = items.reduce((n, x) => n + (Number(x.reviewCount) || 0), 0);
+            const avg = rev ? items.reduce((n, x) => n + (Number(x.rating) || 0) * (Number(x.reviewCount) || 0), 0) / rev : 0;
+            const banner = store && store.banner ? `url('${esc(store.banner)}') center/cover` : `linear-gradient(135deg, ${color}, ${color}cc)`;
             if (head) head.innerHTML = `
-              <div class="bg-white rounded-3xl border ${f ? 'border-amber-300' : 'border-gray-100'} shadow-sm p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                <img src="${esc((store && store.logo) || fallbackLogo(name))}" class="w-24 h-24 rounded-3xl object-cover border border-gray-100" onerror="this.src='${fallbackLogo(name)}'">
-                <div class="text-center sm:text-start flex-1 min-w-0">
-                  <h1 class="text-2xl font-black text-gray-900 flex items-center justify-center sm:justify-start gap-2 flex-wrap">${esc(name)}
-                    ${f ? `<span class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-3 py-1 rounded-full"><i class="fa-solid fa-star"></i> ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : ''}</h1>
-                  <p class="text-sm text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> ${esc([store && countryName(store.country), store && store.city].filter(Boolean).join(' — ') || '—')} · ${items.length} ${isAr() ? 'منتج/خدمة' : 'listings'}</p>
-                  <p class="text-sm text-gray-700 mt-3 leading-relaxed">${esc((store && store.description) || '')}</p>
+              ${store && store.announcement ? `<div class="rounded-2xl px-4 py-2.5 mb-3 text-sm font-bold text-white text-center" style="background:${color}"><i class="fa-solid fa-bullhorn me-2"></i>${esc(store.announcement)}</div>` : ''}
+              <div class="rounded-3xl overflow-hidden border ${f ? 'border-amber-300' : 'border-gray-100'} shadow-sm bg-white">
+                <div class="h-40 sm:h-52" style="background:${banner}"></div>
+                <div class="px-6 pb-6 -mt-12 flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                  <img src="${esc((store && store.logo) || fallbackLogo(name))}" class="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-lg bg-white" onerror="this.src='${fallbackLogo(name)}'">
+                  <div class="text-center sm:text-start flex-1 min-w-0 pt-2">
+                    <h1 class="text-2xl font-black text-gray-900 flex items-center justify-center sm:justify-start gap-2 flex-wrap">${esc(name)}
+                      ${f ? `<span class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-3 py-1 rounded-full"><i class="fa-solid fa-star"></i> ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : ''}</h1>
+                    ${store && store.tagline ? `<p class="text-sm font-bold mt-0.5" style="color:${color}">${esc(store.tagline)}</p>` : ''}
+                    <p class="text-sm text-gray-500 mt-1 flex items-center justify-center sm:justify-start gap-3 flex-wrap">
+                      <span><i class="fa-solid fa-location-dot"></i> ${esc([store && countryName(store.country), store && store.city].filter(Boolean).join(' — ') || '—')}</span>
+                      <span>${items.length} ${isAr() ? 'منتج/خدمة' : 'listings'}</span>
+                      <span>${rev ? `<span class="text-yellow-400">${'★'.repeat(Math.round(avg))}</span><span class="text-gray-300">${'★'.repeat(5 - Math.round(avg))}</span> ${avg.toFixed(1)} (${rev})` : (isAr() ? 'جديد — بدون تقييمات' : 'New — no reviews')}</span>
+                    </p>
+                  </div>
                 </div>
+                ${store && store.description ? `<p class="px-6 pb-5 text-sm text-gray-700 leading-relaxed">${esc(store.description)}</p>` : ''}
+                ${store && (store.shippingPolicy || store.returnPolicy) ? `<div class="grid sm:grid-cols-2 gap-3 px-6 pb-6">
+                  ${store.shippingPolicy ? `<div class="bg-gray-50 rounded-2xl p-4"><p class="text-xs font-black text-gray-500 mb-1"><i class="fa-solid fa-truck-fast me-1"></i>${isAr() ? 'سياسة الشحن' : 'Shipping policy'}</p><p class="text-sm text-gray-700">${esc(store.shippingPolicy)}</p></div>` : ''}
+                  ${store.returnPolicy ? `<div class="bg-gray-50 rounded-2xl p-4"><p class="text-xs font-black text-gray-500 mb-1"><i class="fa-solid fa-rotate-left me-1"></i>${isAr() ? 'سياسة الاسترجاع' : 'Return policy'}</p><p class="text-sm text-gray-700">${esc(store.returnPolicy)}</p></div>` : ''}
+                </div>` : ''}
               </div>`;
+            const grid = document.getElementById('storeProductsGrid');
+            if (grid) {
+                const layout = (store && store.layout) || 'grid3';
+                grid.className = layout === 'list' ? 'grid grid-cols-1 gap-5 max-w-3xl mx-auto' : layout === 'grid4' ? 'grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'grid sm:grid-cols-2 lg:grid-cols-3 gap-5';
+            }
             if (window.ServicesManager) ServicesManager._renderServiceCards(items, 'storeProductsGrid', 'storeProductsEmpty');
         },
 
-        // ── Seller: my store + packages ──────────────────────────────────────
+        // ═════════════════════════════════════════════════════════════════
+        //  SELLER DASHBOARD — «متجري»
+        // ═════════════════════════════════════════════════════════════════
+        PALETTE: ['#0f172a', '#1d4ed8', '#0891b2', '#059669', '#d97706', '#dc2626', '#be185d', '#7c3aed'],
+        _D: { stores: [], plans: [], listings: [], orders: [], cur: null, tab: 'overview' },
+
         async initMyStorePage() {
             const box = document.getElementById('myStoreContent'); if (!box) return;
             const user = AppState.currentUser;
@@ -130,93 +162,273 @@
             if (q === 'success') showToast(isAr() ? '✅ تم الدفع — الباقة هتتفعّل خلال لحظات' : '✅ Paid — package activates shortly', 'success');
             if (q === 'failed') showToast(isAr() ? 'فشل الدفع' : 'Payment failed', 'error');
             box.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>';
-            let store = null, plans = [], count = 0;
-            try {
-                const [ss, ps, ls] = await Promise.all([
-                    window.db.collection(COLLECTIONS.STORES).doc(user.uid).get(),
-                    window.db.collection(COLLECTIONS.STORE_PLANS).get(),
-                    window.db.collection(COLLECTIONS.SERVICES).where('sellerId', '==', user.uid).get(),
-                ]);
-                store = ss.exists ? { id: ss.id, ...ss.data() } : null;
-                plans = ps.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.enabled !== false).sort((a, b) => (a.price || 0) - (b.price || 0));
-                count = ls.size;
-            } catch (e) { box.innerHTML = `<p class="text-center text-red-500 py-8">${esc(e.message)}</p>`; return; }
-
-            const f = store && isFeatured(store);
-            box.innerHTML = `
-            <div class="grid lg:grid-cols-2 gap-6">
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 class="font-black text-gray-900 mb-1">${store ? (isAr() ? 'بيانات المتجر' : 'Store details') : (isAr() ? 'أنشئ متجرك' : 'Create your store')}</h2>
-                <p class="text-xs text-gray-400 mb-4">${isAr() ? `كل منتجاتك وخدماتك (${count}) بتظهر في متجرك تلقائيًا.` : `All your ${count} listings appear in your store automatically.`}</p>
-                <div class="space-y-3">
-                  <div class="flex items-center gap-3"><img id="stLogoPrev" src="${esc((store && store.logo) || fallbackLogo(store && store.name))}" class="w-16 h-16 rounded-2xl object-cover border"><input type="file" id="stLogo" accept="image/*" class="text-xs"></div>
-                  <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'اسم المتجر' : 'Store name'}</label><input id="stName" maxlength="60" class="form-input w-full" value="${esc((store && store.name) || '')}"></div>
-                  <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'وصف المتجر' : 'Description'}</label><textarea id="stDesc" rows="3" maxlength="500" class="form-input w-full">${esc((store && store.description) || '')}</textarea></div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'الدولة' : 'Country'}</label><select id="stCountry" class="form-input w-full">${COUNTRIES.map(c => `<option value="${c[0]}" ${((store && store.country) || 'EG') === c[0] ? 'selected' : ''}>${isAr() ? c[1] : c[2]}</option>`).join('')}</select></div>
-                    <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'المدينة' : 'City'}</label><input id="stCity" maxlength="40" class="form-input w-full" value="${esc((store && store.city) || '')}"></div>
-                  </div>
-                  ${store ? `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="stPaused" ${store.status === 'paused' ? 'checked' : ''}> ${isAr() ? 'إيقاف المتجر مؤقتًا (يختفي من الصفحة)' : 'Pause store (hidden)'}</label>` : ''}
-                  <button onclick="StoresManager.saveStore()" class="btn-primary w-full py-3">${store ? (isAr() ? 'حفظ' : 'Save') : (isAr() ? 'إنشاء المتجر' : 'Create store')}</button>
-                  ${store ? `<button onclick="StoresManager.openStore('${esc(user.uid)}')" class="w-full py-2.5 text-sm font-bold border-2 border-navy-200 text-navy-700 rounded-xl hover:bg-navy-50">${isAr() ? 'معاينة متجري' : 'Preview my store'}</button>` : ''}
-                </div>
-              </div>
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 class="font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-500"></i>${isAr() ? 'الظهور في أول الصفحة' : 'Show at the top'}</h2>
-                ${f ? `<p class="text-sm bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-amber-900">${isAr() ? 'متجرك مميز حاليًا — باقة' : 'Featured now — package'} <b>${esc(store.planName || '')}</b> ${isAr() ? 'لحد' : 'until'} <b>${new Date(toMs(store.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}</b>. ${isAr() ? 'شراء باقة جديدة بيمدّد المدة.' : 'Buying again extends it.'}</p>`
-                       : `<p class="text-xs text-gray-400 mb-3">${isAr() ? 'اختار باقة وادفع علشان متجرك يظهر في أول الصفحة الرئيسية وأول قايمة المتاجر.' : 'Pick a package to show your store at the top of the home page.'}</p>`}
-                ${!store ? `<p class="text-sm text-gray-500 bg-gray-50 rounded-xl p-4 text-center">${isAr() ? 'أنشئ متجرك الأول لتفعيل الباقات' : 'Create your store first'}</p>`
-                  : (plans.length ? `<div class="space-y-3">${plans.map(p => `
-                    <div class="border-2 border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
-                      <div class="min-w-0"><p class="font-black text-gray-900">${esc(p.nameAr || p.name || '')}</p>
-                        <p class="text-xs text-gray-500">${Number(p.days) || 0} ${isAr() ? 'يوم' : 'days'}${p.description ? ' — ' + esc(p.description) : ''}</p></div>
-                      <button onclick="StoresManager.buyPlan('${esc(p.id)}')" class="btn-primary px-4 py-2 text-sm whitespace-nowrap">${Number(p.price) > 0 ? formatCurrency(p.price) : (isAr() ? 'مجانًا' : 'Free')}</button>
-                    </div>`).join('')}</div>` : `<p class="text-sm text-gray-400 text-center py-6">${isAr() ? 'مفيش باقات متاحة حاليًا' : 'No packages available yet'}</p>`)}
-              </div>
-            </div>`;
-            const lf = document.getElementById('stLogo');
-            if (lf) lf.onchange = async () => {
-                const file = lf.files[0]; if (!file) return;
-                try { StoresManager._logo = await uploadFile(file, 'stores', 'logo_' + user.uid, { maxPx: 300, maxLen: 70000 }); document.getElementById('stLogoPrev').src = StoresManager._logo; }
-                catch (e) { showToast(e.message, 'error'); }
-            };
-            this._logo = null;
+            await this._reloadDash();
+            this._renderDash();
         },
 
-        async saveStore() {
-            const user = AppState.currentUser; if (!user) return;
-            const name = sanitizeInput(document.getElementById('stName')?.value?.trim() || '', 60);
-            const description = sanitizeInput(document.getElementById('stDesc')?.value?.trim() || '', 500);
-            const city = sanitizeInput(document.getElementById('stCity')?.value?.trim() || '', 40);
-            const country = document.getElementById('stCountry')?.value || 'EG';
-            if (name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
-            const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak([name, description, city]);
+        async _reloadDash() {
+            const user = AppState.currentUser, D = this._D;
+            const [ss, ps, ls, os] = await Promise.all([
+                window.db.collection(COLLECTIONS.STORES).where('ownerId', '==', user.uid).get(),
+                window.db.collection(COLLECTIONS.STORE_PLANS).get(),
+                window.db.collection(COLLECTIONS.SERVICES).where('sellerId', '==', user.uid).get(),
+                window.db.collection(COLLECTIONS.ORDERS).where('sellerId', '==', user.uid).get().catch(() => ({ docs: [] })),
+            ]);
+            D.stores = ss.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.id === user.uid ? -1 : 0) - (b.id === user.uid ? -1 : 0) || String(a.id).localeCompare(b.id));
+            D.plans = ps.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.enabled !== false).sort((a, b) => (a.price || 0) - (b.price || 0));
+            D.listings = ls.docs.map(d => ({ id: d.id, ...d.data() }));
+            D.orders = os.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (!D.cur || !D.stores.find(x => x.id === D.cur)) D.cur = D.stores[0] ? D.stores[0].id : null;
+        },
+        _store() { return this._D.stores.find(x => x.id === this._D.cur) || null; },
+        _storeListings() {
+            const uid = AppState.currentUser.uid, id = this._D.cur;
+            return this._D.listings.filter(x => (x.storeId || uid) === id);      // listings without a storeId belong to the first store
+        },
+        setStore(id) { this._D.cur = id; this._renderDash(); },
+        setTab(t) { this._D.tab = t; this._renderDash(); },
+
+        _modalInput(title, label, placeholder) {
+            return new Promise(resolve => {
+                const ov = document.createElement('div');
+                ov.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
+                ov.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6"><h3 class="text-lg font-black text-gray-900 mb-3">${esc(title)}</h3>
+                  <label class="text-xs font-bold text-gray-600 block mb-1">${esc(label)}</label><input id="miv" maxlength="60" class="form-input w-full mb-4" placeholder="${esc(placeholder || '')}">
+                  <div class="flex gap-3"><button id="mic" class="btn-secondary flex-1 py-2.5">${isAr() ? 'إلغاء' : 'Cancel'}</button><button id="mio" class="btn-primary flex-1 py-2.5">${isAr() ? 'إنشاء' : 'Create'}</button></div></div>`;
+                document.body.appendChild(ov);
+                const done = (v) => { ov.remove(); resolve(v); };
+                ov.querySelector('#mic').onclick = () => done(null);
+                ov.querySelector('#mio').onclick = () => done(ov.querySelector('#miv').value.trim());
+                setTimeout(() => ov.querySelector('#miv').focus(), 50);
+            });
+        },
+
+        async createStore() {
+            const user = AppState.currentUser, D = this._D;
+            const taken = new Set(D.stores.map(x => x.id));
+            const id = [user.uid, ...[2, 3, 4, 5].map(n => user.uid + '_' + n)].find(x => !taken.has(x));
+            if (!id) { showToast(isAr() ? 'وصلت للحد الأقصى: 5 متاجر' : 'Limit reached: 5 stores', 'warning'); return; }
+            const name = await this._modalInput(isAr() ? 'متجر جديد' : 'New store', isAr() ? 'اسم المتجر' : 'Store name', isAr() ? 'مثال: متجر الإلكترونيات' : '');
+            if (name === null) return;
+            const clean = sanitizeInput(name, 60);
+            if (clean.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
+            const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak([clean]);
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
             showLoading();
             try {
-                const ref = window.db.collection(COLLECTIONS.STORES).doc(user.uid);
-                const snap = await ref.get();
-                const base = { name, description, country, city, updatedAt: serverTimestamp() };
-                if (this._logo) base.logo = this._logo;
-                if (snap.exists) {
-                    base.status = document.getElementById('stPaused')?.checked ? 'paused' : 'active';
-                    await ref.update(base);
-                } else {
-                    await ref.set({ ownerId: user.uid, logo: this._logo || '', status: 'active', ...base, createdAt: serverTimestamp() });
-                }
-                hideLoading(); showToast(isAr() ? '✅ تم حفظ المتجر' : '✅ Store saved', 'success');
-                this.initMyStorePage();
+                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                this._D.cur = id; this._D.tab = 'settings';
+                await this._reloadDash(); hideLoading(); this._renderDash();
+                showToast(isAr() ? '✅ تم إنشاء المتجر — كمّل بياناته وتصميمه' : '✅ Store created', 'success');
             } catch (e) { hideLoading(); showToast(e.message, 'error'); }
+        },
+
+        _renderDash() {
+            const box = document.getElementById('myStoreContent'); if (!box) return;
+            const D = this._D, user = AppState.currentUser, st = this._store();
+            if (!st) {
+                box.innerHTML = `<div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-10 text-center max-w-lg mx-auto">
+                  <i class="fa-solid fa-shop text-navy-300 text-6xl mb-4"></i>
+                  <h2 class="text-xl font-black text-gray-900 mb-2">${isAr() ? 'ابدأ متجرك الأول' : 'Start your first store'}</h2>
+                  <p class="text-sm text-gray-500 mb-5">${isAr() ? 'متجر باسمك وهويتك، يجمع كل منتجاتك، وتقدر تميّزه في أول الصفحة بباقة.' : 'A branded storefront for all your listings.'}</p>
+                  <button onclick="StoresManager.createStore()" class="btn-primary px-8 py-3">${isAr() ? '＋ إنشاء متجر' : '＋ Create store'}</button></div>`;
+                return;
+            }
+            const tabs = [['overview', 'fa-chart-pie', isAr() ? 'نظرة عامة' : 'Overview'], ['products', 'fa-box', isAr() ? 'المنتجات' : 'Products'],
+                ['settings', 'fa-gear', isAr() ? 'الإعدادات' : 'Settings'], ['design', 'fa-palette', isAr() ? 'التصميم' : 'Design'], ['promo', 'fa-star', isAr() ? 'الظهور في الأول' : 'Promote']];
+            box.innerHTML = `
+            <div class="flex flex-wrap items-center gap-3 mb-5">
+              <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-3 py-2 shadow-sm">
+                <img src="${esc(st.logo || fallbackLogo(st.name))}" class="w-10 h-10 rounded-xl object-cover" onerror="this.src='${fallbackLogo(st.name)}'">
+                <select onchange="StoresManager.setStore(this.value)" class="font-black text-gray-900 bg-transparent outline-none max-w-[14rem]">
+                  ${D.stores.map(x => `<option value="${esc(x.id)}" ${x.id === st.id ? 'selected' : ''}>${esc(x.name || x.id)}${x.status === 'paused' ? (isAr() ? ' (موقوف)' : ' (paused)') : ''}</option>`).join('')}
+                </select>
+              </div>
+              <button onclick="StoresManager.createStore()" class="px-4 py-2.5 text-sm font-bold border-2 border-dashed border-navy-300 text-navy-700 rounded-2xl hover:bg-navy-50"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'إضافة متجر تاني' : 'Add another store'} <span class="text-xs text-gray-400">(${D.stores.length}/5)</span></button>
+              <button onclick="StoresManager.openStore('${esc(st.id)}')" class="ms-auto px-4 py-2.5 text-sm font-bold bg-navy-800 text-white rounded-2xl hover:bg-navy-900"><i class="fa-solid fa-eye me-1"></i>${isAr() ? 'عرض متجري' : 'View store'}</button>
+            </div>
+            <div class="flex gap-2 overflow-x-auto mb-5 pb-1">${tabs.map(t => `
+              <button onclick="StoresManager.setTab('${t[0]}')" class="whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ${D.tab === t[0] ? 'bg-navy-800 text-white' : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'}"><i class="fa-solid ${t[1]}"></i>${t[2]}</button>`).join('')}</div>
+            <div id="storeTabBody"></div>`;
+            const body = document.getElementById('storeTabBody');
+            ({ overview: this._tabOverview, products: this._tabProducts, settings: this._tabSettings, design: this._tabDesign, promo: this._tabPromo }[D.tab] || this._tabOverview).call(this, body, st);
+        },
+
+        _tabOverview(body, st) {
+            const list = this._storeListings(), ids = new Set(list.map(x => x.id));
+            const orders = this._D.orders.filter(o => ids.has(o.serviceId));
+            const done = orders.filter(o => o.status === 'completed');
+            const sales = done.reduce((n, o) => n + (Number(o.price) || 0), 0);
+            const open = orders.filter(o => ['payment_held', 'in_progress', 'revision', 'delivered', 'disputed'].includes(o.status)).length;
+            const rev = list.reduce((n, x) => n + (Number(x.reviewCount) || 0), 0);
+            const avg = rev ? list.reduce((n, x) => n + (Number(x.rating) || 0) * (Number(x.reviewCount) || 0), 0) / rev : 0;
+            const f = isFeatured(st);
+            const todo = [
+                [!!st.logo, isAr() ? 'ارفع شعار المتجر' : 'Upload a logo', 'design'], [!!st.banner, isAr() ? 'أضف صورة غلاف' : 'Add a cover image', 'design'],
+                [!!st.tagline, isAr() ? 'اكتب شعارًا مختصرًا' : 'Write a tagline', 'settings'], [(st.description || '').length >= 40, isAr() ? 'اكتب وصفًا للمتجر (40 حرف+)' : 'Write a description', 'settings'],
+                [!!(st.shippingPolicy && st.returnPolicy), isAr() ? 'حدد سياسة الشحن والاسترجاع' : 'Add shipping & return policy', 'settings'], [list.length > 0, isAr() ? 'أضف أول منتج' : 'Add your first product', 'products'],
+            ];
+            const card = (ic, col, v, l) => `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"><div class="w-10 h-10 rounded-xl ${col} flex items-center justify-center mb-2"><i class="fa-solid ${ic}"></i></div><p class="text-2xl font-black text-gray-900">${v}</p><p class="text-xs text-gray-500">${l}</p></div>`;
+            body.innerHTML = `
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              ${card('fa-box', 'bg-blue-50 text-blue-600', list.length, isAr() ? 'منتجات وخدمات' : 'Listings')}
+              ${card('fa-bag-shopping', 'bg-amber-50 text-amber-600', open, isAr() ? 'طلبات جارية' : 'Open orders')}
+              ${card('fa-sack-dollar', 'bg-green-50 text-green-600', formatCurrency(sales), isAr() ? 'مبيعات مكتملة' : 'Completed sales')}
+              ${card('fa-star', 'bg-yellow-50 text-yellow-500', rev ? avg.toFixed(1) + ' <span class="text-sm text-gray-400">(' + rev + ')</span>' : '—', isAr() ? 'التقييم' : 'Rating')}
+            </div>
+            <div class="grid lg:grid-cols-2 gap-6">
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <h3 class="font-black text-gray-900 mb-3">${isAr() ? 'خطوات لتحسين متجرك' : 'Improve your store'}</h3>
+                <div class="space-y-2">${todo.map(t => `<button onclick="StoresManager.setTab('${t[2]}')" class="w-full flex items-center gap-3 text-start text-sm p-2.5 rounded-xl ${t[0] ? 'text-gray-400' : 'bg-amber-50 text-amber-900 font-bold hover:bg-amber-100'}"><i class="fa-solid ${t[0] ? 'fa-circle-check text-green-500' : 'fa-circle-exclamation text-amber-500'}"></i>${t[1]}</button>`).join('')}</div>
+              </div>
+              <div class="bg-white rounded-2xl border ${f ? 'border-amber-300' : 'border-gray-100'} shadow-sm p-5">
+                <h3 class="font-black text-gray-900 mb-2 flex items-center gap-2"><i class="fa-solid fa-star text-amber-500"></i>${isAr() ? 'الظهور في أول الصفحة' : 'Top placement'}</h3>
+                ${f ? `<p class="text-sm text-amber-900">${isAr() ? 'متجرك مميز حاليًا — باقة' : 'Featured — package'} <b>${esc(st.planName || '')}</b> ${isAr() ? 'لحد' : 'until'} <b>${new Date(toMs(st.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}</b></p>`
+                    : `<p class="text-sm text-gray-500 mb-3">${isAr() ? 'متجرك مش ظاهر في الأول. اختار باقة علشان يظهر في أول الصفحة الرئيسية.' : 'Not featured yet.'}</p>`}
+                <button onclick="StoresManager.setTab('promo')" class="mt-3 btn-primary px-5 py-2.5 text-sm">${isAr() ? 'عرض الباقات' : 'See packages'}</button>
+              </div>
+            </div>`;
+        },
+
+        _tabProducts(body, st) {
+            const D = this._D, list = this._storeListings().sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
+            body.innerHTML = `
+            <div class="flex items-center justify-between mb-4"><h3 class="font-black text-gray-900">${isAr() ? `منتجات المتجر (${list.length})` : `Store listings (${list.length})`}</h3>
+              <div class="flex gap-2"><button onclick="StoresManager.addProduct('product')" class="btn-primary px-4 py-2 text-sm"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'منتج' : 'Product'}</button>
+              <button onclick="StoresManager.addProduct('service')" class="px-4 py-2 text-sm font-bold border-2 border-navy-200 text-navy-700 rounded-xl hover:bg-navy-50">${isAr() ? 'خدمة' : 'Service'}</button></div></div>
+            ${list.length ? `<div class="space-y-3">${list.map(x => {
+                const on = x.active !== false && x.status !== 'paused';
+                return `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex items-center gap-3 flex-wrap">
+                  <img src="${esc((window.getServiceImage && getServiceImage(x)) || '')}" class="w-16 h-16 rounded-xl object-cover bg-gray-100" onerror="this.style.visibility='hidden'">
+                  <div class="flex-1 min-w-[10rem]"><p class="font-bold text-gray-900 truncate">${esc(x.title || '—')}</p>
+                    <p class="text-xs text-gray-500">${formatCurrency(x.price || 0)} ${x.listingType === 'product' ? `· ${Number(x.shippingFee) > 0 ? (isAr() ? 'شحن ' + x.shippingFee + (x.shippingMode === 'cod' ? ' عند الاستلام' : ' أونلاين') : '') : (isAr() ? 'شحن مجاني' : 'free ship')}` : ''} · <span class="${on ? 'text-green-600' : 'text-gray-400'} font-bold">${on ? (isAr() ? 'نشط' : 'active') : (isAr() ? 'موقوف' : 'paused')}</span></p></div>
+                  ${D.stores.length > 1 ? `<select onchange="StoresManager.moveListing('${x.id}',this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" title="${isAr() ? 'نقل لمتجر' : 'Move to store'}">${D.stores.map(m => `<option value="${esc(m.id)}" ${m.id === st.id ? 'selected' : ''}>${esc(m.name || m.id)}</option>`).join('')}</select>` : ''}
+                  <button onclick="StoresManager.toggleListing('${x.id}',${on})" class="text-xs px-3 py-1.5 rounded-lg font-bold ${on ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'}">${on ? (isAr() ? 'إيقاف' : 'Pause') : (isAr() ? 'تفعيل' : 'Activate')}</button>
+                  <button onclick="navigateTo('add-service',{id:'${x.id}'})" class="w-9 h-9 bg-navy-50 text-navy-700 rounded-lg hover:bg-navy-100"><i class="fa-solid fa-pen text-xs"></i></button>
+                </div>`; }).join('')}</div>`
+              : `<div class="text-center bg-white rounded-2xl border border-dashed border-gray-200 py-14 text-gray-400">${isAr() ? 'المتجر فاضي — أضف أول منتج' : 'Empty store — add your first listing'}</div>`}`;
+        },
+        addProduct(type) { AppState.pendingStoreId = this._D.cur; ServicesManager.openAddServiceForm(type); },
+        async toggleListing(id, isOn) {
+            try { await window.db.collection(COLLECTIONS.SERVICES).doc(id).update({ active: !isOn, status: isOn ? 'paused' : 'active', updatedAt: serverTimestamp() }); await this._reloadDash(); this._renderDash(); }
+            catch (e) { showToast(e.message, 'error'); }
+        },
+        async moveListing(id, storeId) {
+            try { await window.db.collection(COLLECTIONS.SERVICES).doc(id).update({ storeId, updatedAt: serverTimestamp() }); showToast(isAr() ? '✅ تم النقل' : '✅ Moved', 'success'); await this._reloadDash(); this._renderDash(); }
+            catch (e) { showToast(e.message, 'error'); }
+        },
+
+        _tabSettings(body, st) {
+            const inp = (id, label, val, max, ph) => `<div><label class="text-xs font-bold text-gray-600 block mb-1">${label}</label><input id="${id}" maxlength="${max}" class="form-input w-full" value="${esc(val || '')}" placeholder="${esc(ph || '')}"></div>`;
+            body.innerHTML = `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl space-y-4">
+              ${inp('stName', isAr() ? 'اسم المتجر' : 'Store name', st.name, 60)}
+              ${inp('stTagline', isAr() ? 'شعار مختصر' : 'Tagline', st.tagline, 80, isAr() ? 'مثال: أفضل الإلكترونيات بأقل سعر' : '')}
+              <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'وصف المتجر' : 'Description'}</label><textarea id="stDesc" rows="3" maxlength="500" class="form-input w-full">${esc(st.description || '')}</textarea></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'الدولة' : 'Country'}</label><select id="stCountry" class="form-input w-full">${COUNTRIES.map(c => `<option value="${c[0]}" ${(st.country || 'EG') === c[0] ? 'selected' : ''}>${isAr() ? c[1] : c[2]}</option>`).join('')}</select></div>
+                ${inp('stCity', isAr() ? 'المدينة' : 'City', st.city, 40)}
+              </div>
+              <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'سياسة الشحن' : 'Shipping policy'}</label><textarea id="stShipPol" rows="2" maxlength="400" class="form-input w-full" placeholder="${isAr() ? 'مثال: الشحن خلال 2-4 أيام عمل لكل المحافظات' : ''}">${esc(st.shippingPolicy || '')}</textarea></div>
+              <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'سياسة الاسترجاع' : 'Return policy'}</label><textarea id="stRetPol" rows="2" maxlength="400" class="form-input w-full" placeholder="${isAr() ? 'مثال: استرجاع خلال 14 يوم لو المنتج غير مطابق' : ''}">${esc(st.returnPolicy || '')}</textarea></div>
+              <p class="text-xs text-gray-400"><i class="fa-solid fa-shield-halved me-1"></i>${isAr() ? 'ممنوع كتابة أرقام هاتف أو روابط تواصل — كل التواصل داخل المنصة.' : 'Contact details are not allowed — keep communication on the platform.'}</p>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="stPaused" ${st.status === 'paused' ? 'checked' : ''}> ${isAr() ? 'إيقاف المتجر مؤقتًا (يختفي من الموقع)' : 'Pause store (hidden)'}</label>
+              <div class="flex gap-3 pt-2"><button onclick="StoresManager.saveStore('settings')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ الإعدادات' : 'Save'}</button>
+                <button onclick="StoresManager.deleteStore()" class="px-5 py-3 text-sm font-bold text-rose-600 border-2 border-rose-200 rounded-xl hover:bg-rose-50">${isAr() ? 'حذف المتجر' : 'Delete store'}</button></div>
+            </div>`;
+        },
+
+        _tabDesign(body, st) {
+            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3' };
+            body.innerHTML = `
+            <div class="grid lg:grid-cols-2 gap-6">
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'لون المتجر' : 'Brand color'}</p>
+                  <div class="flex flex-wrap items-center gap-2">${this.PALETTE.map(c => `<button type="button" onclick="StoresManager.draft('themeColor','${c}')" class="w-9 h-9 rounded-full border-4 ${this._draft.themeColor === c ? 'border-gray-400' : 'border-white'} shadow" style="background:${c}"></button>`).join('')}
+                    <input type="color" id="stColor" value="${this._draft.themeColor}" onchange="StoresManager.draft('themeColor',this.value)" class="w-9 h-9 rounded-full cursor-pointer border-0 p-0" title="${isAr() ? 'لون مخصص' : 'Custom'}"></div></div>
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'الشعار' : 'Logo'}</p><input type="file" id="stLogo" accept="image/*" class="text-xs"></div>
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'صورة الغلاف' : 'Cover image'}</p><input type="file" id="stBanner" accept="image/*" class="text-xs mb-1"><button type="button" onclick="StoresManager.draft('banner','')" class="text-xs text-rose-600 font-bold">${isAr() ? 'إزالة الغلاف' : 'Remove cover'}</button></div>
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'شكل عرض المنتجات' : 'Product layout'}</p>
+                  <div class="flex gap-2">${[['grid3', isAr() ? '3 أعمدة' : '3 columns'], ['grid4', isAr() ? '4 أعمدة' : '4 columns'], ['list', isAr() ? 'قائمة' : 'List']].map(l => `<label class="flex-1 text-center text-sm font-bold p-2.5 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50"><input type="radio" name="stLayout" value="${l[0]}" class="hidden" ${this._draft.layout === l[0] ? 'checked' : ''} onchange="StoresManager.draft('layout','${l[0]}')">${l[1]}</label>`).join('')}</div></div>
+                <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
+                <button onclick="StoresManager.saveStore('design')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ التصميم' : 'Save design'}</button>
+              </div>
+              <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'معاينة مباشرة' : 'Live preview'}</p><div id="stPreview" class="rounded-3xl overflow-hidden border border-gray-100 shadow-sm bg-white"></div></div>
+            </div>`;
+            const up = (id, key, px, len) => { const el = document.getElementById(id); if (el) el.onchange = async () => { const f = el.files[0]; if (!f) return; try { this.draft(key, await uploadFile(f, 'stores', key + '_' + st.id, { maxPx: px, maxLen: len })); } catch (e) { showToast(e.message, 'error'); } }; };
+            up('stLogo', 'logo', 300, 70000); up('stBanner', 'banner', 1200, 200000);
+            this._paintPreview();
+        },
+        draft(key, val) {
+            this._draft[key] = val;
+            if (key === 'themeColor') { const c = document.getElementById('stColor'); if (c) c.value = val; }
+            this._paintPreview();
+        },
+        _paintPreview() {
+            const el = document.getElementById('stPreview'); if (!el) return;
+            const st = this._store(), d = this._draft, name = (st && st.name) || '';
+            const bg = d.banner ? `url('${d.banner}') center/cover` : `linear-gradient(135deg, ${d.themeColor}, ${d.themeColor}cc)`;
+            el.innerHTML = `<div class="h-28" style="background:${bg}"></div>
+              <div class="px-5 pb-5 -mt-8 flex items-end gap-3"><img src="${esc(d.logo || fallbackLogo(name))}" class="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow bg-white">
+                <div class="pb-1"><p class="font-black text-gray-900">${esc(name)}</p><p class="text-xs font-bold" style="color:${d.themeColor}">${esc((st && st.tagline) || (isAr() ? 'شعار المتجر' : 'Your tagline'))}</p></div></div>
+              <div class="px-5 pb-5 grid ${d.layout === 'list' ? 'grid-cols-1' : d.layout === 'grid4' ? 'grid-cols-4' : 'grid-cols-3'} gap-2">${[1, 2, 3, 4].map(() => `<div class="h-14 rounded-xl bg-gray-100"></div>`).join('')}</div>`;
+        },
+
+        async saveStore(section) {
+            const st = this._store(); if (!st) return;
+            const v = (id) => document.getElementById(id)?.value?.trim() || '';
+            let patch = {};
+            if (section === 'settings') {
+                patch = { name: sanitizeInput(v('stName'), 60), tagline: sanitizeInput(v('stTagline'), 80), description: sanitizeInput(v('stDesc'), 500),
+                    country: v('stCountry') || 'EG', city: sanitizeInput(v('stCity'), 40), shippingPolicy: sanitizeInput(v('stShipPol'), 400), returnPolicy: sanitizeInput(v('stRetPol'), 400),
+                    status: document.getElementById('stPaused')?.checked ? 'paused' : 'active' };
+                if (patch.name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
+            } else {
+                patch = { themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120) };
+            }
+            const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak(Object.values(patch).filter(x => typeof x === 'string' && !x.startsWith('data:') && x.length < 600));
+            if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
+            showLoading();
+            try {
+                await window.db.collection(COLLECTIONS.STORES).doc(st.id).update({ ...patch, updatedAt: serverTimestamp() });
+                await this._reloadDash(); hideLoading(); this._renderDash();
+                showToast(isAr() ? '✅ تم الحفظ' : '✅ Saved', 'success');
+            } catch (e) { hideLoading(); showToast(e.message, 'error'); }
+        },
+        async deleteStore() {
+            const st = this._store(); if (!st) return;
+            if (!confirm(isAr() ? `حذف متجر «${st.name}»؟ المنتجات مش هتتحذف، هتتنقل للمتجر الأول.` : `Delete "${st.name}"? Listings are kept.`)) return;
+            showLoading();
+            try {
+                const moved = this._storeListings();
+                const first = this._D.stores.find(x => x.id !== st.id);
+                for (const l of moved) await window.db.collection(COLLECTIONS.SERVICES).doc(l.id).update({ storeId: first ? first.id : AppState.currentUser.uid, updatedAt: serverTimestamp() }).catch(() => {});
+                await window.db.collection(COLLECTIONS.STORES).doc(st.id).delete();
+                this._D.cur = null; await this._reloadDash(); hideLoading(); this._renderDash();
+            } catch (e) { hideLoading(); showToast(e.message, 'error'); }
+        },
+
+        _tabPromo(body, st) {
+            const plans = this._D.plans, f = isFeatured(st);
+            body.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl">
+              <h3 class="font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-star text-amber-500"></i>${isAr() ? 'الظهور في أول الصفحة' : 'Show at the top'} — ${esc(st.name)}</h3>
+              ${f ? `<p class="text-sm bg-amber-50 border border-amber-200 rounded-xl p-3 my-3 text-amber-900">${isAr() ? 'مميز حاليًا — باقة' : 'Featured now —'} <b>${esc(st.planName || '')}</b> ${isAr() ? 'لحد' : 'until'} <b>${new Date(toMs(st.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}</b>. ${isAr() ? 'شراء باقة جديدة بيمدّد المدة.' : 'Buying again extends it.'}</p>`
+                  : `<p class="text-xs text-gray-400 my-3">${isAr() ? 'اختار باقة وادفع علشان المتجر ده يظهر في أول الصفحة الرئيسية وأول قايمة المتاجر.' : 'Pick a package to show this store at the top.'}</p>`}
+              ${st.status === 'paused' ? `<p class="text-sm text-rose-600 font-bold mb-3">${isAr() ? 'المتجر موقوف — فعّله الأول من الإعدادات' : 'Store is paused'}</p>` : ''}
+              ${plans.length ? `<div class="space-y-3">${plans.map(p => `<div class="border-2 border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+                  <div class="min-w-0"><p class="font-black text-gray-900">${esc(p.nameAr || p.name || '')}</p><p class="text-xs text-gray-500">${Number(p.days) || 0} ${isAr() ? 'يوم' : 'days'}${p.description ? ' — ' + esc(p.description) : ''}</p></div>
+                  <button onclick="StoresManager.buyPlan('${esc(p.id)}')" class="btn-primary px-4 py-2 text-sm whitespace-nowrap">${Number(p.price) > 0 ? formatCurrency(p.price) : (isAr() ? 'مجانًا' : 'Free')}</button></div>`).join('')}</div>`
+                : `<p class="text-sm text-gray-400 text-center py-6">${isAr() ? 'مفيش باقات متاحة حاليًا' : 'No packages available yet'}</p>`}</div>`;
         },
 
         async buyPlan(planId) {
             showLoading(isAr() ? 'جاري تجهيز الدفع...' : 'Preparing payment...');
             try {
-                const out = await api({ action: 'buyPlan', planId });
+                const out = await api({ action: 'buyPlan', planId, storeId: this._D.cur });
                 hideLoading();
                 if (out.redirectUrl) { window.location.href = out.redirectUrl; return; }
                 showToast(isAr() ? '✅ تم تفعيل الباقة' : '✅ Package activated', 'success');
-                this.initMyStorePage();
+                await this._reloadDash(); this._renderDash();
             } catch (e) { hideLoading(); showToast(e.message, 'error'); }
         },
     };

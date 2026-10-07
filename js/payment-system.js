@@ -70,8 +70,10 @@
         // prices in Firestore, so this number can never be tampered with to
         // pay less than the real price.
         const totals  = getCartTotals();
-        const baseAmt = (context === 'service' || context === 'order') ? (parseFloat(serviceData && serviceData.price) || 0) : totals.subtotal;
-        const fees    = calcPlatformFee(baseAmt);
+        const priceOnly = (context === 'service' || context === 'order') ? (parseFloat(serviceData && serviceData.price) || 0) : totals.subtotal;
+        const shipOnline = (context === 'order' && serviceData) ? (Number(serviceData.shippingOnline) || 0) : 0;   // seller-set shipping paid online
+        const baseAmt = Number((priceOnly + shipOnline).toFixed(2));
+        const fees    = calcPlatformFee(priceOnly);                       // platform fee on the product price only
         const total   = Number((baseAmt + fees).toFixed(2));
 
         PaymentState.amount          = total;
@@ -103,6 +105,8 @@
                 id: order.serviceId, title: order.serviceTitle, image: order.image,
                 price: order.price, sellerId: order.sellerId, sellerName: order.sellerName,
                 deliveryDays: order.deliveryDays,
+                shippingOnline: order.shippingMode === 'cod' ? 0 : (Number(order.shippingFee) || 0),
+                shippingFee: Number(order.shippingFee) || 0, shippingMode: order.shippingMode || 'online',
             }, orderId);
         } catch (err) { hideLoading(); showToast(t('general.error'), 'error'); }
     }
@@ -225,6 +229,8 @@
                       <span>${isAr ? 'المجموع الفرعي' : 'Subtotal'}</span>
                       <span>${formatCurrency(subtotal)}</span>
                     </div>
+                    ${(items[0] && Number(items[0].shippingOnline) > 0) ? `<p class="text-xs text-gray-400">${isAr ? 'شامل الشحن' : 'incl. shipping'} ${formatCurrency(items[0].shippingOnline)}</p>` : ''}
+                    ${(items[0] && items[0].shippingMode === 'cod' && Number(items[0].shippingFee) > 0) ? `<p class="text-xs text-amber-700 font-bold">${isAr ? `+ ${formatCurrency(items[0].shippingFee)} شحن كاش للمندوب عند الاستلام` : `+ ${formatCurrency(items[0].shippingFee)} shipping in cash on delivery`}</p>` : ''}
                     ${fees > 0 ? `<div class="flex justify-between text-sm text-gray-600">
                       <span>${isAr ? 'رسوم المنصة' : 'Platform Fee'} (${window._feeLabel()})</span>
                       <span>${formatCurrency(fees)}</span>
