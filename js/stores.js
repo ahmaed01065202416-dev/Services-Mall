@@ -114,29 +114,14 @@
             const rev = items.reduce((n, x) => n + (Number(x.reviewCount) || 0), 0);
             const avg = rev ? items.reduce((n, x) => n + (Number(x.rating) || 0) * (Number(x.reviewCount) || 0), 0) / rev : 0;
             const banner = store && store.banner ? `url('${esc(store.banner)}') center/cover` : `linear-gradient(135deg, ${color}, ${color}cc)`;
-            if (head) head.innerHTML = `
-              ${store && store.announcement ? `<div class="rounded-2xl px-4 py-2.5 mb-3 text-sm font-bold text-white text-center" style="background:${color}"><i class="fa-solid fa-bullhorn me-2"></i>${esc(store.announcement)}</div>` : ''}
-              <div class="rounded-3xl overflow-hidden border ${f ? 'border-amber-300' : 'border-gray-100'} shadow-sm bg-white">
-                <div class="h-40 sm:h-52" style="background:${banner}"></div>
-                <div class="px-6 pb-6 -mt-12 flex flex-col sm:flex-row items-center sm:items-end gap-4">
-                  <img src="${esc((store && store.logo) || fallbackLogo(name))}" class="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-lg bg-white" onerror="this.src='${fallbackLogo(name)}'">
-                  <div class="text-center sm:text-start flex-1 min-w-0 pt-2">
-                    <h1 class="text-2xl font-black text-gray-900 flex items-center justify-center sm:justify-start gap-2 flex-wrap">${esc(name)}
-                      ${f ? `<span class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-3 py-1 rounded-full"><i class="fa-solid fa-star"></i> ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : ''}</h1>
-                    ${store && store.tagline ? `<p class="text-sm font-bold mt-0.5" style="color:${color}">${esc(store.tagline)}</p>` : ''}
-                    <p class="text-sm text-gray-500 mt-1 flex items-center justify-center sm:justify-start gap-3 flex-wrap">
-                      <span><i class="fa-solid fa-location-dot"></i> ${esc([store && countryName(store.country), store && store.city].filter(Boolean).join(' — ') || '—')}</span>
-                      <span>${items.length} ${isAr() ? 'منتج/خدمة' : 'listings'}</span>
-                      <span>${rev ? `<span class="text-yellow-400">${'★'.repeat(Math.round(avg))}</span><span class="text-gray-300">${'★'.repeat(5 - Math.round(avg))}</span> ${avg.toFixed(1)} (${rev})` : (isAr() ? 'جديد — بدون تقييمات' : 'New — no reviews')}</span>
-                    </p>
-                  </div>
-                </div>
-                ${store && store.description ? `<p class="px-6 pb-5 text-sm text-gray-700 leading-relaxed">${esc(store.description)}</p>` : ''}
-                ${store && (store.shippingPolicy || store.returnPolicy) ? `<div class="grid sm:grid-cols-2 gap-3 px-6 pb-6">
-                  ${store.shippingPolicy ? `<div class="bg-gray-50 rounded-2xl p-4"><p class="text-xs font-black text-gray-500 mb-1"><i class="fa-solid fa-truck-fast me-1"></i>${isAr() ? 'سياسة الشحن' : 'Shipping policy'}</p><p class="text-sm text-gray-700">${esc(store.shippingPolicy)}</p></div>` : ''}
-                  ${store.returnPolicy ? `<div class="bg-gray-50 rounded-2xl p-4"><p class="text-xs font-black text-gray-500 mb-1"><i class="fa-solid fa-rotate-left me-1"></i>${isAr() ? 'سياسة الاسترجاع' : 'Return policy'}</p><p class="text-sm text-gray-700">${esc(store.returnPolicy)}</p></div>` : ''}
-                </div>` : ''}
-              </div>`;
+            const themeId = (store && store.theme) || 'classic';
+            if (window.StoreThemes) StoreThemes.apply(document.getElementById('storeThemeWrap'), themeId, color);
+            if (head) head.innerHTML = window.StoreThemes ? StoreThemes.header(themeId, {
+                name, tagline: store && store.tagline, logo: store && store.logo, banner: store && store.banner, color, featured: !!f,
+                count: items.length, rev, avg, loc: [store && countryName(store.country), store && store.city].filter(Boolean).join(' — '),
+                desc: store && store.description, announcement: store && store.announcement,
+                shippingPolicy: store && store.shippingPolicy, returnPolicy: store && store.returnPolicy,
+            }) : '';
             const grid = document.getElementById('storeProductsGrid');
             if (grid) {
                 const layout = (store && store.layout) || 'grid3';
@@ -216,7 +201,7 @@
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
             showLoading();
             try {
-                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
                 this._D.cur = id; this._D.tab = 'settings';
                 await this._reloadDash(); hideLoading(); this._renderDash();
                 showToast(isAr() ? '✅ تم إنشاء المتجر — كمّل بياناته وتصميمه' : '✅ Store created', 'success');
@@ -339,10 +324,12 @@
         },
 
         _tabDesign(body, st) {
-            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3' };
+            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3', theme: st.theme || 'classic' };
             body.innerHTML = `
             <div class="grid lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'ثيم المتجر (6 تصميمات)' : 'Store theme (6 designs)'}</p>
+                  <div id="stThemePicker" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div></div>
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'لون المتجر' : 'Brand color'}</p>
                   <div class="flex flex-wrap items-center gap-2">${this.PALETTE.map(c => `<button type="button" onclick="StoresManager.draft('themeColor','${c}')" class="w-9 h-9 rounded-full border-4 ${this._draft.themeColor === c ? 'border-gray-400' : 'border-white'} shadow" style="background:${c}"></button>`).join('')}
                     <input type="color" id="stColor" value="${this._draft.themeColor}" onchange="StoresManager.draft('themeColor',this.value)" class="w-9 h-9 rounded-full cursor-pointer border-0 p-0" title="${isAr() ? 'لون مخصص' : 'Custom'}"></div></div>
@@ -350,28 +337,44 @@
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'صورة الغلاف' : 'Cover image'}</p><input type="file" id="stBanner" accept="image/*" class="text-xs mb-1"><button type="button" onclick="StoresManager.draft('banner','')" class="text-xs text-rose-600 font-bold">${isAr() ? 'إزالة الغلاف' : 'Remove cover'}</button></div>
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'شكل عرض المنتجات' : 'Product layout'}</p>
                   <div class="flex gap-2">${[['grid3', isAr() ? '3 أعمدة' : '3 columns'], ['grid4', isAr() ? '4 أعمدة' : '4 columns'], ['list', isAr() ? 'قائمة' : 'List']].map(l => `<label class="flex-1 text-center text-sm font-bold p-2.5 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50"><input type="radio" name="stLayout" value="${l[0]}" class="hidden" ${this._draft.layout === l[0] ? 'checked' : ''} onchange="StoresManager.draft('layout','${l[0]}')">${l[1]}</label>`).join('')}</div></div>
-                <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
+                <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" oninput="StoresManager._paintPreview()" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
                 <button onclick="StoresManager.saveStore('design')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ التصميم' : 'Save design'}</button>
               </div>
               <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'معاينة مباشرة' : 'Live preview'}</p><div id="stPreview" class="rounded-3xl overflow-hidden border border-gray-100 shadow-sm bg-white"></div></div>
             </div>`;
             const up = (id, key, px, len) => { const el = document.getElementById(id); if (el) el.onchange = async () => { const f = el.files[0]; if (!f) return; try { this.draft(key, await uploadFile(f, 'stores', key + '_' + st.id, { maxPx: px, maxLen: len })); } catch (e) { showToast(e.message, 'error'); } }; };
             up('stLogo', 'logo', 300, 70000); up('stBanner', 'banner', 1200, 200000);
+            this._paintPicker();
             this._paintPreview();
         },
         draft(key, val) {
             this._draft[key] = val;
             if (key === 'themeColor') { const c = document.getElementById('stColor'); if (c) c.value = val; }
+            if (key === 'theme' || key === 'themeColor') this._paintPicker();
             this._paintPreview();
         },
+        _paintPicker() {
+            const box = document.getElementById('stThemePicker'); if (!box || !window.StoreThemes) return;
+            const c = this._draft.themeColor;
+            box.innerHTML = StoreThemes.LIST.map(t => `
+              <button type="button" onclick="StoresManager.draft('theme','${t.id}')" class="text-start p-2 rounded-2xl border-2 transition ${this._draft.theme === t.id ? 'border-navy-600 bg-navy-50' : 'border-gray-100 hover:border-gray-300'}">
+                ${StoreThemes.thumb(t.id, c)}
+                <p class="font-black text-sm text-gray-900 mt-2">${isAr() ? t.ar : t.en}${this._draft.theme === t.id ? ' ✓' : ''}</p>
+                <p class="text-[11px] text-gray-500 leading-snug">${isAr() ? t.desc.ar : t.desc.en}</p>
+              </button>`).join('');
+        },
         _paintPreview() {
-            const el = document.getElementById('stPreview'); if (!el) return;
-            const st = this._store(), d = this._draft, name = (st && st.name) || '';
-            const bg = d.banner ? `url('${d.banner}') center/cover` : `linear-gradient(135deg, ${d.themeColor}, ${d.themeColor}cc)`;
-            el.innerHTML = `<div class="h-28" style="background:${bg}"></div>
-              <div class="px-5 pb-5 -mt-8 flex items-end gap-3"><img src="${esc(d.logo || fallbackLogo(name))}" class="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow bg-white">
-                <div class="pb-1"><p class="font-black text-gray-900">${esc(name)}</p><p class="text-xs font-bold" style="color:${d.themeColor}">${esc((st && st.tagline) || (isAr() ? 'شعار المتجر' : 'Your tagline'))}</p></div></div>
-              <div class="px-5 pb-5 grid ${d.layout === 'list' ? 'grid-cols-1' : d.layout === 'grid4' ? 'grid-cols-4' : 'grid-cols-3'} gap-2">${[1, 2, 3, 4].map(() => `<div class="h-14 rounded-xl bg-gray-100"></div>`).join('')}</div>`;
+            const el = document.getElementById('stPreview'); if (!el || !window.StoreThemes) return;
+            const st = this._store(), d = this._draft;
+            const cardsMock = [1, 2, 3, 4].map(() => `<div class="service-card card" style="height:92px"></div>`).join('');
+            StoreThemes.apply(el, d.theme, d.themeColor);
+            el.style.overflow = 'hidden';
+            el.innerHTML = StoreThemes.header(d.theme, {
+                name: (st && st.name) || '', tagline: st && st.tagline, logo: d.logo, banner: d.banner, color: d.themeColor, featured: false,
+                count: this._storeListings().length, rev: 0, avg: 0, loc: st ? [countryName(st.country), st.city].filter(Boolean).join(' — ') : '',
+                desc: st && st.description, announcement: document.getElementById('stAnn')?.value || (st && st.announcement) || '',
+                shippingPolicy: st && st.shippingPolicy, returnPolicy: st && st.returnPolicy,
+            }) + `<div style="display:grid;grid-template-columns:repeat(${d.layout === 'list' ? 1 : d.layout === 'grid4' ? 4 : 3},1fr);gap:10px;margin-top:18px">${cardsMock}</div>`;
         },
 
         async saveStore(section) {
@@ -384,7 +387,7 @@
                     status: document.getElementById('stPaused')?.checked ? 'paused' : 'active' };
                 if (patch.name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
             } else {
-                patch = { themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120) };
+                patch = { theme: this._draft.theme, themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120) };
             }
             const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak(Object.values(patch).filter(x => typeof x === 'string' && !x.startsWith('data:') && x.length < 600));
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }

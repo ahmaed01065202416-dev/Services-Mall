@@ -605,19 +605,21 @@ service cloud.firestore {
       allow create: if isSeller() && !sellerBlocked()
                     && (storeId == request.auth.uid || storeId.matches(request.auth.uid + '_[2-5]'))
                     && request.resource.data.ownerId == request.auth.uid
-                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','banner','tagline','themeColor','layout','announcement','shippingPolicy','returnPolicy','country','city','status','createdAt','updatedAt'])
+                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','createdAt','updatedAt'])
                     && request.resource.data.keys().hasAll(['ownerId','name','createdAt'])
                     && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
                     && request.resource.data.get('status', 'active') in ['active','paused']
                     && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']
+                      && request.resource.data.get('theme', 'classic') in ['classic','midnight','minimal','bold','elegant','playful']
                     && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$'));
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.ownerId) && isSeller() && !sellerBlocked()
                       && request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['name','description','logo','banner','tagline','themeColor','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt'])
+                           .hasOnly(['name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt'])
                       && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
                       && request.resource.data.get('status', 'active') in ['active','paused']
                       && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']
+                      && request.resource.data.get('theme', 'classic') in ['classic','midnight','minimal','bold','elegant','playful']
                       && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$')));
       allow delete: if isAdmin() || isSellerOwner(resource.data.ownerId);
     }
