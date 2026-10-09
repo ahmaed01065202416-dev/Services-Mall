@@ -114,13 +114,17 @@
             const rev = items.reduce((n, x) => n + (Number(x.reviewCount) || 0), 0);
             const avg = rev ? items.reduce((n, x) => n + (Number(x.rating) || 0) * (Number(x.reviewCount) || 0), 0) / rev : 0;
             const banner = store && store.banner ? `url('${esc(store.banner)}') center/cover` : `linear-gradient(135deg, ${color}, ${color}cc)`;
+            this._items = items;
+            // "Hero product" for themes that spotlight one item: best reviewed, else first with a picture.
+            const heroItem = items.slice().sort((a, b) => ((Number(b.reviewCount) || 0) * (Number(b.rating) || 0)) - ((Number(a.reviewCount) || 0) * (Number(a.rating) || 0)))[0];
+            const hero = heroItem ? { id: heroItem.id, title: heroItem.title || '', price: heroItem.price || 0, image: (window.getServiceImage && getServiceImage(heroItem)) || '' } : null;
             const themeId = (store && store.theme) || 'classic';
             if (window.StoreThemes) StoreThemes.apply(document.getElementById('storeThemeWrap'), themeId, color);
             if (head) head.innerHTML = window.StoreThemes ? StoreThemes.header(themeId, {
                 name, tagline: store && store.tagline, logo: store && store.logo, banner: store && store.banner, color, featured: !!f,
                 count: items.length, rev, avg, loc: [store && countryName(store.country), store && store.city].filter(Boolean).join(' — '),
                 desc: store && store.description, announcement: store && store.announcement,
-                shippingPolicy: store && store.shippingPolicy, returnPolicy: store && store.returnPolicy,
+                shippingPolicy: store && store.shippingPolicy, returnPolicy: store && store.returnPolicy, hero,
             }) : '';
             const grid = document.getElementById('storeProductsGrid');
             if (grid) {
@@ -128,6 +132,14 @@
                 grid.className = layout === 'list' ? 'grid grid-cols-1 gap-5 max-w-3xl mx-auto' : layout === 'grid4' ? 'grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'grid sm:grid-cols-2 lg:grid-cols-3 gap-5';
             }
             if (window.ServicesManager) ServicesManager._renderServiceCards(items, 'storeProductsGrid', 'storeProductsEmpty');
+        },
+
+        /** Marketplace theme search box: filters the store's listings in place. */
+        filterItems(q) {
+            if (!window.ServicesManager || !this._items) return;
+            const needle = String(q || '').trim().toLowerCase();
+            const list = needle ? this._items.filter(x => String(x.title || '').toLowerCase().includes(needle) || String(x.category || '').toLowerCase().includes(needle)) : this._items;
+            ServicesManager._renderServiceCards(list, 'storeProductsGrid', 'storeProductsEmpty');
         },
 
         // ═════════════════════════════════════════════════════════════════
@@ -324,7 +336,7 @@
         },
 
         _tabDesign(body, st) {
-            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3', theme: st.theme || 'classic' };
+            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3', theme: st.theme || 'classic', colorTouched: !!st.themeColor && st.themeColor !== '#0f172a' };
             body.innerHTML = `
             <div class="grid lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
@@ -349,19 +361,31 @@
         },
         draft(key, val) {
             this._draft[key] = val;
-            if (key === 'themeColor') { const c = document.getElementById('stColor'); if (c) c.value = val; }
+            if (key === 'themeColor') this._draft.colorTouched = true;
+            // picking a theme proposes its signature colour — unless the owner already chose his own
+            if (key === 'theme' && window.StoreThemes) {
+                const t = StoreThemes.get(val);
+                if (t.accent && !this._draft.colorTouched) this._draft.themeColor = t.accent;
+            }
+            { const c = document.getElementById('stColor'); if (c) c.value = this._draft.themeColor; }
             if (key === 'theme' || key === 'themeColor') this._paintPicker();
             this._paintPreview();
         },
         _paintPicker() {
             const box = document.getElementById('stThemePicker'); if (!box || !window.StoreThemes) return;
             const c = this._draft.themeColor;
-            box.innerHTML = StoreThemes.LIST.map(t => `
+            const card = (t) => `
               <button type="button" onclick="StoresManager.draft('theme','${t.id}')" class="text-start p-2 rounded-2xl border-2 transition ${this._draft.theme === t.id ? 'border-navy-600 bg-navy-50' : 'border-gray-100 hover:border-gray-300'}">
                 ${StoreThemes.thumb(t.id, c)}
                 <p class="font-black text-sm text-gray-900 mt-2">${isAr() ? t.ar : t.en}${this._draft.theme === t.id ? ' ✓' : ''}</p>
                 <p class="text-[11px] text-gray-500 leading-snug">${isAr() ? t.desc.ar : t.desc.en}</p>
-              </button>`).join('');
+              </button>`;
+            const base = StoreThemes.LIST.filter(t => t.group !== 'pro'), pro = StoreThemes.LIST.filter(t => t.group === 'pro');
+            box.className = '';
+            box.innerHTML = `<p class="text-xs font-black text-gray-500 mb-2">${isAr() ? 'تصميمات أساسية' : 'Essentials'}</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">${base.map(card).join('')}</div>
+              <p class="text-xs font-black text-gray-500 mb-2">${isAr() ? 'تصميمات حسب النشاط (الأنسب لـ…)' : 'By business type (best for…)'}</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${pro.map(card).join('')}</div>`;
         },
         _paintPreview() {
             const el = document.getElementById('stPreview'); if (!el || !window.StoreThemes) return;
@@ -374,6 +398,7 @@
                 count: this._storeListings().length, rev: 0, avg: 0, loc: st ? [countryName(st.country), st.city].filter(Boolean).join(' — ') : '',
                 desc: st && st.description, announcement: document.getElementById('stAnn')?.value || (st && st.announcement) || '',
                 shippingPolicy: st && st.shippingPolicy, returnPolicy: st && st.returnPolicy,
+                hero: (() => { const x = this._storeListings()[0]; return x ? { id: x.id, title: x.title || '', price: x.price || 0, image: (window.getServiceImage && getServiceImage(x)) || '' } : null; })(),
             }) + `<div style="display:grid;grid-template-columns:repeat(${d.layout === 'list' ? 1 : d.layout === 'grid4' ? 4 : 3},1fr);gap:10px;margin-top:18px">${cardsMock}</div>`;
         },
 

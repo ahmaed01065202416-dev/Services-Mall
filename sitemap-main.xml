@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<!-- Core pages only. The blog (/blog + all articles) lives in /sitemap-live.xml so no URL is listed twice.
+     lastmod = the day the page really changed (home: index.html reworked 2026-10-08). No hreflang: there is
+     no separate English page (/?lang=en is the same document with the same canonical). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://mall-services.pages.dev/</loc>
-    <lastmod>2025-05-21</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://mall-services.pages.dev/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://mall-services.pages.dev/?lang=en"/>
-  </url>
-  <url>
-    <loc>https://mall-services.pages.dev/blog</loc>
-    <lastmod>2025-05-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://mall-services.pages.dev/about</loc>
@@ -26,6 +20,11 @@
     <lastmod>2025-05-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mall-services.pages.dev/refund-policy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://mall-services.pages.dev/privacy</loc>

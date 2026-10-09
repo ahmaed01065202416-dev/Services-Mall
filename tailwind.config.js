@@ -12,7 +12,7 @@ module.exports = {
     './js/**/*.js',
     './privacy.html',
     './terms.html',
-    './refund-policy.html',
+    './refund-policy/**/*.html',
     './privacy/**/*.html',
     './terms/**/*.html',
   ],

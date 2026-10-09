@@ -140,7 +140,7 @@
     ];
 
     // Tiny schematic of each theme for the picker (uses the owner's colour).
-    function thumb(id, c) {
+    function baseThumb(id, c) {
         const bar = (w, h, bg, r) => `<div style="width:${w};height:${h};background:${bg};border-radius:${r || 3}px"></div>`;
         const cards = (bg, border, r, sh) => `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px">${[1, 2, 3].map(() => `<div style="height:20px;background:${bg};border:${border};border-radius:${r}px;box-shadow:${sh || 'none'}"></div>`).join('')}</div>`;
         const t = {
@@ -154,21 +154,33 @@
         return t[id] || t.classic;
     }
 
+    const loadedFonts = new Set();
+    function ensureFont(href) {
+        if (!href || loadedFonts.has(href)) return;
+        loadedFonts.add(href);
+        const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+    }
+
     window.StoreThemes = {
         LIST: THEMES,
-        ids: THEMES.map(t => t.id),
+        get ids() { return THEMES.map(t => t.id); },
+        /** Other files (store-themes-pro.js) add themes here. */
+        register(t) { if (!THEMES.find(x => x.id === t.id)) THEMES.push(t); },
         get(id) { return THEMES.find(t => t.id === id) || THEMES[0]; },
         header(id, d) { return this.get(id).header(d); },
-        thumb,
+        thumb(id, c) { const t = THEMES.find(x => x.id === id); return t && t.thumb ? t.thumb(c) : baseThumb(id, c); },
         /** Put the theme class + scoped CSS on a container (the public store page or the live preview). */
         apply(el, id, color) {
             if (!el) return;
             THEMES.forEach(t => el.classList.remove('st-t-' + t.id));
-            el.classList.add('st-t-' + this.get(id).id);
+            const t = this.get(id);
+            el.classList.add('st-t-' + t.id);
+            ensureFont(t.fonts);
             let st = document.getElementById('stThemeCss');
             if (!st) { st = document.createElement('style'); st.id = 'stThemeCss'; document.head.appendChild(st); }
             const c = /^#[0-9a-fA-F]{6}$/.test(color || '') ? color : '#0f172a';
-            st.textContent = THEMES.map(t => t.css(c)).join('\n');
+            // Only the active theme's CSS is emitted (the pro themes restyle the product card deeply).
+            st.textContent = t.css(c);
         },
     };
     console.log('✅ StoreThemes loaded (6 themes)');

@@ -8,16 +8,6 @@ Disallow: /dashboard
 Disallow: /api/
 Disallow: /*.env
 
-# Crawl-delay
-Crawl-delay: 1
-
-# Sitemaps
+# Sitemaps: the index (core pages + the live blog sitemap) and the live sitemap itself.
 Sitemap: https://mall-services.pages.dev/sitemap.xml
-Sitemap: https://mall-services.pages.dev/blog-sitemap.xml
-# ⚠️ ADDED: blog-sitemap.xml only lists the 9 hand-written static articles
-# (hardcoded, last touched 2025-05-21) — it never picks up AI-generated posts
-# (functions/api/ai-generate.js writes to Firestore, not this file). The
-# dynamic sitemap (functions/api/sitemap-dynamic.js, exposed here via
-# _redirects) reads blog_posts from Firestore on every request, so it's the
-# one that actually reflects new/published AI articles.
 Sitemap: https://mall-services.pages.dev/sitemap-live.xml

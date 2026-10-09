@@ -26,15 +26,12 @@
 /blog/web-design-trends-2025 /blog/web-design-trends-2025/index.html 200
 /blog/paymob-instapay-guide /blog/paymob-instapay-guide/index.html 200
 
-# ⚠️ FIXED: this list only covered the 6 hand-written static posts — any
-# other /blog/<slug> (every AI-generated article, functions/api/ai-generate.js)
-# matched NO rule here and fell through to the final SPA catch-all below,
-# which serves the main app's index.html — not blog/index.html. That file has
-# no blog-post view at all, so visitors, shared links, and search-engine
-# crawlers landed on the homepage instead of the article. blog/index.html
-# already handles direct /blog/:slug loads correctly (see its own init() at
-# the bottom of that file) — it just never used to be reached for these URLs.
-/blog/:slug /blog/index.html 200
+# Old blog sitemap (replaced by the live sitemap that also lists the hand-written articles): keep old submissions working.
+/blog-sitemap.xml /sitemap-live.xml 301
+
+# Dynamic (AI) articles: /blog/:slug is handled by functions/blog/[slug].js (route enabled in _routes.json).
+# It returns a REAL 404 for unknown slugs and injects canonical/og/JSON-LD per article. The old blanket rule
+# "/blog/:slug /blog/index.html 200" was removed on purpose: it answered 200 for every slug (soft 404).
 
 # Legacy standalone legal pages — superseded by the redesigned /terms and
 # /privacy folders below. Kept as 301s (not deleted) so old bookmarks/backlinks
@@ -44,6 +41,7 @@
 # point at /terms and /privacy directly, this redirect is the safety net).
 /terms.html /terms 301
 /privacy.html /privacy 301
+/refund-policy.html /refund-policy 301
 
 # Static pages
 /about /about/index.html 200
@@ -54,6 +52,11 @@
 /privacy/ /privacy/index.html 200
 /terms /terms/index.html 200
 /terms/ /terms/index.html 200
+/refund-policy /refund-policy/index.html 200
+/refund-policy/ /refund-policy/index.html 200
 
-# SPA fallback for main app
-/* /index.html 200
+# No SPA catch-all on purpose.
+# The app uses HASH routing (/#services, /#store-<id> …) and every real path it links to exists as a file or a
+# Function (/, /about, /blog, /contact, /privacy, /terms, /refund-policy, /api/*, /sitemap-live.xml). A blanket
+# "/* /index.html 200" answered 200 for ANY made-up URL (soft 404 for Google). Unknown paths now get the real
+# 404 page (404.html, status 404). If real path-based app URLs are introduced one day, add explicit rules for them.
