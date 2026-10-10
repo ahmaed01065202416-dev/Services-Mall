@@ -65,7 +65,7 @@ export async function onRequest(context) {
   const newest = [...STATIC_ARTICLES.map(a => a[1]), ...posts.map(p => p.updated)].filter(Boolean).sort().pop() || BLOG_INDEX_FALLBACK_DATE;
 
   const urls = [
-    entry('/blog', newest, 'weekly', '0.9'),
+    entry('/blog/', newest, 'weekly', '0.9'),   // trailing slash = the URL Pages serves for the blog index (matches its canonical)
     ...STATIC_ARTICLES.map(([slug, date]) => entry(`/blog/${encodeURIComponent(slug)}`, date, 'monthly', '0.7')),
     ...posts.map(p => entry(`/blog/${encodeURIComponent(p.slug)}`, p.updated, 'monthly', '0.8')),
   ];
