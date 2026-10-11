@@ -4,7 +4,6 @@
     <loc>https://mall-services.pages.dev/sitemap-main.xml</loc>
     <lastmod>2026-10-08</lastmod>
   </sitemap>
-  <!-- sitemap-live.xml is generated per request (Firestore), so no static lastmod is declared for it. -->
   <sitemap>
     <loc>https://mall-services.pages.dev/sitemap-live.xml</loc>
   </sitemap>

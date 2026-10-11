@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Core pages only. Folder pages are listed WITH the trailing slash: that is the URL Cloudflare Pages really serves (/about -> 308 -> /about/), and it matches each page's canonical. The blog (/blog + all articles) lives in /sitemap-live.xml so no URL is listed twice.
-     lastmod = the day the page really changed (home: index.html reworked 2026-10-08). No hreflang: there is
-     no separate English page (/?lang=en is the same document with the same canonical). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://mall-services.pages.dev/</loc>
