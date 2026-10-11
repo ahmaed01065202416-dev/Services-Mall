@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>عن مول الخدمات | منصتك الأولى للمنتجات والخدمات الرقمية في مصر</title>
-<meta name="description" content="تعرف على مول الخدمات، منصتك الأولى للمنتجات والخدمات الرقمية في مصر. قصتنا، رسالتنا، فريقنا، وكيف نربط المحترفين وأصحاب المنتجات بأصحاب الأعمال والعملاء بأمان وشفافية.">
+<meta name="description" content="تعرف على مول الخدمات، منصتك الأولى للمنتجات والخدمات الرقمية في مصر. قصتنا ورسالتنا وقيمنا، وكيف نربط المحترفين وأصحاب المنتجات بأصحاب الأعمال والعملاء بأمان وشفافية.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://mall-services.pages.dev/about/">
 <meta property="og:title" content="عن مول الخدمات">
@@ -90,17 +90,13 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:#f
 .value-card h3{font-size:18px;font-weight:800;margin-bottom:10px}
 .value-card p{font-size:14px;color:var(--muted);line-height:1.7}
 
-/* TEAM */
-.team-section{padding:80px 24px;background:var(--bg)}
-.team-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-@media(max-width:768px){.team-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:480px){.team-grid{grid-template-columns:1fr}}
-.team-card{background:#fff;border-radius:var(--radius);padding:28px;text-align:center;border:1px solid var(--border);transition:all .3s}
-.team-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-.team-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#fff}
-.team-card h4{font-size:16px;font-weight:800;margin-bottom:4px}
-.team-card .role{font-size:13px;color:var(--brand);font-weight:600;margin-bottom:10px}
-.team-card p{font-size:13px;color:var(--muted)}
+/* LIVE COUNTERS */
+.live-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:4px 12px;border-radius:999px;margin-bottom:10px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:livePulse 1.8s infinite}
+.live-badge.off{color:#92400e;background:#fffbeb;border-color:#fde68a}.live-badge.off .live-dot{background:#f59e0b;animation:none}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.55)}70%{box-shadow:0 0 0 9px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px;min-height:18px}
+.stats-note{max-width:1000px;margin:20px auto 0;text-align:center;font-size:12px;color:var(--muted)}
 
 /* CTA */
 .about-cta{background:linear-gradient(135deg,#0369a1,#7c3aed);padding:80px 24px;text-align:center}
@@ -150,26 +146,34 @@ footer{background:#111827;color:#9ca3af;padding:40px 24px 24px}
   </div>
 </section>
 
-<!-- STATS -->
+<!-- STATS — real numbers from /api/home-stats (live Firestore counts, refreshed every 30s). Nothing here is hardcoded. -->
 <section class="stats-section">
+  <div style="text-align:center">
+    <span class="live-badge" id="liveBadge"><span class="live-dot"></span><span id="liveBadgeText">أرقام حقيقية تتحدّث مباشرة</span></span>
+  </div>
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-num">+5K</div>
-      <div class="stat-label">محترف مسجّل</div>
+      <div class="stat-num" id="stSellers">—</div>
+      <div class="stat-label">بائع ومحترف مسجّل</div>
+      <div class="stat-sub">&nbsp;</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num">+20K</div>
-      <div class="stat-label">خدمة منجزة</div>
+      <div class="stat-num" id="stServices">—</div>
+      <div class="stat-label">خدمة ومنتج نشط</div>
+      <div class="stat-sub">&nbsp;</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num">98%</div>
-      <div class="stat-label">نسبة رضا العملاء</div>
+      <div class="stat-num" id="stOrders">—</div>
+      <div class="stat-label">طلب مكتمل</div>
+      <div class="stat-sub">&nbsp;</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num">+10</div>
-      <div class="stat-label">وسائل دفع مدعومة</div>
+      <div class="stat-num" id="stRating">—</div>
+      <div class="stat-label">متوسط تقييم العملاء</div>
+      <div class="stat-sub" id="stReviews">لا توجد تقييمات بعد</div>
     </div>
   </div>
+  <p class="stats-note" id="statsNote">تُحسب هذه الأرقام من بيانات المنصة نفسها وقت فتح الصفحة، وليست أرقامًا تسويقية ثابتة.</p>
 </section>
 
 <!-- MISSION -->
@@ -242,34 +246,6 @@ footer{background:#111827;color:#9ca3af;padding:40px 24px 24px}
   </div>
 </section>
 
-<!-- TEAM -->
-<section class="team-section">
-  <div class="section-header-c">
-    <h2>الفريق المؤسس</h2>
-    <p>شغوفون بالتكنولوجيا، ملتزمون بتمكين المحترف العربي</p>
-  </div>
-  <div class="team-grid">
-    <div class="team-card">
-      <div class="team-avatar" style="background:linear-gradient(135deg,#0284c7,#7c3aed)">أ</div>
-      <h4>أحمد محمد</h4>
-      <div class="role">المؤسس والرئيس التنفيذي</div>
-      <p>خبرة +10 سنوات في التكنولوجيا وريادة الأعمال الرقمية</p>
-    </div>
-    <div class="team-card">
-      <div class="team-avatar" style="background:linear-gradient(135deg,#10b981,#0284c7)">س</div>
-      <h4>سارة علي</h4>
-      <div class="role">مديرة تجربة المستخدم</div>
-      <p>متخصصة في تصميم منتجات رقمية تُحدث فرقاً حقيقياً</p>
-    </div>
-    <div class="team-card">
-      <div class="team-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">م</div>
-      <h4>محمد حسن</h4>
-      <div class="role">مدير التكنولوجيا</div>
-      <p>مهندس برمجيات بخبرة واسعة في بناء المنصات القابلة للتطوير</p>
-    </div>
-  </div>
-</section>
-
 <!-- CTA -->
 <section class="about-cta">
   <h2>انضم إلى مجتمعنا</h2>
@@ -329,5 +305,57 @@ footer{background:#111827;color:#9ca3af;padding:40px 24px 24px}
 </nav>
 <div class="ms-bottom-nav-spacer"></div>
 
+<script>
+/* Live counters: real numbers from /api/home-stats (server-side Firestore COUNT/AVG aggregations).
+   - count-up animation from the previous value, so a change is visible
+   - refreshes every 30s while the tab is visible (the endpoint itself caches ~30s)
+   - never invents numbers: no data → "—" */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var shown = {};                       // last value rendered per element id
+  var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+
+  function countTo(id, target) {
+    var el = $(id); if (!el) return;
+    var from = shown[id] == null ? 0 : shown[id];
+    shown[id] = target;
+    if (from === target) { el.textContent = fmt(target); return; }
+    var start = null, dur = 900;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = Math.min(1, (ts - start) / dur);
+      el.textContent = fmt(Math.round(from + (target - from) * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) requestAnimationFrame(step);
+    }
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(target); return; }
+    requestAnimationFrame(step);
+  }
+  function setLive(ok) {
+    var b = $('liveBadge'), t = $('liveBadgeText'); if (!b || !t) return;
+    b.classList.toggle('off', !ok);
+    t.textContent = ok ? 'أرقام حقيقية تتحدّث مباشرة' : 'تعذّر تحديث الأرقام الآن — سنحاول تلقائيًا';
+  }
+  async function load() {
+    try {
+      var ctl = ('AbortController' in window) ? new AbortController() : null;
+      var to = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : null;
+      var res = await fetch('/api/home-stats', { cache: 'no-store', signal: ctl ? ctl.signal : undefined });
+      if (to) clearTimeout(to);
+      var d = await res.json();
+      if (!d || !d.success) throw new Error('bad response');
+      countTo('stSellers', d.sellers || 0);
+      countTo('stServices', d.services || 0);
+      countTo('stOrders', d.completedOrders || 0);
+      var has = d.reviews > 0 && d.avgRating != null;
+      $('stRating').textContent = has ? Number(d.avgRating).toFixed(1) + ' / 5' : '—';
+      $('stReviews').textContent = has ? 'من ' + fmt(d.reviews) + ' تقييم حقيقي' : 'لا توجد تقييمات بعد';
+      setLive(true);
+    } catch (e) { setLive(false); }
+  }
+  load();
+  setInterval(function () { if (!document.hidden) load(); }, 30000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+})();
+</script>
 </body>
 </html>
