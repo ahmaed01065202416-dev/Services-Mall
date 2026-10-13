@@ -38,25 +38,28 @@
   Access-Control-Allow-Headers: Content-Type, Authorization
 
 /blog/*
-  Cache-Control: public, max-age=1800, stale-while-revalidate=86400
+  Cache-Control: public, max-age=300, stale-while-revalidate=600
   X-Robots-Tag: index, follow
 
 /about/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=0, must-revalidate
 
 /contact/*
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=0, must-revalidate
+
+/refund-policy/*
+  Cache-Control: public, max-age=0, must-revalidate
 
 /privacy/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=0, must-revalidate
 
 /terms/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.xml
   Cache-Control: public, max-age=3600
   Content-Type: application/xml; charset=UTF-8
 
 /robots.txt
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=3600
   Content-Type: text/plain; charset=UTF-8

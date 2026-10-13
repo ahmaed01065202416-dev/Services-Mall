@@ -66,7 +66,8 @@ export async function onRequest(context) {
 
   const urls = [
     entry('/blog/', newest, 'weekly', '0.9'),   // trailing slash = the URL Pages serves for the blog index (matches its canonical)
-    ...STATIC_ARTICLES.map(([slug, date]) => entry(`/blog/${encodeURIComponent(slug)}`, date, 'monthly', '0.7')),
+    // hand-written articles are folders → Pages serves them at /blog/<slug>/ (matches their canonical)
+    ...STATIC_ARTICLES.map(([slug, date]) => entry(`/blog/${encodeURIComponent(slug)}/`, date, 'monthly', '0.7')),
     ...posts.map(p => entry(`/blog/${encodeURIComponent(p.slug)}`, p.updated, 'monthly', '0.8')),
   ];
 
