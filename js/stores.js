@@ -132,6 +132,7 @@
                 grid.className = layout === 'list' ? 'grid grid-cols-1 gap-5 max-w-3xl mx-auto' : layout === 'grid4' ? 'grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'grid sm:grid-cols-2 lg:grid-cols-3 gap-5';
             }
             if (window.ServicesManager) ServicesManager._renderServiceCards(items, 'storeProductsGrid', 'storeProductsEmpty');
+            if (window.AffiliateUI) AffiliateUI.renderStoreProducts(storeId, document.getElementById('storeAffGrid'));
         },
 
         /** Marketplace theme search box: filters the store's listings in place. */
@@ -232,7 +233,7 @@
                 return;
             }
             const tabs = [['overview', 'fa-chart-pie', isAr() ? 'نظرة عامة' : 'Overview'], ['products', 'fa-box', isAr() ? 'المنتجات' : 'Products'],
-                ['settings', 'fa-gear', isAr() ? 'الإعدادات' : 'Settings'], ['design', 'fa-palette', isAr() ? 'التصميم' : 'Design'], ['promo', 'fa-star', isAr() ? 'الظهور في الأول' : 'Promote']];
+                ['affiliate', 'fa-link', isAr() ? 'منتجات التسويق' : 'Marketing products'], ['settings', 'fa-gear', isAr() ? 'الإعدادات' : 'Settings'], ['design', 'fa-palette', isAr() ? 'التصميم' : 'Design'], ['promo', 'fa-star', isAr() ? 'الظهور في الأول' : 'Promote']];
             box.innerHTML = `
             <div class="flex flex-wrap items-center gap-3 mb-5">
               <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-3 py-2 shadow-sm">
@@ -248,7 +249,13 @@
               <button onclick="StoresManager.setTab('${t[0]}')" class="whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ${D.tab === t[0] ? 'bg-navy-800 text-white' : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'}"><i class="fa-solid ${t[1]}"></i>${t[2]}</button>`).join('')}</div>
             <div id="storeTabBody"></div>`;
             const body = document.getElementById('storeTabBody');
-            ({ overview: this._tabOverview, products: this._tabProducts, settings: this._tabSettings, design: this._tabDesign, promo: this._tabPromo }[D.tab] || this._tabOverview).call(this, body, st);
+            ({ overview: this._tabOverview, products: this._tabProducts, settings: this._tabSettings, design: this._tabDesign, promo: this._tabPromo, affiliate: this._tabAffiliate }[D.tab] || this._tabOverview).call(this, body, st);
+        },
+
+        // «منتجات التسويق» — external-link products + tracked orders + dues/subscription (js/affiliate.js).
+        async _tabAffiliate(body) {
+            if (!window.AffiliateUI) { body.innerHTML = '<p class="text-red-500 text-center py-6">affiliate.js not loaded</p>'; return; }
+            await window.AffiliateUI.renderMarketerTab(body);
         },
 
         _tabOverview(body, st) {

@@ -1,0 +1,50 @@
+/* Generated: dark-mode overrides for hard-coded colours in the static pages' inline CSS.
+   Loaded only by static pages (about/contact/blog/legal/404) — NOT by index.html. */
+html.dark .ad-slot,
+html.dark .article-body tr:hover td,
+html.dark .article-content,
+html.dark .btn-white,
+html.dark .cat-btn,
+html.dark .compare-table td,
+html.dark .compare-table tr:hover td,
+html.dark .contact-card,
+html.dark .contact-form-section,
+html.dark .cta-banner a,
+html.dark .cta-btn,
+html.dark .faq-item,
+html.dark .gateway-card,
+html.dark .legal-card,
+html.dark .live-badge,
+html.dark .live-badge.off,
+html.dark .mission-item,
+html.dark .rel-card,
+html.dark .related-card,
+html.dark .s-widget,
+html.dark .service-card,
+html.dark .share-row,
+html.dark .stats-section,
+html.dark .sw,
+html.dark .tip,
+html.dark .tip-box,
+html.dark .values-section{background-color:var(--m-surface)!important}
+html.dark .article-body h2,
+html.dark .article-body h3,
+html.dark .article-body strong,
+html.dark a.back{color:var(--m-ink)!important}
+html.dark .article-body li,
+html.dark .article-body p,
+html.dark .article-content li,
+html.dark .article-content p,
+html.dark .body li,
+html.dark .body p,
+html.dark .cat-btn,
+html.dark .cta-banner a,
+html.dark .legal-card li,
+html.dark .legal-card p,
+html.dark .mission-content p{color:var(--m-mute)!important}
+html.dark .ad-slot,
+html.dark .article-body td,
+html.dark .cat-btn{border-color:var(--m-rule)!important}
+html.dark .stat-card,html.dark .mission-visual{background:var(--m-surface2)!important}
+html.dark img{filter:brightness(.92)}
+html.dark .m-tg img{filter:none}

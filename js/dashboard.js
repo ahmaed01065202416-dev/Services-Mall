@@ -1288,6 +1288,9 @@
                 }).join('');
             })();
 
+            } else if (tab === 'affiliate') {
+                if (window.AffiliateUI) await window.AffiliateUI.renderAdminTab(container);
+                else container.innerHTML = '<p class="text-red-500 text-center py-6">affiliate.js not loaded</p>';
             } else if (tab === 'dropship') {
                 if (window.DropshipUI) await window.DropshipUI.renderAdminTab(container);
                 else container.innerHTML = '<p class="text-red-500 text-center py-6">dropship.js not loaded</p>';
@@ -1951,6 +1954,7 @@
               <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
               <button onclick="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
               <button onclick="adminTab('dropship')"   class="tab-btn admin-pill-tab" id="adminTab_dropship"><i class="fa-solid fa-boxes-packing text-turquoise-500"></i>${isAr?'دروبشيبنج':'Dropshipping'}</button>
+              <button onclick="adminTab('affiliate')"  class="tab-btn admin-pill-tab" id="adminTab_affiliate"><i class="fa-solid fa-link text-turquoise-500"></i>${isAr?'التسويق بالرابط':'Link marketing'}</button>
               <button onclick="adminTab('stores')"     class="tab-btn admin-pill-tab" id="adminTab_stores"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'المتاجر':'Stores'}</button>
               <button onclick="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
               <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>

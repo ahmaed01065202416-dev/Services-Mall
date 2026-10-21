@@ -10,9 +10,9 @@
 (function () {
     'use strict';
     var CATS = [['clothing', 'ملابس', 'Clothing'], ['electronics', 'إلكترونيات', 'Electronics'], ['home', 'مستلزمات منزلية', 'Home'], ['beauty', 'مستحضرات تجميل', 'Beauty'], ['food', 'أطعمة ومشروبات', 'Food'], ['accessories', 'إكسسوارات', 'Accessories'], ['other', 'أخرى', 'Other']];
-    var DEFAULTS = { DROPSHIP_ENABLED: true, DROPSHIP_AUTO_APPROVE_SUPPLIERS: true, DROPSHIP_MIN_MARGIN_PERCENT: 10, DROPSHIP_MIN_MARGIN_FIXED: 1, DROPSHIP_FEE_BASE: 'margin', DROPSHIP_SHIP_SLA_DAYS: 3 };
+    var DEFAULTS = { DROPSHIP_ENABLED: true, DROPSHIP_AUTO_APPROVE_SUPPLIERS: true, DROPSHIP_MIN_MARGIN_PERCENT: 10, DROPSHIP_MIN_MARGIN_FIXED: 1, DROPSHIP_FEE_BASE: 'margin', DROPSHIP_SHIP_SLA_DAYS: 3, MARKETER_PROGRAM_ENABLED: false };
     var ST = { processing: ['بانتظار الشحن', 'To ship', 'bg-amber-100 text-amber-700'], shipped: ['تم الشحن', 'Shipped', 'bg-blue-100 text-blue-700'], delivered: ['تم التسليم', 'Delivered', 'bg-green-100 text-green-700'], completed: ['مكتمل', 'Completed', 'bg-green-100 text-green-700'] };
-    var state = { view: 'catalog', photos: [], cat: '', q: '' };
+    var state = { view: 'catalog', photos: [], cat: '', q: '', refresh: null };
 
     function ar() { return !window.AppState || window.AppState.language !== 'en'; }
     function esc(v) { return typeof window.escapeHtml === 'function' ? window.escapeHtml(v) : String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
@@ -49,6 +49,7 @@
 
     // ═════════════════════════ SELLER / SUPPLIER TAB ═══════════════════════════
     async function renderSellerTab(container) {
+        state.refresh = null;   // import/refresh callbacks belong to the container being drawn
         var me = uid(); if (!me) return;
         var ds = await settings();
         if (!ds.DROPSHIP_ENABLED) { container.innerHTML = '<p class="text-center text-gray-400 py-12">' + (ar() ? 'الدروبشيبنج متوقف حالياً' : 'Dropshipping is currently disabled') + '</p>'; return; }
@@ -93,11 +94,13 @@
             var list = all.filter(function (p) { return (!state.cat || p.category === state.cat) && (!q || (p.title || '').toLowerCase().indexOf(q) > -1); });
             var grid = document.getElementById('dsGrid'); if (!grid) return;
             grid.innerHTML = list.length ? list.map(function (p) {
-                var imp = mine[p.id];
+                var imp = mine[p.id], fl = floorPrice(p.wholesalePrice, ds), sugProfit = Number(p.suggestedPrice) > Number(p.wholesalePrice) ? Number(p.suggestedPrice) - Number(p.wholesalePrice) : 0;
                 return '<div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col"><div class="h-40 bg-gray-100"><img src="' + esc(p.image) + '" class="w-full h-full object-cover" loading="lazy" alt=""></div>' +
                     '<div class="p-3 flex flex-col gap-1.5 flex-1"><p class="font-black text-sm text-gray-900 line-clamp-2">' + esc(p.title) + '</p><p class="text-xs text-gray-400">' + esc(p.supplierName || '') + ' • ' + esc(catName(p.category)) + '</p>' +
                     '<div class="flex justify-between text-xs mt-1"><span class="text-gray-500">' + (ar() ? 'سعر الجملة' : 'Wholesale') + '</span><b class="text-navy-700">' + money(p.wholesalePrice) + '</b></div>' +
+                    '<div class="flex justify-between text-xs"><span class="text-gray-500">' + (ar() ? 'الحد الأدنى للبيع' : 'Min. selling price') + '</span><b>' + money(fl) + '</b></div>' +
                     (p.suggestedPrice ? '<div class="flex justify-between text-xs"><span class="text-gray-500">' + (ar() ? 'سعر مقترح' : 'Suggested') + '</span><b>' + money(p.suggestedPrice) + '</b></div>' : '') +
+                    (sugProfit ? '<div class="flex justify-between text-xs text-green-700"><span>' + (ar() ? 'الربح المتوقع (قبل العمولة)' : 'Expected profit (before fee)') + '</span><b>' + money(sugProfit) + '</b></div>' : '') +
                     '<div class="flex justify-between text-xs text-gray-500"><span>' + (ar() ? 'مخزون ' : 'Stock ') + p.stock + '</span><span>' + (ar() ? 'توصيل ' : 'Ships in ') + p.shipDays + (ar() ? ' يوم' : 'd') + '</span></div>' +
                     '<button ' + (imp ? 'disabled' : 'data-imp="' + esc(p.id) + '"') + ' class="mt-auto pt-0 text-xs font-bold py-2 rounded-xl ' + (imp ? 'bg-gray-100 text-gray-400' : 'bg-turquoise-600 text-white hover:bg-turquoise-700') + '">' + (imp ? (ar() ? 'مستورد بالفعل' : 'Already imported') : (ar() ? 'استورد وبيع' : 'Import & sell')) + '</button></div></div>';
             }).join('') : '<p class="col-span-full text-center text-gray-400 py-10">' + (ar() ? 'مفيش منتجات مطابقة' : 'No matching products') + '</p>';
@@ -132,14 +135,15 @@
             var b = this, price = parseFloat(document.getElementById('dsImpPrice').value) || 0;
             if (price < floor) return toast((ar() ? 'أقل سعر مسموح ' : 'Minimum price ') + floor, 'warning');
             b.disabled = true;
-            try { await api('importProduct', { supplierProductId: p.id, price: price, title: document.getElementById('dsImpTitle').value }); closeModal(); toast(ar() ? '✅ تم نشر المنتج في متجرك' : '✅ Published to your store', 'success'); var c = document.getElementById('dsBody'); if (c && c.parentNode) renderSellerTab(c.parentNode); }
+            try { await api('importProduct', { supplierProductId: p.id, price: price, title: document.getElementById('dsImpTitle').value }); closeModal(); toast(ar() ? '✅ تم نشر المنتج في متجرك' : '✅ Published to your store', 'success'); if (state.refresh) state.refresh(); else { var c = document.getElementById('dsBody'); if (c && c.parentNode) renderSellerTab(c.parentNode); } }
             catch (e) { b.disabled = false; toast(e.message, 'error'); }
         };
     }
 
     // ── supplier: my products ──────────────────────────────────────────────────
-    async function viewMine(body, container) {
-        var snap = await window.db.collection('supplier_products').where('supplierId', '==', uid()).get();
+    async function viewMine(body, container, opts) {
+        opts = opts || {}; var sid = opts.sid || uid(), refresh = opts.refresh || function () { renderSellerTab(container); };
+        var snap = await window.db.collection('supplier_products').where('supplierId', '==', sid).get();
         var list = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return ms(b.createdAt) - ms(a.createdAt); });
         body.innerHTML = '<div class="flex justify-between items-center mb-4"><h3 class="font-black text-gray-900">' + (ar() ? 'منتجاتي (' : 'My products (') + list.length + ')</h3><button id="dsNew" class="btn-primary text-sm px-4 py-2"><i class="fa-solid fa-plus me-1"></i>' + (ar() ? 'منتج جديد' : 'New product') + '</button></div>' +
             (list.length ? '<div class="space-y-3">' + list.map(function (p) {
@@ -150,9 +154,9 @@
                     (p.blocked ? '' : '<button data-tgl="' + esc(p.id) + '" data-on="' + (p.active !== false ? '1' : '0') + '" class="text-xs px-3 py-1.5 rounded-lg font-bold ' + (p.active !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500') + '">' + (p.active !== false ? (ar() ? 'مفعّل' : 'Active') : (ar() ? 'متوقف' : 'Paused')) + '</button>') + '</div></div></div>';
             }).join('') + '</div>' : '<p class="text-center text-gray-400 py-10">' + (ar() ? 'لسه ما أضفتش منتجات' : 'No products yet') + '</p>');
         var byId = {}; list.forEach(function (p) { byId[p.id] = p; });
-        document.getElementById('dsNew').onclick = function () { openProductForm(null, container); };
-        body.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openProductForm(byId[b.getAttribute('data-edit')], container); }; });
-        body.querySelectorAll('[data-tgl]').forEach(function (b) { b.onclick = async function () { try { await api('supplierToggleProduct', { id: b.getAttribute('data-tgl'), active: b.getAttribute('data-on') !== '1' }); renderSellerTab(container); } catch (e) { toast(e.message, 'error'); } }; });
+        document.getElementById('dsNew').onclick = function () { openProductForm(null, container, { action: opts.saveAction, refresh: refresh }); };
+        body.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openProductForm(byId[b.getAttribute('data-edit')], container, { action: opts.saveAction, refresh: refresh }); }; });
+        body.querySelectorAll('[data-tgl]').forEach(function (b) { b.onclick = async function () { try { await api(opts.toggleAction || 'supplierToggleProduct', { id: b.getAttribute('data-tgl'), active: b.getAttribute('data-on') !== '1' }); refresh(); } catch (e) { toast(e.message, 'error'); } }; });
     }
     function photoGrid() {
         var g = document.getElementById('dsPhotos'); if (!g) return;
@@ -164,8 +168,8 @@
         g.querySelectorAll('[data-rm]').forEach(function (b) { b.onclick = function () { state.photos.splice(parseInt(b.getAttribute('data-rm'), 10), 1); photoGrid(); }; });
         var c = document.getElementById('dsPhotoCount'); if (c) c.textContent = '(' + state.photos.length + '/5)';
     }
-    function openProductForm(p, container) {
-        p = p || {}; state.photos = [].concat(p.image ? [p.image] : [], (p.images || []).filter(function (u) { return u !== p.image; })).slice(0, 5).map(function (u) { return { url: u }; });
+    function openProductForm(p, container, opts) {
+        opts = opts || {}; p = p || {}; state.photos = [].concat(p.image ? [p.image] : [], (p.images || []).filter(function (u) { return u !== p.image; })).slice(0, 5).map(function (u) { return { url: u }; });
         modal('<div class="flex justify-between items-start mb-3"><h3 class="font-black text-lg">' + (p.id ? (ar() ? 'تعديل المنتج' : 'Edit product') : (ar() ? 'منتج جديد' : 'New product')) + '</h3><button id="dsX" class="text-gray-400 text-xl">&times;</button></div><div class="space-y-3">' +
             field(ar() ? 'العنوان' : 'Title', '<input id="spTitle" class="input-field w-full mt-1" maxlength="120" value="' + esc(p.title || '') + '">') +
             field(ar() ? 'الوصف' : 'Description', '<textarea id="spDesc" rows="3" class="input-field w-full mt-1" maxlength="2000">' + esc(p.description || '') + '</textarea>') +
@@ -195,16 +199,17 @@
             try {
                 var urls = [];
                 for (var i = 0; i < state.photos.length; i++) { var x = state.photos[i]; urls.push(x.url ? x.url : await window.uploadFile(x.file, 'supplier', 'sp_' + Date.now() + '_' + i, { maxPx: 900, maxLen: Math.min(per, 330000) })); }
-                await api('supplierSaveProduct', { id: p.id || '', title: val('spTitle'), description: val('spDesc'), category: val('spCat'), wholesalePrice: parseFloat(val('spWho')), suggestedPrice: parseFloat(val('spSug')) || 0, stock: parseInt(val('spStock'), 10), shipDays: parseInt(val('spShip'), 10), image: urls[0], images: urls });
-                closeModal(); toast(ar() ? '✅ تم الحفظ' : '✅ Saved', 'success'); renderSellerTab(container);
+                await api(opts.action || 'supplierSaveProduct', { id: p.id || '', title: val('spTitle'), description: val('spDesc'), category: val('spCat'), wholesalePrice: parseFloat(val('spWho')), suggestedPrice: parseFloat(val('spSug')) || 0, stock: parseInt(val('spStock'), 10), shipDays: parseInt(val('spShip'), 10), image: urls[0], images: urls });
+                closeModal(); toast(ar() ? '✅ تم الحفظ' : '✅ Saved', 'success'); (opts.refresh || function () { renderSellerTab(container); })();
             } catch (e) { b.disabled = false; b.textContent = ar() ? 'حفظ' : 'Save'; toast(e.message, 'error'); }
         };
         function val(id) { return (document.getElementById(id) || {}).value || ''; }
     }
 
     // ── supplier: orders to ship ───────────────────────────────────────────────
-    async function viewOrders(body, container) {
-        var snap = await window.db.collection('dropship_orders').where('supplierId', '==', uid()).get();
+    async function viewOrders(body, container, opts) {
+        opts = opts || {}; var sid = opts.sid || uid(), refresh = opts.refresh || function () { renderSellerTab(container); };
+        var snap = await window.db.collection('dropship_orders').where('supplierId', '==', sid).get();
         var list = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return ms(b.createdAt) - ms(a.createdAt); });
         body.innerHTML = list.length ? '<div class="space-y-3">' + list.map(function (o) {
             var s = o.shippingInfo || {};
@@ -216,17 +221,18 @@
                 (o.status === 'processing' ? '<button data-ship="' + esc(o.id) + '" class="mt-3 px-4 py-2 bg-navy-700 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-truck me-1"></i>' + (ar() ? 'تم الشحن' : 'Mark shipped') + '</button>' : '') +
                 (o.status === 'shipped' ? '<button data-dlv="' + esc(o.id) + '" class="mt-3 px-4 py-2 bg-turquoise-600 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-house-circle-check me-1"></i>' + (ar() ? 'تم التسليم' : 'Mark delivered') + '</button>' : '') + '</div>';
         }).join('') + '</div>' : '<p class="text-center text-gray-400 py-10">' + (ar() ? 'مفيش طلبات شحن حالياً' : 'No orders to ship') + '</p>';
-        body.querySelectorAll('[data-ship]').forEach(function (b) { b.onclick = function () { openShip(b.getAttribute('data-ship'), container); }; });
-        body.querySelectorAll('[data-dlv]').forEach(function (b) { b.onclick = async function () { if (!confirm(ar() ? 'تأكيد إن الطلب اتسلّم للعميل؟' : 'Confirm the order was delivered?')) return; try { await api('supplierDelivered', { orderId: b.getAttribute('data-dlv') }); toast(ar() ? '✅ تم' : '✅ Done', 'success'); renderSellerTab(container); } catch (e) { toast(e.message, 'error'); } }; });
+        body.querySelectorAll('[data-ship]').forEach(function (b) { b.onclick = function () { openShip(b.getAttribute('data-ship'), container, refresh); }; });
+        body.querySelectorAll('[data-dlv]').forEach(function (b) { b.onclick = async function () { if (!confirm(ar() ? 'تأكيد إن الطلب اتسلّم للعميل؟' : 'Confirm the order was delivered?')) return; try { await api('supplierDelivered', { orderId: b.getAttribute('data-dlv') }); toast(ar() ? '✅ تم' : '✅ Done', 'success'); refresh(); } catch (e) { toast(e.message, 'error'); } }; });
     }
-    function openShip(orderId, container) {
+    function openShip(orderId, container, refresh) {
+        refresh = refresh || function () { renderSellerTab(container); };
         modal('<div class="flex justify-between mb-3"><h3 class="font-black text-lg">' + (ar() ? 'بيانات الشحن' : 'Shipping details') + '</h3><button id="dsX" class="text-gray-400 text-xl">&times;</button></div><div class="space-y-3">' +
             field(ar() ? 'شركة الشحن' : 'Carrier', '<input id="shCar" class="input-field w-full mt-1" maxlength="60">') + field(ar() ? 'رقم التتبع' : 'Tracking number', '<input id="shTrk" class="input-field w-full mt-1" dir="ltr" maxlength="80">') +
             '<button id="shGo" class="btn-primary w-full py-2.5">' + (ar() ? 'تأكيد الشحن' : 'Confirm shipment') + '</button></div>');
         document.getElementById('dsX').onclick = closeModal;
         document.getElementById('shGo').onclick = async function () {
             var b = this; b.disabled = true;
-            try { await api('supplierShip', { orderId: orderId, carrier: document.getElementById('shCar').value, trackingNumber: document.getElementById('shTrk').value }); closeModal(); toast(ar() ? '✅ تم تسجيل الشحن وإخطار العميل' : '✅ Shipment recorded', 'success'); renderSellerTab(container); }
+            try { await api('supplierShip', { orderId: orderId, carrier: document.getElementById('shCar').value, trackingNumber: document.getElementById('shTrk').value }); closeModal(); toast(ar() ? '✅ تم تسجيل الشحن وإخطار العميل' : '✅ Shipment recorded', 'success'); refresh(); }
             catch (e) { b.disabled = false; toast(e.message, 'error'); }
         };
     }
@@ -257,18 +263,42 @@
                 var c = await settings();
                 body.innerHTML = '<div class="max-w-lg space-y-4">' +
                     '<label class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl"><input id="dsOn" type="checkbox" ' + (c.DROPSHIP_ENABLED !== false ? 'checked' : '') + '><div><p class="font-bold text-sm">' + (ar() ? 'تفعيل الدروبشيبنج' : 'Enable dropshipping') + '</p><p class="text-xs text-gray-500">' + (ar() ? 'لو اتقفل: ما ينفعش شراء أي منتج دروبشيبنج ولا استيراد جديد.' : 'When off: no dropship purchases or imports.') + '</p></div></label>' +
+                    '<label class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl"><input id="dsMkt" type="checkbox" ' + (c.MARKETER_PROGRAM_ENABLED === true ? 'checked' : '') + '><div><p class="font-bold text-sm">' + (ar() ? 'تفعيل برنامج المسوّقين («ابدأ كمسوّق»)' : 'Enable marketer program') + '</p><p class="text-xs text-gray-500">' + (ar() ? 'مقفول افتراضياً. لما يتفعّل بيظهر زرار «ابدأ كمسوّق» لأي مستخدم مسجّل.' : 'Off by default. When on, signed-in users see a Start as marketer button.') + '</p></div></label>' +
                     '<label class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl"><input id="dsAuto" type="checkbox" ' + (c.DROPSHIP_AUTO_APPROVE_SUPPLIERS !== false ? 'checked' : '') + '><div><p class="font-bold text-sm">' + (ar() ? 'تفعيل الموردين تلقائياً' : 'Auto-approve suppliers') + '</p><p class="text-xs text-gray-500">' + (ar() ? 'لو اتقفل: كل مورد جديد بيستنى موافقتك.' : 'When off, new suppliers wait for your approval.') + '</p></div></label>' +
                     '<div class="grid grid-cols-2 gap-3">' + field(ar() ? 'أقل هامش ربح للبائع (%)' : 'Min reseller margin (%)', '<input id="dsMp" type="number" min="0" max="500" step="0.1" class="input-field w-full mt-1" value="' + c.DROPSHIP_MIN_MARGIN_PERCENT + '">') + field(ar() ? 'أقل هامش ثابت (ج.م)' : 'Min fixed margin (EGP)', '<input id="dsMf" type="number" min="0" step="0.01" class="input-field w-full mt-1" value="' + c.DROPSHIP_MIN_MARGIN_FIXED + '">') + '</div>' +
                     field(ar() ? 'عمولة المنصة تُحسب على' : 'Platform commission is calculated on', '<select id="dsBase" class="input-field w-full mt-1"><option value="margin"' + (c.DROPSHIP_FEE_BASE !== 'total' ? ' selected' : '') + '>' + (ar() ? 'هامش البائع فقط (الافتراضي)' : "Reseller's margin only (default)") + '</option><option value="total"' + (c.DROPSHIP_FEE_BASE === 'total' ? ' selected' : '') + '>' + (ar() ? 'سعر البيع كامل (بحد أقصى الهامش)' : 'Full selling price (capped at margin)') + '</option></select>') +
                     field(ar() ? 'مهلة شحن المورد (أيام) قبل التنبيه' : 'Supplier shipping deadline (days) before reminder', '<input id="dsSla" type="number" min="1" max="30" class="input-field w-full mt-1" value="' + c.DROPSHIP_SHIP_SLA_DAYS + '">') +
                     '<button id="dsSave" class="btn-primary px-6 py-2.5 text-sm">' + (ar() ? 'حفظ' : 'Save') + '</button></div>';
                 document.getElementById('dsSave').onclick = async function () {
-                    var data = { DROPSHIP_ENABLED: document.getElementById('dsOn').checked, DROPSHIP_AUTO_APPROVE_SUPPLIERS: document.getElementById('dsAuto').checked, DROPSHIP_MIN_MARGIN_PERCENT: Math.max(0, parseFloat(document.getElementById('dsMp').value) || 0), DROPSHIP_MIN_MARGIN_FIXED: Math.max(0, parseFloat(document.getElementById('dsMf').value) || 0), DROPSHIP_FEE_BASE: document.getElementById('dsBase').value === 'total' ? 'total' : 'margin', DROPSHIP_SHIP_SLA_DAYS: Math.min(30, Math.max(1, parseInt(document.getElementById('dsSla').value, 10) || 3)) };
+                    var data = { DROPSHIP_ENABLED: document.getElementById('dsOn').checked, DROPSHIP_AUTO_APPROVE_SUPPLIERS: document.getElementById('dsAuto').checked, MARKETER_PROGRAM_ENABLED: document.getElementById('dsMkt').checked, DROPSHIP_MIN_MARGIN_PERCENT: Math.max(0, parseFloat(document.getElementById('dsMp').value) || 0), DROPSHIP_MIN_MARGIN_FIXED: Math.max(0, parseFloat(document.getElementById('dsMf').value) || 0), DROPSHIP_FEE_BASE: document.getElementById('dsBase').value === 'total' ? 'total' : 'margin', DROPSHIP_SHIP_SLA_DAYS: Math.min(30, Math.max(1, parseInt(document.getElementById('dsSla').value, 10) || 3)) };
                     try { await window.db.collection('settings').doc('platform').set(data, { merge: true }); toast(ar() ? '✅ تم الحفظ' : '✅ Saved', 'success'); } catch (e) { toast(e.message, 'error'); }
                 };
             }
         } catch (e) { body.innerHTML = '<p class="text-red-500 text-center py-6">' + esc(e.message) + '</p>'; }
     }
 
-    window.DropshipUI = { renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab };
+    // ═════════════════════════ MARKETER (ابدأ كمسوّق) ══════════════════════════
+    async function marketerEnabled() { var ds = await settings(); return ds.MARKETER_PROGRAM_ENABLED === true; }
+    async function startMarketer() {
+        var u = window.AppState && window.AppState.currentUser;
+        if (!u) { if (typeof window.navigateTo === 'function') window.navigateTo('login'); return; }
+        if (u.role === 'admin') return toast(ar() ? 'حساب الإدارة مش محتاج تسجيل كمسوّق' : 'Admins do not need this', 'info');
+        modal('<div class="flex justify-between items-start mb-3"><h3 class="font-black text-lg text-gray-900"><i class="fa-solid fa-bullhorn me-1 text-turquoise-600"></i>' + (ar() ? 'ابدأ كمسوّق' : 'Start as a marketer') + '</h3><button id="mkX" class="text-gray-400 text-xl">&times;</button></div>' +
+            '<p class="text-xs text-gray-600 mb-3">' + (ar() ? 'هيتم تحويل حسابك لبائع وإنشاء متجرك الأول. بعدها من «متجري ← منتجات التسويق» ضيف رابط أي منتج من المنصة اللي بتسوّق لها، وهيظهر في متجرك. العميل بيدفع على المنصة الخارجية، وإحنا بنتتبع طلبك.' : 'Your account becomes a seller account and your first store is created. Then add links to products from the platform you promote; customers pay there and we track your orders.') + '</p>' +
+            field(ar() ? 'اسم متجرك' : 'Store name', '<input id="mkName" class="input-field w-full mt-1 mb-3" maxlength="60" value="' + esc(u.name || u.displayName || '') + '">') +
+            '<button id="mkGo" class="btn-primary w-full py-2.5">' + (ar() ? 'ابدأ الآن' : 'Start now') + '</button>');
+        document.getElementById('mkX').onclick = closeModal;
+        document.getElementById('mkGo').onclick = async function () {
+            var b = this; b.disabled = true;
+            try {
+                await api('startMarketer', { storeName: document.getElementById('mkName').value });
+                u.role = 'seller'; closeModal();
+                toast(ar() ? '✅ تم تفعيل حسابك كمسوّق وإنشاء متجرك' : '✅ You are a marketer now', 'success');
+                if (window.StoresManager && window.StoresManager._D) { window.StoresManager._D.tab = 'affiliate'; window.StoresManager._D.cur = null; }
+                if (typeof window.navigateTo === 'function') window.navigateTo('my-store');
+            } catch (e) { b.disabled = false; toast(e.message, 'error'); }
+        };
+    }
+
+    window.DropshipUI = { renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab, startMarketer: startMarketer, marketerEnabled: marketerEnabled };
 })();

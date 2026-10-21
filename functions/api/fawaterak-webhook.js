@@ -16,6 +16,7 @@ import { finalizePendingPayment, hmacHex, timingSafeEqual } from './payment.js';
 import { activateSubscriptionToken } from './subscription.js';
 import { activateAdPayment } from './ads.js';
 import { activateStorePayment } from './stores.js';
+import { activateMarketerPayment } from './affiliate.js';
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -85,6 +86,13 @@ export async function onRequest(context) {
         if (payLoad && payLoad.storeSubId) {
             const r = await activateStorePayment(env, payLoad.storeSubId, data.invoice_id);
             console.log('[FawaterakWebhook] store plan payment:', payLoad.storeSubId, JSON.stringify(r));
+            return new Response('OK', { status: 200 });
+        }
+
+        // Marketer program: subscription plan or settlement of fees owed (see functions/api/affiliate.js).
+        if (payLoad && (payLoad.mktSubId || payLoad.mktDuesId)) {
+            const r = await activateMarketerPayment(env, payLoad, data.invoice_id);
+            console.log('[FawaterakWebhook] marketer payment:', JSON.stringify(payLoad), JSON.stringify(r));
             return new Response('OK', { status: 200 });
         }
 

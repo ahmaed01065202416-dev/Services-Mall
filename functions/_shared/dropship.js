@@ -24,7 +24,9 @@ export const DEFAULT_DROPSHIP = {
     DROPSHIP_MIN_MARGIN_FIXED: 1,            // …and at least this many EGP
     DROPSHIP_FEE_BASE: 'margin',             // 'margin' | 'total' — what the platform commission is calculated on
     DROPSHIP_SHIP_SLA_DAYS: 3,               // supplier must ship within N days (reminder after)
+    MARKETER_PROGRAM_ENABLED: false,         // «ابدأ كمسوّق» — OFF by default, admin turns it on
 };
+
 
 export async function getDropshipSettings(env) {
     const d = await fsGet(env, 'settings/platform').catch(() => null);
@@ -36,6 +38,7 @@ export async function getDropshipSettings(env) {
     out.DROPSHIP_MIN_MARGIN_FIXED = Math.max(0, Number(out.DROPSHIP_MIN_MARGIN_FIXED) || 0);
     out.DROPSHIP_FEE_BASE = out.DROPSHIP_FEE_BASE === 'total' ? 'total' : 'margin';
     out.DROPSHIP_SHIP_SLA_DAYS = Math.max(1, Number(out.DROPSHIP_SHIP_SLA_DAYS) || 3);
+    out.MARKETER_PROGRAM_ENABLED = out.MARKETER_PROGRAM_ENABLED === true;
     return out;
 }
 

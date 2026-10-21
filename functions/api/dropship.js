@@ -11,8 +11,9 @@
  *  supplierSaveProduct   supplier            → create/update a catalogue product
  *  supplierToggleProduct supplier            → pause / resume
  *  importProduct         seller (reseller)   → creates MY listing for a supplier product
- *  supplierShip          the order's supplier→ carrier + tracking number, order → shipped
- *  supplierDelivered     the order's supplier→ order → delivered (buyer can now confirm)
+ *  supplierShip          the order's supplier → carrier + tracking number, order → shipped
+ *  supplierDelivered     the order's supplier → order → delivered (buyer can now confirm)
+ *  startMarketer         any signed-in user  → becomes a seller + gets a store in one click (needs MARKETER_PROGRAM_ENABLED)
  *  adminSetSupplier      admin               → active / suspended
  *  adminSetProduct       admin               → active / blocked
  *  slaSweep              cron (X-Admin-Token)→ late-to-ship reminders
@@ -158,18 +159,18 @@ async function loadFulfilment(env, auth, body, allowed) {
     const orderId = safeId(body.orderId), dso = orderId && await fsGet(env, `dropship_orders/${orderId}`);
     if (!dso) throw err(404, 'الطلب غير موجود');
     if (dso.supplierId !== auth.uid) throw err(403, 'الطلب ده مش بتاعك');
+    const actorName = (await requireSupplier(env, auth.uid)).name;
     if (!allowed.includes(dso.status)) throw err(409, 'حالة الطلب لا تسمح بالإجراء ده');
     const order = await fsGet(env, `orders/${orderId}`);
     if (!order || ['refunded', 'cancelled', 'completed', 'disputed'].includes(order.status)) throw err(409, 'الطلب لم يعد قابلاً للشحن');
-    return { orderId, dso, order };
+    return { orderId, dso, order, actorName };
 }
 async function chatNote(env, orderId, sender, status) {
     try { await rtdbUpdate(env, `chats/${orderId}/messages/${crypto.randomUUID().replace(/-/g, '')}`, { senderId: sender.uid, senderName: sender.name || 'المورد', type: 'shipping_update', shippingStatus: status, createdAt: Date.now() }); }
     catch (e) { console.warn('[dropship] chat note skipped:', e.message); }
 }
 async function supplierShip(body, env, auth) {
-    const sup = await requireSupplier(env, auth.uid);
-    const { orderId, dso, order } = await loadFulfilment(env, auth, body, ['processing']);
+    const { orderId, dso, order, actorName } = await loadFulfilment(env, auth, body, ['processing']);
     const carrier = clean(body.carrier, 60), tracking = clean(body.trackingNumber, 80);
     if (carrier.length < 2) throw err(400, 'اكتب اسم شركة الشحن');
     if (tracking.length < 3) throw err(400, 'اكتب رقم التتبع');
@@ -178,19 +179,42 @@ async function supplierShip(body, env, auth) {
     await fsSet(env, `orders/${orderId}`, { shippingStatus: 'shipped', carrier, trackingNumber: tracking, shippedAt: now, updatedAt: now }, true);
     await notify(env, order.buyerId, '🚚 تم شحن طلبك!', `"${order.serviceTitle || ''}" في الطريق إليك — ${carrier} • رقم التتبع ${tracking}`, { orderId });
     if (dso.resellerId) await notify(env, dso.resellerId, '🚚 المورد شحن الطلب', `تم شحن "${order.serviceTitle || ''}" — رقم التتبع ${tracking}`, { orderId });
-    await chatNote(env, orderId, { uid: auth.uid, name: sup.name }, 'shipped');
+    await chatNote(env, orderId, { uid: auth.uid, name: actorName }, 'shipped');
     return { orderId, status: 'shipped' };
 }
 async function supplierDelivered(body, env, auth) {
-    const sup = await requireSupplier(env, auth.uid);
-    const { orderId, dso, order } = await loadFulfilment(env, auth, body, ['shipped']);
+    const { orderId, dso, order, actorName } = await loadFulfilment(env, auth, body, ['shipped']);
     const now = new Date();
     await fsSet(env, `dropship_orders/${orderId}`, { status: 'delivered', deliveredAt: now }, true);
     // Same state the existing seller flow (OrderWorkspace.markProductDelivered) produces → buyer's "confirm receipt" button appears.
     await fsSet(env, `orders/${orderId}`, { shippingStatus: 'delivered', status: 'delivered', deliveredAt: now, updatedAt: now }, true);
     await notify(env, order.buyerId, '📦 تم تسليم طلبك!', `"${order.serviceTitle || ''}" تم تسليمه — راجع الطلب وأكّد الاستلام`, { orderId });
-    await chatNote(env, orderId, { uid: auth.uid, name: sup.name }, 'delivered');
+    await chatNote(env, orderId, { uid: auth.uid, name: actorName }, 'delivered');
     return { orderId, status: 'delivered' };
+}
+
+// ── marketer: «ابدأ كمسوّق» — seller role + first store in one click ─────────
+async function startMarketer(body, env, auth) {
+    const ds = await getDropshipSettings(env);
+    if (!ds.MARKETER_PROGRAM_ENABLED) throw err(403, 'برنامج المسوّقين غير متاح حالياً');
+    const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
+    if (!user) throw err(400, 'أكمل بيانات حسابك الأول');
+    if (user.role === 'admin') throw err(400, 'حساب الإدارة مش محتاج تسجيل كمسوّق');
+    const now = new Date();
+    const upd = { updatedAt: now };
+    if (user.role !== 'seller') upd.role = 'seller';
+    if (!user.isMarketer) { upd.isMarketer = true; upd.marketerSince = now; }
+    if (Object.keys(upd).length > 1) await fsSet(env, `users/${auth.uid}`, upd, true);
+    // First store lives at stores/{uid} (same id scheme as StoresManager.createStore). Never overwrite an existing one.
+    let storeCreated = false;
+    if (!(await fsGet(env, `stores/${auth.uid}`))) {
+        const name = clean(body.storeName, 60) || clean(user.name || user.displayName, 40) || 'متجري';
+        if (name.length < 2) throw err(400, 'اكتب اسم المتجر');
+        if (LEAK.test(name)) throw err(400, 'ممنوع وضع بيانات تواصل في اسم المتجر');
+        await fsSet(env, `stores/${auth.uid}`, { ownerId: auth.uid, name, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', isMarketerStore: true, createdAt: now, updatedAt: now });
+        storeCreated = true;
+    }
+    return { role: 'seller', storeCreated };
 }
 
 // ── admin ───────────────────────────────────────────────────────────────────
@@ -250,11 +274,12 @@ export async function onRequest(context) {
         const auth = tok ? await verifyIdToken(tok, env) : null;
         if (!auth) return json(401, CORS, { error: 'يجب تسجيل الدخول' });
 
-        const handlers = { becomeSupplier, supplierSaveProduct, supplierToggleProduct, importProduct, supplierShip, supplierDelivered };
+        const handlers = { becomeSupplier, supplierSaveProduct, supplierToggleProduct, importProduct, supplierShip, supplierDelivered, startMarketer };
         if (handlers[action]) return json(200, CORS, { success: true, ...(await handlers[action](body, env, auth)) });
-        if (action === 'adminSetSupplier' || action === 'adminSetProduct') {
+        const adminHandlers = { adminSetSupplier, adminSetProduct };
+        if (adminHandlers[action]) {
             if (!(await isAdminUid(env, auth.uid))) return json(403, CORS, { error: 'للإدارة فقط' });
-            return json(200, CORS, { success: true, ...(await (action === 'adminSetSupplier' ? adminSetSupplier : adminSetProduct)(body, env)) });
+            return json(200, CORS, { success: true, ...(await adminHandlers[action](body, env)) });
         }
         return json(400, CORS, { error: `Unknown action: ${action}` });
     } catch (e) {
