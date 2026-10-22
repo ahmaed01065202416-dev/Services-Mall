@@ -48,14 +48,19 @@
     const StoresManager = {
         COUNTRIES, countryName, isFeatured,
         _all: [],
+        _TTL: 60000,
+        _cacheGet(k) { try { const o = JSON.parse(sessionStorage.getItem('stc_' + k) || 'null'); return o && Date.now() - o.t < this._TTL ? o.v : null; } catch (_) { return null; } },
+        _cacheSet(k, v) { try { sessionStorage.setItem('stc_' + k, JSON.stringify({ t: Date.now(), v })); } catch (_) {} },
+        _cacheBust() { try { Object.keys(sessionStorage).filter(k => k.startsWith('stc_')).forEach(k => sessionStorage.removeItem(k)); } catch (_) {} },
 
         // ── Home: featured stores at the very top ───────────────────────────
         async loadHomeStrip() {
             const sec = document.getElementById('homeStoresSection'), grid = document.getElementById('homeStoresGrid');
             if (!sec || !grid || !window.db || PLATFORM.STORES_ENABLED === false) return;
             try {
-                const snap = await window.db.collection(COLLECTIONS.STORES).where('featuredUntil', '>', new Date()).limit(24).get();
-                const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.status !== 'paused').sort(sortStores).slice(0, 8);
+                let raw = this._cacheGet('home');
+                if (!raw) { const snap = await window.db.collection(COLLECTIONS.STORES).where('featuredUntil', '>', new Date()).limit(24).get(); raw = snap.docs.map(d => ({ id: d.id, ...d.data() })); this._cacheSet('home', raw); }
+                const list = raw.filter(s => s.status !== 'paused').sort(sortStores).slice(0, 8);
                 if (!list.length) { sec.classList.add('hidden'); return; }
                 grid.innerHTML = list.map(storeCard).join('');
                 sec.classList.remove('hidden');
@@ -73,8 +78,9 @@
                 sel.dataset.ready = '1';
             }
             try {
-                const snap = await window.db.collection(COLLECTIONS.STORES).limit(200).get();
-                this._all = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.status !== 'paused');
+                let raw = this._cacheGet('all');
+                if (!raw) { const snap = await window.db.collection(COLLECTIONS.STORES).limit(200).get(); raw = snap.docs.map(d => ({ id: d.id, ...d.data() })); this._cacheSet('all', raw); }
+                this._all = raw.filter(s => s.status !== 'paused');
             } catch (e) { grid.innerHTML = `<p class="col-span-full text-center text-red-500 py-8">${esc(e.message)}</p>`; return; }
             this.filterStores();
         },
@@ -83,7 +89,14 @@
             const q = (document.getElementById('storesSearch')?.value || '').trim().toLowerCase();
             const c = document.getElementById('storesCountry')?.value || '';
             const list = this._all.filter(s => (!q || String(s.name || '').toLowerCase().includes(q)) && (!c || s.country === c)).sort(sortStores);
-            grid.innerHTML = list.length ? list.map(storeCard).join('') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
+            this._shown = list; this._n = 24; grid.innerHTML = list.length ? list.slice(0, 24).map(storeCard).join('') + (list.length > 24 ? `<button onclick="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : '') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
+        },
+
+        moreStores() {
+            const grid = document.getElementById('storesGrid'), btn = document.getElementById('storesMore'); if (!grid || !this._shown) return;
+            const next = this._shown.slice(this._n, this._n + 24); this._n += 24;
+            if (btn) btn.remove();
+            grid.insertAdjacentHTML('beforeend', next.map(storeCard).join('') + (this._n < this._shown.length ? `<button onclick="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : ''));
         },
 
         // ── One store page (public) — themed by the owner ───────────────────
@@ -95,14 +108,17 @@
             if (head) head.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>';
             let store = null, items = [];
             try {
-                const ss = await window.db.collection(COLLECTIONS.STORES).doc(storeId).get();
+                const SV = window.db.collection(COLLECTIONS.SERVICES);
+                // Run the store doc, the storeId query and the legacy sellerId query in parallel (was sequential).
+                const [ss, byStore, bySeller] = await Promise.all([
+                    window.db.collection(COLLECTIONS.STORES).doc(storeId).get(),
+                    SV.where('storeId', '==', storeId).where('active', '==', true).limit(60).get(),
+                    SV.where('sellerId', '==', storeId).where('active', '==', true).limit(60).get().catch(() => ({ docs: [] })),
+                ]);
                 store = ss.exists ? { id: ss.id, ...ss.data() } : null;
                 const ownerId = store ? store.ownerId : storeId;
-                const isFirst = !store || store.id === store.ownerId;      // the first store also owns listings that predate stores
-                const q = isFirst
-                    ? window.db.collection(COLLECTIONS.SERVICES).where('sellerId', '==', ownerId).where('active', '==', true).limit(200)
-                    : window.db.collection(COLLECTIONS.SERVICES).where('storeId', '==', storeId).where('active', '==', true).limit(200);
-                const ls = await q.get();
+                const isFirst = !store || store.id === store.ownerId;
+                const seen = new Set(); const ls = { docs: [...byStore.docs, ...(isFirst ? bySeller.docs : [])].filter(d => !seen.has(d.id) && seen.add(d.id)) };
                 items = ls.docs.map(d => ({ id: d.id, ...d.data() }));
                 if (isFirst) items = items.filter(x => !x.storeId || x.storeId === storeId);
             } catch (e) { if (head) head.innerHTML = `<p class="text-center text-red-500 py-8">${esc(e.message)}</p>`; return; }
@@ -132,6 +148,7 @@
                 grid.className = layout === 'list' ? 'grid grid-cols-1 gap-5 max-w-3xl mx-auto' : layout === 'grid4' ? 'grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'grid sm:grid-cols-2 lg:grid-cols-3 gap-5';
             }
             if (window.ServicesManager) ServicesManager._renderServiceCards(items, 'storeProductsGrid', 'storeProductsEmpty');
+            if (window.StoreExtras) StoreExtras.setup('storeProductsGrid', store && store.productAnim, store && store.customTheme);
             if (window.AffiliateUI) AffiliateUI.renderStoreProducts(storeId, document.getElementById('storeAffGrid'));
         },
 
@@ -214,7 +231,7 @@
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
             showLoading();
             try {
-                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); this._cacheBust();
                 this._D.cur = id; this._D.tab = 'settings';
                 await this._reloadDash(); hideLoading(); this._renderDash();
                 showToast(isAr() ? '✅ تم إنشاء المتجر — كمّل بياناته وتصميمه' : '✅ Store created', 'success');
@@ -343,7 +360,7 @@
         },
 
         _tabDesign(body, st) {
-            this._draft = { themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3', theme: st.theme || 'classic', colorTouched: !!st.themeColor && st.themeColor !== '#0f172a' };
+            this._draft = { productAnim: st.productAnim || 'fade', customTheme: st.customTheme || null, themeColor: st.themeColor || '#0f172a', logo: st.logo || '', banner: st.banner || '', layout: st.layout || 'grid3', theme: st.theme || 'classic', colorTouched: !!st.themeColor && st.themeColor !== '#0f172a' };
             body.innerHTML = `
             <div class="grid lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
@@ -357,6 +374,7 @@
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'شكل عرض المنتجات' : 'Product layout'}</p>
                   <div class="flex gap-2">${[['grid3', isAr() ? '3 أعمدة' : '3 columns'], ['grid4', isAr() ? '4 أعمدة' : '4 columns'], ['list', isAr() ? 'قائمة' : 'List']].map(l => `<label class="flex-1 text-center text-sm font-bold p-2.5 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50"><input type="radio" name="stLayout" value="${l[0]}" class="hidden" ${this._draft.layout === l[0] ? 'checked' : ''} onchange="StoresManager.draft('layout','${l[0]}')">${l[1]}</label>`).join('')}</div></div>
                 <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" oninput="StoresManager._paintPreview()" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
+                <div id="stExtras"></div>
                 <button onclick="StoresManager.saveStore('design')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ التصميم' : 'Save design'}</button>
               </div>
               <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'معاينة مباشرة' : 'Live preview'}</p><div id="stPreview" class="rounded-3xl overflow-hidden border border-gray-100 shadow-sm bg-white"></div></div>
@@ -365,6 +383,7 @@
             up('stLogo', 'logo', 300, 70000); up('stBanner', 'banner', 1200, 200000);
             this._paintPicker();
             this._paintPreview();
+            if (window.StoreExtras) StoreExtras.paintEditor(this);
         },
         draft(key, val) {
             this._draft[key] = val;
@@ -419,13 +438,14 @@
                     status: document.getElementById('stPaused')?.checked ? 'paused' : 'active' };
                 if (patch.name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
             } else {
-                patch = { theme: this._draft.theme, themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120) };
+                patch = { theme: this._draft.theme, themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120),
+                    productAnim: (window.StoreExtras ? StoreExtras.validAnim(this._draft.productAnim) : 'fade'), customTheme: (window.StoreExtras && StoreExtras.safeCT(this._draft.customTheme)) || null };
             }
             const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak(Object.values(patch).filter(x => typeof x === 'string' && !x.startsWith('data:') && x.length < 600));
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
             showLoading();
             try {
-                await window.db.collection(COLLECTIONS.STORES).doc(st.id).update({ ...patch, updatedAt: serverTimestamp() });
+                await window.db.collection(COLLECTIONS.STORES).doc(st.id).update({ ...patch, updatedAt: serverTimestamp() }); this._cacheBust();
                 await this._reloadDash(); hideLoading(); this._renderDash();
                 showToast(isAr() ? '✅ تم الحفظ' : '✅ Saved', 'success');
             } catch (e) { hideLoading(); showToast(e.message, 'error'); }
@@ -437,8 +457,16 @@
             try {
                 const moved = this._storeListings();
                 const first = this._D.stores.find(x => x.id !== st.id);
-                for (const l of moved) await window.db.collection(COLLECTIONS.SERVICES).doc(l.id).update({ storeId: first ? first.id : AppState.currentUser.uid, updatedAt: serverTimestamp() }).catch(() => {});
+                const target = first ? first.id : AppState.currentUser.uid;
+                // Move listings in atomic batches; abort BEFORE deleting the store if any move fails
+                // (previously failures were swallowed and listings were orphaned = "products vanished").
+                for (let i = 0; i < moved.length; i += 400) {
+                    const b = window.db.batch();
+                    moved.slice(i, i + 400).forEach(l => b.update(window.db.collection(COLLECTIONS.SERVICES).doc(l.id), { storeId: target, updatedAt: serverTimestamp() }));
+                    await b.commit();
+                }
                 await window.db.collection(COLLECTIONS.STORES).doc(st.id).delete();
+                this._cacheBust();
                 this._D.cur = null; await this._reloadDash(); hideLoading(); this._renderDash();
             } catch (e) { hideLoading(); showToast(e.message, 'error'); }
         },

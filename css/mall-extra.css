@@ -1,0 +1,70 @@
+/* Mall Services — extras: dashboard charts, product reveal animations, custom store theme, search-in-hero, mobile polish */
+
+/* ── hero search card inside the dark design hero ── */
+#mallDesign .msearch .bg-gray-50{background:rgba(244,238,225,.96);color:#0E1A33}
+#mallDesign .msearch .text-gray-400{color:#5b6679}
+#mallDesign .msearch input{font-size:16px}
+.m-stats-strip p{line-height:1.5}
+
+/* ── charts ── */
+.mc-panel{background:#fff;color:#0E1A33;border:1px solid rgba(14,26,51,.08);border-radius:22px;padding:18px;margin-bottom:22px;box-shadow:0 10px 30px -20px rgba(14,26,51,.35)}
+html.dark .mc-panel{background:#16254A;color:#F4EEE1;border-color:rgba(244,238,225,.14)}
+.mc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.mc-head h3{font-weight:900;font-size:1.05rem}
+.mc-tabs{display:flex;gap:4px;background:rgba(14,26,51,.06);padding:3px;border-radius:12px}
+html.dark .mc-tabs{background:rgba(244,238,225,.1)}
+.mc-tabs button{padding:6px 14px;border-radius:9px;font-size:.78rem;font-weight:700;min-height:34px;background:transparent;color:inherit;border:0;cursor:pointer}
+.mc-tabs button[aria-selected="true"]{background:#0F766E;color:#fff}
+.mc-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:22px;align-items:start}
+.mc-sum{font-size:.85rem;opacity:.8;margin-bottom:6px}.mc-sum b{color:#0F766E}html.dark .mc-sum b{color:#14B8A6}
+.mc-wrap{position:relative}.mc-wrap svg{width:100%;height:auto;display:block;touch-action:pan-y;color:inherit}
+.mc-tip{position:absolute;top:0;transform:translate(-50%,-4px);background:#0E1A33;color:#F4EEE1;border-radius:10px;padding:6px 10px;font-size:.72rem;line-height:1.5;pointer-events:none;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.3);z-index:2}
+.mc-tip span{display:flex;align-items:center;gap:6px}.mc-tip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.mc-donut{display:flex;flex-direction:column;align-items:center;gap:10px}.mc-donut svg{width:150px;height:150px;color:inherit}
+.mc-donut ul{list-style:none;padding:0;margin:0;width:100%;display:grid;gap:6px;font-size:.8rem}
+.mc-donut li{display:flex;align-items:center;gap:8px}.mc-donut li span{flex:1}.mc-donut li i{width:10px;height:10px;border-radius:50%}
+.mc-side h4{font-weight:800;font-size:.85rem;margin:16px 0 8px}
+.mc-bars{display:grid;gap:8px;font-size:.78rem}.mc-bars>div{display:grid;grid-template-columns:90px 1fr 34px;gap:8px;align-items:center}
+.mc-bars em{display:block;height:8px;border-radius:99px;background:rgba(14,26,51,.08);overflow:hidden}html.dark .mc-bars em{background:rgba(244,238,225,.12)}
+.mc-bars em i{display:block;height:100%;border-radius:99px}
+@media(max-width:860px){.mc-grid{grid-template-columns:1fr}}
+
+/* ── 10 product reveal animations (store page + editor demo) ── */
+[data-sx]:not([data-sx="none"])>*{opacity:0;will-change:transform,opacity}
+[data-sx]>*.sx-in{opacity:1;transform:none;filter:none;transition:opacity .75s ease,transform .75s cubic-bezier(.2,.75,.2,1),filter .75s ease;transition-delay:calc(var(--i,0)*70ms)}
+[data-sx="fade"]>*{transform:translateY(30px)}
+[data-sx="zoom"]>*{transform:scale(.8)}
+[data-sx="flip"]>*{transform:perspective(800px) rotateX(-75deg);transform-origin:top}
+[data-sx="slide"]>*:nth-child(odd){transform:translateX(70px)}[data-sx="slide"]>*:nth-child(even){transform:translateX(-70px)}
+[data-sx="wave"]>*{transform:translateY(46px) rotate(2deg)}[data-sx="wave"]>.sx-in{transition-delay:calc(var(--i,0)*120ms)}
+[data-sx="blur"]>*{filter:blur(14px);transform:scale(1.05)}
+[data-sx="spin"]>*{transform:rotate(-14deg) scale(.7)}
+[data-sx="bounce"]>.sx-in{animation:sxb .9s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(var(--i,0)*80ms);transition:none}
+@keyframes sxb{0%{opacity:0;transform:translateY(-70px)}55%{opacity:1;transform:translateY(12px)}78%{transform:translateY(-6px)}100%{transform:none}}
+[data-sx="tilt"]>*{transform:translateY(24px)}
+[data-sx="tilt"]>.sx-in:hover{transform:perspective(700px) rotateX(4deg) rotateY(-7deg) translateY(-6px);transition-delay:0s;transition-duration:.25s}
+[data-sx="shine"]>*{transform:translateY(20px);position:relative;overflow:hidden}
+[data-sx="shine"]>*::after{content:"";position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-220%) skewX(-20deg);pointer-events:none}
+[data-sx="shine"]>.sx-in::after{animation:sxs 1.4s ease .5s 1}[data-sx="shine"]>*:hover::after{animation:sxs .9s ease 1}
+@keyframes sxs{to{transform:translateX(420%) skewX(-20deg)}}
+@media(prefers-reduced-motion:reduce){[data-sx]>*{opacity:1!important;transform:none!important;filter:none!important;animation:none!important}}
+.sx-pick{padding:9px 10px;border-radius:12px;border:2px solid #e5e7eb;font-size:.8rem;font-weight:700;background:#fff;color:#0E1A33;min-height:44px;cursor:pointer}
+.sx-pick.on{border-color:#0F766E;background:#E7F7F4;color:#0F766E}
+.sx-demo-card{height:56px;border-radius:12px;background:linear-gradient(135deg,#14B8A6,#0F766E)}
+
+/* ── merchant custom theme (applied on #storeThemeWrap / live preview) ── */
+.sx-custom{background:var(--sx-bg,transparent)!important;color:var(--sx-text,inherit);font-family:var(--sx-font,inherit)}
+.sx-custom .service-card,.sx-custom .card{background:var(--sx-card,#fff)!important;border-radius:var(--sx-r,16px)!important;color:var(--sx-text,inherit)}
+.sx-custom .btn-primary,.sx-custom button.btn-primary{background:var(--sx-accent,#0F766E)!important;border-color:var(--sx-accent,#0F766E)!important;color:#fff}
+.sx-custom a:not(.btn-primary){color:var(--sx-accent,inherit)}
+
+/* ── mobile polish (all pages) ── */
+html,body{max-width:100%;overflow-x:hidden}
+@media(max-width:767px){
+  input,select,textarea{font-size:16px}
+  #page-admin table,#adminContent table,#myStoreContent table{display:block;overflow-x:auto;white-space:nowrap;max-width:100%}
+  #page-admin .grid,#myStoreContent .grid{min-width:0}
+  .page{padding-bottom:84px}
+  #stPreview{max-width:100%}
+  button,[role="button"],a.btn-primary{min-height:44px}
+}

@@ -382,6 +382,8 @@
   </style>
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
+  <link rel="stylesheet" href="/css/mall-home.css?v=1">
+  <link rel="stylesheet" href="/css/mall-extra.css?v=1">
   <script src="/js/theme.js?v=1"></script>
 </head>
 <body>
@@ -583,26 +585,16 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        HERO — dual segmented search (خدمات مخصصة / منتجات جاهزة) + live stats
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="m-hero relative overflow-hidden mt-6 mx-auto max-w-7xl">
-    <svg class="m-deco" viewBox="0 0 400 480" aria-hidden="true"><path pathLength="1" stroke="rgba(20,184,166,.45)" stroke-width="1.6" d="M20,470 V200 A180,180 0 0 1 380,200 V470"/><path pathLength="1" stroke="rgba(224,184,114,.55)" stroke-width="1.6" d="M60,470 V200 A140,140 0 0 1 340,200 V470"/><path pathLength="1" stroke="rgba(150,160,185,.35)" stroke-width="1.6" d="M100,470 V200 A100,100 0 0 1 300,200 V470"/></svg>
-    <div class="absolute -top-24 -right-24 w-96 h-96 bg-secondary/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute top-1/2 -left-20 w-80 h-80 bg-turquoise-500/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="relative px-6 py-14 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
-
-      <!-- Text + Dual Search -->
-      <div class="text-center md:text-start">
-        <div class="inline-flex items-center gap-2 bg-turquoise-50 text-turquoise-700 px-4 py-1.5 rounded-full mb-5">
-          <i class="fa-solid fa-shield-halved text-sm"></i>
-          <span class="text-xs font-bold">حماية 100% لأموالك بنظام الضمان Escrow</span>
-        </div>
-        <h1 class="font-sans font-black text-4xl md:text-5xl text-navy-900 mb-5 leading-tight" data-i18n="home.hero.title">
-          منصتك الأولى للمنتجات والخدمات الرقمية
-        </h1>
-        <p class="text-lg text-navy-500 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed" data-i18n="home.hero.subtitle">
-          اطلب خدمات مخصصة من خبراء معتمدين، أو حمّل منتجات رقمية جاهزة فورًا — فلوسك محجوزة عندنا لحد ما توافق إنك استلمت
-        </p>
-
-        <!-- Segment: Services vs Products -->
+  <!-- ══ HERO + SCROLL STORY (design v15) — scoped under #mallDesign; css/mall-home.css + js/mall-home.js ══ -->
+  <div id="mallDesign">
+<section class="hero pad">
+  <div class="glow"></div>
+  <div>
+    <span class="kick" id="md-kk">متجرك الرقمي على مول الخدمات</span>
+    <h1 id="md-h1">بيع منتجاتك وخدماتك الرقمية من أول يوم</h1>
+    <p class="lead" id="md-lead">افتح متجرك، ارفع قوالبك وكتبك ودوراتك وخدماتك، واستلم فلوسك بحماية نظام Escrow.</p>
+    <div class="acts" id="md-acts"><a class="btn" href="#" data-go="register">ابدأ البيع</a><a class="btn2" href="#" data-go="digital-products">تسوّق المنتجات</a></div>
+    <div class="msearch">        <!-- Segment: Services vs Products -->
         <div class="bg-gray-50 p-1.5 rounded-2xl flex flex-col gap-2 max-w-xl mx-auto md:mx-0">
           <div class="flex items-center gap-1 p-1 bg-white rounded-xl w-fit mx-auto md:mx-0" id="heroTabGroup">
             <button type="button" id="heroTabServices" onclick="switchHeroSearch('services')"
@@ -634,19 +626,48 @@
             <button onclick="filterByCategory('marketing')" class="bg-white hover:bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-navy-600 transition">حملات إعلانية</button>
           </div>
         </div>
+    </div>
+  </div>
+  <div class="vis" id="md-vis">
+    <svg class="deco" id="md-deco" viewBox="0 0 400 480" aria-hidden="true"><path pathLength="1" stroke="rgba(20,184,166,.45)" stroke-width="1.6" d="M20,470 V200 A180,180 0 0 1 380,200 V470"/><path pathLength="1" stroke="rgba(224,184,114,.4)" stroke-width="1.6" d="M60,470 V200 A140,140 0 0 1 340,200 V470"/><path pathLength="1" stroke="rgba(244,238,225,.22)" stroke-width="1.6" d="M100,470 V200 A100,100 0 0 1 300,200 V470"/></svg>
+    <div class="win" id="md-hWin"></div>
+    <div class="phone" id="md-hPhone"></div>
+    <div class="toast" id="md-hToast"></div>
+    <div class="hlogo" id="md-hLogo"><div class="hlogo-in" id="md-hLogoIn"><div class="hpulse" id="md-hPulse"></div><svg class="rng" id="md-hRing" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="hbadge"><img data-logo alt="شعار مول الخدمات"></div></div></div>
+  </div>
+  </section>
 
-        <div class="flex flex-wrap items-center gap-3 mt-8 justify-center md:justify-start">
-        <button onclick="navigateTo('register')" class="inline-flex items-center gap-3 bg-turquoise-500 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-turquoise-600 transition">
-          <i class="fa-solid fa-rocket"></i><span data-i18n="home.hero.sell">ابدأ البيع</span>
-        </button>
-        <!-- Shown only when the admin turns the marketer program on (settings/platform.MARKETER_PROGRAM_ENABLED) -->
-        <button id="heroMarketerBtn" onclick="DropshipUI.startMarketer()" class="hidden inline-flex items-center gap-3 bg-navy-800 text-white font-black px-7 py-3.5 rounded-2xl hover:bg-navy-900 transition">
-          <i class="fa-solid fa-bullhorn"></i><span>ابدأ كمسوّق</span>
-        </button>
-        </div>
+<div class="tick"><div id="md-tk"></div></div>
 
+<section class="sell" id="md-sell"><div class="sstage pad">
+  <div><span class="kick">من الفكرة لأول عملية بيع</span><div class="steps" id="md-steps"></div><div class="sbar" id="md-sbar"></div></div>
+  <div class="sv"><div class="win" id="md-sWin"></div><div class="phone" id="md-sPhone"></div><div class="toast" id="md-sToast"></div><div class="earn" id="md-sEarn"><small>إيراد اليوم (مثال)</small><b id="md-eb">٠ ج.م</b></div></div>
+</div></section>
+
+<section class="mk pad" id="md-mk">
+  <span class="kick" style="background:rgba(14,26,51,.08);color:#7A5C2E">سوق المنتجات والخدمات</span>
+  <h2>اللي بيتباع عندنا<br>قوالب وكتب ودورات وخدمات</h2>
+  <div class="pgrid" id="md-pg"></div>
+</section>
+
+<section class="seller pad" id="md-seller">
+  <div><span class="kick">للبائعين</span><h2>لوحة تحكم لمتجرك<br>وطلباتك في مكان واحد</h2>
+    <ul id="md-lst"></ul><a class="btn" href="#" data-go="register">افتح متجرك</a></div>
+  <div class="win dash" id="md-dash"><div class="hd">مبيعات الأسبوع<small>أرقام توضيحية</small></div><div class="bars" id="md-bars"></div>
+    <div class="kp"><div><small>الطلبات</small><b>٢٤</b></div><div><small>المنتجات</small><b>١٢</b></div><div><small>التقييم</small><b>٤٫٨</b></div></div></div>
+</section>
+
+<section class="end pad" id="md-end">
+  <img data-logo alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
+  <div class="acts" style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل مجانًا</a><a class="btn2" href="#" data-go="digital-products">تصفّح السوق</a></div>
+</section>
+<span id="md-cc" hidden>0</span>
+  </div>
+  <!-- Live platform stats (real numbers, filled by loadHomeStats()) -->
+  <section class="m-stats-strip max-w-7xl mx-auto px-4 py-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
         <!-- Live stats — real counts, loaded by loadHomeStats() (refreshes every 60s) -->
-        <div class="grid grid-cols-4 gap-3 mt-10 pt-8 border-t border-gray-100 max-w-md mx-auto md:mx-0">
+        <div class=" ">
           <div>
             <p class="text-xl md:text-2xl font-black text-navy-900" id="statServices">—</p>
             <p class="text-gray-400 text-xs mt-1" data-i18n="home.stats.services">خدمة نشطة</p>
@@ -664,16 +685,8 @@
             <p class="text-gray-400 text-xs mt-1"><span data-i18n="home.stats.rating">تقييم المستخدمين</span> <span id="statReviews"></span></p>
           </div>
         </div>
-      </div>
-
-      <!-- Visual: store mock + checkout phone + logo badge (decorative) -->
-      <div class="m-vis hidden md:block" aria-hidden="true">
-        <div class="m-badge"><div class="m-pulse"></div><svg class="m-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="m-badge-in"><img src="/icons/logo-mark.png" alt="شعار مول الخدمات"></div></div>
-      </div>
-
     </div>
   </section>
-  <div class="m-tick" aria-hidden="true"><div><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b><span>قوالب مواقع</span><b>◆</b><span>كتب إلكترونية</span><b>◆</b><span>دورات</span><b>◆</b><span>هويات بصرية</span><b>◆</b><span>تطبيقات</span><b>◆</b><span>متاجر إلكترونية</span><b>◆</b><span>إلكترونيات</span><b>◆</b><span>خدمات تسويق</span><b>◆</b><span>ترجمة</span><b>◆</b><span>مونتاج</span><b>◆</b></div></div>
 
 
   <div data-ad-slot="home_top" class="max-w-7xl mx-auto px-4 mb-10" style="display:none"></div>
@@ -2770,6 +2783,11 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 })();
 </script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
+<script defer src="/js/mall-home.js?v=1"></script>
+<script defer src="/js/mall-charts.js?v=1"></script>
+<script defer src="/js/store-extras.js?v=1"></script>
 </body>
 </html>

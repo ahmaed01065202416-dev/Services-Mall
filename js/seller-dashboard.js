@@ -226,6 +226,7 @@
                     ${this._levelCard(completedOrders.length, avgRating, isAr)}
                   </div>
                 </div>`;
+                try { if (window.MallCharts) MallCharts.seller(container, orders, isAr); } catch (ce) { console.warn('[MallCharts]', ce); }
             } catch(e) {
                 container.innerHTML = `<p class="text-red-500 text-center py-8">${e.message}</p>`;
             }

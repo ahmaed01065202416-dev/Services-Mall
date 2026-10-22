@@ -615,7 +615,9 @@ service cloud.firestore {
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.ownerId) && isSeller() && !sellerBlocked()
                       && request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt'])
+                           .hasOnly(['name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt','productAnim','customTheme'])
+                      && request.resource.data.get('productAnim', 'fade') in ['none','fade','zoom','flip','slide','wave','blur','spin','bounce','tilt','shine']
+                      && (request.resource.data.get('customTheme', null) == null || request.resource.data.customTheme is map)
                       && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
                       && request.resource.data.get('status', 'active') in ['active','paused']
                       && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']

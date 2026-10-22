@@ -290,6 +290,7 @@
                     <p class="text-2xl font-black ${openDisputes>0?'text-red-600':'text-emerald-600'}">${openDisputes}</p>
                     <p class="text-[11px] text-gray-400 mt-2">${isAr?'نزاع مفتوح':'open dispute(s)'}</p>
                   </div>`;
+                try { if (window.MallCharts) MallCharts.admin(row, orders, users); } catch (ce) { console.warn('[MallCharts]', ce); }
 
                 if (bar) {
                     bar.innerHTML = `
