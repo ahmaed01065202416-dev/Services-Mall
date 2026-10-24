@@ -109,7 +109,7 @@
   <noscript><style>#appLoadingScreen{display:none!important}</style></noscript>
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
 
   <!-- Font Awesome -->
   <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -382,9 +382,12 @@
   </style>
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
-  <link rel="stylesheet" href="/css/mall-home.css?v=1">
-  <link rel="stylesheet" href="/css/mall-extra.css?v=1">
+  <link rel="stylesheet" href="/css/mall-home.css?v=2">
+  <link rel="stylesheet" href="/css/mall-extra.css?v=2">
+  <link rel="stylesheet" href="/css/mall-home-b.css?v=1">
+  <link rel="stylesheet" href="/css/mall-design-mint.css?v=1">
   <script src="/js/theme.js?v=1"></script>
+  <script src="/js/design.js?v=1"></script>
 </head>
 <body>
 <noscript>
@@ -663,6 +666,33 @@
 </section>
 <span id="md-cc" hidden>0</span>
   </div>
+  <!-- ══ HOME DESIGN B (نعناع وذهب) — shown only when <html data-design="mint">; css/mall-home-b.css + js/mall-home-b.js ══ -->
+<div id="mallDesignB" aria-label="الصفحة الرئيسية — تصميم هوية البراند">
+<div class="mb-bgfx" aria-hidden="true"><i class="mb-o1"></i><i class="mb-o2"></i><i class="mb-o3"></i><svg class="mb-ga" viewBox="0 0 400 470"><path d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path opacity=".7" d="M60,462 V208 A140,140 0 0 1 340,208 V462"/><path opacity=".45" d="M96,462 V212 A104,104 0 0 1 304,212 V462"/></svg></div>
+
+<section class="mb-hero mb-pad"><div><span class="mb-eyebrow">منصة عربية للخدمات والمنتجات الرقمية</span><h1>حيث يلتقي <em>الإبداع</em> والبرمجة والتجارة</h1><p>مدخل واحد لكل مبدع: صمّم، برمج، وبيع بثقة. فلوسك محمية بنظام Escrow لحد ما العميل يستلم.</p><div id="mb-msearch"></div><div class="mb-acts"><a class="mb-btn" href="#" data-go="register">افتح متجرك</a><a class="mb-btn mb-o" href="#mb-brand">تعرّف على الهوية</a></div></div>
+<div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img src="/icons/logo-mark.png" loading="lazy" alt="شعار مول الخدمات"></div>
+<span class="mb-chip" data-p style="--c:var(--em);--s:90px;top:12%;inset-inline-start:-6%">تصميم</span><span class="mb-chip" data-p style="--c:var(--navy);--s:-70px;top:44%;inset-inline-end:-8%">برمجة</span><span class="mb-chip" data-p style="--c:var(--gold);--s:60px;bottom:10%;inset-inline-start:-4%">تجارة</span></div></section>
+<div class="mb-band" data-p><span>الإبداع ✦ البرمجة ✦ التجارة ✦ الإبداع ✦ البرمجة ✦ التجارة</span></div>
+<section class="mb-sec mb-pad mb-story" id="mb-story"><svg class="mb-weave" data-d viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" stroke="#B8935A" d="M0,520 C250,420 350,120 500,120 S750,420 1000,520"/><path pathLength="1" stroke="#0F7A6C" d="M0,560 C250,470 350,170 500,170 S750,470 1000,560"/></svg>
+<div style="position:relative"><span class="mb-eyebrow mb-rv">قصة الشعار</span><h2 class="mb-rv">ثلاث خيوط، قوس واحد</h2><p class="mb-sub mb-rv">القوس هو مدخلك للسوق، وكل خيط بيمثّل قوة بتجتمع تحت سقف واحد.</p>
+<div class="mb-pil"><div class="mb-pc mb-rv" style="--c:var(--navy)"><div class="mb-ic"><svg viewBox="0 0 64 64"><path d="M12 52l3-11L41 15l8 8L23 49z M36 20l8 8"/></svg></div><h3>الإبداع</h3><p>تصميم وكتابة وهوية بصرية تحكي قصة مشروعك.</p></div>
+<div class="mb-pc mb-rv" style="--c:var(--em)"><div class="mb-ic"><svg viewBox="0 0 64 64"><path d="M24 22L12 32l12 10M40 22l12 10-12 10M35 18l-6 28"/></svg></div><h3>البرمجة</h3><p>مواقع وتطبيقات وقوالب جاهزة بإتقان تقني.</p></div>
+<div class="mb-pc mb-rv" style="--c:var(--gold)"><div class="mb-ic"><svg viewBox="0 0 64 64"><path d="M6 10h8l6 30h28l6-22H18 M26 50h.1M44 50h.1"/></svg></div><h3>التجارة</h3><p>متجرك، طلباتك، وأرباحك في لوحة واحدة.</p></div></div></div></section>
+<div class="mb-band mb-r" data-p><span>ثقة ✦ أمان ✦ إتقان ✦ ثقة ✦ أمان ✦ إتقان ✦ ثقة ✦ أمان</span></div>
+<section class="mb-sec mb-pad" id="mb-trust"><div class="mb-trust"><div class="mb-rv"><span class="mb-eyebrow">المصافحة في قلب الشعار</span><h2>الثقة أول قيمة عندنا</h2><div class="mb-vals"><div><i></i><p><b>أمان</b><span>الدفع محجوز في Escrow لحد التسليم.</span></p></div><div><i></i><p><b>إتقان</b><span>تقييمات حقيقية وبائعين متحقَّق منهم.</span></p></div><div><i></i><p><b>وضوح</b><span>رسوم معلنة ومن غير مفاجآت.</span></p></div></div></div>
+<div class="mb-esc mb-rv" id="mb-esc"><h3 class="mb-disp" style="color:var(--gold);font-size:1.3rem">رحلة الدفع الآمن</h3><div class="mb-flow"><div><b>١</b>العميل يدفع</div><s></s><div><b>٢</b>حجز آمن</div><s></s><div><b>٣</b>تسليم</div><s></s><div><b>٤</b>تحويل للبائع</div></div></div></div></section>
+<section class="mb-sec mb-bk" id="mb-brand"><span class="mb-eyebrow mb-rv">دليل الهوية</span><h2 class="mb-rv">خواص البراند</h2><p class="mb-sub mb-rv">ألوان وخطوط ونبرة موحّدة في كل صفحة. اضغط على أي لون لنسخ الكود.</p>
+<div class="mb-sw mb-rv"><button style="--c:#0C1830;--t:#F7F1E3;box-shadow:inset 0 0 0 1px rgba(247,241,227,.3)" data-c="#0C1830"><b>كحلي الثقة</b>#0C1830</button><button style="--c:#0F7A6C;--t:#fff" data-c="#0F7A6C"><b>زمردي النمو</b>#0F7A6C</button><button style="--c:#B8935A;--t:#0C1830" data-c="#B8935A"><b>ذهبي القيمة</b>#B8935A</button><button style="--c:#E6F0EA;--t:#0C1830" data-c="#E6F0EA"><b>نعناع الصفاء</b>#E6F0EA</button></div>
+<div class="mb-bg3"><div class="mb-bx mb-rv mb-tp"><h3>الخطوط</h3><div class="mb-a">Reem Kufi</div><div class="mb-b">للعناوين: هندسي بروح عربية<br>Readex Pro للنصوص: واضح ومريح</div></div>
+<div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img src="/icons/logo-mark.png" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
+<div class="mb-bx mb-rv"><h3>نبرة الصوت</h3><ul class="mb-vo"><li>واضح ودافئ: «ابدأ متجرك النهاردة»</li><li>واثق من غير مبالغة</li><li class="mb-n">لا وعود وهمية أو لغة معقّدة</li></ul></div></div></section>
+<section class="mb-sec mb-pad mb-mk" id="mb-shop"><span class="mb-eyebrow mb-rv">السوق</span><h2 class="mb-rv" style="font-size:clamp(2rem,4.6vw,3.6rem);margin:10px 0 36px;line-height:1.3">جديد في المول</h2><div class="mb-pg"><div class="mb-pk"><div class="mb-th" style="--c:#0F7A6C"><svg viewBox="0 0 64 64"><path d="M24 22L12 32l12 10M40 22l12 10-12 10M35 18l-6 28"/></svg></div><div class="mb-b"><small>قوالب</small><h4>قالب موقع متجر</h4><div class="mb-pr">٣٩٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#B8935A"><svg viewBox="0 0 64 64"><path d="M18 10h22l8 8v36H18z M24 30h18M24 38h18"/></svg></div><div class="mb-b"><small>كتب</small><h4>كتاب التسويق الرقمي</h4><div class="mb-pr">١٢٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#0C1830"><svg viewBox="0 0 64 64"><path d="M12 52l3-11L41 15l8 8L23 49z"/></svg></div><div class="mb-b"><small>تصميم</small><h4>باقة هوية بصرية</h4><div class="mb-pr">٨٥٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#0F7A6C"><svg viewBox="0 0 64 64"><path d="M8 16h36v32H8z M44 29l12-7v20l-12-7z"/></svg></div><div class="mb-b"><small>دورات</small><h4>كورس مونتاج فيديو</h4><div class="mb-pr">٤٥٠ ج.م</div></div></div></div></section>
+<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.png" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك مجاناً</a></div></section>
+
+<div class="mb-toast" id="mb-ts"></div>
+</div>
+
   <!-- Live platform stats (real numbers, filled by loadHomeStats()) -->
   <section class="m-stats-strip max-w-7xl mx-auto px-4 py-10">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
@@ -1699,7 +1729,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 2. Constants & Utilities -->
-<script src="js/constants.js?v=2026-10-05-v9"></script>
+<script src="js/constants.js?v=2026-10-24-v10"></script>
 
 <script>
 // Load live platform settings BEFORE any page renders
@@ -1715,48 +1745,48 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 3. i18n -->
-<script src="js/i18n.js?v=2026-10-05-v9"></script>
+<script src="js/i18n.js?v=2026-10-24-v10"></script>
 
 <!-- 4. Payment System -->
-<script src="js/request-system.js?v=2026-10-05-v9"></script>
-<script src="js/subscription-system.js?v=2026-10-05-v9"></script>
+<script src="js/request-system.js?v=2026-10-24-v10"></script>
+<script src="js/subscription-system.js?v=2026-10-24-v10"></script>
 
 <!-- 5. Escrow -->
-<script src="js/escrow.js?v=2026-10-05-v9"></script>
+<script src="js/escrow.js?v=2026-10-24-v10"></script>
 
 <!-- 5b. Payment (⚠️ ADDED — this tag was missing entirely, so window.PaymentSystem
      was never defined and every "ادفع الآن" click threw "PaymentSystem is not
      defined" instead of opening the payment gateway. The file itself was
      always complete and correct — it just never got wired into the page.) -->
-<script src="js/payment-system.js?v=2026-10-05-v9"></script>
+<script src="js/payment-system.js?v=2026-10-24-v10"></script>
 
 <!-- 6. Orders Manager -->
-<script src="js/orders.js?v=2026-10-05-v9"></script>
+<script src="js/orders.js?v=2026-10-24-v10"></script>
 
 <!-- 7. Order Workspace (chat + delivery) -->
-<script src="js/order-workspace.js?v=2026-10-05-v9"></script>
+<script src="js/order-workspace.js?v=2026-10-24-v10"></script>
 
 <!-- 7d. Product Returns (buyer request → seller approve/reject → admin refund) -->
-<script src="js/returns.js?v=2026-10-05-v9"></script>
-<script src="js/non-receipt.js?v=2026-10-05-v9"></script>
-<script src="js/store-themes.js?v=2026-10-05-v9"></script>
-<script src="js/store-themes-pro.js?v=2026-10-05-v9"></script>
-<script src="js/stores.js?v=2026-10-05-v9"></script>
-<script src="js/reviews.js?v=2026-10-05-v9"></script>
+<script src="js/returns.js?v=2026-10-24-v10"></script>
+<script src="js/non-receipt.js?v=2026-10-24-v10"></script>
+<script src="js/store-themes.js?v=2026-10-24-v10"></script>
+<script src="js/store-themes-pro.js?v=2026-10-24-v10"></script>
+<script src="js/stores.js?v=2026-10-24-v10"></script>
+<script src="js/reviews.js?v=2026-10-24-v10"></script>
 
 <!-- 7b. Dedicated Chat Module -->
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
-<script src="js/blog-engine.js?v=2026-10-05-v9"></script>
+<script src="js/blog-engine.js?v=2026-10-24-v10"></script>
 
 <!-- 8. Auth -->
-<script src="js/auth.js?v=2026-10-05-v9"></script>
+<script src="js/auth.js?v=2026-10-24-v10"></script>
 
 <!-- 9. Services -->
-<script src="js/services.js?v=2026-10-05-v9"></script>
-<script src="js/ads-embed.js?v=2026-10-05-v9"></script>
-<script src="js/ads-system.js?v=2026-10-05-v9"></script>
+<script src="js/services.js?v=2026-10-24-v10"></script>
+<script src="js/ads-embed.js?v=2026-10-24-v10"></script>
+<script src="js/ads-system.js?v=2026-10-24-v10"></script>
 <script src="js/dropship.js?v=2026-10-19-marketer2"></script>
 <script src="js/affiliate.js?v=2026-10-19"></script>
 <script>
@@ -1767,7 +1797,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 10. Notifications -->
-<script src="js/notifications.js?v=2026-10-05-v9"></script>
+<script src="js/notifications.js?v=2026-10-24-v10"></script>
 
 <!-- 11. Dashboard -->
 <script defer src="js/dashboard.js"></script>
@@ -2786,7 +2816,8 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
-<script defer src="/js/mall-home.js?v=1"></script>
+<script defer src="/js/mall-home.js?v=2"></script>
+<script defer src="/js/mall-home-b.js?v=1"></script>
 <script defer src="/js/mall-charts.js?v=1"></script>
 <script defer src="/js/store-extras.js?v=1"></script>
 </body>

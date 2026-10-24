@@ -86,7 +86,7 @@ MallHome._boot=function(){
   var W='#md-sWin ',cart={v:0},earn={v:0};
   gsap.set([W+'.sh-h',W+'.ban'],{opacity:0,y:20});gsap.set(W+'.pd',{opacity:0,y:24,scale:.94});
   gsap.set('#md-sPhone',{x:-80,opacity:0});gsap.set('#md-sSheet',{yPercent:110});gsap.set('#md-sToast',{y:-40,opacity:0});gsap.set('#md-sEarn',{opacity:0,y:20});
-  var tl=gsap.timeline({scrollTrigger:{trigger:'#md-sell',start:'top top',end:'+=500%',pin:true,scrub:.6,onUpdate:function(s){var i=Math.min(4,Math.floor(s.progress*5));setStep(i);}}});
+  var tl=gsap.timeline({scrollTrigger:{trigger:'#md-sell',start:'top top',end:'bottom bottom',scrub:.6,onUpdate:function(s){var i=Math.min(4,Math.floor(s.progress*5));setStep(i);}}});
   tl.to([W+'.sh-h',W+'.ban'],{opacity:1,y:0,stagger:.25,duration:.7},0)
     .to(W+'.pd',{opacity:1,y:0,scale:1,stagger:.12,duration:.5},1)
     .to('#md-sPhone',{x:0,opacity:1,duration:.8},2)

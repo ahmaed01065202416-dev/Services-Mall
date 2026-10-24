@@ -90,6 +90,8 @@ const PLATFORM = {
     // ── Maintenance ───────────────────────────────────────────────────
     MAINTENANCE:      false,
     MAINTENANCE_MSG:  '',
+    // ── Site design (admin → «تصميم الموقع»): 'navy' | 'mint' ──────────
+    SITE_DESIGN:      'navy',
 };
 
 // ── Load live settings from Firestore and merge into PLATFORM ─────────────────
@@ -103,6 +105,7 @@ async function loadPlatformSettings() {
         if (snap.exists) {
             const data = snap.data();
             Object.keys(data).forEach(k => { if (k in PLATFORM) PLATFORM[k] = data[k]; });
+            if (data.SITE_DESIGN && window.MallDesign) window.MallDesign.sync(data.SITE_DESIGN);
             console.log('[Settings] Platform config loaded | type:', PLATFORM.FEE_TYPE, '| %:', PLATFORM.FEE_PERCENT, '| fixed:', PLATFORM.FEE_FIXED);
         } else {
             // First run — write the defaults so the admin panel can display them

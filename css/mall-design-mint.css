@@ -1,0 +1,24 @@
+/* Site design switch — palette/typography for design "mint" (نعناع وذهب).
+   Applied when <html data-design="mint"> (set by js/design.js from settings/platform.SITE_DESIGN).
+   Default design ("navy") needs no rules: it is the base palette in mall-theme.css. */
+#mallDesignB{display:none}
+html[data-design="mint"] #mallDesignB{display:block}
+html[data-design="mint"] #mallDesign{display:none!important}
+
+html[data-design="mint"]{
+  --m-bg:#E6F0EA;--m-bg2:#DCE9E2;--m-surface:#FBFEFC;--m-surface2:#EEF5F1;--m-surface3:#D5E4DB;
+  --m-ink:#0C1830;--m-mute:#4F5F66;--m-mute2:#7C8C90;--m-rule:rgba(12,24,48,.13);
+  --m-navy:#0C1830;--m-navy2:#0A4A41;--m-cream:#F7F1E3;
+  --m-teal:#0F7A6C;--m-teal2:#14B8A6;--m-gold:#B8935A;--m-cta:#B8935A;--m-on-cta:#0C1830;
+  --m-glass:rgba(230,240,234,.86);--m-shadow:0 24px 60px -30px rgba(12,24,48,.3);
+  --m-disp:'Reem Kufi','Readex Pro',system-ui,sans-serif;
+  --brand-dark:#0A4A41;
+}
+html[data-design="mint"].dark{
+  --m-bg:#08191A;--m-bg2:#061213;--m-surface:#0F2A2B;--m-surface2:#14363A;--m-surface3:#1A4247;
+  --m-ink:#F3EEDF;--m-mute:#9FB3B0;--m-mute2:#7C9390;--m-rule:rgba(243,238,223,.14);
+  --m-teal:#14B8A6;--m-gold:#D2AE72;--m-cta:#D2AE72;
+  --m-glass:rgba(8,25,26,.86);--m-shadow:0 28px 64px -30px rgba(0,0,0,.75);
+  --brand-dark:#5EEAD4;
+}
+html[data-design="mint"] h1,html[data-design="mint"] h2,html[data-design="mint"] .font-display{font-family:var(--m-disp)}

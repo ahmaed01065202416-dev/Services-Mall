@@ -367,6 +367,9 @@
         container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
         try {
 
+            // ── SITE DESIGN (js/design.js) ────────────────────────────────────
+            if (tab === 'design') { window.MallDesign.renderAdminTab(container, isAr); return; }
+
             // ── ORDERS ────────────────────────────────────────────────────────
             if (tab === 'orders') {
                 const ordersSnap = await window.db.collection(COLLECTIONS.ORDERS).orderBy('createdAt','desc').limit(100).get();
@@ -1958,6 +1961,7 @@
               <button onclick="adminTab('affiliate')"  class="tab-btn admin-pill-tab" id="adminTab_affiliate"><i class="fa-solid fa-link text-turquoise-500"></i>${isAr?'التسويق بالرابط':'Link marketing'}</button>
               <button onclick="adminTab('stores')"     class="tab-btn admin-pill-tab" id="adminTab_stores"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'المتاجر':'Stores'}</button>
               <button onclick="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
+              <button onclick="adminTab('design')"     class="tab-btn admin-pill-tab" id="adminTab_design"><i class="fa-solid fa-palette text-amber-500"></i>${isAr?'تصميم الموقع':'Site design'}</button>
               <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
             </nav>
             <div class="p-5" id="adminTabContent"></div>
