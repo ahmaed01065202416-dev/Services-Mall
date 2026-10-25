@@ -92,6 +92,8 @@ const PLATFORM = {
     MAINTENANCE_MSG:  '',
     // ── Site design (admin → «تصميم الموقع»): 'navy' | 'mint' ──────────
     SITE_DESIGN:      'navy',
+    // Home sections the admin switched on/off («تصميم الموقع» ← أقسام الصفحة الرئيسية). Missing key = default.
+    HOME_SECTIONS:    {},
 };
 
 // ── Load live settings from Firestore and merge into PLATFORM ─────────────────
@@ -106,6 +108,7 @@ async function loadPlatformSettings() {
             const data = snap.data();
             Object.keys(data).forEach(k => { if (k in PLATFORM) PLATFORM[k] = data[k]; });
             if (data.SITE_DESIGN && window.MallDesign) window.MallDesign.sync(data.SITE_DESIGN);
+            if (data.HOME_SECTIONS && window.MallDesign) window.MallDesign.syncSections(data.HOME_SECTIONS);
             console.log('[Settings] Platform config loaded | type:', PLATFORM.FEE_TYPE, '| %:', PLATFORM.FEE_PERCENT, '| fixed:', PLATFORM.FEE_FIXED);
         } else {
             // First run — write the defaults so the admin panel can display them

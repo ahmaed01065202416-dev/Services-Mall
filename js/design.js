@@ -30,17 +30,89 @@
     meta(); place();
   }
   apply(cur());
+
+  // ── Home sections on/off (settings/platform.HOME_SECTIONS) ─────────────────────────
+  // The home page is introductory: the two listing sections are hidden unless the admin turns them on.
+  var HS = [
+    ['stats',       'شريط الإحصائيات الحية',            'Live stats strip'],
+    ['pay',         'مزايا الدفع',                       'Payment features'],
+    ['explore',     'استكشف حسب نوع احتياجك',            'Browse by need'],
+    ['bestsellers', 'قائمة المنتجات المتاحة',            'Products list'],
+    ['featured',    'قائمة الخدمات المتاحة',             'Services list'],
+    ['trust',       'كيف يضمن مول الخدمات حقك',          'How we protect you'],
+    ['blog',        'المدونة',                           'Blog'],
+    ['newsletter',  'النشرة البريدية',                   'Newsletter'],
+    ['cta',         'زرار «جاهز تفتح متجرك؟» (آخر الصفحة)', 'Final call-to-action']
+  ];
+  var HS_OFF_BY_DEFAULT = { bestsellers: 1, featured: 1 };
+  function hsGet() {
+    var o = {}; try { o = JSON.parse(localStorage.getItem('mallHome') || '{}') || {}; } catch (e) {}
+    var r = {}; HS.forEach(function (s) { var k = s[0]; r[k] = (k in o) ? !!o[k] : !HS_OFF_BY_DEFAULT[k]; }); return r;
+  }
+  function hsApply(r) { d.setAttribute('data-hs', HS.filter(function (s) { return !r[s[0]]; }).map(function (s) { return s[0]; }).join(' ')); }
+  hsApply(hsGet());
   document.addEventListener('DOMContentLoaded', function () { place(); meta(); });
   // theme.js rewrites <meta theme-color> whenever html.dark flips; re-assert ours right after it
   new MutationObserver(meta).observe(d, { attributes: true, attributeFilter: ['class'] });
+
+  function MallDesign_sections(box, isAr) {
+    var cur2 = hsGet();
+    function draw2() {
+      box.innerHTML =
+        '<div class="mb-4"><h3 class="font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-table-list text-amber-500"></i>' + (isAr ? 'أقسام الصفحة الرئيسية' : 'Home page sections') + '</h3>' +
+        '<p class="text-sm text-gray-500 mt-1">' + (isAr ? 'اختار إيه يظهر وإيه يختفي في الرئيسية. قوائم المنتجات والخدمات مقفولة افتراضياً لأن الرئيسية للتعريف.' : 'Choose which sections show on the home page.') + '</p></div>' +
+        '<div class="grid sm:grid-cols-2 gap-3">' + HS.map(function (s) {
+          var on = cur2[s[0]];
+          return '<label class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 cursor-pointer hover:border-gray-300">' +
+            '<span class="font-bold text-sm text-gray-800">' + (isAr ? s[1] : s[2]) + '</span>' +
+            '<input type="checkbox" data-k="' + s[0] + '"' + (on ? ' checked' : '') + ' class="w-5 h-5 accent-amber-500"></label>';
+        }).join('') + '</div>' +
+        '<div class="flex flex-wrap items-center gap-3 mt-5"><button type="button" id="hsSave" class="bg-navy-900 text-white font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition"><i class="fa-solid fa-check"></i> ' + (isAr ? 'حفظ الأقسام' : 'Save sections') + '</button>' +
+        '<span class="text-xs text-gray-400">' + (isAr ? 'التغيير بيظهر على الصفحة فوراً عندك، وللزوّار في زيارتهم التالية.' : 'Applies for visitors on their next load.') + '</span></div>';
+      box.querySelectorAll('input[data-k]').forEach(function (i) {
+        i.onchange = function () { cur2[i.getAttribute('data-k')] = i.checked; hsApply(cur2); };
+      });
+      box.querySelector('#hsSave').onclick = async function () {
+        var btn = this; btn.disabled = true;
+        try {
+          await window.db.collection('settings').doc('platform').set({ HOME_SECTIONS: cur2, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          try { if (typeof PLATFORM === 'object') PLATFORM.HOME_SECTIONS = cur2; } catch (e) {}
+          window.MallDesign.syncSections(cur2);
+          if (window.showToast) showToast(isAr ? '✅ تم حفظ أقسام الرئيسية' : '✅ Sections saved', 'success');
+        } catch (err) {
+          console.error('[MallDesign]', err);
+          if (window.showToast) showToast(isAr ? 'تعذّر الحفظ: ' + (err && err.message || '') : 'Save failed', 'error');
+        }
+        btn.disabled = false;
+      };
+    }
+    draw2();
+  }
+
+  // gentle reveal for the shared home sections
+  function reveal() {
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('hs-on'); io.unobserve(e.target); } }); }, { threshold: .15 });
+    document.querySelectorAll('.hs-head,.hs-card,.hs-explore .grid>div,.hs-explore button,[data-home-sec="trust"] .grid>div').forEach(function (el, i) {
+      el.classList.add('hs-rv'); el.style.transitionDelay = (i % 4) * .07 + 's'; io.observe(el);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', reveal);
 
   function save(v) { try { localStorage.setItem(K, v); } catch (e) {} }
   window.MallDesign = {
     get: cur,
     // called by constants.js once settings/platform has loaded
     sync: function (v) { if (!OK[v]) return; save(v); if (v !== (d.getAttribute('data-design') || 'navy')) apply(v); },
+    syncSections: function (o) {
+      if (!o || typeof o !== 'object') return;
+      try { localStorage.setItem('mallHome', JSON.stringify(o)); } catch (e) {}
+      hsApply(hsGet());
+    },
     preview: function (v) { apply(v); },
     renderAdminTab: function (box, isAr) {
+      box.innerHTML = '<div id="dsgDesign"></div><div id="dsgSections" class="mt-10 pt-8 border-t border-gray-200"></div>';
+      var pbox = box; box = box.querySelector('#dsgDesign');
       var active = cur();
       var defs = [
         { id: 'navy', t: isAr ? 'كحلي وذهبي' : 'Navy & gold', d: isAr ? 'التصميم الأساسي: خلفية كريمي، كحلي عميق، ولمسات ذهبية.' : 'Base design: cream, deep navy, gold accents.', c: ['#FBF8F2', '#0E1A33', '#E0B872', '#0F766E'] },
@@ -81,6 +153,7 @@
         };
       }
       draw();
+      MallDesign_sections(pbox.querySelector('#dsgSections'), isAr);
     }
   };
 })();

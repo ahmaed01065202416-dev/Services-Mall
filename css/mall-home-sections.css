@@ -1,0 +1,52 @@
+/* Home sections (both designs): admin on/off switches + a shared, brand-aware look.
+   Visibility: js/design.js sets <html data-hs="key key…"> with the HIDDEN section keys
+   (settings/platform.HOME_SECTIONS, cached in localStorage → no flash). */
+html[data-hs~="stats"] [data-home-sec="stats"],
+html[data-hs~="pay"] [data-home-sec="pay"],
+html[data-hs~="explore"] [data-home-sec="explore"],
+html[data-hs~="bestsellers"] [data-home-sec="bestsellers"],
+html[data-hs~="featured"] [data-home-sec="featured"],
+html[data-hs~="trust"] [data-home-sec="trust"],
+html[data-hs~="blog"] [data-home-sec="blog"],
+html[data-hs~="newsletter"] [data-home-sec="newsletter"],
+html[data-hs~="cta"] [data-home-sec="cta"]{display:none!important}
+
+.hs{padding:44px 16px}
+.hs-in{max-width:80rem;margin-inline:auto}
+.hs h2{font-family:var(--m-disp,inherit)}
+.hs-head{text-align:center;max-width:42rem;margin:0 auto 34px}
+.hs-head h2{font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:800;line-height:1.35;color:var(--m-ink)}
+.hs-kick{display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.03em;color:var(--m-gold);background:color-mix(in srgb,var(--m-gold) 14%,transparent);padding:4px 16px;border-radius:999px;margin-bottom:10px}
+
+/* payment features */
+.hs-grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.hs-card{position:relative;background:var(--m-surface);border:1px solid var(--m-rule);border-radius:24px;padding:26px 22px;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .3s,box-shadow .3s,border-color .3s}
+.hs-card::before{content:"";position:absolute;inset-inline:0;top:0;height:4px;background:linear-gradient(90deg,var(--m-teal),var(--m-gold));opacity:.75}
+.hs-card:hover{transform:translateY(-6px);box-shadow:var(--m-shadow);border-color:color-mix(in srgb,var(--m-gold) 55%,var(--m-rule))}
+.hs-ico{width:54px;height:54px;border-radius:18px 18px 18px 6px;display:grid;place-items:center;font-size:1.35rem}
+.hs-ico.t{background:color-mix(in srgb,var(--m-teal) 14%,transparent);color:var(--m-teal)}
+.hs-ico.g{background:color-mix(in srgb,var(--m-gold) 18%,transparent);color:var(--m-gold)}
+.hs-ico.n{background:color-mix(in srgb,var(--m-ink) 10%,transparent);color:var(--m-ink)}
+.hs-card h3{font-family:var(--m-disp,inherit);font-weight:800;font-size:1.1rem;color:var(--m-ink);line-height:1.5}
+.hs-card p{color:var(--m-mute);font-size:.9rem;line-height:1.9}
+
+/* explore (services / products paths) */
+.hs-explore .grid>div{position:relative;overflow:hidden;background:var(--m-surface);border:1px solid var(--m-rule);border-radius:28px;padding:28px;box-shadow:var(--m-shadow)}
+.hs-explore .grid>div::before{content:"";position:absolute;inset-inline:0;top:0;height:5px;background:linear-gradient(90deg,var(--m-gold),color-mix(in srgb,var(--m-gold) 30%,transparent))}
+.hs-explore .grid>div:last-child::before{background:linear-gradient(90deg,var(--m-teal),color-mix(in srgb,var(--m-teal) 30%,transparent))}
+.hs-explore h2{font-size:clamp(1.7rem,3.6vw,2.6rem)!important;font-weight:800!important;line-height:1.35;color:var(--m-ink)!important}
+.hs-explore .text-secondary.text-sm{display:inline-block;color:var(--m-gold)!important;background:color-mix(in srgb,var(--m-gold) 14%,transparent);padding:4px 16px;border-radius:999px;margin-bottom:6px}
+.hs-explore h3{font-family:var(--m-disp,inherit);font-size:1.15rem;color:var(--m-ink)!important}
+.hs-explore button{border:1px solid var(--m-rule);background:var(--m-surface2)!important;border-radius:18px!important;padding:16px 14px!important;gap:10px!important;transition:transform .25s,border-color .25s,box-shadow .25s,background .25s}
+.hs-explore button:hover{transform:translateY(-4px);border-color:var(--m-gold);box-shadow:var(--m-shadow);background:var(--m-surface)!important}
+.hs-explore button i{width:48px;height:48px;border-radius:16px 16px 16px 5px;display:grid;place-items:center;font-size:1.15rem!important;background:color-mix(in srgb,var(--m-gold) 16%,transparent);color:var(--m-gold)!important}
+.hs-explore .grid>div:last-child button i{background:color-mix(in srgb,var(--m-teal) 14%,transparent);color:var(--m-teal)!important}
+.hs-explore button span{font-weight:700;color:var(--m-ink)}
+
+/* listing sections / trust: same rhythm */
+[data-home-sec="bestsellers"] h2,[data-home-sec="featured"] h2,[data-home-sec="trust"] h2{font-weight:800!important;line-height:1.4;color:var(--m-ink)!important}
+
+/* scroll reveal (class added by js/design.js; no effect without JS) */
+.hs-rv{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s cubic-bezier(.2,.8,.2,1)}
+.hs-rv.hs-on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.hs-rv{opacity:1;transform:none;transition:none}.hs-card,.hs-explore button{transition:none}}

@@ -85,6 +85,10 @@ service cloud.firestore {
                     && request.resource.data.get('sellerVerified', false) == false
                     // dropship listings are created ONLY by functions/api/dropship.js (importProduct)
                     && request.resource.data.get('dropship', false) == false
+                    // seller's own return window (days, 0 = no returns) — a small whole number
+                    && request.resource.data.get('returnDays', 0) is number
+                    && request.resource.data.get('returnDays', 0) >= 0
+                    && request.resource.data.get('returnDays', 0) <= 90
                     && !('supplierProductId' in request.resource.data)
                     && !('supplierId' in request.resource.data);
       allow update: if isAdmin() || (
@@ -93,9 +97,12 @@ service cloud.firestore {
                         .hasOnly(['title','description','category','price','deliveryDays',
                                   'revisions','image','images','tags','active','status','recurring','updatedAt',
                                   'listingType','digitalDelivery','stockLimit','expiryDate',
-                                  'orderMode','orderRules','structuredFields','shippingFee','shippingMode','storeId',
+                                  'orderMode','orderRules','structuredFields','shippingFee','shippingMode','returnDays','storeId',
                                   'sellerName','sellerAvatar'])
                       && request.resource.data.price is number && request.resource.data.price > 0
+                      && request.resource.data.get('returnDays', 0) is number
+                      && request.resource.data.get('returnDays', 0) >= 0
+                      && request.resource.data.get('returnDays', 0) <= 90
                       // a dropship listing can never be priced below wholesale + minimum margin (floor kept in sync by the server)
                       && (!resource.data.get('dropship', false) || request.resource.data.price >= resource.data.get('dropshipFloorPrice', 0))
                     );
@@ -136,6 +143,7 @@ service cloud.firestore {
                     && (!('escrowHeld' in request.resource.data) || request.resource.data.escrowHeld != true)
                     && !('dropship' in request.resource.data) && !('supplierId' in request.resource.data)
                     && !('trackingNumber' in request.resource.data) && !('carrier' in request.resource.data)
+                    && !('returnDays' in request.resource.data)   // snapshot of the seller's return window — written only by functions/api/payment.js
                     && (
                          !('serviceId' in request.resource.data) ||
                          (
@@ -182,6 +190,7 @@ service cloud.firestore {
                          request.resource.data.get('shippingFee', null)   == resource.data.get('shippingFee', null) &&
                          request.resource.data.get('shippingMode', null)  == resource.data.get('shippingMode', null) &&
                          request.resource.data.get('codAmount', null)     == resource.data.get('codAmount', null) &&
+                         request.resource.data.get('returnDays', null)    == resource.data.get('returnDays', null) &&
                          request.resource.data.get('trackingNumber', null) == resource.data.get('trackingNumber', null) &&
                          request.resource.data.get('carrier', null)       == resource.data.get('carrier', null) &&
                          (!resource.data.get('dropship', false) || (

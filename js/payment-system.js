@@ -135,7 +135,7 @@
                 <h1 class="text-2xl font-black text-gray-900">${t('pay.title')}</h1>
                 <p class="text-gray-500 text-sm flex items-center gap-2 mt-0.5">
                   <i class="fa-solid fa-lock text-green-500"></i>
-                  ${isAr ? 'دفع آمن ومشفر 100٪ — مدعوم بفواتيرك' : 'Secure payment powered by Fawaterak'}
+                  ${isAr ? 'دفع مشفّر — عبر بوابة فواتيرك' : 'Secure payment powered by Fawaterak'}
                 </p>
               </div>
             </div>

@@ -4,7 +4,7 @@
    write CSS custom properties (--sp, --p), so the browser animates transform/opacity on the compositor. */
 (function () {
   'use strict';
-  var R = null, booted = false, tick = false, ps = [], wv = null, vh = innerHeight, io = null;
+  var R = null, E = null, booted = false, tick = false, ps = [], wv = null, vh = innerHeight, io = null;
   var AR = '٠١٢٣٤٥٦٧٨٩';
   function ar(n) { return String(n).replace(/\d/g, function (d) { return AR[d]; }); }
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
@@ -60,7 +60,7 @@
       el.style.transitionDelay = (i % 4) * 0.08 + 's';
       io.observe(el);
     });
-    ps = [].slice.call(R.querySelectorAll('[data-p]'));
+    ps = [].slice.call(R.querySelectorAll('[data-p]')).concat(E ? [].slice.call(E.querySelectorAll('[data-p]')) : []);
     wv = R.querySelector('[data-d]');
     // brand palette: click to copy
     var ts = R.querySelector('#mb-ts'), tm;
@@ -74,16 +74,23 @@
       });
     });
     // actions: data-go → SPA navigation; #mb-* anchors → smooth scroll (don't touch the SPA router)
-    R.addEventListener('click', function (e) {
+    var onClick = function (e) {
       var g = e.target.closest('[data-go]');
-      if (g) { e.preventDefault(); if (window.navigateTo) navigateTo(g.getAttribute('data-go')); return; }
+      if (g) {
+        e.preventDefault();
+        var v = g.getAttribute('data-go');
+        if (v === 'products' && window.filterByType) filterByType('product'); else if (window.navigateTo) navigateTo(v);
+        return;
+      }
       var a = e.target.closest('a[href^="#mb-"]');
       if (a) {
         e.preventDefault();
         var t = R.querySelector(a.getAttribute('href'));
         if (t) t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
       }
-    });
+    };
+    R.addEventListener('click', onClick);
+    if (E) E.addEventListener('click', onClick);
     addEventListener('scroll', req, { passive: true });
     addEventListener('resize', function () { vh = innerHeight; req(); });
     upd();
@@ -91,6 +98,7 @@
 
   function watch() {
     R = document.getElementById('mallDesignB');
+    E = document.getElementById('mallDesignBEnd');
     if (!R) return;
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) { if (es[0].isIntersecting) { boot(); req(); } }, { rootMargin: '200px' }).observe(R);

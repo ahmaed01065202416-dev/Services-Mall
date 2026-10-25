@@ -26,7 +26,7 @@
 
             // Home
             'home.hero.title':    'منصتك الأولى للمنتجات والخدمات الرقمية',
-            'home.hero.subtitle': 'اطلب خدمات مخصصة من خبراء معتمدين، أو احصل على منتجات رقمية جاهزة فورًا — بأمان تام وضمان استرداد',
+            'home.hero.subtitle': 'اطلب خدمات مخصصة، أو اشترِ منتجات جاهزة — ومدفوعاتك محمية بنظام Escrow',
             'home.hero.cta':      'استعرض الخدمات والمنتجات',
             'home.hero.sell':     'ابدأ البيع',
             'home.hero.searchPlaceholder': 'ابحث هنا... عن خدمة أو منتج بتدور عليه؟',
@@ -182,7 +182,7 @@
 
             // Home
             'home.hero.title':    "Your #1 Platform for Digital Products & Services",
-            'home.hero.subtitle': 'Order custom services from certified experts, or get ready-made digital products instantly — with full security and a refund guarantee',
+            'home.hero.subtitle': 'Order custom services or buy ready-made products — with your payment protected by Escrow',
             'home.hero.cta':      'Browse Services & Products',
             'home.hero.sell':     'Start Selling',
             'home.hero.searchPlaceholder': 'Search here... looking for a service or product?',

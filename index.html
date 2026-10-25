@@ -383,11 +383,12 @@
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
   <link rel="stylesheet" href="/css/mall-home.css?v=2">
-  <link rel="stylesheet" href="/css/mall-extra.css?v=2">
-  <link rel="stylesheet" href="/css/mall-home-b.css?v=1">
-  <link rel="stylesheet" href="/css/mall-design-mint.css?v=1">
+  <link rel="stylesheet" href="/css/mall-extra.css?v=3">
+  <link rel="stylesheet" href="/css/mall-home-b.css?v=2">
+  <link rel="stylesheet" href="/css/mall-home-sections.css?v=1">
+  <link rel="stylesheet" href="/css/mall-design-mint.css?v=2">
   <script src="/js/theme.js?v=1"></script>
-  <script src="/js/design.js?v=1"></script>
+  <script src="/js/design.js?v=2"></script>
 </head>
 <body>
 <noscript>
@@ -594,9 +595,9 @@
   <div class="glow"></div>
   <div>
     <span class="kick" id="md-kk">متجرك الرقمي على مول الخدمات</span>
-    <h1 id="md-h1">بيع منتجاتك وخدماتك الرقمية من أول يوم</h1>
-    <p class="lead" id="md-lead">افتح متجرك، ارفع قوالبك وكتبك ودوراتك وخدماتك، واستلم فلوسك بحماية نظام Escrow.</p>
-    <div class="acts" id="md-acts"><a class="btn" href="#" data-go="register">ابدأ البيع</a><a class="btn2" href="#" data-go="digital-products">تسوّق المنتجات</a></div>
+    <h1 id="md-h1">بيع منتجاتك وخدماتك من أول يوم</h1>
+    <p class="lead" id="md-lead">افتح متجرك، ارفع منتجاتك وخدماتك، واستلم فلوسك بحماية نظام Escrow.</p>
+    <div class="acts" id="md-acts"><a class="btn" href="#" data-go="register">ابدأ البيع</a><a class="btn2" href="#" data-go="products">تسوّق المنتجات</a></div>
     <div class="msearch">        <!-- Segment: Services vs Products -->
         <div class="bg-gray-50 p-1.5 rounded-2xl flex flex-col gap-2 max-w-xl mx-auto md:mx-0">
           <div class="flex items-center gap-1 p-1 bg-white rounded-xl w-fit mx-auto md:mx-0" id="heroTabGroup">
@@ -644,33 +645,25 @@
 
 <section class="sell" id="md-sell"><div class="sstage pad">
   <div><span class="kick">من الفكرة لأول عملية بيع</span><div class="steps" id="md-steps"></div><div class="sbar" id="md-sbar"></div></div>
-  <div class="sv"><div class="win" id="md-sWin"></div><div class="phone" id="md-sPhone"></div><div class="toast" id="md-sToast"></div><div class="earn" id="md-sEarn"><small>إيراد اليوم (مثال)</small><b id="md-eb">٠ ج.م</b></div></div>
+  <div class="sv"><div class="win" id="md-sWin"></div><div class="phone" id="md-sPhone"></div><div class="toast" id="md-sToast"></div></div>
 </div></section>
 
-<section class="mk pad" id="md-mk">
-  <span class="kick" style="background:rgba(14,26,51,.08);color:#7A5C2E">سوق المنتجات والخدمات</span>
-  <h2>اللي بيتباع عندنا<br>قوالب وكتب ودورات وخدمات</h2>
-  <div class="pgrid" id="md-pg"></div>
-</section>
+
 
 <section class="seller pad" id="md-seller">
   <div><span class="kick">للبائعين</span><h2>لوحة تحكم لمتجرك<br>وطلباتك في مكان واحد</h2>
     <ul id="md-lst"></ul><a class="btn" href="#" data-go="register">افتح متجرك</a></div>
-  <div class="win dash" id="md-dash"><div class="hd">مبيعات الأسبوع<small>أرقام توضيحية</small></div><div class="bars" id="md-bars"></div>
-    <div class="kp"><div><small>الطلبات</small><b>٢٤</b></div><div><small>المنتجات</small><b>١٢</b></div><div><small>التقييم</small><b>٤٫٨</b></div></div></div>
+  <div class="win dash" id="md-dash"><div class="hd">شكل لوحة المبيعات<small>رسم توضيحي</small></div><div class="bars" id="md-bars"></div></div>
 </section>
 
-<section class="end pad" id="md-end">
-  <img data-logo alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
-  <div class="acts" style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل مجانًا</a><a class="btn2" href="#" data-go="digital-products">تصفّح السوق</a></div>
-</section>
+
 <span id="md-cc" hidden>0</span>
   </div>
   <!-- ══ HOME DESIGN B (نعناع وذهب) — shown only when <html data-design="mint">; css/mall-home-b.css + js/mall-home-b.js ══ -->
 <div id="mallDesignB" aria-label="الصفحة الرئيسية — تصميم هوية البراند">
 <div class="mb-bgfx" aria-hidden="true"><i class="mb-o1"></i><i class="mb-o2"></i><i class="mb-o3"></i><svg class="mb-ga" viewBox="0 0 400 470"><path d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path opacity=".7" d="M60,462 V208 A140,140 0 0 1 340,208 V462"/><path opacity=".45" d="M96,462 V212 A104,104 0 0 1 304,212 V462"/></svg></div>
 
-<section class="mb-hero mb-pad"><div><span class="mb-eyebrow">منصة عربية للخدمات والمنتجات الرقمية</span><h1>حيث يلتقي <em>الإبداع</em> والبرمجة والتجارة</h1><p>مدخل واحد لكل مبدع: صمّم، برمج، وبيع بثقة. فلوسك محمية بنظام Escrow لحد ما العميل يستلم.</p><div id="mb-msearch"></div><div class="mb-acts"><a class="mb-btn" href="#" data-go="register">افتح متجرك</a><a class="mb-btn mb-o" href="#mb-brand">تعرّف على الهوية</a></div></div>
+<section class="mb-hero mb-pad"><div><span class="mb-eyebrow">منصة عربية للخدمات والمنتجات</span><h1>حيث يلتقي <em>الإبداع</em> والبرمجة والتجارة</h1><p>مدخل واحد لكل مبدع: صمّم، برمج، وبيع بثقة. فلوسك محمية بنظام Escrow لحد ما العميل يستلم.</p><div id="mb-msearch"></div><div class="mb-acts"><a class="mb-btn" href="#" data-go="register">افتح متجرك</a><a class="mb-btn mb-o" href="#mb-brand">تعرّف على الهوية</a></div></div>
 <div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img src="/icons/logo-mark.png" loading="lazy" alt="شعار مول الخدمات"></div>
 <span class="mb-chip" data-p style="--c:var(--em);--s:90px;top:12%;inset-inline-start:-6%">تصميم</span><span class="mb-chip" data-p style="--c:var(--navy);--s:-70px;top:44%;inset-inline-end:-8%">برمجة</span><span class="mb-chip" data-p style="--c:var(--gold);--s:60px;bottom:10%;inset-inline-start:-4%">تجارة</span></div></section>
 <div class="mb-band" data-p><span>الإبداع ✦ البرمجة ✦ التجارة ✦ الإبداع ✦ البرمجة ✦ التجارة</span></div>
@@ -680,21 +673,21 @@
 <div class="mb-pc mb-rv" style="--c:var(--em)"><div class="mb-ic"><svg viewBox="0 0 64 64"><path d="M24 22L12 32l12 10M40 22l12 10-12 10M35 18l-6 28"/></svg></div><h3>البرمجة</h3><p>مواقع وتطبيقات وقوالب جاهزة بإتقان تقني.</p></div>
 <div class="mb-pc mb-rv" style="--c:var(--gold)"><div class="mb-ic"><svg viewBox="0 0 64 64"><path d="M6 10h8l6 30h28l6-22H18 M26 50h.1M44 50h.1"/></svg></div><h3>التجارة</h3><p>متجرك، طلباتك، وأرباحك في لوحة واحدة.</p></div></div></div></section>
 <div class="mb-band mb-r" data-p><span>ثقة ✦ أمان ✦ إتقان ✦ ثقة ✦ أمان ✦ إتقان ✦ ثقة ✦ أمان</span></div>
-<section class="mb-sec mb-pad" id="mb-trust"><div class="mb-trust"><div class="mb-rv"><span class="mb-eyebrow">المصافحة في قلب الشعار</span><h2>الثقة أول قيمة عندنا</h2><div class="mb-vals"><div><i></i><p><b>أمان</b><span>الدفع محجوز في Escrow لحد التسليم.</span></p></div><div><i></i><p><b>إتقان</b><span>تقييمات حقيقية وبائعين متحقَّق منهم.</span></p></div><div><i></i><p><b>وضوح</b><span>رسوم معلنة ومن غير مفاجآت.</span></p></div></div></div>
+<section class="mb-sec mb-pad" id="mb-trust"><div class="mb-trust"><div class="mb-rv"><span class="mb-eyebrow">المصافحة في قلب الشعار</span><h2>الثقة أول قيمة عندنا</h2><div class="mb-vals"><div><i></i><p><b>حماية الدفع</b><span>فلوسك محجوزة في Escrow ولا تتحول للبائع إلا بعد تأكيدك الاستلام.</span></p></div><div><i></i><p><b>دفع مرن</b><span>بطاقة بنكية أو فوري أو فودافون كاش أو ميزة من صفحة دفع واحدة عبر فواتيرك.</span></p></div><div><i></i><p><b>مراجعة عند المشكلة</b><span>افتح نزاعاً على الطلب وتراجعه إدارة المنصة. ولو مرّت ٧ أيام على التسليم دون تأكيدك يفتح النظام نزاعاً للمراجعة.</span></p></div></div></div>
 <div class="mb-esc mb-rv" id="mb-esc"><h3 class="mb-disp" style="color:var(--gold);font-size:1.3rem">رحلة الدفع الآمن</h3><div class="mb-flow"><div><b>١</b>العميل يدفع</div><s></s><div><b>٢</b>حجز آمن</div><s></s><div><b>٣</b>تسليم</div><s></s><div><b>٤</b>تحويل للبائع</div></div></div></div></section>
 <section class="mb-sec mb-bk" id="mb-brand"><span class="mb-eyebrow mb-rv">دليل الهوية</span><h2 class="mb-rv">خواص البراند</h2><p class="mb-sub mb-rv">ألوان وخطوط ونبرة موحّدة في كل صفحة. اضغط على أي لون لنسخ الكود.</p>
 <div class="mb-sw mb-rv"><button style="--c:#0C1830;--t:#F7F1E3;box-shadow:inset 0 0 0 1px rgba(247,241,227,.3)" data-c="#0C1830"><b>كحلي الثقة</b>#0C1830</button><button style="--c:#0F7A6C;--t:#fff" data-c="#0F7A6C"><b>زمردي النمو</b>#0F7A6C</button><button style="--c:#B8935A;--t:#0C1830" data-c="#B8935A"><b>ذهبي القيمة</b>#B8935A</button><button style="--c:#E6F0EA;--t:#0C1830" data-c="#E6F0EA"><b>نعناع الصفاء</b>#E6F0EA</button></div>
 <div class="mb-bg3"><div class="mb-bx mb-rv mb-tp"><h3>الخطوط</h3><div class="mb-a">Reem Kufi</div><div class="mb-b">للعناوين: هندسي بروح عربية<br>Readex Pro للنصوص: واضح ومريح</div></div>
 <div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img src="/icons/logo-mark.png" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
 <div class="mb-bx mb-rv"><h3>نبرة الصوت</h3><ul class="mb-vo"><li>واضح ودافئ: «ابدأ متجرك النهاردة»</li><li>واثق من غير مبالغة</li><li class="mb-n">لا وعود وهمية أو لغة معقّدة</li></ul></div></div></section>
-<section class="mb-sec mb-pad mb-mk" id="mb-shop"><span class="mb-eyebrow mb-rv">السوق</span><h2 class="mb-rv" style="font-size:clamp(2rem,4.6vw,3.6rem);margin:10px 0 36px;line-height:1.3">جديد في المول</h2><div class="mb-pg"><div class="mb-pk"><div class="mb-th" style="--c:#0F7A6C"><svg viewBox="0 0 64 64"><path d="M24 22L12 32l12 10M40 22l12 10-12 10M35 18l-6 28"/></svg></div><div class="mb-b"><small>قوالب</small><h4>قالب موقع متجر</h4><div class="mb-pr">٣٩٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#B8935A"><svg viewBox="0 0 64 64"><path d="M18 10h22l8 8v36H18z M24 30h18M24 38h18"/></svg></div><div class="mb-b"><small>كتب</small><h4>كتاب التسويق الرقمي</h4><div class="mb-pr">١٢٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#0C1830"><svg viewBox="0 0 64 64"><path d="M12 52l3-11L41 15l8 8L23 49z"/></svg></div><div class="mb-b"><small>تصميم</small><h4>باقة هوية بصرية</h4><div class="mb-pr">٨٥٠ ج.م</div></div></div><div class="mb-pk"><div class="mb-th" style="--c:#0F7A6C"><svg viewBox="0 0 64 64"><path d="M8 16h36v32H8z M44 29l12-7v20l-12-7z"/></svg></div><div class="mb-b"><small>دورات</small><h4>كورس مونتاج فيديو</h4><div class="mb-pr">٤٥٠ ج.م</div></div></div></div></section>
-<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.png" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك مجاناً</a></div></section>
+
+
 
 <div class="mb-toast" id="mb-ts"></div>
 </div>
 
   <!-- Live platform stats (real numbers, filled by loadHomeStats()) -->
-  <section class="m-stats-strip max-w-7xl mx-auto px-4 py-10">
+  <section data-home-sec="stats" class="m-stats-strip max-w-7xl mx-auto px-4 py-10">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
         <!-- Live stats — real counts, loaded by loadHomeStats() (refreshes every 60s) -->
         <div class=" ">
@@ -724,35 +717,12 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        VALUE PROPS — 4 trust cards
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
-        <div class="w-12 h-12 rounded-xl bg-turquoise-50 text-turquoise-600 flex items-center justify-center"><i class="fa-solid fa-shield-halved text-xl"></i></div>
-        <h3 class="font-black text-navy-900">حماية بنظام Escrow</h3>
-        <p class="text-sm text-gray-500 leading-relaxed">نحتفظ بقيمة الطلب في خزينة ضمان آمنة، ولا يتم تحويل المستحقات للبائع إلا بعد استلامك الخدمة وموافقتك.</p>
-      </div>
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
-        <div class="w-12 h-12 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center"><i class="fa-solid fa-bolt text-xl"></i></div>
-        <h3 class="font-black text-navy-900">تحميل المنتجات فوري</h3>
-        <p class="text-sm text-gray-500 leading-relaxed">القوالب والأكواد والأصول الرقمية الجاهزة تصبح متاحة للتحميل المباشر فور تأكيد الدفع.</p>
-      </div>
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
-        <div class="w-12 h-12 rounded-xl bg-navy-50 text-navy-700 flex items-center justify-center"><i class="fa-solid fa-id-badge text-xl"></i></div>
-        <h3 class="font-black text-navy-900">بائعون حقيقيون</h3>
-        <p class="text-sm text-gray-500 leading-relaxed">كل بائع بيسجل حساب موثّق ومربوط بتقييمات حقيقية من عملاء فعليين على المنصة.</p>
-      </div>
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition">
-        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-wallet text-xl"></i></div>
-        <h3 class="font-black text-navy-900">وسائل دفع آمنة</h3>
-        <p class="text-sm text-gray-500 leading-relaxed">ادفع عبر فواتيرك بالبطاقات البنكية، فودافون كاش، وباقي المحافظ الإلكترونية من صفحة واحدة.</p>
-      </div>
-    </div>
-  </section>
+  <section data-home-sec="pay" class="hs hs-pay"><div class="hs-in"><div class="hs-head"><span class="hs-kick">مزايا الدفع</span><h2>دفعك محمي في كل خطوة</h2></div><div class="hs-grid4"><div class="hs-card"><div class="hs-ico t"><i class="fa-solid fa-shield-halved"></i></div><h3>حماية بنظام Escrow</h3><p>قيمة الطلب محجوزة في خزينة ضمان، ولا تتحول للبائع إلا بعد تأكيدك الاستلام.</p></div><div class="hs-card"><div class="hs-ico g"><i class="fa-solid fa-credit-card"></i></div><h3>دفع من صفحة واحدة</h3><p>ادفع بالبطاقة البنكية أو فوري أو فودافون كاش أو ميزة عبر بوابة فواتيرك، واستخدم كوبون الخصم لو معاك.</p></div><div class="hs-card"><div class="hs-ico n"><i class="fa-solid fa-scale-balanced"></i></div><h3>مراجعة من الإدارة عند المشكلة</h3><p>لو حصلت مشكلة افتح نزاعاً على الطلب وتراجعه الإدارة. وبعد ٧ أيام من التسليم دون تأكيد يفتح النظام نزاعاً تلقائياً للمراجعة.</p></div><div class="hs-card"><div class="hs-ico t"><i class="fa-solid fa-rotate-left"></i></div><h3>طلب مرتجع للمنتجات</h3><p>اطلب إرجاع المنتج من صفحة الطلب، ويراجع طلبك البائع ثم الإدارة عند الحاجة.</p></div></div></div></section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        DUAL CATEGORY BROWSE — services categories | product categories
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+  <section data-home-sec="explore" class="hs hs-explore"><div class="hs-in">
     <div class="text-center mb-8">
       <span class="text-secondary text-sm font-bold">مسارات السوق المتكاملة</span>
       <h2 class="font-sans font-black text-3xl text-gray-900 mt-1">استكشف حسب نوع احتياجك</h2>
@@ -776,8 +746,8 @@
       <!-- Products categories -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-5">
-          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-turquoise-500"></span><h3 class="font-black text-navy-900">منتجات جاهزة (تحميل فوري)</h3></div>
-          <span class="text-xs font-bold bg-turquoise-50 text-turquoise-700 px-2.5 py-1 rounded-md">تحميل بنقرة واحدة</span>
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-turquoise-500"></span><h3 class="font-black text-navy-900">منتجات جاهزة</h3></div>
+          <span class="text-xs font-bold bg-turquoise-50 text-turquoise-700 px-2.5 py-1 rounded-md">اشترِ مباشرة</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <button onclick="filterByTypeAndCategory('product','programming')" class="p-3 rounded-xl hover:bg-gray-50 transition flex flex-col items-start gap-1.5 text-start"><i class="fa-solid fa-window-restore text-turquoise-600 text-xl"></i><span class="text-sm font-bold text-navy-900">قوالب SaaS و UI</span></button>
@@ -789,16 +759,16 @@
         </div>
       </div>
     </div>
-  </section>
+  </div></section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        DIGITAL PRODUCTS SPOTLIGHT — real data
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+  <section data-home-sec="bestsellers" class="hs"><div class="hs-in">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
-        <span class="inline-flex items-center gap-1.5 bg-turquoise-50 text-turquoise-700 text-xs font-bold px-3 py-1 rounded-full mb-2"><i class="fa-solid fa-bolt"></i> تسليم وتنزيل فوري تلقائي</span>
-        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900">المنتجات الرقمية الجاهزة الأكثر مبيعاً</h2>
+        <span class="inline-flex items-center gap-1.5 bg-turquoise-50 text-turquoise-700 text-xs font-bold px-3 py-1 rounded-full mb-2"><i class="fa-solid fa-shield-halved"></i> مدفوعاتك محمية بنظام Escrow</span>
+        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900">المنتجات المتاحة في المول</h2>
       </div>
       <button onclick="filterByType('product')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm">
         <span>عرض كل المنتجات</span><i class="fa-solid fa-arrow-left"></i>
@@ -810,16 +780,16 @@
       <div class="service-card"><div class="skeleton h-40 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>
       <div class="service-card"><div class="skeleton h-40 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>
     </div>
-  </section>
+  </div></section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        CUSTOM SERVICES SPOTLIGHT — real data (reuses loadFeaturedServices)
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+  <section data-home-sec="featured" class="hs"><div class="hs-in">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
         <span class="inline-flex items-center gap-1.5 bg-secondary/10 text-secondary text-xs font-bold px-3 py-1 rounded-full mb-2"><i class="fa-solid fa-gavel"></i> تنفيذ مخصص محمي بنظام Escrow</span>
-        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900" data-i18n="home.featured">خدمات ومنتجات مميزة تناسب احتياجك</h2>
+        <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900" data-i18n="home.featured">خدمات متاحة في المول</h2>
       </div>
       <button onclick="navigateTo('services')" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm">
         <span>عرض كل الخدمات</span><i class="fa-solid fa-arrow-left"></i>
@@ -830,17 +800,17 @@
       <div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>
       <div class="service-card"><div class="skeleton h-48 w-full"></div><div class="p-4 space-y-3"><div class="skeleton h-4 w-3/4 rounded"></div><div class="skeleton h-3 w-1/2 rounded"></div><div class="skeleton h-8 w-full rounded-xl"></div></div></div>
     </div>
-  </section>
+  </div></section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
        HOW IT WORKS — 2-column comparison (escrow flow vs instant delivery)
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="py-4 px-4 max-w-7xl mx-auto mb-14">
+  <section data-home-sec="trust" class="hs"><div class="hs-in">
     <div class="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100">
       <div class="text-center max-w-2xl mx-auto mb-10">
         <span class="inline-block bg-turquoise-50 text-turquoise-700 text-xs font-bold px-3 py-1 rounded-full mb-3">الأمان والشفافية أولاً</span>
         <h2 class="font-sans font-black text-2xl md:text-3xl text-gray-900 mb-3">كيف يضمن مول الخدمات حقك كاملاً؟</h2>
-        <p class="text-gray-500 text-sm">مساران ماليان واضحان مصممان لحماية أموالك سواء طلبت عملاً مخصصاً أو اشتريت منتجاً رقمياً فورياً.</p>
+        <p class="text-gray-500 text-sm">مساران واضحان لحماية أموالك، سواء طلبت عملاً مخصصاً أو اشتريت منتجاً جاهزاً.</p>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-gray-50 rounded-2xl p-6">
@@ -867,12 +837,12 @@
         </div>
       </div>
     </div>
-  </section>
+  </div></section>
 
   <div data-ad-slot="home_mid" class="max-w-7xl mx-auto px-4 mb-10" style="display:none"></div>
 
   <!-- ── Blog Teaser Section (Dynamic from Firestore) ─────────────────────── -->
-  <section class="py-14 px-4 bg-gray-50 -mx-4">
+  <section data-home-sec="blog" class="py-14 px-4 bg-gray-50 -mx-4">
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
@@ -895,7 +865,7 @@
   </section>
 
   <!-- ── Newsletter Section ─────────────────────────────────────────────── -->
-  <section class="m-band py-16 px-4 -mx-4">
+  <section data-home-sec="newsletter" class="m-band py-16 px-4 -mx-4">
     <div class="max-w-2xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 border border-white/20">
         <i class="fa-solid fa-envelope-open-text text-yellow-300"></i>
@@ -919,13 +889,25 @@
   </section>
 
   <!-- ── Footer ───────────────────────────────────────────────────────────── -->
-  <footer class="m-footer py-14 px-4 -mx-4">
+  <!-- ══ END CTA (design A) — last block of the home page ══ -->
+<div id="mallDesignEnd" data-home-sec="cta">
+<section class="end pad" id="md-end">
+  <img data-logo alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
+  <div class="acts" style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل الآن</a><a class="btn2" href="#" data-go="products">تصفّح المنتجات</a></div>
+</section>
+</div>
+<!-- ══ END CTA (design B) ══ -->
+<div id="mallDesignBEnd" data-home-sec="cta">
+<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.png" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك</a></div></section>
+</div>
+
+<footer class="m-footer py-14 px-4 -mx-4">
     <p id="buildStamp" class="text-center text-[10px] text-gray-600 mb-2" dir="ltr"></p>
     <div class="max-w-6xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
         <div class="lg:col-span-2">
           <div class="m-flogo"><div class="m-logo"><img src="/icons/logo-mark.png" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
-          <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">المنصة الموثوقة للخدمات الرقمية والمنتجات الجاهزة، بنظام ضمان مالي (Escrow) يحمي حقوق البائع والمشتري في كل عملية.</p>
+          <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">منصة عربية للخدمات والمنتجات، بنظام ضمان مالي (Escrow) تُحجز فيه قيمة الطلب إلى أن يؤكد المشتري الاستلام.</p>
           <div class="inline-flex items-center gap-2 bg-turquoise-500/10 text-turquoise-400 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-shield-halved"></i> معاملات محمية بالكامل
           </div>
@@ -952,7 +934,7 @@
       <div class="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <p class="text-navy-200/60 text-xs">© 2026 مول الخدمات. جميع الحقوق محفوظة</p>
         <div class="flex items-center gap-4 text-xs text-navy-200/60">
-          <span class="flex items-center gap-1.5"><i class="fa-solid fa-lock text-turquoise-400"></i> دفع آمن 100%</span>
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-lock text-turquoise-400"></i> دفع مشفّر عبر فواتيرك</span>
           <span id="footerRatingWrap" class="items-center gap-1.5" style="display:none"><i class="fa-solid fa-star text-yellow-400"></i> <span><span data-i18n="home.stats.rating">تقييم المستخدمين</span> <span id="footerRating"></span></span></span>
         </div>
       </div>
@@ -1729,7 +1711,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 2. Constants & Utilities -->
-<script src="js/constants.js?v=2026-10-24-v10"></script>
+<script src="js/constants.js?v=2026-10-25-v11"></script>
 
 <script>
 // Load live platform settings BEFORE any page renders
@@ -1745,48 +1727,48 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 3. i18n -->
-<script src="js/i18n.js?v=2026-10-24-v10"></script>
+<script src="js/i18n.js?v=2026-10-25-v11"></script>
 
 <!-- 4. Payment System -->
-<script src="js/request-system.js?v=2026-10-24-v10"></script>
-<script src="js/subscription-system.js?v=2026-10-24-v10"></script>
+<script src="js/request-system.js?v=2026-10-25-v11"></script>
+<script src="js/subscription-system.js?v=2026-10-25-v11"></script>
 
 <!-- 5. Escrow -->
-<script src="js/escrow.js?v=2026-10-24-v10"></script>
+<script src="js/escrow.js?v=2026-10-25-v11"></script>
 
 <!-- 5b. Payment (⚠️ ADDED — this tag was missing entirely, so window.PaymentSystem
      was never defined and every "ادفع الآن" click threw "PaymentSystem is not
      defined" instead of opening the payment gateway. The file itself was
      always complete and correct — it just never got wired into the page.) -->
-<script src="js/payment-system.js?v=2026-10-24-v10"></script>
+<script src="js/payment-system.js?v=2026-10-25-v11"></script>
 
 <!-- 6. Orders Manager -->
-<script src="js/orders.js?v=2026-10-24-v10"></script>
+<script src="js/orders.js?v=2026-10-25-v11"></script>
 
 <!-- 7. Order Workspace (chat + delivery) -->
-<script src="js/order-workspace.js?v=2026-10-24-v10"></script>
+<script src="js/order-workspace.js?v=2026-10-25-v11"></script>
 
 <!-- 7d. Product Returns (buyer request → seller approve/reject → admin refund) -->
-<script src="js/returns.js?v=2026-10-24-v10"></script>
-<script src="js/non-receipt.js?v=2026-10-24-v10"></script>
-<script src="js/store-themes.js?v=2026-10-24-v10"></script>
-<script src="js/store-themes-pro.js?v=2026-10-24-v10"></script>
-<script src="js/stores.js?v=2026-10-24-v10"></script>
-<script src="js/reviews.js?v=2026-10-24-v10"></script>
+<script src="js/returns.js?v=2026-10-25-v11"></script>
+<script src="js/non-receipt.js?v=2026-10-25-v11"></script>
+<script src="js/store-themes.js?v=2026-10-25-v11"></script>
+<script src="js/store-themes-pro.js?v=2026-10-25-v11"></script>
+<script src="js/stores.js?v=2026-10-25-v11"></script>
+<script src="js/reviews.js?v=2026-10-25-v11"></script>
 
 <!-- 7b. Dedicated Chat Module -->
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
-<script src="js/blog-engine.js?v=2026-10-24-v10"></script>
+<script src="js/blog-engine.js?v=2026-10-25-v11"></script>
 
 <!-- 8. Auth -->
-<script src="js/auth.js?v=2026-10-24-v10"></script>
+<script src="js/auth.js?v=2026-10-25-v11"></script>
 
 <!-- 9. Services -->
-<script src="js/services.js?v=2026-10-24-v10"></script>
-<script src="js/ads-embed.js?v=2026-10-24-v10"></script>
-<script src="js/ads-system.js?v=2026-10-24-v10"></script>
+<script src="js/services.js?v=2026-10-25-v11"></script>
+<script src="js/ads-embed.js?v=2026-10-25-v11"></script>
+<script src="js/ads-system.js?v=2026-10-25-v11"></script>
 <script src="js/dropship.js?v=2026-10-19-marketer2"></script>
 <script src="js/affiliate.js?v=2026-10-19"></script>
 <script>
@@ -1797,7 +1779,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 10. Notifications -->
-<script src="js/notifications.js?v=2026-10-24-v10"></script>
+<script src="js/notifications.js?v=2026-10-25-v11"></script>
 
 <!-- 11. Dashboard -->
 <script defer src="js/dashboard.js"></script>
@@ -2817,7 +2799,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
 <script defer src="/js/mall-home.js?v=2"></script>
-<script defer src="/js/mall-home-b.js?v=1"></script>
+<script defer src="/js/mall-home-b.js?v=2"></script>
 <script defer src="/js/mall-charts.js?v=1"></script>
 <script defer src="/js/store-extras.js?v=1"></script>
 </body>

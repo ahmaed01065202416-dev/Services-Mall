@@ -5,7 +5,7 @@
 
 MallHome._boot=function(){
   var LOGO='icons/logo-mark.png';
-  document.querySelectorAll('#mallDesign [data-logo]').forEach(function(i){i.src=LOGO;});
+  document.querySelectorAll('#mallDesign [data-logo],#mallDesignEnd [data-logo]').forEach(function(i){i.src=LOGO;});
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   gsap.registerPlugin(ScrollTrigger);
 
@@ -14,23 +14,19 @@ MallHome._boot=function(){
    cart:'<path d="M6 10h8l6 30h28l6-22H18 M26 50h.1M44 50h.1"/>',shield:'<path d="M32 6l20 8v16c0 14-9 22-20 28C21 52 12 44 12 30V14z M23 30l7 7 12-14"/>',check:'<path d="M14 34l12 12 24-28"/>'};
   function svg(k){return '<svg viewBox="0 0 64 64">'+IC[k]+'</svg>';}
   
-  /* منتجات توضيحية */
+  /* أمثلة للعرض فقط — بدون أسعار أو أرقام */
   var P=[['قالب موقع متجر','قوالب','code','#0F766E','#115E59',390],['كتاب التسويق الرقمي','كتب إلكترونية','write','#B8935A','#7A5C2E',120],['باقة هوية بصرية','تصميم','design','#2B4170','#0F766E',850],['كورس مونتاج فيديو','دورات','video','#8A6A3A','#2B4170',450],['إدارة حملة إعلانية','تسويق','market','#115E59','#B8935A',1200],['تطبيق موبايل جاهز','برمجة','code','#1B2A4A','#14B8A6',2500],['سماعات لاسلكية','إلكترونيات','product','#2B4170','#B8935A',680],['ترجمة ٥٠٠٠ كلمة','ترجمة','write','#B8935A','#0F766E',300]];
   function th(p,k){return '<div class="th" style="--a:'+p[3]+';--b:'+p[4]+'">'+svg(k||p[2])+'</div>';}
-  function store(n){var c='';for(var i=0;i<n;i++){var p=P[i];c+='<div class="pd">'+th(p)+'<div class="pi"><b>'+p[0]+'</b><span>'+ar(p[5])+' ج.م</span></div></div>';}
+  function store(n){var c='';for(var i=0;i<n;i++){var p=P[i];c+='<div class="pd">'+th(p)+'<div class="pi"><b>'+p[0]+'</b><span class="skl"></span></div></div>';}
     return '<div class="wb"><i></i><i></i><i></i><span>متجرك.com</span></div><div class="sh"><div class="sh-h"><b class="sn"><img class="lgm" src="'+LOGO+'" alt="">متجرك</b><em><span class="ct">'+'السلة</span></em></div><div class="ban"><b>منتجات رقمية جاهزة</b><span>جديد</span><i class="bdc"></i></div><div class="gd">'+c+'</div></div>';}
-  function phone(sheet){return '<div class="pt"><img class="lgm" src="'+LOGO+'" alt="">إتمام الطلب</div><div class="prow">'+th(P[0])+'<div><b>'+P[0][0]+'</b><small>'+ar(P[0][5])+' ج.م</small></div></div><div class="escb">'+svg('shield')+'دفع محمي بنظام Escrow</div><button class="pay">ادفع '+ar(P[0][5])+' ج.م</button>'+(sheet?'<div class="sheet" id="md-sSheet"><div class="ok">'+svg('check')+'</div><b>تم حجز المبلغ بأمان</b><small>يتحرر بعد موافقتك</small></div>':'');}
-  function toast(){return '<i>'+svg('check')+'</i><div>طلب جديد<small>'+P[0][0]+' · +'+ar(P[0][5])+' ج.م</small></div>';}
+  function phone(sheet){return '<div class="pt"><img class="lgm" src="'+LOGO+'" alt="">إتمام الطلب</div><div class="prow">'+th(P[0])+'<div><b>'+P[0][0]+'</b><small><span class="skl"></span></small></div></div><div class="escb">'+svg('shield')+'دفع محمي بنظام Escrow</div><button class="pay">ادفع الآن</button>'+(sheet?'<div class="sheet" id="md-sSheet"><div class="ok">'+svg('check')+'</div><b>تم حجز المبلغ بأمان</b><small>يتحرر بعد موافقتك</small></div>':'');}
+  function toast(){return '<i>'+svg('check')+'</i><div>طلب جديد<small>'+P[0][0]+'</small></div>';}
   document.getElementById('md-hWin').innerHTML=store(6);document.getElementById('md-hPhone').innerHTML=phone(false);document.getElementById('md-hToast').innerHTML=toast();
   document.getElementById('md-sWin').innerHTML=store(6);document.getElementById('md-sPhone').innerHTML=phone(true);document.getElementById('md-sToast').innerHTML=toast();
   /* خطوات القصة */
   var S=[['١','افتح متجرك','سجّل واختار اسم متجرك وهويته.'],['٢','ارفع منتجاتك','قوالب وكتب ودورات وخدمات، كل حاجة بسعرها ووصفها.'],['٣','العميل بيطلب','بيضيف للسلة ويطلب من موبايله أو من اللاب توب.'],['٤','دفع محمي','المبلغ بيتحجز بنظام Escrow لحد التسليم.'],['٥','استلم فلوسك','بعد موافقة العميل، المبلغ بيتحوّل لك.']];
   document.getElementById('md-steps').innerHTML=S.map(function(s){return '<div class="stp"><b>'+s[0]+'</b><h2>'+s[1]+'</h2><p>'+s[2]+'</p></div>';}).join('');
   document.getElementById('md-sbar').innerHTML=S.map(function(){return '<i></i>';}).join('');
-  /* سوق المنتجات */
-  document.getElementById('md-pg').innerHTML=P.map(function(p,i){return '<div class="pc">'+th(p)+'<div class="bd"><small>'+p[1]+'</small><h3>'+p[0]+'</h3><div class="rw"><span class="pr">'+ar(p[5])+' ج.م</span><span class="st">★ '+ar('4.'+(5+i%5)).replace('#mallDesign .','٫')+'</span></div><button class="add" data-i="'+i+'">أضف للسلة</button></div></div>';}).join('');
-  var cnt=0,cc=document.getElementById('md-cc');
-  document.querySelectorAll('#mallDesign .add').forEach(function(b){b.addEventListener('click',function(){var on=b.classList.toggle('done');cnt+=on?1:-1;b.textContent=on?'تمت الإضافة ✓':'أضف للسلة';cc.textContent=ar(cnt);if(!reduce)gsap.fromTo(cc,{scale:1.6},{scale:1,duration:.4,ease:'back.out(3)'});});});
   /* تيلت 3D خفيف */
   document.querySelectorAll('#mallDesign .pc').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform='rotateY('+x*8+'deg) rotateX('+(-y*8)+'deg)';});c.addEventListener('pointerleave',function(){c.style.transform='';});});
   document.getElementById('md-lst').innerHTML=['لوحة بكل الطلبات والمبيعات','رفع المنتجات الرقمية وتسليمها للعميل بعد الدفع','فلوسك محمية بنظام Escrow لحد التسليم','متجر بهويتك وروابط تشاركها مع عملائك'].map(function(t){return '<li><i>'+svg('check')+'</i>'+t+'</li>';}).join('');
@@ -38,10 +34,10 @@ MallHome._boot=function(){
   var tk=['قوالب مواقع','كتب إلكترونية','دورات','هويات بصرية','تطبيقات','متاجر إلكترونية','إلكترونيات','خدمات تسويق','ترجمة','مونتاج'],t='';
   for(var r=0;r<6;r++)tk.forEach(function(x){t+='<span>'+x+'</span><b>◆</b>';});document.getElementById('md-tk').innerHTML=t;
 
-  function split(el){var ws=el.textContent.trim().split(/\s+/);el.innerHTML=ws.map(function(w){return '<span class="w"><i>'+w+'</i></span> ';}).join('');return el.querySelectorAll('#mallDesign .w>i');}
+  function split(el){var ws=el.textContent.trim().split(/\s+/);el.innerHTML=ws.map(function(w){return '<span class="w"><i>'+w+'</i></span> ';}).join('');return el.querySelectorAll('.w>i');}
   var hw=split(document.getElementById('md-h1')),ew=split(document.getElementById('md-eh'));
 
-  if(reduce){gsap.set('#mallDesign .stp',{opacity:0});gsap.set('#mallDesign .stp:last-child',{opacity:1});gsap.set('#md-sSheet',{yPercent:0});document.getElementById('md-eb').textContent=ar(390)+' ج.م';return;}
+  if(reduce){gsap.set('#mallDesign .stp',{opacity:0});gsap.set('#mallDesign .stp:last-child',{opacity:1});gsap.set('#md-sSheet',{yPercent:0});return;}
 
   /* هيرو */
   gsap.set(hw,{yPercent:115});
@@ -63,7 +59,7 @@ MallHome._boot=function(){
   var oi=0;
   function cyc(){oi=(oi+1)%6;var p=P[oi],t=document.getElementById('md-hToast'),cards=document.querySelectorAll('#md-hWin .pd');
     gsap.timeline().to(t,{scale:.88,opacity:0,duration:.3,ease:'power2.in'})
-      .add(function(){t.innerHTML='<i>'+svg('check')+'</i><div>طلب جديد<small>'+p[0]+' · +'+ar(p[5])+' ج.م</small></div>';})
+      .add(function(){t.innerHTML='<i>'+svg('check')+'</i><div>طلب جديد<small>'+p[0]+'</small></div>';})
       .to(t,{scale:1,opacity:1,duration:.55,ease:'back.out(2.2)'})
       .fromTo(cards[oi],{boxShadow:'0 0 0 0 rgba(20,184,166,0)'},{boxShadow:'0 0 0 3px #14B8A6',duration:.35,yoyo:true,repeat:1},'-=.45');}
   gsap.delayedCall(5,function loop(){cyc();gsap.delayedCall(4.5,loop);});
@@ -83,9 +79,9 @@ MallHome._boot=function(){
   ScrollTrigger.create({trigger:'#mallDesign .tick',start:'top bottom',end:'bottom top',onUpdate:function(s){l.timeScale(1+Math.abs(s.getVelocity())/260);gsap.to(l,{timeScale:1,duration:.9,overwrite:true,delay:.05});}});
 
   /* قصة البيع: شاشة المتجر بتتبني مع السكرول */
-  var W='#md-sWin ',cart={v:0},earn={v:0};
+  var W='#md-sWin ',cart={v:0};
   gsap.set([W+'.sh-h',W+'.ban'],{opacity:0,y:20});gsap.set(W+'.pd',{opacity:0,y:24,scale:.94});
-  gsap.set('#md-sPhone',{x:-80,opacity:0});gsap.set('#md-sSheet',{yPercent:110});gsap.set('#md-sToast',{y:-40,opacity:0});gsap.set('#md-sEarn',{opacity:0,y:20});
+  gsap.set('#md-sPhone',{x:-80,opacity:0});gsap.set('#md-sSheet',{yPercent:110});gsap.set('#md-sToast',{y:-40,opacity:0});
   var tl=gsap.timeline({scrollTrigger:{trigger:'#md-sell',start:'top top',end:'bottom bottom',scrub:.6,onUpdate:function(s){var i=Math.min(4,Math.floor(s.progress*5));setStep(i);}}});
   tl.to([W+'.sh-h',W+'.ban'],{opacity:1,y:0,stagger:.25,duration:.7},0)
     .to(W+'.pd',{opacity:1,y:0,scale:1,stagger:.12,duration:.5},1)
@@ -93,24 +89,23 @@ MallHome._boot=function(){
     .to(W+'.pd:nth-child(1)',{boxShadow:'0 0 0 3px #14B8A6',duration:.3},2.2)
     .to(cart,{v:1,duration:.2,onUpdate:function(){W&&(document.querySelector('#md-sWin .ct').textContent='السلة '+ar(Math.round(cart.v)));}},2.4)
     .to('#md-sSheet',{yPercent:0,duration:.8,ease:'power3.out'},3)
-    .to('#md-sToast',{y:0,opacity:1,duration:.6},4).to('#md-sEarn',{opacity:1,y:0,duration:.5},4.1)
-    .to(earn,{v:390,duration:.8,onUpdate:function(){document.getElementById('md-eb').textContent=ar(Math.round(earn.v))+' ج.م';}},4.2).to({},{duration:.3},4.9);
+    .to('#md-sToast',{y:0,opacity:1,duration:.6},4)
+    .to({},{duration:.3},4.9);
   var curS=-1,SPs=document.querySelectorAll('#mallDesign .stp'),bars=document.querySelectorAll('#md-sbar i');
   function setStep(i){if(i===curS)return;gsap.to(SPs,{opacity:function(k){return k===i?1:0;},y:function(k){return k===i?0:(k<i?-24:24);},duration:.45,overwrite:true});bars.forEach(function(b,k){b.classList.toggle('on',k<=i);});curS=i;}
   setStep(0);
 
   /* سوق + بائعين */
-  gsap.from('#mallDesign .pc',{y:60,opacity:0,duration:.8,stagger:.07,ease:'power3.out',scrollTrigger:{trigger:'#md-pg',start:'top 85%'}});
-  gsap.from('#mallDesign .mk h2',{y:30,opacity:0,duration:.8,scrollTrigger:{trigger:'#mallDesign .mk',start:'top 75%'}});
   gsap.from('#md-bars i',{scaleY:0,stagger:.1,duration:.9,ease:'power3.out',scrollTrigger:{trigger:'#md-bars',start:'top 85%'}});
   gsap.from('#mallDesign .seller li',{x:30,opacity:0,stagger:.12,duration:.7,scrollTrigger:{trigger:'#md-lst',start:'top 85%'}});
   gsap.from('#md-dash',{y:50,opacity:0,duration:.9,scrollTrigger:{trigger:'#md-dash',start:'top 88%'}});
-  gsap.set(ew,{yPercent:115});gsap.to(ew,{yPercent:0,stagger:.1,duration:1,ease:'power4.out',scrollTrigger:{trigger:'#mallDesign .end',start:'top 70%'}});
-  gsap.from('#mallDesign .end img,#mallDesign .end .acts',{y:30,opacity:0,stagger:.15,duration:.8,scrollTrigger:{trigger:'#mallDesign .end',start:'top 70%'}});
+  gsap.set(ew,{yPercent:115});gsap.to(ew,{yPercent:0,stagger:.1,duration:1,ease:'power4.out',scrollTrigger:{trigger:'#mallDesignEnd .end',start:'top 70%'}});
+  gsap.from('#mallDesignEnd .end img,#mallDesignEnd .end .acts',{y:30,opacity:0,stagger:.15,duration:.8,scrollTrigger:{trigger:'#mallDesignEnd .end',start:'top 70%'}});
 };
   function go(){var el=document.getElementById('mallDesign');if(!el||!window.gsap||!window.ScrollTrigger)return;
     if(!MallHome._done){MallHome._done=true;try{MallHome._boot();}catch(e){console.warn('[MallHome]',e);}
-      el.addEventListener('click',function(e){var a=e.target.closest('[data-go]');if(!a)return;e.preventDefault();if(window.navigateTo)navigateTo(a.getAttribute('data-go'));});}
+      var onGo=function(e){var a=e.target.closest('[data-go]');if(!a)return;e.preventDefault();var v=a.getAttribute('data-go');if(v==='products'&&window.filterByType){filterByType('product');return;}if(window.navigateTo)navigateTo(v);};
+      el.addEventListener('click',onGo);var en=document.getElementById('mallDesignEnd');if(en)en.addEventListener('click',onGo);}
     setTimeout(function(){ScrollTrigger.refresh();},60);}
   function watch(){var el=document.getElementById('mallDesign');if(!el)return;
     if('IntersectionObserver' in window){new IntersectionObserver(function(es){if(es[0].isIntersecting)go();},{rootMargin:'200px'}).observe(el);}else go();

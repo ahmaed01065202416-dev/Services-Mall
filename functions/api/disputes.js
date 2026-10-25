@@ -101,9 +101,18 @@ async function reportNonReceipt(body, env, CORS, auth) {
         return json(400, CORS, { error: `البلاغ متاح بعد ما البائع يسجّل التسليم، أو لو الشحنة اتأخرت أكتر من ${cfg.SHIPPED_LATE_DAYS} أيام من تاريخ الشحن` });
     }
     if (body.reasonCode !== 'not_arrived' && !delivered) return json(400, CORS, { error: 'سبب «وصل ومعجبنيش/تالف» مينفعش قبل تسجيل التسليم' });
-    if (delivered && cfg.RETURN_WINDOW_DAYS > 0) {
+    if (delivered) {
         const anchor = toMs(order.deliveredAt) || toMs(order.updatedAt) || toMs(order.createdAt);
-        if (anchor && (now - anchor) > cfg.RETURN_WINDOW_DAYS * DAY) return json(400, CORS, { error: `انتهت مدة البلاغ (${cfg.RETURN_WINDOW_DAYS} يوم من التسليم)` });
+        // Seller's own return policy (set on the listing, snapshotted on the order by payment.js — buyers can't write it,
+        // see firestore.rules). It governs ONLY «it arrived but I don't want it». Seller-fault reports keep the platform window.
+        const hasSellerPolicy = order.returnDays !== undefined && order.returnDays !== null;
+        if (body.reasonCode === 'changed_mind' && hasSellerPolicy) {
+            const sellerDays = Math.max(0, Number(order.returnDays) || 0);
+            if (sellerDays <= 0) return json(400, CORS, { error: 'البائع ده مش بيقبل مرتجع «غيّرت رأيي» — تقدر تبلّغ لو المنتج لم يصل أو وصل تالف أو غير مطابق' });
+            if (anchor && (now - anchor) > sellerDays * DAY) return json(400, CORS, { error: `انتهت مدة الاسترجاع عند البائع (${sellerDays} يوم من التسليم)` });
+        } else if (cfg.RETURN_WINDOW_DAYS > 0) {
+            if (anchor && (now - anchor) > cfg.RETURN_WINDOW_DAYS * DAY) return json(400, CORS, { error: `انتهت مدة البلاغ (${cfg.RETURN_WINDOW_DAYS} يوم من التسليم)` });
+        }
     }
 
     // ② one report per order, ever

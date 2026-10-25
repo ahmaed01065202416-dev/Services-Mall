@@ -812,7 +812,7 @@
         if (isProductBrief) {
             return `
             <div class="mx-2 my-3">
-              <div class="bg-turquoise-800 text-white rounded-2xl p-4 max-w-sm">
+              <div class="ow-brief bg-navy-800 text-white rounded-2xl p-4 max-w-sm">
                 <div class="flex items-center gap-2 mb-2">
                   <i class="fa-solid fa-box text-turquoise-300"></i>
                   <p class="font-black text-sm">${isAr ? 'بيانات طلب المنتج' : 'Product Order Details'}</p>

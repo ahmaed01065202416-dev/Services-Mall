@@ -68,3 +68,12 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
   #stPreview{max-width:100%}
   button,[role="button"],a.btn-primary{min-height:44px}
 }
+
+/* order workspace: brief card is always readable (light text on a solid dark card, in every design/theme) */
+.ow-brief{background:var(--m-navy,#0E1A33)!important;color:#fff!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.55)}
+.ow-brief .text-turquoise-300{color:var(--m-gold,#E0B872)!important}
+.ow-brief .text-turquoise-50,.ow-brief .text-turquoise-200{color:rgba(255,255,255,.88)!important}
+/* hover/focus states whose Tailwind classes were never compiled */
+.hover\:bg-secondary-600:hover,.hover\:bg-turquoise-700:hover{filter:brightness(.92)}
+.hover\:border-navy-400:hover{border-color:var(--m-teal)}
+.focus\:ring-navy-100:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--m-teal) 22%,transparent)}

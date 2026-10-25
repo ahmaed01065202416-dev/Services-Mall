@@ -323,7 +323,7 @@
             <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;text-align:center">
               <i class="fa-solid fa-store" style="font-size:32px;color:#0F172A;margin-bottom:10px;display:block"></i>
               <p style="font-weight:900;font-size:14px;color:#111827;margin-bottom:6px">ابدأ على المنصة</p>
-              <p style="font-size:12px;color:#6b7280;margin-bottom:14px">آلاف المحترفين في انتظارك</p>
+              <p style="font-size:12px;color:#6b7280;margin-bottom:14px">سجّل الآن وابدأ في دقائق</p>
               <a href="/#services"
                 style="display:block;width:100%;padding:10px;background:#0F172A;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-sizing:border-box">
                 استعرض الخدمات

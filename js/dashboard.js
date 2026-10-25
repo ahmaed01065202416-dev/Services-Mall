@@ -1411,7 +1411,7 @@
                       <span class="text-sm font-bold text-gray-700">${isAr?'تفعيل طلبات الاسترجاع':'Enable return requests'}</span>
                     </label>
                     <div id="returnsWindowRow" class="${cfg.RETURNS_ENABLED===false?'hidden':''}">
-                      <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'مدة الاسترجاع (أيام بعد التسليم — 0 = بدون حد)':'Return window (days after delivery — 0 = unlimited)'}</label>
+                      <label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'مدة بلاغات «لم يصل / تالف / غير مطابق» (أيام بعد التسليم — 0 = بدون حد). مدة «غيّرت رأيي» بيحددها كل بائع لمنتجه.':'Report window for not-arrived / damaged / not-as-described (days after delivery — 0 = unlimited). Change-of-mind returns are set per seller on each product.'}</label>
                       <input type="number" id="cfg_returns_window" min="0" step="1" class="form-input w-full" value="${cfg.RETURN_WINDOW_DAYS ?? 14}">
                     </div>
                   </div>

@@ -1,9 +1,9 @@
 /* Site design switch — palette/typography for design "mint" (نعناع وذهب).
    Applied when <html data-design="mint"> (set by js/design.js from settings/platform.SITE_DESIGN).
    Default design ("navy") needs no rules: it is the base palette in mall-theme.css. */
-#mallDesignB{display:none}
-html[data-design="mint"] #mallDesignB{display:block}
-html[data-design="mint"] #mallDesign{display:none!important}
+#mallDesignB,#mallDesignBEnd{display:none}
+html[data-design="mint"] #mallDesignB,html[data-design="mint"] #mallDesignBEnd{display:block}
+html[data-design="mint"] #mallDesign,html[data-design="mint"] #mallDesignEnd{display:none!important}
 
 html[data-design="mint"]{
   --m-bg:#E6F0EA;--m-bg2:#DCE9E2;--m-surface:#FBFEFC;--m-surface2:#EEF5F1;--m-surface3:#D5E4DB;

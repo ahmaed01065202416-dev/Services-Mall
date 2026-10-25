@@ -41,6 +41,31 @@
 
     function isPhysical(o) { return !!(o && o.listingType === 'product' && o.shippingInfo); }
 
+    // ── Seller's own return window (listing.returnDays, snapshotted on the order by the server at payment) ──
+    // days === 0 → this seller takes no "I changed my mind" returns. A missing field = an order from before this
+    // feature → keep the old platform window. Seller-fault reports (not arrived / damaged / wrong item / not as
+    // described) are NOT affected: they stay protected by the platform window whatever the seller chose.
+    function returnInfo(o) {
+        const has = o && o.returnDays !== undefined && o.returnDays !== null;
+        if (!has) return { legacy: true, days: Number(PLATFORM.RETURN_WINDOW_DAYS) || 0 };
+        return { legacy: false, days: Math.max(0, Number(o.returnDays) || 0) };
+    }
+    function canChangeMind(o) {
+        const ri = returnInfo(o);
+        if (ri.legacy) return true;
+        if (ri.days <= 0) return false;
+        const anchor = toMs(o.deliveredAt) || toMs(o.updatedAt) || toMs(o.createdAt);
+        return !(anchor && (Date.now() - anchor) > ri.days * 86400000);
+    }
+    function policyHint(o) {
+        if (!isPhysical(o) || returnInfo(o).legacy) return '';
+        const d = returnInfo(o).days;
+        const txt = d > 0
+            ? (isAr() ? `سياسة البائع: استرجاع «غيّرت رأيي» خلال ${d} يوم من التسليم.` : `Seller policy: change-of-mind returns within ${d} days of delivery.`)
+            : (isAr() ? 'سياسة البائع: لا يقبل مرتجع «غيّرت رأيي». بلاغات عدم الوصول أو التلف أو عدم المطابقة تفضل متاحة.' : "Seller policy: no change-of-mind returns. Not-arrived / damaged / not-as-described reports stay available.");
+        return `<p class="text-[11px] text-gray-500 text-center leading-relaxed mt-1">${txt}</p>`;
+    }
+
     // Same eligibility the server enforces (the server is the real gate — this only decides whether to show the button).
     function eligibility(order) {
         if (PLATFORM.NONRECEIPT_ENABLED === false) return { ok: false, msg: isAr() ? 'الميزة متوقفة حاليًا' : 'Disabled' };
@@ -86,7 +111,7 @@
     }
 
     const NonReceipt = {
-        REASONS, reasonLabel, isPhysical, eligibility,
+        REASONS, reasonLabel, isPhysical, eligibility, returnInfo, canChangeMind, policyHint,
 
         /** The «عدم استلام» button (buyer, physical product only). */
         buttonHtml(order, cls) {
@@ -94,7 +119,7 @@
             const el = eligibility(order);
             if (!el.ok) return '';
             return `<button onclick="NonReceipt.open('${order.id}')" class="${cls || 'w-full py-3 text-sm font-bold border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2'}">
-              <i class="fa-solid fa-box-circle-xmark"></i>${isAr() ? 'عدم استلام' : 'Not received / reject'}</button>`;
+              <i class="fa-solid fa-box-circle-xmark"></i>${isAr() ? 'عدم استلام' : 'Not received / reject'}</button>${policyHint(order)}`;
         },
 
         // ── BUYER ───────────────────────────────────────────────────────────
@@ -114,12 +139,14 @@
             const fee = Number(PLATFORM.RETURN_SHIPPING_FEE) || 0;
             const hours = Number(PLATFORM.SELLER_RESPONSE_HOURS) || 48;
             const bag = { files: [] };
-            const list = REASONS.filter(r => el.late ? r.code === 'not_arrived' || r.code === 'other' : true);
+            const mindOk = canChangeMind(order);
+            const list = REASONS.filter(r => (el.late ? r.code === 'not_arrived' || r.code === 'other' : true) && (r.code !== 'changed_mind' || mindOk));
             const ov = modal(`
               <h3 class="text-xl font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-box-circle-xmark text-red-500"></i>${isAr() ? 'عدم استلام المنتج' : 'Report: product not accepted'}</h3>
               <p class="text-xs text-gray-500 mb-4 leading-relaxed">${isAr()
                 ? `هيتفتح نزاع وفلوسك هتفضل متجمّدة في الضمان. البائع عنده ${hours} ساعة يرد ويثبت الشحن، وبعدها الإدارة تحكم بينكم.`
                 : `A dispute opens and your money stays frozen. The seller has ${hours}h to reply and prove shipping, then the admin rules.`}</p>
+              ${mindOk ? '' : `<p class="text-xs bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3 text-gray-700 leading-relaxed">${isAr() ? 'البائع ده مش بيقبل مرتجع «غيّرت رأيي» (أو المدة انتهت). تقدر تبلّغ لو المنتج لم يصل أو وصل تالف أو غير مطابق للوصف.' : 'This seller does not accept change-of-mind returns (or the window ended). You can still report: not arrived, damaged, or not as described.'}</p>`}
               <p class="text-sm font-bold text-gray-700 mb-2">${isAr() ? 'ليه مش مستلم؟' : 'Why?'}</p>
               <div class="space-y-2 mb-4" id="nrReasons">${list.map((r, i) => `
                 <label class="flex items-start gap-2 p-3 border-2 border-gray-100 rounded-xl cursor-pointer hover:border-navy-300 has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">

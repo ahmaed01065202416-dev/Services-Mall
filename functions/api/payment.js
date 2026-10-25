@@ -281,6 +281,8 @@ async function resolveExistingOrder(orderId, auth, env) {
             price, deliveryDays: svc.deliveryDays || order.deliveryDays || 3,
             sellerId: svc.sellerId || '', sellerName: svc.sellerName || order.sellerName || '',
             shippingFee: shipFee, shippingMode: shipMode, shippingOnline: shipOnline,
+            // seller's own return window for a PHYSICAL product (0 = no returns): read from the listing here, snapshotted on the order at payment
+            ...((svc.listingType === 'product' && svc.category !== 'digital') ? { returnDays: Math.max(0, Math.min(90, Math.round(Number(svc.returnDays) || 0))) } : {}),
             ...(svc.dropship ? { dropship: true } : {}),
         },
         subtotal: Number((price + shipOnline).toFixed(2)), fees, total,
@@ -410,6 +412,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         const shipExtra = {
             shippingFee: Number(item.shippingFee) || 0, shippingMode: item.shippingMode === 'cod' ? 'cod' : 'online',
             codAmount: item.shippingMode === 'cod' ? (Number(item.shippingFee) || 0) : 0,
+            ...(item.returnDays !== undefined && item.returnDays !== null ? { returnDays: Math.max(0, Math.min(90, Math.round(Number(item.returnDays) || 0))) } : {}),
         };
         const orderUpdate = productDelivery
             ? {

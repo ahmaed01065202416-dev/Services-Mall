@@ -446,7 +446,7 @@
                      money is held until the buyer confirms delivery. -->
                 <div class="flex items-center gap-1.5 mt-2.5 text-[11px] text-green-700 font-bold">
                   <i class="fa-solid fa-shield-halved text-green-500"></i>
-                  <span>${isAr ? 'ضمان استرجاع الأموال 100٪' : '100% Money-Back Guarantee'}</span>
+                  <span>${isAr ? 'مدفوعاتك محمية بنظام Escrow' : 'Payments protected by Escrow'}</span>
                 </div>
 
                 <!-- Action Buttons -->
@@ -621,6 +621,7 @@
                               <p class="text-navy-200 text-sm">${isAr ? 'السعر الإجمالي' : 'Total Price'}</p>
                               <p class="text-3xl font-black" data-price-egp="${s.price||0}">${formatCurrency(s.price || 0)}</p>
                               ${s.listingType === 'product' && s.category !== 'digital' && !s.dropship ? `<p class="text-navy-100 text-xs mt-1"><i class="fa-solid fa-truck-fast me-1"></i>${Number(s.shippingFee) > 0 ? (isAr ? `الشحن ${formatCurrency(s.shippingFee)} — ${s.shippingMode === 'cod' ? 'عند الاستلام' : 'يتدفع مع المنتج'}` : `Shipping ${formatCurrency(s.shippingFee)} — ${s.shippingMode === 'cod' ? 'on delivery' : 'paid with the product'}`) : (isAr ? 'شحن مجاني' : 'Free shipping')}</p>` : ''}
+${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class="fa-solid fa-rotate-left me-1"></i>${s.category !== 'digital' ? (Number(s.returnDays) > 0 ? (isAr ? `الاسترجاع: خلال ${Number(s.returnDays)} يوم من التسليم` : `Returns within ${Number(s.returnDays)} days of delivery`) : (isAr ? 'بدون استرجاع (غيّرت رأيي)' : 'No change-of-mind returns')) : (isAr ? 'منتج رقمي: بدون استرجاع، ويمكن طلب مراجعة' : 'Digital product: no returns, revision can be requested')}</p>` : ''}
                             </div>
                             <div class="bg-white/15 rounded-xl px-3 py-2 text-sm font-bold">
                               ${isAr ? 'مدفوع بأمان عبر Escrow' : 'Secured by Escrow'}
@@ -944,7 +945,18 @@
                           <span class="text-sm"><b>${isAr?'عند الاستلام (كاش للمندوب)':'Cash on delivery'}</b><br><span class="text-xs text-gray-500">${isAr?'العميل يدفع الشحن للمندوب. ده برا الضمان — المنصة مش بتحصّله ولا بتحميه.':'Buyer pays the courier. Outside escrow — the platform neither collects nor protects it.'}</span></span>
                         </label>
                       </div>
-                    </div>
+                    <div class="mt-4 pt-4 border-t border-amber-100">
+<label class="block text-sm font-black text-gray-800 mb-1"><i class="fa-solid fa-rotate-left text-amber-600 me-1"></i>${isAr?'مدة الاسترجاع (بالأيام)':'Return window (days)'}</label>
+<p class="text-xs text-gray-500 mb-3">${isAr?'عدد الأيام اللي يقدر فيها العميل يرجّع المنتج بعد التسليم لو غيّر رأيه. 0 = بدون استرجاع. بلاغات «لم يصل / وصل تالف / غير مطابق للوصف» بتفضل متاحة من المنصة في كل الأحوال.':'Days after delivery in which the buyer may return the product if they changed their mind. 0 = no returns. Reports for not arrived / damaged / not as described stay available regardless.'}</p>
+<input type="number" id="svcReturnDays" class="form-input mb-2" min="0" max="90" step="1" value="${service?.returnDays ?? 0}" placeholder="0">
+<div class="flex flex-wrap gap-2">
+${[0,3,7,14,30].map(v => `<button type="button" onclick="document.getElementById('svcReturnDays').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'بدون استرجاع':'No returns'):(isAr?v+' أيام':v+' days')}</button>`).join('')}
+</div>
+</div>
+</div>
+<div id="svcDigitalNotice" class="bg-gray-50 border border-gray-200 rounded-2xl p-4 hidden">
+<p class="text-sm font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-rotate-left text-gray-500"></i>${isAr?'الخدمات والمنتجات الرقمية: مراجعة بدل الاسترجاع':'Services & digital products: revision instead of returns'}</p>
+<p class="text-xs text-gray-600 mt-1">${isAr?'مفيش استرجاع للخدمات والمنتجات الرقمية. لو العميل محتاج تعديل بعد الاستلام بيطلب «مراجعة» منك من صفحة الطلب.':'No returns for services and digital products. After delivery the buyer can request a revision from the order page.'}</p></div>
 
 
                     <!-- Which of my stores shows this listing -->
@@ -1051,6 +1063,7 @@
             document.getElementById('svcDeliverySection')?.classList.toggle('hidden', !(isProduct && isDigital));
             document.getElementById('svcShippingNotice')?.classList.toggle('hidden', !(isProduct && !isDigital));
             document.getElementById('svcShippingBox')?.classList.toggle('hidden', !(isProduct && !isDigital));
+document.getElementById('svcDigitalNotice')?.classList.toggle('hidden', isProduct && !isDigital);
         },
 
         // ⚠️ ADDED: rebuilds the "suggested fields for this category" panel —
@@ -1289,7 +1302,8 @@
                         const fee = Math.max(0, Math.min(2000, parseFloat(document.getElementById('svcShippingFee')?.value) || 0));
                         data.shippingFee  = Math.round(fee * 100) / 100;
                         data.shippingMode = document.querySelector('input[name=svcShippingMode]:checked')?.value === 'cod' ? 'cod' : 'online';
-                    } else { data.shippingFee = 0; data.shippingMode = 'online'; }
+data.returnDays = Math.max(0, Math.min(90, Math.round(parseFloat(document.getElementById('svcReturnDays')?.value) || 0)));   // 0 / empty = this seller takes no returns
+                    } else { data.shippingFee = 0; data.shippingMode = 'online'; data.returnDays = 0; }
                     data.orderRules = sanitizeInput(document.getElementById('svcOrderRules')?.value?.trim() || '', 1000);
                     data.images = photoUrls.slice(1, 5);   // extras only — the cover lives in `image` (the detail view shows image + images)
                     // ⚠️ ADDED: read the enabled suggested-field toggles into a

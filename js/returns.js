@@ -68,8 +68,16 @@
             if (activeReturn && [RETURN_STATUS.PENDING, RETURN_STATUS.APPROVED].includes(activeReturn.status)) {
                 return { ok: false, reasonAr: 'يوجد طلب استرجاع مفتوح بالفعل على هذا الطلب', reasonEn: 'A return request is already open for this order' };
             }
-            // 0 (or unset) means the admin has left the window uncapped.
-            const windowDays = Number(PLATFORM.RETURN_WINDOW_DAYS) || 0;
+            // The seller's own window wins when the order carries one (snapshotted by the server at payment);
+            // 0 there means this seller takes no returns. A missing field = old order → platform window
+            // (0 = the admin left it uncapped).
+            let windowDays = Number(PLATFORM.RETURN_WINDOW_DAYS) || 0;
+            if (order.returnDays !== undefined && order.returnDays !== null) {
+                windowDays = Math.max(0, Number(order.returnDays) || 0);
+                if (windowDays <= 0) {
+                    return { ok: false, reasonAr: 'البائع لا يقبل المرتجعات لهذا المنتج', reasonEn: 'This seller does not accept returns for this product' };
+                }
+            }
             if (windowDays > 0) {
                 const anchor = order.deliveredAt || order.updatedAt || order.createdAt;
                 if (_daysSince(anchor) > windowDays) {
