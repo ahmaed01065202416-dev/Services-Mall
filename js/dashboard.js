@@ -111,9 +111,9 @@
                 <div>
                   <div class="flex items-center gap-3 mb-1 flex-wrap">
                     <h1 class="text-2xl font-black text-gray-900">${isAr?'لوحة تحكم البائع':'Seller Dashboard'}</h1>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200">
-                      <span class="w-2 h-2 rounded-full bg-turquoise-500 animate-pulse"></span>${isAr?'حساب معتمد':'Verified account'}
-                    </span>
+                    ${user.verified===true?`<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-turquoise-50 text-turquoise-700 border border-turquoise-200">
+                      <span class="w-2 h-2 rounded-full bg-turquoise-500"></span>${isAr?'حساب موثّق':'Verified account'}
+                    </span>`:''}
                   </div>
                   <p class="text-gray-500 text-sm">${isAr?`أهلاً بعودتك يا`:`Welcome back,`} <span class="font-bold text-gray-800">${escapeHtml(user.displayName?.split(' ')[0]||'')}</span></p>
                 </div>

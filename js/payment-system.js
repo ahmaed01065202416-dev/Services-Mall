@@ -201,7 +201,7 @@
                     <i class="fa-solid fa-lock text-navy-500"></i> Escrow
                   </div>
                   <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <i class="fa-solid fa-rotate-left text-orange-500"></i> ${isAr ? 'ضمان استرداد' : 'Money-Back'}
+                    <i class="fa-solid fa-rotate-left text-orange-500"></i> ${isAr ? 'الدفع محجوز لحد الاستلام' : 'Held until delivery'}
                   </div>
                 </div>
               </div>
