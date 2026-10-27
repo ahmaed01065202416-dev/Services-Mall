@@ -1,7 +1,7 @@
 {
   "name": "Mall Services — مول الخدمات والمنتجات",
   "short_name": "مول الخدمات",
-  "description": "منصة عربية للمنتجات والخدمات بنظام Escrow",
+  "description": "منصتك الأولى للمنتجات والخدمات الرقمية",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

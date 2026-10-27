@@ -25,7 +25,7 @@
             'nav.admin':          'الإدارة',
 
             // Home
-            'home.hero.title':    'منصة عربية للمنتجات والخدمات بنظام Escrow',
+            'home.hero.title':    'منصتك الأولى للمنتجات والخدمات الرقمية',
             'home.hero.subtitle': 'اطلب خدمات مخصصة، أو اشترِ منتجات جاهزة — ومدفوعاتك محمية بنظام Escrow',
             'home.hero.cta':      'استعرض الخدمات والمنتجات',
             'home.hero.sell':     'ابدأ البيع',
@@ -181,7 +181,7 @@
             'nav.admin':          'Admin',
 
             // Home
-            'home.hero.title':    "An Arabic Marketplace for Products & Services, Protected by Escrow",
+            'home.hero.title':    "Your #1 Platform for Digital Products & Services",
             'home.hero.subtitle': 'Order custom services or buy ready-made products — with your payment protected by Escrow',
             'home.hero.cta':      'Browse Services & Products',
             'home.hero.sell':     'Start Selling',
