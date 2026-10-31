@@ -44,7 +44,11 @@ function cleanPhotos(list, lim) {
     const out = [];
     for (const p of (Array.isArray(list) ? list : []).slice(0, lim.n)) {
         const s = String(p || '');
-        if (!(s.startsWith('data:image/') || s.startsWith('https://'))) continue;
+        // SECURITY: these values end up inside <img src="..."> in the admin dashboard — accept only strict,
+        // quote-free shapes so a crafted string can never break out of the attribute (stored XSS).
+        const okData = /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
+        const okUrl  = /^https:\/\/[^\s"'<>\\]+$/.test(s);
+        if (!(okData || okUrl)) continue;
         if (s.length > lim.each) throw Object.assign(new Error('إحدى الصور كبيرة جدًا — استخدم صورة أصغر'), { status: 400 });
         out.push(s);
     }

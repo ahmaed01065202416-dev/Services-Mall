@@ -523,10 +523,27 @@ function sanitizeInput(value, maxLength = 1000) {
 // ── Service/product image priority ───────────────────────────────────────
 // 1) the seller's own cover image  2) the first gallery image the seller
 // uploaded  3) '' (callers then fall back to the default placeholder image).
+// ── URL safety (stored-XSS guard) ────────────────────────────────────────────
+// Image/file URLs come from other users (listing images, chat attachments, dispute/return photos).
+// They are interpolated into src="..."/href="..." inside innerHTML templates, so a value like
+//   x" onerror="fetch(...)   or   javascript:...   would execute in the VIEWER's browser (incl. admin).
+// safeUrl() returns the URL ONLY when it has a safe shape (https URL, relative path, blob:, or a base64 image
+// data URL) and contains no quote/space/angle-bracket/backslash; otherwise ''. Always wrap user URLs with it.
+function safeUrl(u) {
+    const s = String(u == null ? '' : u).trim();
+    if (!s || s.length > 2000000) return '';
+    if (/^https:\/\/[^\s"'<>\\]+$/i.test(s)) return s;
+    if (/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s)) return s;
+    if (/^blob:https?:\/\/[^\s"'<>\\]+$/i.test(s)) return s;
+    if (/^\/(?!\/)[^\s"'<>\\]*$/.test(s)) return s;
+    return '';
+}
+window.safeUrl = safeUrl;
+
 function getServiceImage(s) {
     if (!s) return '';
-    if (s.image) return s.image;
-    if (Array.isArray(s.images) && s.images.length && s.images[0]) return s.images[0];
+    if (s.image) return safeUrl(s.image);
+    if (Array.isArray(s.images) && s.images.length && s.images[0]) return safeUrl(s.images[0]);
     return '';
 }
 window.getServiceImage = getServiceImage;

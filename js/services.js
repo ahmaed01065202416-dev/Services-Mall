@@ -485,7 +485,7 @@
         // and a tap/click opens a full-screen lightbox with keyboard / swipe navigation.
         _galList(s) {
             const out = [];
-            const add = (u) => { if (u && typeof u === 'string' && !out.includes(u)) out.push(u); };
+            const add = (u) => { u = (typeof u === 'string') ? window.safeUrl(u) : ''; if (u && !out.includes(u)) out.push(u); };
             add(getServiceImage(s)); add(s.image); (Array.isArray(s.images) ? s.images : []).forEach(add);
             return out.length ? out : ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'];
         },

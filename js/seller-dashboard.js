@@ -801,7 +801,7 @@
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div class="flex items-start gap-3 min-w-0">
-                  <img src="${r.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+                  <img src="${window.safeUrl(r.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap mb-1">
                       <span class="text-xs font-mono font-bold text-gray-400">#${(r.orderId||'').slice(-8).toUpperCase()}</span>
@@ -816,7 +816,7 @@
               <div class="bg-gray-50 rounded-xl p-3 mb-3 text-sm">
                 <p class="text-gray-800"><strong>${isAr?'السبب:':'Reason:'}</strong> ${escapeHtml(reasonLabel)}</p>
                 ${r.description ? `<p class="text-gray-600 mt-1 whitespace-pre-wrap">${escapeHtml(r.description)}</p>` : ''}
-                ${r.photo ? `<img src="${r.photo}" class="mt-2 rounded-lg border border-gray-200 max-h-32 object-cover">` : ''}
+                ${r.photo ? `<img src="${window.safeUrl(r.photo)}" class="mt-2 rounded-lg border border-gray-200 max-h-32 object-cover">` : ''}
               </div>
               ${r.status === 'rejected' && r.sellerNote ? `<p class="text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-3"><strong>${isAr?'ردك:':'Your note:'}</strong> ${escapeHtml(r.sellerNote)}</p>` : ''}
               ${r.status === 'approved' ? `<p class="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 mb-3">${r.needsManualRefund ? (isAr?'بانتظار استرداد يدوي من الإدارة (تم تحصيل المبلغ في محفظتك بالفعل).':'Awaiting a manual admin refund (funds were already released to your wallet).') : (isAr?'تم تحويل الطلب لمراجعة الإدارة لإتمام الاسترداد.':'Sent for admin review to complete the refund.')}</p>` : ''}

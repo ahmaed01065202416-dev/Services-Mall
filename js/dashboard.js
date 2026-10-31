@@ -530,8 +530,8 @@
                             const who = m.senderId === o?.buyerId ? (isAr?'المشتري':'Buyer') : m.senderId === o?.sellerId ? (isAr?'البائع':'Seller') : (m.senderName||'—');
                             const when = m.createdAt ? new Date(m.createdAt).toLocaleString(isAr?'ar-EG':'en-GB') : '';
                             let body;
-                            if (m.type === 'image')      body = `<a href="${m.file?.url}" target="_blank" rel="noopener" class="text-blue-600 underline">${isAr?'📷 صورة مرفقة':'📷 Image attachment'}</a>`;
-                            else if (m.type === 'file')  body = `<a href="${m.file?.url}" target="_blank" rel="noopener" class="text-blue-600 underline">📎 ${escapeHtml(m.file?.name||(isAr?'ملف مرفق':'File attachment'))}</a>`;
+                            if (m.type === 'image')      body = `<a href="${window.safeUrl(m.file?.url) || '#'}" target="_blank" rel="noopener" class="text-blue-600 underline">${isAr?'📷 صورة مرفقة':'📷 Image attachment'}</a>`;
+                            else if (m.type === 'file')  body = `<a href="${window.safeUrl(m.file?.url) || '#'}" target="_blank" rel="noopener" class="text-blue-600 underline">📎 ${escapeHtml(m.file?.name||(isAr?'ملف مرفق':'File attachment'))}</a>`;
                             else if (m.type === 'delivery') body = `<span class="font-bold text-green-700">${isAr?'تسليم:':'Delivery:'}</span> ${escapeHtml(m.note||'—')}${m.files?.length ? ` (${m.files.length} ${isAr?'ملف':'file(s)'})` : ''}`;
                             else if (m.type === 'request_brief') body = `<span class="font-bold">${isAr?'تفاصيل الطلب:':'Request brief:'}</span> ${escapeHtml(m.details||'—')}`;
                             else if (m.type === 'product_order_brief') body = `<span class="font-bold">${isAr?'بيانات الشحن:':'Shipping info:'}</span> ${escapeHtml(m.fullName||'')} — ${escapeHtml(m.phone||'')} — ${escapeHtml(m.address||'')}`;
@@ -556,15 +556,15 @@
                           <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 text-sm space-y-2">
                             <p><b>${isAr?'السبب:':'Reason:'}</b> ${escapeHtml(window.NonReceipt ? NonReceipt.reasonLabel(dp.reasonCode) : dp.reasonCode)} — <span class="font-bold ${dp.faultHint==='buyer'?'text-amber-700':'text-blue-700'}">${isAr?'الخطأ المحتمل: ':'likely fault: '}${dp.faultHint==='buyer'?(isAr?'المشتري':'buyer'):dp.faultHint==='seller'?(isAr?'البائع':'seller'):(isAr?'غير واضح':'unclear')}</span></p>
                             <p class="text-xs text-gray-500">${isAr?'مصاريف الشحن لو الخطأ على المشتري:':'Shipping if buyer at fault:'} ${formatCurrency(dp.shippingDeduction||0)}${dp.shipmentLate?` · ${isAr?'شحنة متأخرة':'late shipment'}`:''}${o?.trackingNumber?` · ${escapeHtml(o.carrier||'')} ${escapeHtml(o.trackingNumber)}`:` · <span class="text-red-600 font-bold">${isAr?'بدون رقم تتبع':'no tracking'}</span>`}</p>
-                            ${(dp.evidence||[]).length?`<div><p class="text-xs font-bold text-gray-500 mb-1">${isAr?'إثبات المشتري':'Buyer proof'}</p><div class="flex gap-2 flex-wrap">${dp.evidence.map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div></div>`:''}
-                            ${dp.sellerResponse?`<div class="bg-green-50 border border-green-200 rounded-xl p-3"><p class="text-xs font-bold text-green-700 mb-1">${isAr?'رد البائع':'Seller reply'}${dp.sellerResponse.late?(isAr?' (متأخر)':' (late)'):''}</p><p>${escapeHtml(dp.sellerResponse.text||'')}</p>${(dp.sellerResponse.evidence||[]).length?`<div class="flex gap-2 flex-wrap mt-2">${dp.sellerResponse.evidence.map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div>`:''}</div>`:`<p class="text-xs text-red-600 font-bold">${isAr?'البائع لم يرد حتى الآن':'The seller has not replied yet'}</p>`}
+                            ${(dp.evidence||[]).length?`<div><p class="text-xs font-bold text-gray-500 mb-1">${isAr?'إثبات المشتري':'Buyer proof'}</p><div class="flex gap-2 flex-wrap">${dp.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div></div>`:''}
+                            ${dp.sellerResponse?`<div class="bg-green-50 border border-green-200 rounded-xl p-3"><p class="text-xs font-bold text-green-700 mb-1">${isAr?'رد البائع':'Seller reply'}${dp.sellerResponse.late?(isAr?' (متأخر)':' (late)'):''}</p><p>${escapeHtml(dp.sellerResponse.text||'')}</p>${(dp.sellerResponse.evidence||[]).length?`<div class="flex gap-2 flex-wrap mt-2">${dp.sellerResponse.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div>`:''}</div>`:`<p class="text-xs text-red-600 font-bold">${isAr?'البائع لم يرد حتى الآن':'The seller has not replied yet'}</p>`}
                           </div>` : ''}
 
                           ${rr ? `
                           <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
                             <p class="text-xs font-bold text-amber-600 mb-1">${isAr?'طلب استرجاع منتج مرتبط':'Linked product return request'}</p>
                             <p class="text-sm text-gray-800">${escapeHtml(window.ReturnsManager ? window.ReturnsManager.reasonLabel(rr.reasonCode, isAr) : rr.reasonCode)}: ${escapeHtml(rr.description||'')}</p>
-                            ${rr.photo ? `<img src="${rr.photo}" class="mt-2 rounded-xl max-h-40 border border-amber-200">` : ''}
+                            ${rr.photo ? `<img src="${window.safeUrl(rr.photo)}" class="mt-2 rounded-xl max-h-40 border border-amber-200">` : ''}
                           </div>` : ''}
 
                           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">

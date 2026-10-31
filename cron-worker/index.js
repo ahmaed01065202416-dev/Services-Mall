@@ -14,6 +14,13 @@ export default {
   },
   // Optional: allow manual trigger via HTTP for testing
   async fetch(request, env) {
+    // SECURITY: this URL is public. Without a check, anyone could trigger the daily job
+    // (AI article generation = paid API credits, subscription billing, dispute flagging).
+    const sent = request.headers.get('x-admin-token') || '';
+    const secret = String(env.ADMIN_SECRET || '');
+    let diff = sent.length ^ secret.length;
+    for (let i = 0; i < Math.max(sent.length, secret.length); i++) diff |= (sent.charCodeAt(i) || 0) ^ (secret.charCodeAt(i) || 0);
+    if (!secret || diff !== 0) return new Response('Forbidden', { status: 403 });
     const result = await runDailyJob(env);
     return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
   },

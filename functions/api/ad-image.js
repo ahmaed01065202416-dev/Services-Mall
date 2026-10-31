@@ -35,7 +35,14 @@ export async function onRequest(context) {
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
             return new Response(bytes, { status: 200, headers: { 'Content-Type': m[1], 'Cache-Control': 'public, max-age=3600, s-maxage=3600', 'X-Content-Type-Options': 'nosniff' } });
         }
-        if (/^https:\/\//i.test(img)) return Response.redirect(img, 302);
+        if (/^https:\/\//i.test(img)) {
+            // SECURITY: sellers control `img`, so this endpoint must not work as an open redirect for links
+            // shared in chats/social. Browsers send Sec-Fetch-Dest=image when it's used from an <img> tag.
+            const dest = request.headers.get('sec-fetch-dest');
+            if (dest && dest !== 'image') return new Response('forbidden', { status: 403 });
+            if (/["'<>\s\\]/.test(img)) return new Response('unsupported', { status: 415 });
+            return Response.redirect(img, 302);
+        }
         return new Response('unsupported', { status: 415 });
     } catch (e) {
         return new Response('error', { status: 500, headers: { 'Cache-Control': 'no-store' } });

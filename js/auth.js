@@ -375,7 +375,7 @@
           <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 space-y-5">
             <div class="flex items-center gap-5">
               <div class="relative">
-                <img id="profileAvatarPreview" src="${user.photoURL || avatarFallback}"
+                <img id="profileAvatarPreview" src="${window.safeUrl(user.photoURL) || avatarFallback}"
                   class="w-20 h-20 rounded-2xl object-cover"
                   onerror="this.src='${avatarFallback}'">
                 <label class="absolute bottom-0 end-0 w-7 h-7 bg-secondary text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-secondary-600 transition">

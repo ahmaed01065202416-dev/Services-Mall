@@ -366,7 +366,7 @@
                   </div>
                   <p class="text-sm text-gray-700 mb-1"><strong>${isAr ? 'السبب:' : 'Reason:'}</strong> ${escapeHtml(_reasonLabel(activeReturn.reasonCode, isAr))}</p>
                   ${activeReturn.description ? `<p class="text-sm text-gray-600 whitespace-pre-wrap mb-2">${escapeHtml(activeReturn.description)}</p>` : ''}
-                  ${activeReturn.photo ? `<img src="${activeReturn.photo}" class="rounded-xl border border-gray-100 max-h-40 object-cover mb-2">` : ''}
+                  ${activeReturn.photo ? `<img src="${window.safeUrl(activeReturn.photo)}" class="rounded-xl border border-gray-100 max-h-40 object-cover mb-2">` : ''}
 
                   ${activeReturn.status === RETURN_STATUS.PENDING ? `
                     <p class="text-xs text-gray-400 mb-3">${isAr ? 'بانتظار رد البائع على الطلب' : "Awaiting the seller's response"}</p>

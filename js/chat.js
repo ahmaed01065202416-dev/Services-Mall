@@ -248,8 +248,8 @@
             <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-1">
               <div class="max-w-xs">
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 px-1">${_esc(msg.senderName||'')}</p>` : ''}
-                <a href="${msg.file?.url || '#'}" target="_blank" rel="noopener">
-                  <img src="${msg.file?.url || ''}" alt="${_esc(msg.file?.name||'image')}"
+                <a href="${window.safeUrl(msg.file?.url) || '#'}" target="_blank" rel="noopener">
+                  <img src="${window.safeUrl(msg.file?.url)}" alt="${_esc(msg.file?.name||'image')}"
                     class="rounded-2xl border border-gray-200 shadow-sm hover:opacity-90 transition cursor-zoom-in object-cover"
                     loading="lazy" style="max-width:220px;max-height:180px">
                 </a>
@@ -307,7 +307,7 @@
         };
         const icon = iconMap[ext] || 'fa-file text-gray-500';
         return `
-        <a href="${_esc(file.url)}" target="_blank" rel="noopener" download="${_esc(file.name||'file')}"
+        <a href="${window.safeUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_esc(file.name||'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-brand-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">

@@ -102,7 +102,7 @@
             <div class="bg-white rounded-2xl border ${needsAttention ? 'border-amber-300 ring-1 ring-amber-100' : 'border-gray-200'} p-5 hover:shadow-lg transition-all duration-300 order-card" data-order="${order.id}">
               <div class="flex flex-wrap items-start gap-4">
                 <!-- Image -->
-                <img src="${order.image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
+                <img src="${window.safeUrl(order.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
                   class="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                   onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
 

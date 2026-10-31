@@ -22,7 +22,14 @@
     "/DEPLOY_CLOUDFLARE.md",
     "/DEPLOY_RULES.md",
     "/FIXES_APPLIED.md",
-    "/SECURITY_FIX_PAYMENT.md"
+    "/SECURITY_FIX_PAYMENT.md",
+    "/CHANGES_V15.md",
+    "/CHANGES_V16.md",
+    "/CHANGES_V17.md",
+    "/MARKETER_PROGRAM.md",
+    "/THEME_CHANGES.md",
+    "/.env.example",
+    "/tests/*"
   ],
   "exclude": []
 }

@@ -30,7 +30,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow read:   if isSignedIn();
       allow create: if isOwner(userId)
-                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller']);
+                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller'])
+                    // SECURITY: a user could pre-create their own profile with privileged flags (e.g. verified:true,
+                    // which dropship import copies onto listings as the "verified seller" badge).
+                    && request.resource.data.get('verified', false) == false
+                    && !request.resource.data.keys().hasAny(['sellerVerified','isVerified','blocked','banned','suspended',
+                         'sellerBlocked','plan','subscription','balance','walletBalance','kyc','kycStatus','sellerStatus',
+                         'isAdmin','badge','trust','featured']);
       // ⚠️ CHANGED (privacy audit): 'phone' removed from the editable-fields
       // list. This document is readable by ANY signed-in user (needed so
       // buyers can see a seller's public name/avatar/bio/rating) — there is
@@ -154,8 +160,9 @@ service cloud.firestore {
                     && (
                          request.resource.data.status == 'pending'
                          || (request.resource.data.status == 'accepted' &&
-                             (request.resource.data.listingType == 'product' ||
-                              request.resource.data.orderMode == 'instant'))
+                             'serviceId' in request.resource.data &&
+                             (get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.get('listingType', 'service') == 'product' ||
+                              get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.get('orderMode', 'request_first') == 'instant'))
                        );
       allow update: if isSignedIn() &&
                        (request.auth.uid == resource.data.buyerId  ||
@@ -239,7 +246,7 @@ service cloud.firestore {
       allow read:   if isSignedIn() &&
                        (request.auth.uid == resource.data.userId ||
                         request.auth.uid == resource.data.sellerId || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if false;   // SECURITY: was open to any signed-in user -> fake "payment" rows in the admin payments tab
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -276,6 +283,7 @@ service cloud.firestore {
                         request.auth.uid == resource.data.sellerId) &&
                        resource.data.status == 'held' &&
                        request.resource.data.status == 'frozen' &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','frozenAt']) &&
                        request.resource.data.amount   == resource.data.amount &&
                        request.resource.data.buyerId  == resource.data.buyerId &&
                        request.resource.data.sellerId == resource.data.sellerId
@@ -439,7 +447,15 @@ service cloud.firestore {
                         isAdmin());
       allow create: if isSignedIn() && disputeId.matches('[A-Za-z0-9_-]{1,64}') &&
                        (request.resource.data.buyerId == request.auth.uid ||
-                        request.resource.data.sellerId == request.auth.uid);
+                        request.resource.data.sellerId == request.auth.uid) &&
+                       // SECURITY: must be a real order the caller is part of, opened as a plain 'open' dispute.
+                       request.resource.data.raisedBy == request.auth.uid &&
+                       request.resource.data.status == 'open' &&
+                       request.resource.data.get('resolution', null) == null &&
+                       request.resource.data.buyerId  == _order(request.resource.data.orderId).buyerId &&
+                       request.resource.data.sellerId == _order(request.resource.data.orderId).sellerId &&
+                       // server-only fields: payout deduction / fault verdicts drive the admin resolution maths
+                       !request.resource.data.keys().hasAny(['shippingDeduction','faultHint','type','shipmentLate','sellerResponse']);
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

@@ -76,6 +76,12 @@ export async function onRequest(context) {
     if (type === 'chat') {
       await rtdbDelete(env, `chats/${orderId}`);
     } else {
+      // SECURITY/INTEGRITY: deleting an order whose escrow still holds money would orphan the funds
+      // (nobody could release or refund them). Force the admin to resolve the escrow first.
+      const esc = await fsGet(env, `escrow/${orderId}`).catch(() => null);
+      if (esc && (esc.status === 'held' || esc.status === 'frozen')) {
+        return json(409, CORS, { error: 'الطلب عليه مبلغ محجوز في الضمان (' + esc.status + ') — حلّ الضمان الأول (تحرير أو استرداد) وبعدين احذف الطلب' });
+      }
       // type === 'order': delete the Firestore doc AND its RTDB chat together
       // so nothing is left orphaned on either side.
       await fsDelete(env, `orders/${orderId}`);

@@ -906,8 +906,8 @@
               <div>
                 ${!isMine ? `<p class="text-xs text-gray-400 mb-1 mx-1">${_escapeHtml(msg.senderName || '—')}</p>` : ''}
                 <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
-                  <a href="${msg.file?.url}" target="_blank" rel="noopener">
-                    <img src="${msg.file?.url}" alt="${_escapeHtml(msg.file?.name || 'image')}"
+                  <a href="${window.safeUrl(msg.file?.url) || '#'}" target="_blank" rel="noopener">
+                    <img src="${window.safeUrl(msg.file?.url)}" alt="${_escapeHtml(msg.file?.name || 'image')}"
                       class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
                       loading="lazy" style="max-height:200px;object-fit:cover">
                   </a>
@@ -982,7 +982,7 @@
         const icon = isImg ? 'fa-file-image text-blue-500' : (iconMap[ext] || 'fa-file text-gray-500');
 
         return `
-        <a href="${file.url}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
+        <a href="${window.safeUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">

@@ -94,7 +94,7 @@
     function wirePhotos(ov, bag, max, maxLen) {
         const input = ov.querySelector('#nrPhotos'), prev = ov.querySelector('#nrPrev');
         const redraw = () => {
-            prev.innerHTML = bag.files.map((f, i) => `<div class="relative"><img src="${f}" class="w-20 h-20 object-cover rounded-xl border border-gray-200">
+            prev.innerHTML = bag.files.map((f, i) => `<div class="relative"><img src="${window.safeUrl(f)}" class="w-20 h-20 object-cover rounded-xl border border-gray-200">
               <button type="button" data-i="${i}" class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button></div>`).join('');
             prev.querySelectorAll('button').forEach(b => b.onclick = () => { bag.files.splice(+b.dataset.i, 1); redraw(); });
         };
