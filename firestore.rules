@@ -26,11 +26,27 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
+    // ── seller identity verification (written ONLY by functions/api/kyc.js) ─────
+    // The applicant can read the status of their own application; the photos (sub-collection `files`) can't be read or
+    // written from any browser — admins open them through the API, which logs every view in kyc_access_log.
+    // Nothing here is ever deleted (the owner wants the records kept in case a legal authority asks for them).
+    match /seller_applications/{uid} {
+      allow read: if isSignedIn() && (isOwner(uid) || isAdmin());
+      allow write: if false;
+      match /files/{fileId} { allow read, write: if false; }
+    }
+    match /kyc_access_log/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ── users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read:   if isSignedIn();
+      // SECURITY: this used to be `isSignedIn()` — ANY logged-in user could list every user's email/name/role.
+      // Only the owner, an admin, or the referrer (query: where referredBy == me, used by the referral counter) may read.
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin() || resource.data.get('referredBy', '') == request.auth.uid);
       allow create: if isOwner(userId)
-                    && (!('role' in request.resource.data) || request.resource.data.role in ['buyer','seller'])
+                    && (!('role' in request.resource.data) || request.resource.data.role == 'buyer')   // sellers only via approved KYC
                     // SECURITY: a user could pre-create their own profile with privileged flags (e.g. verified:true,
                     // which dropship import copies onto listings as the "verified seller" badge).
                     && request.resource.data.get('verified', false) == false
@@ -54,9 +70,9 @@ service cloud.firestore {
                       isOwner(userId) &&
                       request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['name','displayName','avatar','photoURL','bio',
-                                  'role','updatedAt','acceptedTerms','termsAcceptedAt']) &&
-                      (!('role' in request.resource.data.diff(resource.data).affectedKeys()) ||
-                       (resource.data.role == 'buyer' && request.resource.data.role == 'seller'))
+                                  'updatedAt','acceptedTerms','termsAcceptedAt'])
+                      // NOTE: 'role' is deliberately NOT editable here any more. A user becomes a seller only when an
+                      // admin approves their identity verification (functions/api/kyc.js sets role='seller').
                     );
       allow delete: if isAdmin();
 
@@ -96,7 +112,13 @@ service cloud.firestore {
                     && request.resource.data.get('returnDays', 0) >= 0
                     && request.resource.data.get('returnDays', 0) <= 90
                     && !('supplierProductId' in request.resource.data)
-                    && !('supplierId' in request.resource.data);
+                    && !('supplierId' in request.resource.data)
+                    // SECURITY: ranking/badge fields are server- or admin-controlled (qualityScore is recomputed by cron)
+                    && !request.resource.data.keys().hasAny(['qualityScore','featuredUntil','sponsored','adBoost','badge','pinned',
+                         'topRated','isTopRated','promoted','boost','rankScore','verified','isVerified'])
+                    // a listing may only be attached to one of MY stores (uid, uid_2 .. uid_5) — no injecting into someone else's store
+                    && (!('storeId' in request.resource.data) || (request.resource.data.storeId is string
+                         && request.resource.data.storeId.matches(request.auth.uid + '(_[2-5])?')));
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.sellerId) && isSeller() && !sellerBlocked() &&
                       request.resource.data.diff(resource.data).affectedKeys()
@@ -109,6 +131,9 @@ service cloud.firestore {
                       && request.resource.data.get('returnDays', 0) is number
                       && request.resource.data.get('returnDays', 0) >= 0
                       && request.resource.data.get('returnDays', 0) <= 90
+                      // may only point at one of MY stores
+                      && (!('storeId' in request.resource.data) || (request.resource.data.storeId is string
+                           && request.resource.data.storeId.matches(request.auth.uid + '(_[2-5])?')))
                       // a dropship listing can never be priced below wholesale + minimum margin (floor kept in sync by the server)
                       && (!resource.data.get('dropship', false) || request.resource.data.price >= resource.data.get('dropshipFloorPrice', 0))
                     );
@@ -211,8 +236,11 @@ service cloud.firestore {
                          (
                            request.resource.data.status == resource.data.status ||
                            // seller answers a request (or buyer withdraws it)
+                           // either party may cancel a pending request, but ONLY the seller may accept it
+                           // (otherwise a buyer could self-accept and skip the seller's review of the request)
                            (resource.data.status == 'pending' &&
-                            request.resource.data.status in ['accepted','cancelled']) ||
+                            (request.resource.data.status == 'cancelled' ||
+                             (request.resource.data.status == 'accepted' && request.auth.uid == resource.data.sellerId))) ||
                            // buyer sends brief after payment; revision loop
                            (resource.data.status in ['payment_held','revision'] &&
                             request.resource.data.status == 'in_progress') ||
@@ -228,6 +256,7 @@ service cloud.firestore {
                            // buyer asks for changes
                            (resource.data.status in ['payment_held','in_progress','delivered'] &&
                             resource.data.get('escrowHeld', false) == true &&
+                            request.auth.uid == resource.data.buyerId &&      // a revision is the BUYER's request
                             request.resource.data.status == 'revision') ||
                            // either side opens a dispute (escrow.js / returns.js)
                            (resource.data.status in ['payment_held','in_progress','revision','delivered'] &&
@@ -339,13 +368,20 @@ service cloud.firestore {
                     && _order(request.resource.data.orderId).sellerId   == request.resource.data.sellerId
                     && _order(request.resource.data.orderId).serviceId  == request.resource.data.serviceId
                     && _order(request.resource.data.orderId).status     == 'completed'
-                    && _order(request.resource.data.orderId).reviewed   != true;
+                    && _order(request.resource.data.orderId).reviewed   != true
+                    // SECURITY: rating feeds the seller quality score / ranking — it must be a real 1..5 number
+                    && request.resource.data.rating is number
+                    && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+                    && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
       allow update: if isAdmin() || (
                       isOwner(resource.data.reviewerId) &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','text','updatedAt']) &&
                       request.resource.data.sellerId  == resource.data.sellerId &&
                       request.resource.data.serviceId == resource.data.serviceId &&
-                      request.resource.data.orderId   == resource.data.orderId
+                      request.resource.data.orderId   == resource.data.orderId &&
+                      request.resource.data.rating is number &&
+                      request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+                      (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 2000))
                     );
       allow delete: if isOwner(resource.data.reviewerId) || isAdmin();
     }

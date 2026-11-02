@@ -70,7 +70,9 @@ async function _recomputeSeller(env, sellerId) {
         fsQuery(env, { from: [{ collectionId: 'orders' }],  where: _eqFilter('sellerId', sellerId) }),
     ]);
 
-    const avgRating = reviews.length ? reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviews.length : null;
+    // only real 1..5 ratings count (a forged out-of-range value must never inflate the ranking score)
+    const rated = reviews.map(r => Number(r.rating) || 0).filter(n => n >= 1 && n <= 5);
+    const avgRating = rated.length ? rated.reduce((s, n) => s + n, 0) / rated.length : null;
     const completed = orders.filter(o => o.status === 'completed').length;
     const cancelled = orders.filter(o => o.status === 'cancelled' || o.status === 'refunded').length;
     const completionRate = (completed + cancelled) > 0 ? completed / (completed + cancelled) : null;

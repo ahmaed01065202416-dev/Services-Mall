@@ -174,7 +174,7 @@
             const phone    = (document.getElementById('registerPhone')?.value || '').trim();
             const password = document.getElementById('registerPassword')?.value || '';
             const roleEl   = document.querySelector('input[name="role"]:checked');
-            const role     = roleEl?.value || 'buyer';
+            const wantsSeller = (roleEl?.value === 'seller');   // chosen in the form — but every new account starts as a BUYER
             const isAr     = AppState.language !== 'en';
 
             if (!name)           { showToast(isAr ? 'أدخل اسمك' : 'Enter your name', 'warning'); return; }
@@ -197,7 +197,7 @@
                 const userRef = window.db.collection(COLLECTIONS.USERS).doc(cred.user.uid);
                 const batch = window.db.batch();
                 batch.set(userRef, {
-                    name, email, role,
+                    name, email, role: 'buyer',   // sellers are created only by an admin-approved identity verification (api/kyc.js)
                     avatar: '', verified: false, acceptedTerms: true,
                     emailVerified: false,
                     ...(referredBy ? { referredBy } : {}),
@@ -222,6 +222,8 @@
                     'success', 6000
                 );
                 navigateTo('home');
+                // They asked to sell: open the identity-verification form (admin reviews it before the store is activated).
+                if (wantsSeller) setTimeout(() => { try { window.SellerKYC && window.SellerKYC.open(); } catch (_) {} }, 900);
             } catch (err) {
                 hideLoading();
                 showToast(_authError(err.code), 'error');
@@ -314,24 +316,13 @@
             }
         },
 
+        // Becoming a seller now goes through identity verification (ID photos + admin approval) — see js/seller-kyc.js.
+        // Nobody can promote themselves any more: the Firestore rules no longer allow clients to change `role`.
         async upgradeToSeller() {
             const user = AppState.currentUser;
             if (!user) { navigateTo('login'); return; }
-            const isAr = AppState.language !== 'en';
-            if (!confirm(isAr ? 'هل تريد الترقية لحساب بائع؟' : 'Upgrade to seller?')) return;
-            showLoading();
-            try {
-                await window.db.collection(COLLECTIONS.USERS).doc(user.uid).update({
-                    role: 'seller', updatedAt: serverTimestamp()
-                });
-                AppState.currentUser.role = 'seller';
-                hideLoading();
-                showToast(isAr ? 'تم الترقية لبائع!' : 'Upgraded to seller!', 'success');
-                navigateTo('dashboard');
-            } catch (err) {
-                hideLoading();
-                showToast(isAr ? 'حدث خطأ' : 'Error', 'error');
-            }
+            if (window.SellerKYC) { window.SellerKYC.open(); return; }
+            showToast(AppState.language !== 'en' ? 'نظام التوثيق مش متاح حاليًا — حاول بعد شوية' : 'Verification is unavailable right now', 'warning');
         },
 
         // ── Accept Terms — CRITICAL: must be on window.AuthManager ────────────
@@ -385,7 +376,7 @@
               </div>
               <div>
                 <h2 class="font-black text-gray-900 text-xl">${escapeHtml(user.displayName || '')}</h2>
-                <p class="text-gray-500">${user.email || ''}</p>
+                <p class="text-gray-500">${escapeHtml(user.email || '')}</p>
                 <span class="inline-block mt-1 text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">
                   ${user.role === 'admin' ? '👑 Admin' : user.role === 'seller' ? '🏪 '+(isAr?'بائع':'Seller') : '🛍️ '+(isAr?'مشتري':'Buyer')}
                 </span>
@@ -398,11 +389,11 @@
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-2">${t('auth.email')}</label>
-              <input type="email" class="form-input opacity-60" value="${user.email || ''}" disabled>
+              <input type="email" class="form-input opacity-60" value="${escapeHtml(user.email || '')}" disabled>
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-2">${t('auth.phone')}</label>
-              <input type="tel" id="profilePhone" class="form-input" value="${user.phone || ''}" dir="ltr">
+              <input type="tel" id="profilePhone" class="form-input" value="${escapeHtml(user.phone || '')}" dir="ltr">
             </div>
             <button onclick="AuthManager.updateProfile({name:document.getElementById('profileName').value,phone:document.getElementById('profilePhone').value})"
               class="btn-primary w-full py-4">${t('general.save')}</button>

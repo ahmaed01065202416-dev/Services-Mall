@@ -32,7 +32,7 @@
  * below needs to change.
  * ============================================================================
  */
-import { verifyIdToken, fsGet, fsCreate, fsSet, fsQuery, fsCommit, writeIncrement, writeCreate } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsCreate, fsSet, fsQuery, fsCommit, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js';
 import { timingSafeEqual } from './payment.js';
 
 const DAY = 86400000;
@@ -101,25 +101,28 @@ async function activateAd(env, ad, placement) {
 
 // Refund to the seller's wallet minus ONLY the gateway fee (admin-editable).
 async function refundToWallet(env, ad, settings, reason) {
-    const paid = Number(ad.paidAmount) || 0;
-    if (!ad.paid || paid <= 0 || ad.refunded) return 0;
+    // SECURITY (double refund): "refunded" used to be written in a SEPARATE request after the wallet credit, so two
+    // simultaneous cancel/reject calls both saw refunded=false and both credited the wallet. Now the credit, the
+    // transaction log and the refunded flag are ONE atomic commit guarded by the ad's updateTime — exactly one wins.
+    const cur = await fsGet(env, `ads/${ad.id}`).catch(() => null);
+    if (!cur) return 0;
+    const paid = Number(cur.paidAmount) || 0;
+    if (!cur.paid || paid <= 0 || cur.refunded) return 0;
     const fee = Math.min(paid, Number(((paid * settings.ADS_REFUND_FEE_PERCENT) / 100 + settings.ADS_REFUND_FEE_FIXED).toFixed(2)));
     const refund = Number((paid - fee).toFixed(2));
     const writes = [
         writeCreate(env, `transactions/${crypto.randomUUID()}`, {
-            userId: ad.sellerId, type: 'ad_refund', amount: refund, gatewayFee: fee, adId: ad.id,
+            userId: cur.sellerId, type: 'ad_refund', amount: refund, gatewayFee: fee, adId: ad.id,
             description: `استرداد إعلان — ${reason}`, status: 'completed', createdAt: new Date(),
         }),
+        writeUpdate(env, `ads/${ad.id}`, { refunded: true, refundAmount: refund, refundFee: fee }, { updateTime: cur._updateTime }),
     ];
-    if (refund > 0) writes.unshift(writeIncrement(env, `wallets/${ad.sellerId}`, 'balance', refund));
-    await fsCommit(env, writes);
-    await fsSet(env, `ads/${ad.id}`, { refunded: true, refundAmount: refund, refundFee: fee }, true);
+    if (refund > 0) writes.unshift(writeIncrement(env, `wallets/${cur.sellerId}`, 'balance', refund));
+    try { await fsCommit(env, writes); }
+    catch (e) { console.warn('[ads] refund skipped (already refunded by a concurrent call):', e.message); return 0; }
     return refund;
 }
 
-// ── Media ads (image upload / image URL / video link) ───────────────────────
-// Videos are LINKS (direct .mp4/.webm/.ogg, YouTube or Vimeo): there is no file storage behind this app
-// (photos live inside Firestore documents), so a video file cannot be uploaded — it must be hosted elsewhere.
 const IMG_DATA_RE = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 function parseVideo(url) {
     const u = String(url || '').trim();

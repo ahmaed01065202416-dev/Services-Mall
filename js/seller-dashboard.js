@@ -228,7 +228,7 @@
                 </div>`;
                 try { if (window.MallCharts) MallCharts.seller(container, orders, isAr); } catch (ce) { console.warn('[MallCharts]', ce); }
             } catch(e) {
-                container.innerHTML = `<p class="text-red-500 text-center py-8">${e.message}</p>`;
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(e.message)}</p>`;
             }
         },
 
@@ -503,9 +503,9 @@
                           ? `<p class="text-center py-16 text-gray-400">${isAr?'لا توجد عناصر':'No items'}</p>`
                           : `<div class="space-y-4">${services.map(s => this._serviceRow(s, isAr)).join('')}</div>`
                         }`;
-                    } catch(e2) { container.innerHTML = `<p class="text-red-500 text-center py-8">${e2.message}</p>`; }
+                    } catch(e2) { container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(e2.message)}</p>`; }
                 } else {
-                    container.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
+                    container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(err.message)}</p>`;
                 }
             }
         },
@@ -547,7 +547,7 @@
                     <span><i class="fa-solid fa-tag text-navy-400 me-1"></i>${formatCurrency(s.price||0)}</span>
                     <span><i class="fa-solid fa-eye text-blue-400 me-1"></i>${s.views||0} ${isAr?'مشاهدة':'views'}</span>
                     <span><i class="fa-solid fa-cart-shopping text-green-400 me-1"></i>${s.ordersCount||s.orderCount||0} ${isAr?'طلب':'orders'}</span>
-                    <span><i class="fa-solid fa-folder text-purple-400 me-1"></i>${s.category||'—'}</span>
+                    <span><i class="fa-solid fa-folder text-purple-400 me-1"></i>${escapeHtml(s.category||'—')}</span>
                     <span><i class="fa-solid fa-calendar text-gray-400 me-1"></i>${createdStr}</span>
                     ${s.listingType !== 'product' ? `<span><i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-teal-500 me-1"></i>${s.orderMode==='instant'?(isAr?'دفع مباشر':'Instant pay'):(isAr?'طلب ثم موافقة':'Request first')}</span>` : ''}
                   </div>
@@ -665,7 +665,7 @@
                   : `<div class="space-y-4">${shown.map(o => this._orderCard(o, isAr)).join('')}</div>`
                 }`;
             } catch(err) {
-                container.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(err.message)}</p>`;
             }
         },
 
@@ -790,7 +790,7 @@
                   : `<div class="space-y-4">${shown.map(r => this._returnCard(r, isAr)).join('')}</div>`
                 }`;
             } catch (err) {
-                container.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(err.message)}</p>`;
             }
         },
 
@@ -889,7 +889,7 @@
                 container.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center">
                   <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl mb-2"></i>
                   <p class="text-amber-700 font-bold text-sm">${isAr?'تعذر تحميل سجل الضمان':'Could not load escrow log'}</p>
-                  <p class="text-amber-600 text-xs mt-1">${err.message}</p>
+                  <p class="text-amber-600 text-xs mt-1">${escapeHtml(err.message)}</p>
                 </div>`;
             }
         },
@@ -972,7 +972,7 @@
                   ${this._renderStatusBars(orders, isAr)}
                 </div>`;
             } catch(e) {
-                container.innerHTML = `<p class="text-red-500 text-center py-8">${e.message}</p>`;
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(e.message)}</p>`;
             }
         },
 

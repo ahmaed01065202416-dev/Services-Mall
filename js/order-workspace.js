@@ -435,7 +435,7 @@
                 </div>` : ''}
 
                 <textarea id="buyerInstructions" rows="4" class="form-input text-sm mb-3 w-full resize-none"
-                  placeholder="${isAr ? 'اكتب تعليماتك هنا... مثال: أريد تصميم شعار باللون الأزرق مع اسم...' : 'Write your instructions... e.g. I want a blue logo with the name...'}">${order.buyerInstructions || ''}</textarea>
+                  placeholder="${isAr ? 'اكتب تعليماتك هنا... مثال: أريد تصميم شعار باللون الأزرق مع اسم...' : 'Write your instructions... e.g. I want a blue logo with the name...'}">${_escapeHtml(order.buyerInstructions || '')}</textarea>
 
                 <!-- File upload -->
                 <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center mb-3 hover:border-navy-400 hover:bg-navy-50 transition cursor-pointer"
@@ -475,14 +475,14 @@
                 </div>
                 ${isBuyer ? `
                   ${order.digitalDelivery.type === 'link' ? `
-                    <a href="${_escapeHtml(order.digitalDelivery.value || '')}" target="_blank" rel="noopener"
+                    <a href="${window.safeUrl(order.digitalDelivery.value) || '#'}" target="_blank" rel="noopener noreferrer"
                       class="flex items-center gap-3 p-3 bg-white border border-green-200 rounded-xl hover:border-green-400 hover:shadow-md transition break-all">
                       <i class="fa-solid fa-link text-green-600 flex-shrink-0"></i>
                       <span class="text-sm font-bold text-navy-700 flex-1">${_escapeHtml(order.digitalDelivery.value || '')}</span>
                       <i class="fa-solid fa-arrow-up-right-from-square text-gray-300 flex-shrink-0"></i>
                     </a>
                   ` : `
-                    <a href="${_escapeHtml(order.digitalDelivery.value || '')}" target="_blank" rel="noopener" download
+                    <a href="${window.safeFileUrl(order.digitalDelivery.value) || '#'}" target="_blank" rel="noopener" download
                       class="flex items-center gap-3 p-3 bg-white border border-green-200 rounded-xl hover:border-green-400 hover:shadow-md transition">
                       <i class="fa-solid fa-file-arrow-down text-green-600 text-xl flex-shrink-0"></i>
                       <span class="text-sm font-bold text-gray-900 flex-1">${isAr ? 'تحميل الملف' : 'Download file'}</span>
@@ -982,7 +982,7 @@
         const icon = isImg ? 'fa-file-image text-blue-500' : (iconMap[ext] || 'fa-file text-gray-500');
 
         return `
-        <a href="${window.safeUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
+        <a href="${window.safeFileUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_escapeHtml(file.name || 'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">
@@ -1437,7 +1437,7 @@
             <div class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-navy-400 hover:shadow-sm transition">
               ${_fileDownloadCard(f)}
             </div>
-            <p class="text-xs text-gray-400 mt-1 px-1">${f.sentBy || '—'} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '<i class="fa-solid fa-box"></i>' : ''}</p>
+            <p class="text-xs text-gray-400 mt-1 px-1">${_escapeHtml(f.sentBy || '—')} · ${formatTimeAgo(f.sentAt)} ${f.isDelivery ? '<i class="fa-solid fa-box"></i>' : ''}</p>
           </div>`).join('');
     }
 

@@ -30,7 +30,7 @@ const clean = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u00
 const isHttps = u => { try { return new URL(String(u)).protocol === 'https:'; } catch (_) { return false; } };
 // This app has no object storage: photos are compressed in the browser and stored as base64 data URLs inside the
 // document (see uploadFile in js/constants.js). Accept those (strict mime) or plain https URLs.
-const isImg = u => typeof u === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u) || isHttps(u));
+const isImg = u => typeof u === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u) || (isHttps(u) && /^[^\s"'<>\\]+$/.test(u)));   // strict: URL must not contain quote/space/angle/backslash (stored-XSS guard)
 const eq = (f, v) => ({ fieldFilter: { field: { fieldPath: f }, op: 'EQUAL', value: typeof v === 'boolean' ? { booleanValue: v } : { stringValue: String(v) } } });
 
 export const CATEGORIES = ['clothing', 'electronics', 'home', 'beauty', 'food', 'accessories', 'other'];   // 'digital' is not shippable stock
@@ -61,7 +61,9 @@ async function becomeSupplier(body, env, auth) {
     if (existing) return { status: existing.status, already: true };
     const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
     if (!user) throw err(400, 'أكمل بيانات حسابك الأول');
-    if (user.role === 'buyer') await fsSet(env, `users/${auth.uid}`, { role: 'seller', updatedAt: new Date() }, true);   // a supplier is also a seller
+    // A supplier must be an identity-verified seller already (admin-approved KYC, see api/kyc.js). This used to silently
+    // promote ANY buyer to seller, which would have bypassed the verification completely.
+    if (user.role !== 'seller' && user.role !== 'admin') throw err(403, 'لازم توثّق هويتك وتتقبل كبائع الأول (زر "كن بائع") قبل ما تسجّل كمورد');
     const name = clean(body.businessName, 80) || user.name || user.displayName || 'مورد';
     const status = ds.DROPSHIP_AUTO_APPROVE_SUPPLIERS ? 'active' : 'pending';
     await fsSet(env, `suppliers/${auth.uid}`, { uid: auth.uid, name, status, createdAt: new Date(), productsCount: 0 });
@@ -202,7 +204,7 @@ async function startMarketer(body, env, auth) {
     if (user.role === 'admin') throw err(400, 'حساب الإدارة مش محتاج تسجيل كمسوّق');
     const now = new Date();
     const upd = { updatedAt: now };
-    if (user.role !== 'seller') upd.role = 'seller';
+    if (user.role !== 'seller') throw err(403, 'لازم توثّق هويتك وتتقبل كبائع الأول (زر "كن بائع") قبل ما تبدأ كمسوّق');   // no KYC bypass
     if (!user.isMarketer) { upd.isMarketer = true; upd.marketerSince = now; }
     if (Object.keys(upd).length > 1) await fsSet(env, `users/${auth.uid}`, upd, true);
     // First store lives at stores/{uid} (same id scheme as StoresManager.createStore). Never overwrite an existing one.

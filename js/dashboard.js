@@ -370,6 +370,9 @@
             // ── SITE DESIGN (js/design.js) ────────────────────────────────────
             if (tab === 'design') { window.MallDesign.renderAdminTab(container, isAr); return; }
 
+            // ── SELLER IDENTITY VERIFICATION (js/seller-kyc.js) ─────────────────
+            if (tab === 'kyc') { window.SellerKYC.renderAdminTab(container, isAr); return; }
+
             // ── ORDERS ────────────────────────────────────────────────────────
             if (tab === 'orders') {
                 const ordersSnap = await window.db.collection(COLLECTIONS.ORDERS).orderBy('createdAt','desc').limit(100).get();
@@ -531,7 +534,7 @@
                             const when = m.createdAt ? new Date(m.createdAt).toLocaleString(isAr?'ar-EG':'en-GB') : '';
                             let body;
                             if (m.type === 'image')      body = `<a href="${window.safeUrl(m.file?.url) || '#'}" target="_blank" rel="noopener" class="text-blue-600 underline">${isAr?'📷 صورة مرفقة':'📷 Image attachment'}</a>`;
-                            else if (m.type === 'file')  body = `<a href="${window.safeUrl(m.file?.url) || '#'}" target="_blank" rel="noopener" class="text-blue-600 underline">📎 ${escapeHtml(m.file?.name||(isAr?'ملف مرفق':'File attachment'))}</a>`;
+                            else if (m.type === 'file')  body = `<a href="${window.safeFileUrl(m.file?.url) || '#'}" target="_blank" rel="noopener" class="text-blue-600 underline">📎 ${escapeHtml(m.file?.name||(isAr?'ملف مرفق':'File attachment'))}</a>`;
                             else if (m.type === 'delivery') body = `<span class="font-bold text-green-700">${isAr?'تسليم:':'Delivery:'}</span> ${escapeHtml(m.note||'—')}${m.files?.length ? ` (${m.files.length} ${isAr?'ملف':'file(s)'})` : ''}`;
                             else if (m.type === 'request_brief') body = `<span class="font-bold">${isAr?'تفاصيل الطلب:':'Request brief:'}</span> ${escapeHtml(m.details||'—')}`;
                             else if (m.type === 'product_order_brief') body = `<span class="font-bold">${isAr?'بيانات الشحن:':'Shipping info:'}</span> ${escapeHtml(m.fullName||'')} — ${escapeHtml(m.phone||'')} — ${escapeHtml(m.address||'')}`;
@@ -609,7 +612,7 @@
                 </div>
                 <div class="space-y-2">${users.map(u=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" id="urow_${u.id}">
-                    <img src="${u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
+                    <img src="${window.safeUrl(u.avatar)||`https://ui-avatars.com/api/?name=${window.encName(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p>
                     </div>
                     <select onchange="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
@@ -1104,7 +1107,7 @@
                       </div>
                       <p class="text-sm font-bold text-gray-900">${isAr?'البلاغ على:':'Reported:'} ${r.targetName||r.targetId||'—'}</p>
                       <p class="text-sm text-gray-600 mt-1">${escapeHtml(r.reason||'—')}</p>
-                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${r.reporterName||'—'} · ${formatDateAr(r.createdAt)}</p>
+                      <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${escapeHtml(r.reporterName||'—')} · ${formatDateAr(r.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-1 flex-shrink-0">
                       ${r.orderId ? `<button onclick="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
@@ -1597,7 +1600,7 @@
                 };
             }
         } catch(err) {
-            container.innerHTML = `<p class="text-red-500 text-center py-4">${t('general.error')}: ${err.message}</p>`;
+            container.innerHTML = `<p class="text-red-500 text-center py-4">${t('general.error')}: ${escapeHtml(err.message)}</p>`;
         }
     }
 
@@ -1947,6 +1950,7 @@
             <nav class="flex overflow-x-auto p-2 gap-1.5 border-b border-gray-100">
               <button onclick="adminTab('orders')"     class="tab-btn admin-pill-tab active" id="adminTab_orders"><i class="fa-solid fa-bag-shopping"></i>${isAr?'الطلبات':'Orders'}</button>
               <button onclick="adminTab('disputes')"   class="tab-btn admin-pill-tab" id="adminTab_disputes"><i class="fa-solid fa-flag text-red-500"></i>${isAr?'النزاعات':'Disputes'}</button>
+              <button onclick="adminTab('kyc')"        class="tab-btn admin-pill-tab" id="adminTab_kyc"><i class="fa-solid fa-id-card text-emerald-600"></i>${isAr?'توثيق البائعين':'Seller verification'}</button>
               <button onclick="adminTab('users')"      class="tab-btn admin-pill-tab" id="adminTab_users"><i class="fa-solid fa-users"></i>${isAr?'المستخدمون':'Users'}</button>
               <button onclick="adminTab('services')"   class="tab-btn admin-pill-tab" id="adminTab_services"><i class="fa-solid fa-layer-group"></i>${isAr?'الخدمات والمنتجات':'Services'}</button>
               <button onclick="adminTab('withdraw')"   class="tab-btn admin-pill-tab" id="adminTab_withdraw"><i class="fa-solid fa-money-bill-transfer text-amber-500"></i>${isAr?'السحوبات':'Withdrawals'}</button>

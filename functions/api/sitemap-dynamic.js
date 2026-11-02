@@ -28,25 +28,35 @@ const STATIC_ARTICLES = [
 const toDate = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? new Date(t).toISOString().split('T')[0] : ''; };
 
 async function getFirestorePosts(projectId) {
+  // Uses runQuery with a field projection instead of listing the whole collection: the old
+  // ".../documents/blog_posts?pageSize=500" downloaded every article WITH its full HTML body (megabytes) on every
+  // refresh, which is slow and can time out the Function -> Google then reports "Couldn't fetch". Now only
+  // slug + dates of PUBLISHED posts are fetched (also keeps working if the rules are ever restricted to published posts).
   try {
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/blog_posts?pageSize=500`;
-    const res = await fetch(url);
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+    const body = { structuredQuery: {
+      from: [{ collectionId: 'blog_posts' }],
+      where: { fieldFilter: { field: { fieldPath: 'published' }, op: 'EQUAL', value: { booleanValue: true } } },
+      select: { fields: [{ fieldPath: 'slug' }, { fieldPath: 'updatedAt' }, { fieldPath: 'createdAt' }] },
+      limit: 5000,   // a sitemap file may hold 50,000 URLs; 5000 articles is far beyond what this site will publish
+    } };
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!res.ok) {
       // Don't silently publish a sitemap without articles: leave a trace in the Cloudflare logs.
       console.error('[sitemap] Firestore blog_posts request failed:', res.status, res.statusText);
       return [];
     }
-    const json = await res.json();
+    const rows = await res.json();
     const staticSlugs = new Set(STATIC_ARTICLES.map(a => a[0]));
-    return (json.documents || []).map(doc => {
+    const seen = new Set();
+    return (Array.isArray(rows) ? rows : []).map(r => r && r.document).filter(Boolean).map(doc => {
       const f = doc.fields || {};
       const dateOf = (k) => toDate(f[k] && (f[k].timestampValue || f[k].stringValue));
       return {
         slug: f.slug?.stringValue || '',
         updated: dateOf('updatedAt') || dateOf('createdAt'),   // '' → lastmod omitted (never invented)
-        pub: f.published?.booleanValue,
       };
-    }).filter(d => d.slug && d.pub === true && !staticSlugs.has(d.slug));   // drafts/unreviewed AI posts stay out
+    }).filter(d => d.slug && !staticSlugs.has(d.slug) && !seen.has(d.slug) && seen.add(d.slug));   // no duplicates, no hand-written slugs
   } catch (err) {
     console.error('[sitemap] could not load blog posts:', err && err.message ? err.message : err);
     return [];   // the static articles are still listed, so the sitemap stays valid
@@ -54,7 +64,16 @@ async function getFirestorePosts(projectId) {
 }
 
 export async function onRequest(context) {
-  const { env } = context;
+  const { env, request } = context;
+  // Public endpoint that costs a Firestore query per hit: serve from the edge cache for an hour when the runtime
+  // supports it (no-op / skipped otherwise, e.g. on *.pages.dev or in tests).
+  let cache = null, cacheKey = null;
+  try {
+    cache = (typeof caches !== 'undefined' && caches.default) ? caches.default : null;
+    cacheKey = cache && request ? new Request(new URL(request.url).origin + '/sitemap-live.xml') : null;
+    const hit = cache && cacheKey ? await cache.match(cacheKey) : null;
+    if (hit) return hit;
+  } catch (_) { cache = null; }
   // Real production domain as the fallback; trailing slashes removed so we never emit "//blog".
   const site = String(env.SITE_URL || 'https://mall-services.pages.dev').trim().replace(/\/+$/, '');
   const projectId = env.FIREBASE_PROJECT_ID || 'services-mall';
@@ -73,8 +92,10 @@ export async function onRequest(context) {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}\n</urlset>`;
 
-  return new Response(xml, {
+  const response = new Response(xml, {
     status: 200,
     headers: { 'Content-Type': 'application/xml;charset=UTF-8', 'Cache-Control': 'public,max-age=3600' },
   });
+  try { if (cache && cacheKey && context.waitUntil) context.waitUntil(cache.put(cacheKey, response.clone())); } catch (_) { /* caching is best-effort */ }
+  return response;
 }

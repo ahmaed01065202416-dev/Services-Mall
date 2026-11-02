@@ -540,6 +540,27 @@ function safeUrl(u) {
 }
 window.safeUrl = safeUrl;
 
+// This app stores uploaded files as base64 data URLs (see uploadFile): PDFs, ZIPs, DOCX, media... are legitimate `data:` links.
+// safeFileUrl() accepts those ONLY for a whitelist of passive mime types (never text/html, svg, xml, javascript) and
+// otherwise falls back to safeUrl(). Use it for download links; keep safeUrl() for <img src>.
+const _FILE_MIME_OK = /^(?:image\/(?:jpeg|png|webp|gif)|application\/(?:pdf|zip|x-zip-compressed|octet-stream|msword|json|x-rar-compressed|vnd\.rar|x-7z-compressed|vnd\.[A-Za-z0-9.+-]+)|text\/(?:plain|csv)|audio\/[A-Za-z0-9.+-]+|video\/[A-Za-z0-9.+-]+)$/i;
+function safeFileUrl(u) {
+    const s = String(u == null ? '' : u).trim();
+    if (!s || s.length > 14000000) return '';
+    const m = /^data:([A-Za-z0-9.+\/-]{1,100});base64,[A-Za-z0-9+\/=]+$/.exec(s);
+    if (m) return _FILE_MIME_OK.test(m[1]) ? s : '';
+    return safeUrl(s);
+}
+window.safeFileUrl = safeFileUrl;
+
+// encodeURIComponent() leaves  ' ( ) ! * ~  untouched, which is enough to break out of a JS string inside an
+// inline handler such as onerror="this.src='...${name}...'" (e.g. a store named  '-alert(1)-' ). encName() encodes them too.
+window.encName = function (v) {
+    return encodeURIComponent(String(v == null ? '' : v)).replace(/['()!*~]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+};
+// Ids that are placed inside inline handlers (onclick="...('${id}')") must be plain tokens.
+window.safeId = function (v) { return String(v == null ? '' : v).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 128); };
+
 function getServiceImage(s) {
     if (!s) return '';
     if (s.image) return safeUrl(s.image);

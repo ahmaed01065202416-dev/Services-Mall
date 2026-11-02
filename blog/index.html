@@ -280,6 +280,9 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
   BlogEngine.loadMore = function() { loadPosts(false); };
 
   function buildCard(post) {
+    // SECURITY: post fields are rendered via innerHTML — escape everything that is text, allow only https images.
+    const E = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    const IMG = u => /^https:\/\/[^\s"'<>\\]+$/i.test(String(u||'')) ? String(u) : 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70';
     const catColors = {'ربح-من-الانترنت':'#10b981','تسويق-رقمي':'#3b82f6','ذكاء-اصطناعي':'#8b5cf6','تجارة-الكترونية':'#f97316','عمل-حر':'#f59e0b','دفع-الكتروني':'#14b8a6','تصميم-مواقع':'#ec4899','تحسين-بحث':'#6366f1','استثمار':'#eab308'};
     const c = catColors[post.category] || '#6b7280';
     const excerpt = (post.excerpt || (post.content||'').replace(/<[^>]*>/g,'')).slice(0,120) + '…';
@@ -287,17 +290,17 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
     const words = (post.content||'').replace(/<[^>]*>/g,'').split(/\s+/).length;
     const readMin = Math.max(1,Math.round(words/200));
     return `
-    <article onclick="openPost('${post.slug}')" style="cursor:pointer;background:#fff;border-radius:18px;border:1px solid #e5e7eb;overflow:hidden;transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column" class="blog-card-item">
+    <article onclick="openPost(${JSON.stringify(String(post.slug||'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')})" style="cursor:pointer;background:#fff;border-radius:18px;border:1px solid #e5e7eb;overflow:hidden;transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column" class="blog-card-item">
       <div style="height:185px;overflow:hidden;position:relative;background:#f3f4f6">
-        <img src="${post.image||'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'}" alt="${post.title}" loading="lazy"
+        <img src="${IMG(post.image)}" alt="${E(post.title)}" loading="lazy"
           style="width:100%;height:100%;object-fit:cover;transition:transform .4s"
           onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=70'">
-        <div style="position:absolute;top:10px;right:10px;background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${(post.category||'').replace(/-/g,' ')}</div>
+        <div style="position:absolute;top:10px;right:10px;background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${E((post.category||'').replace(/-/g,' '))}</div>
         ${post.aiGenerated?'<div style="position:absolute;top:10px;left:10px;background:#8b5cf6;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:50px">🤖 AI</div>':''}
       </div>
       <div style="padding:16px;flex:1;display:flex;flex-direction:column">
-        <h3 style="font-size:15px;font-weight:900;color:#111827;line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${post.title}</h3>
-        <p style="font-size:13px;color:#6b7280;line-height:1.6;flex:1;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${excerpt}</p>
+        <h3 style="font-size:15px;font-weight:900;color:#111827;line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${E(post.title)}</h3>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6;flex:1;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${E(excerpt)}</p>
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:10px">
           <span><i class="fa-regular fa-calendar" style="margin-left:4px"></i>${date}</span>
           <span><i class="fa-regular fa-clock" style="margin-left:4px"></i>${readMin} دقائق</span>

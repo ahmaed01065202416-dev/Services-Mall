@@ -39,7 +39,7 @@
             },
             "file": {
               "url": {
-                ".validate": "newData.isString() && newData.val().length <= 2000 && newData.val().matches(/^https:\\/\\/[^\\s\"'<>\\\\]+$/)"
+                ".validate": "newData.isString() && newData.val().length <= 12000000 && (newData.val().beginsWith('https://') || newData.val().beginsWith('data:')) && !newData.val().contains('\"') && !newData.val().contains(\"'\") && !newData.val().contains('<') && !newData.val().contains('>') && !newData.val().contains(' ') && !newData.val().contains('\\\\')"
               },
               "name": {
                 ".validate": "newData.isString() && newData.val().length <= 300"
@@ -52,6 +52,16 @@
               },
               "$other": {
                 ".validate": false
+              }
+            },
+            "files": {
+              "$i": {
+                "url": {
+                  ".validate": "newData.isString() && newData.val().length <= 12000000 && (newData.val().beginsWith('https://') || newData.val().beginsWith('data:')) && !newData.val().contains('\"') && !newData.val().contains(\"'\") && !newData.val().contains('<') && !newData.val().contains('>') && !newData.val().contains(' ') && !newData.val().contains('\\\\')"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 300"
+                }
               }
             }
           }

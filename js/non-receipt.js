@@ -273,7 +273,7 @@
                 const d = snap.docs.map(x => ({ id: x.id, ...x.data() })).find(x => x.status === 'open');
                 if (!d) { slot.innerHTML = ''; return; }
                 const deadline = toMs(d.sellerDeadline), late = deadline && Date.now() > deadline;
-                const imgs = (list) => (list || []).map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" class="w-16 h-16 object-cover rounded-lg border"></a>`).join('');
+                const imgs = (list) => (list || []).map(u => `<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(u)}" class="w-16 h-16 object-cover rounded-lg border"></a>`).join('');
                 slot.innerHTML = `
                 <div class="bg-red-50 border border-red-200 rounded-2xl p-5">
                   <h3 class="font-black text-gray-900 mb-2 flex items-center gap-2"><i class="fa-solid fa-gavel text-red-600"></i>${isAr() ? 'نزاع قيد المراجعة' : 'Dispute under review'}</h3>

@@ -19,7 +19,7 @@ import { fsGet, fsQuery, fsSet, fsCreate } from './gcp.js';
 
 export const DEFAULT_DROPSHIP = {
     DROPSHIP_ENABLED: true,
-    DROPSHIP_AUTO_APPROVE_SUPPLIERS: true,   // "suppliers are added automatically"
+    DROPSHIP_AUTO_APPROVE_SUPPLIERS: false,  // new suppliers wait for an admin to approve them (flip to true only if you accept that risk)
     DROPSHIP_MIN_MARGIN_PERCENT: 10,         // reseller price must beat wholesale by at least this %…
     DROPSHIP_MIN_MARGIN_FIXED: 1,            // …and at least this many EGP
     DROPSHIP_FEE_BASE: 'margin',             // 'margin' | 'total' — what the platform commission is calculated on
@@ -33,7 +33,7 @@ export async function getDropshipSettings(env) {
     const out = { ...DEFAULT_DROPSHIP };
     if (d) for (const k of Object.keys(DEFAULT_DROPSHIP)) if (d[k] !== undefined && d[k] !== null) out[k] = d[k];
     out.DROPSHIP_ENABLED = out.DROPSHIP_ENABLED !== false;
-    out.DROPSHIP_AUTO_APPROVE_SUPPLIERS = out.DROPSHIP_AUTO_APPROVE_SUPPLIERS !== false;
+    out.DROPSHIP_AUTO_APPROVE_SUPPLIERS = out.DROPSHIP_AUTO_APPROVE_SUPPLIERS === true;
     out.DROPSHIP_MIN_MARGIN_PERCENT = Math.max(0, Number(out.DROPSHIP_MIN_MARGIN_PERCENT) || 0);
     out.DROPSHIP_MIN_MARGIN_FIXED = Math.max(0, Number(out.DROPSHIP_MIN_MARGIN_FIXED) || 0);
     out.DROPSHIP_FEE_BASE = out.DROPSHIP_FEE_BASE === 'total' ? 'total' : 'margin';

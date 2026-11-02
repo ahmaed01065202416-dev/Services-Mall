@@ -20,7 +20,7 @@ const json = (status, headers, obj) => new Response(JSON.stringify(obj), { statu
 const safeId = v => { const s = String(v == null ? '' : v); return /^[A-Za-z0-9_\-]{1,128}$/.test(s) ? s : null; };
 const r2 = n => Number(Number(n).toFixed(2));
 const clean = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-const isImg = u => typeof u === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u) || /^https:\/\//i.test(u));
+const isImg = u => typeof u === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u) || /^https:\/\/[^\s\"'<>\\]+$/i.test(u));   // strict: no quote/space/angle/backslash (stored-XSS guard)
 const LEAK = /[\w.+-]+@[\w-]+\.[\w.]+|(?:\+?\d[\s().-]*){10,}|whats\s?app|واتس|تليجرام|telegram/i;
 const CATEGORIES = ['clothing', 'electronics', 'home', 'beauty', 'food', 'accessories', 'digital', 'other'];
 const DAY = 86400000;
@@ -255,8 +255,14 @@ export async function activateMarketerPayment(env, payLoad, invoiceId) {
     if (payLoad.mktSubId) {
         const sub = await fsGet(env, `marketer_subscriptions/${payLoad.mktSubId}`);
         if (!sub || sub.status !== 'pending_payment') return { skipped: true };
-        await fsSet(env, `marketer_subscriptions/${sub.id}`, { status: 'active', paid: true, paidAmount: Number(sub.price) || 0, invoiceId: String(invoiceId || ''), paidAt: new Date() }, true);
-        const until = await applyMarketerPlan(env, sub.userId, { id: sub.planId, nameAr: sub.planName }, sub.days);
+        // SECURITY: claim atomically (updateTime precondition) so a re-delivered/parallel webhook can't apply the plan twice
+        try {
+            await fsCommit(env, [writeUpdate(env, `marketer_subscriptions/${sub.id}`,
+                { status: 'active', paid: true, paidAmount: Number(sub.price) || 0, invoiceId: String(invoiceId || ''), paidAt: new Date() }, { updateTime: sub._updateTime })]);
+        } catch (_) { return { skipped: true, reason: 'concurrent' }; }
+        let until;
+        try { until = await applyMarketerPlan(env, sub.userId, { id: sub.planId, nameAr: sub.planName }, sub.days); }
+        catch (e) { await fsSet(env, `marketer_subscriptions/${sub.id}`, { status: 'pending_payment', paid: false }, true).catch(() => {}); throw e; }
         await fsSet(env, `marketer_subscriptions/${sub.id}`, { endAt: until, activatedAt: new Date() }, true);
         await notify(env, sub.userId, '✅ تم تفعيل اشتراك المسوّق', `اشتراكك ساري لحد ${until.toISOString().slice(0, 10)}.`);
         return { ok: true };

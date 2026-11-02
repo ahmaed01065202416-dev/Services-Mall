@@ -14,7 +14,7 @@
  * Same payment pattern as functions/api/ads.js (webhook: fawaterak-webhook.js → activateStorePayment).
  * ============================================================================
  */
-import { verifyIdToken, fsGet, fsSet, fsCreate } from '../_shared/gcp.js';
+import { verifyIdToken, fsGet, fsSet, fsCreate, fsCommit, writeUpdate } from '../_shared/gcp.js';
 
 const DAY = 86400000;
 function json(status, headers, obj) { return new Response(JSON.stringify(obj), { status, headers }); }
@@ -137,13 +137,26 @@ async function buyPlan(body, env, CORS, auth) {
 // Called by fawaterak-webhook.js after its signature check. Idempotent.
 export async function activateStorePayment(env, subId, invoiceId) {
     const sub = await fsGet(env, `store_subscriptions/${subId}`);
-    if (!sub || sub.status !== 'pending_payment') return { skipped: true };
-    const store = await fsGet(env, `stores/${sub.storeId}`);
-    if (!store) return { skipped: true, reason: 'store missing' };
-    const until = await applyPlan(env, { id: sub.storeId, ...store }, { id: sub.planId, nameAr: sub.planName, rank: sub.rank }, sub.days);
-    await fsSet(env, `store_subscriptions/${subId}`, { status: 'active', paid: true, paidAmount: Number(sub.price) || 0, paidAt: new Date(), invoiceId: String(invoiceId || ''), activatedAt: new Date(), endAt: until }, true);
-    await notify(env, sub.sellerId, '⭐ تم تفعيل باقة متجرك', `متجرك هيظهر في أول الصفحة لحد ${until.toISOString().slice(0, 10)}.`);
-    return { ok: true };
+    if (!sub) return { skipped: true };
+    const stuck = sub.status === 'activating' && (Date.now() - Date.parse(sub.claimedAt || 0)) > 120000;   // crashed worker -> retake
+    if (sub.status !== 'pending_payment' && !stuck) return { skipped: true };
+    // SECURITY: gateways re-deliver webhooks; two parallel deliveries used to both pass the status check above and
+    // each extend the store's featured period (double days for one payment). Claim atomically first (updateTime
+    // precondition) — exactly one delivery wins.
+    try {
+        await fsCommit(env, [writeUpdate(env, `store_subscriptions/${subId}`, { status: 'activating', claimedAt: new Date() }, { updateTime: sub._updateTime })]);
+    } catch (_) { return { skipped: true, reason: 'concurrent' }; }
+    try {
+        const store = await fsGet(env, `stores/${sub.storeId}`);
+        if (!store) { await fsSet(env, `store_subscriptions/${subId}`, { status: 'pending_payment' }, true); return { skipped: true, reason: 'store missing' }; }
+        const until = await applyPlan(env, { id: sub.storeId, ...store }, { id: sub.planId, nameAr: sub.planName, rank: sub.rank }, sub.days);
+        await fsSet(env, `store_subscriptions/${subId}`, { status: 'active', paid: true, paidAmount: Number(sub.price) || 0, paidAt: new Date(), invoiceId: String(invoiceId || ''), activatedAt: new Date(), endAt: until }, true);
+        await notify(env, sub.sellerId, '⭐ تم تفعيل باقة متجرك', `متجرك هيظهر في أول الصفحة لحد ${until.toISOString().slice(0, 10)}.`);
+        return { ok: true };
+    } catch (e) {
+        await fsSet(env, `store_subscriptions/${subId}`, { status: 'pending_payment' }, true).catch(() => {});
+        throw e;
+    }
 }
 
 async function adminGrant(body, env, CORS, auth) {

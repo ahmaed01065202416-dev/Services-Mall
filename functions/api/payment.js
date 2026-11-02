@@ -389,6 +389,25 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         const orderId = pending.orderId;
         const item = pending.item;
 
+        // DUPLICATE PAYMENT GUARD: the buyer can open two invoices for the same order and pay both. The second
+        // one must not touch the order/escrow again (it would overwrite paymentId) — flag it so the admin
+        // can refund it from the gateway dashboard, and mark this pending as handled.
+        const curOrder = await fsGet(env, `orders/${orderId}`).catch(() => null);
+        if (curOrder && curOrder.paymentStatus === 'paid' && curOrder.merchantOrderId && curOrder.merchantOrderId !== pendingId) {
+            await fsSet(env, `pending_payments/${pendingId}`, {
+                status: 'duplicate_paid', paymentId: String(paymentId), duplicateOf: curOrder.merchantOrderId,
+                processedAt: new Date(),
+            }, true);
+            await fsCreate(env, 'notifications', {
+                userId: 'ADMIN', type: 'duplicate_payment',
+                title: '⚠️ دفع مكرر لنفس الطلب',
+                message: `طلب ${orderId} اتدفع مرتين. الدفعة المكررة: ${String(paymentId)} — رجّع المبلغ للعميل من لوحة البوابة.`,
+                orderId, read: false, createdAt: new Date(),
+            }).catch(() => {});
+            console.error('[payment] DUPLICATE payment for paid order', orderId, 'paymentId', String(paymentId));
+            return { ok: true, duplicate: true, orderIds: [orderId] };
+        }
+
         // ⚠️ ADDED: products (listingType: 'product') are ready-made digital
         // items — no seller approval or manual delivery step. As soon as
         // payment clears, auto-attach the seller's digital delivery content
@@ -509,7 +528,19 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         // Deterministic id (was random) → a retried/duplicate finalize can never
         // mint a second order for the same paid line item.
         const orderId = `${pendingId}_${idx}`;
-        if (await fsGet(env, `orders/${orderId}`)) { orderIds.push(orderId); continue; }
+        if (await fsGet(env, `orders/${orderId}`)) {
+            // A previous attempt may have crashed AFTER creating the order but BEFORE creating its escrow.
+            // Skipping blindly would leave the buyer's money paid-but-unreachable (seller never gets paid,
+            // buyer can't release/refund). Create the missing escrow now (idempotent: fixed id = orderId).
+            if (!(await fsGet(env, `escrow/${orderId}`))) {
+                await fsCreate(env, 'escrow', {
+                    orderId, buyerId: pending.uid, sellerId: item.sellerId, amount: item.price,
+                    status: 'held', paymentId: String(paymentId), method, currency: pending.currency,
+                    createdAt: new Date(),
+                }, orderId);
+            }
+            orderIds.push(orderId); continue;
+        }
 
         // ⚠️ ADDED: cart checkout used to always create orders at
         // 'payment_held' and wait for the seller to manually deliver — but a

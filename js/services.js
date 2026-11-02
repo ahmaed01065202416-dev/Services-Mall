@@ -413,8 +413,8 @@
               <!-- Body -->
               <div class="p-4">
                 <!-- Seller -->
-                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${s.storeId||s.sellerId||''}')" title="${isAr?'زيارة المتجر':'Visit store'}">
-                  <img src="${s.sellerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.sellerName||'U')}&background=0284c7&color=fff`}"
+                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${window.safeId(s.storeId||s.sellerId||'')}')" title="${isAr?'زيارة المتجر':'Visit store'}">
+                  <img src="${window.safeUrl(s.sellerAvatar) || `https://ui-avatars.com/api/?name=${window.encName(s.sellerName||'U')}&background=0284c7&color=fff`}"
                     class="w-7 h-7 rounded-full object-cover flex-shrink-0" loading="lazy"
                     onerror="this.src='https://ui-avatars.com/api/?name=U&background=0284c7&color=fff'">
                   <span class="text-xs text-gray-600 font-semibold truncate">${escapeHtml(s.sellerName || '—')}</span>
@@ -569,7 +569,7 @@
                       <div class="p-6 space-y-5">
                         <!-- Title & Category -->
                         <div>
-                          <span class="text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">${s.category || ''}</span>
+                          <span class="text-xs bg-navy-50 text-navy-600 font-bold px-3 py-1 rounded-full">${escapeHtml(s.category || '')}</span>
                           ${s.dropship ? `<span class="text-xs bg-turquoise-50 text-turquoise-700 font-bold px-3 py-1 rounded-full ms-1"><i class="fa-solid fa-truck-fast me-1"></i>${isAr ? 'يُشحن من المورد' : 'Ships from supplier'}${s.deliveryDays ? (isAr ? ` • خلال ${s.deliveryDays} أيام` : ` • within ${s.deliveryDays} days`) : ''}</span>` : ''}
                           <h2 class="text-2xl font-black text-gray-900 mt-2">${escapeHtml(s.title || '—')}</h2>
                           <div class="flex items-center gap-2 mt-2">
@@ -580,11 +580,11 @@
 
                         <!-- Seller -->
                         <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-4">
-                          <img src="${s.sellerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.sellerName||'U')}&background=0284c7&color=fff`}"
+                          <img src="${window.safeUrl(s.sellerAvatar) || `https://ui-avatars.com/api/?name=${window.encName(s.sellerName||'U')}&background=0284c7&color=fff`}"
                             class="w-12 h-12 rounded-xl object-cover">
                           <div>
                             <p class="font-black text-gray-900">${escapeHtml(s.sellerName || '—')}</p>
-                            <p class="text-sm text-gray-500">${s.sellerTitle || ''}</p>
+                            <p class="text-sm text-gray-500">${escapeHtml(s.sellerTitle || '')}</p>
                           </div>
                           ${s.sellerVerified ? '<span class="ms-auto bg-navy-100 text-navy-700 text-xs font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-check me-1"></i>موثّق</span>' : ''}
                         </div>

@@ -62,7 +62,7 @@ export async function onRequest(context) {
 
     const body = await request.json().catch(() => ({}));
     const { type, orderId } = body;
-    if (!orderId) return json(400, CORS, { error: 'orderId is required' });
+    if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_\-]{1,128}$/.test(orderId)) return json(400, CORS, { error: 'orderId is required' });
     if (!['order', 'chat'].includes(type)) {
       return json(400, CORS, { error: 'Invalid type — expected "order" or "chat"' });
     }

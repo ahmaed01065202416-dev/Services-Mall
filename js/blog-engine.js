@@ -71,7 +71,7 @@
 
   function _catBadge(cat) {
     const c = CAT_COLORS[cat] || '#6b7280';
-    return `<span style="background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${(cat||'').replace(/-/g,' ')}</span>`;
+    return `<span style="background:${c}22;color:${c};font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;white-space:nowrap">${escapeHtml((cat||'').replace(/-/g,' '))}</span>`;
   }
 
   // ── Card HTML ──────────────────────────────────────────────────────────────
@@ -272,7 +272,7 @@
             <!-- Keywords -->
             ${post.keywords?.length ? `
             <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">
-              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#0F172A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${k}</span>`).join('')}
+              ${post.keywords.map(k => `<span style="background:#EEF2F8;color:#0F172A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px">#${escapeHtml(k)}</span>`).join('')}
             </div>` : ''}
 
             <!-- Share -->

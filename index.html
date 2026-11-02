@@ -1750,6 +1750,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 <!-- 7d. Product Returns (buyer request → seller approve/reject → admin refund) -->
 <script src="js/returns.js?v=2026-10-31-sec1"></script>
+<script src="js/seller-kyc.js?v=2026-11-01-kyc1"></script>
 <script src="js/non-receipt.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes-pro.js?v=2026-10-31-sec1"></script>
@@ -1897,7 +1898,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         const raw = window.location.hash.replace('#','') || 'home';
         const wsMatch = raw.match(/^workspace-(.+)$/);
         if (wsMatch) {
-            const orderId = wsMatch[1];
+            const orderId = window.safeId(wsMatch[1]);
             (window._authReadyPromise || Promise.resolve()).then(() => {
                 if (AppState.currentUser && typeof openWorkspace === 'function') {
                     openWorkspace(orderId);
@@ -1908,7 +1909,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             return;
         }
         const stMatch = raw.match(/^store-(.+)$/);
-        if (stMatch) { navigateTo('store'); if (window.StoresManager) StoresManager.openStore(stMatch[1]); return; }
+        if (stMatch) { navigateTo('store'); if (window.StoresManager) StoresManager.openStore(window.safeId(stMatch[1])); return; }   // hash comes from the URL — plain id tokens only
         if (raw === 'workspace') { navigateTo('home'); return; }
         const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service','stores','my-store'];
         navigateTo(validPages.includes(raw) ? raw : 'home');
@@ -1963,7 +1964,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
               <div class="p-4 flex flex-col gap-3 flex-1">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <img src="${s.sellerAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.sellerName||'U')}" class="w-8 h-8 rounded-full object-cover">
+                    <img src="${window.safeUrl(s.sellerAvatar) || 'https://ui-avatars.com/api/?name=' + window.encName(s.sellerName||'U')}" class="w-8 h-8 rounded-full object-cover">
                     <span class="text-xs font-bold text-gray-700">${escapeHtml(s.sellerName || '—')}</span>
                   </div>
                   <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">

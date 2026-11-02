@@ -37,6 +37,9 @@ import { verifyIdToken, fsGet, fsCreate, fsSet, fsQuery, fsCommit, writeIncremen
 import { hmacHex, timingSafeEqual } from './payment.js';
 
 function json(status, headers, obj) { return new Response(JSON.stringify(obj), { status, headers }); }
+// SECURITY: ids from the request body are placed inside Firestore REST paths — only plain tokens are allowed
+// (otherwise '../orders/<id>' would redirect a write to a different collection).
+function safeId(v) { const s = String(v == null ? '' : v); return /^[A-Za-z0-9_\-]{1,128}$/.test(s) ? s : null; }
 function getCORS(env) {
     return {
         'Access-Control-Allow-Origin': env.ALLOWED_ORIGINS || '*',
@@ -53,12 +56,14 @@ async function apiPost(url, body, headers = {}) {
 
 // ── Buyer subscribes to a recurring service (first payment = card capture) ──
 async function handleSubscribe(body, env, CORS, auth) {
-    const { serviceId } = body;
+    const serviceId = safeId(body.serviceId);
     if (!serviceId) return json(400, CORS, { error: 'serviceId مطلوب' });
 
     const svc = await fsGet(env, `services/${serviceId}`);
     if (!svc) return json(404, CORS, { error: 'الخدمة غير موجودة' });
     if (!svc.recurring) return json(400, CORS, { error: 'الخدمة دي مش اشتراك شهري' });
+    if (svc.active === false) return json(400, CORS, { error: 'الخدمة موقوفة حالياً' });
+    if (svc.sellerId === auth.uid) return json(400, CORS, { error: 'مينفعش تشترك في خدمتك أنت' });
 
     const amount = Number(svc.price) || 0;
     if (amount <= 0) return json(400, CORS, { error: 'سعر غير صالح' });
@@ -120,7 +125,8 @@ async function handleSubscribe(body, env, CORS, auth) {
 
 // ── Buyer/seller cancels a subscription ───────────────────────────────────────
 async function handleCancel(body, env, CORS, auth) {
-    const { subscriptionId } = body;
+    const subscriptionId = safeId(body.subscriptionId);
+    if (!subscriptionId) return json(400, CORS, { error: 'subscriptionId غير صالح' });
     const sub = await fsGet(env, `subscriptions/${subscriptionId}`);
     if (!sub) return json(404, CORS, { error: 'الاشتراك غير موجود' });
     if (sub.buyerId !== auth.uid && sub.sellerId !== auth.uid) return json(403, CORS, { error: 'غير مصرح' });
@@ -130,11 +136,42 @@ async function handleCancel(body, env, CORS, auth) {
 
 // ── Called by fawaterak-webhook.js once the FIRST payment's token arrives ────
 export async function activateSubscriptionToken(env, subscriptionId, customerToken) {
+    subscriptionId = safeId(subscriptionId);
     if (!subscriptionId || !customerToken) return;
+    const sub = await fsGet(env, `subscriptions/${subscriptionId}`).catch(() => null);
+    if (!sub) return;
     await fsSet(env, `subscriptions/${subscriptionId}`, {
         status: 'active', customerToken,
         nextBillingDate: new Date(Date.now() + 30 * 86400000),
     }, true);
+
+    // The FIRST month was paid through this invoice, but nothing used to create the order/escrow for it — the buyer's
+    // money was taken and neither the seller nor the buyer protection flow ever saw it. Create them now, once
+    // (deterministic id => a re-delivered webhook can't create a second pair).
+    const orderId = `${subscriptionId}_first`;
+    if (!(await fsGet(env, `orders/${orderId}`).catch(() => null))) {
+        await fsCommit(env, [
+            writeCreate(env, `orders/${orderId}`, {
+                serviceId: sub.serviceId, serviceTitle: sub.title,
+                buyerId: sub.buyerId, sellerId: sub.sellerId,
+                price: sub.amount, status: 'payment_held', paymentMethod: 'fawaterak', paymentStatus: 'paid',
+                subscriptionId, escrowHeld: true, escrowAmount: sub.amount, currency: 'EGP',
+                chatEnabled: true, filesEnabled: true,
+                deliveryDeadline: new Date(Date.now() + 3 * 86400000).toISOString(),
+                createdAt: new Date(), updatedAt: new Date(),
+            }),
+            writeCreate(env, `escrow/${orderId}`, {
+                orderId, buyerId: sub.buyerId, sellerId: sub.sellerId, amount: sub.amount,
+                status: 'held', method: 'fawaterak', currency: 'EGP', createdAt: new Date(),
+            }),
+        ]);
+    }
+    if (!(await fsGet(env, `escrow/${orderId}`).catch(() => null))) {
+        await fsCommit(env, [writeCreate(env, `escrow/${orderId}`, {
+            orderId, buyerId: sub.buyerId, sellerId: sub.sellerId, amount: sub.amount,
+            status: 'held', method: 'fawaterak', currency: 'EGP', createdAt: new Date(),
+        })]);
+    }
 }
 
 // ── Cron-driven: charge every subscription due today ──────────────────────────

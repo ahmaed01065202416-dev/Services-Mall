@@ -307,7 +307,7 @@
         };
         const icon = iconMap[ext] || 'fa-file text-gray-500';
         return `
-        <a href="${window.safeUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_esc(file.name||'file')}"
+        <a href="${window.safeFileUrl(file.url) || '#'}" target="_blank" rel="noopener" download="${_esc(file.name||'file')}"
           class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-brand-400 hover:shadow-md transition group w-full">
           <i class="fa-solid ${icon} text-2xl flex-shrink-0"></i>
           <div class="flex-1 min-w-0">

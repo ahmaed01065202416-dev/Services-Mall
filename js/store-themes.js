@@ -18,7 +18,7 @@
     'use strict';
     const isAr = () => AppState.language !== 'en';
     const esc = (v) => (window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v));
-    const fallback = (n) => `https://ui-avatars.com/api/?name=${encodeURIComponent(n || 'S')}&background=0f172a&color=fff&size=128`;
+    const fallback = (n) => `https://ui-avatars.com/api/?name=${window.encName(n || 'S')}&background=0f172a&color=fff&size=128`;
 
     // d = { name, tagline, logo, banner, color, featured, count, rev, avg, loc, desc, announcement, shippingPolicy, returnPolicy }
     const stars = (d, onDark) => d.rev

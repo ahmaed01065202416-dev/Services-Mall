@@ -21,7 +21,7 @@
     const toMs = (ts) => { if (!ts) return 0; if (ts.toDate) return ts.toDate().getTime(); if (ts.seconds) return ts.seconds * 1000; const t = new Date(ts).getTime(); return isNaN(t) ? 0 : t; };
     const isFeatured = (s) => toMs(s.featuredUntil) > Date.now();
     const sortStores = (a, b) => (isFeatured(b) - isFeatured(a)) || ((b.planRank || 0) - (a.planRank || 0)) || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
-    const fallbackLogo = (n) => `https://ui-avatars.com/api/?name=${encodeURIComponent(n || 'S')}&background=0f172a&color=fff&size=128`;
+    const fallbackLogo = (n) => `https://ui-avatars.com/api/?name=${window.encName(n || 'S')}&background=0f172a&color=fff&size=128`;
 
     async function api(body) {
         const token = window.auth && window.auth.currentUser ? await window.auth.currentUser.getIdToken() : '';
@@ -101,6 +101,7 @@
 
         // ── One store page (public) — themed by the owner ───────────────────
         async openStore(storeId) {
+            storeId = window.safeId ? window.safeId(storeId) : storeId;   // may come from the URL hash / inline handlers
             if (!storeId) return;
             navigateTo('store');
             try { history.replaceState({ page: 'store' }, '', '#store-' + storeId); } catch (_) {}

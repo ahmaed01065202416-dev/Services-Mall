@@ -17,7 +17,7 @@
     if (!TH) { console.warn('[StoreThemesPro] StoreThemes missing'); return; }
     const isAr = () => AppState.language !== 'en';
     const esc = (v) => (window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v));
-    const fb = (n) => `https://ui-avatars.com/api/?name=${encodeURIComponent(n || 'S')}&background=0f172a&color=fff&size=128`;
+    const fb = (n) => `https://ui-avatars.com/api/?name=${window.encName(n || 'S')}&background=0f172a&color=fff&size=128`;
     const FONT = (fam) => `https://fonts.googleapis.com/css2?family=${fam}&display=swap`;
     const toGrid = "var g=document.getElementById('storeProductsGrid');if(g)g.scrollIntoView({behavior:'smooth',block:'start'})";
 
