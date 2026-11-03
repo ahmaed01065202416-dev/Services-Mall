@@ -19,6 +19,8 @@
         orderId:         null,
         existingOrderId: null,
         context:         null,
+        couponCode:      '',      // only set after the SERVER accepted it (preview)
+        preview:         null,
     };
 
     // ── Build {serviceId, quantity} list sent to the server ───────────────────
@@ -80,9 +82,13 @@
         PaymentState.context         = context;
         PaymentState.orderId         = null; // assigned by the server once payment starts
         PaymentState.existingOrderId = context === 'order' ? existingOrderId : null;
+        PaymentState.couponCode      = '';
+        PaymentState.preview         = null;
 
         _renderPaymentPage(baseAmt, fees, total, context);
         navigateTo('payment');
+        // the real numbers (automatic store discounts, fees) come from the server — same function that computes the charge
+        _refreshPreview('', true);
     }
 
     // ── Pay for a request the seller already accepted ─────────────────────────
@@ -109,6 +115,68 @@
                 shippingFee: Number(order.shippingFee) || 0, shippingMode: order.shippingMode || 'online',
             }, orderId);
         } catch (err) { hideLoading(); showToast(t('general.error'), 'error'); }
+    }
+
+    // ── Summary rows (re-painted whenever the server sends new numbers) ───────
+    // d = { subtotal, fees, shipOnline, cod, storeDiscount?, platformDiscount?, applied?, capped? }   (subtotal = BEFORE discounts)
+    function _rowsHtml(d) {
+        const isAr = AppState.language !== 'en';
+        const row = (label, val, cls) => `<div class="flex justify-between text-sm ${cls || 'text-gray-600'}"><span>${label}</span><span>${val}</span></div>`;
+        const store = (d.applied || []).filter(a => a.scope === 'store');
+        const plat  = (d.applied || []).filter(a => a.scope === 'platform');
+        let h = row(isAr ? 'المجموع الفرعي' : 'Subtotal', formatCurrency(d.subtotal));
+        if (d.shipOnline > 0) h += `<p class="text-xs text-gray-400">${isAr ? 'شامل الشحن' : 'incl. shipping'} ${formatCurrency(d.shipOnline)}</p>`;
+        if (d.cod > 0) h += `<p class="text-xs text-amber-700 font-bold">${isAr ? `+ ${formatCurrency(d.cod)} شحن كاش للمندوب عند الاستلام` : `+ ${formatCurrency(d.cod)} shipping in cash on delivery`}</p>`;
+        if (d.storeDiscount > 0) h += row((isAr ? 'خصم المتجر' : 'Store discount') + (store[0] ? ` (${esc(store[0].code || store[0].title || '')})` : ''), '− ' + formatCurrency(d.storeDiscount), 'text-green-600 font-bold');
+        if (d.fees > 0) h += row(`${isAr ? 'رسوم المنصة' : 'Platform Fee'} (${window._feeLabel()})`, formatCurrency(d.fees));
+        if (d.platformDiscount > 0) h += row((isAr ? 'خصم المنصة' : 'Platform discount') + (plat[0] && plat[0].code ? ` (${esc(plat[0].code)})` : ''), '− ' + formatCurrency(d.platformDiscount), 'text-green-600 font-bold')
+            + (plat[0] && plat[0].cappedByCommission ? `<p class="text-xs text-gray-400">${isAr ? 'الخصم وصل للحد الأقصى المسموح (من عمولة المنصة)' : 'Discount reached its maximum (paid from the platform commission)'}</p>` : '');
+        return h;
+    }
+    function esc(v) { return window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v); }
+
+    // Ask the server what this payment will really cost (with the typed code, if any).
+    async function _previewFromServer(code) {
+        const idToken = window.auth && window.auth.currentUser ? await window.auth.currentUser.getIdToken() : '';
+        const resp = await fetch(PAY_ENDPOINT, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+            body: JSON.stringify({ action: 'previewPricing', ..._buildPaymentPayload(PaymentState.context), couponCode: code || '' }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.success) throw new Error(data.error || 'preview failed');
+        return data;
+    }
+    function _paint(p) {
+        PaymentState.preview = p;
+        PaymentState.amount  = p.total;
+        const isAr = AppState.language !== 'en';
+        const rows = document.getElementById('pay-rows');
+        if (rows) {
+            const items = (PaymentState.context === 'service' || PaymentState.context === 'order') ? [AppState.currentPaymentService] : (AppState.cart || []);
+            const first = items.filter(Boolean)[0] || {};
+            rows.innerHTML = _rowsHtml({
+                subtotal: Number((p.listSubtotal + p.ship).toFixed(2)), fees: p.fees, shipOnline: p.ship,
+                cod: (first.shippingMode === 'cod' && Number(first.shippingFee) > 0) ? Number(first.shippingFee) : 0,
+                storeDiscount: p.storeDiscount, platformDiscount: p.platformDiscount, applied: p.applied,
+            });
+        }
+        const td = document.getElementById('total-display'); if (td) td.textContent = formatCurrency(p.total);
+        const lb = document.getElementById('pay-btn-label'); if (lb) lb.textContent = t('pay.pay_now') + ' — ' + formatCurrency(p.total);
+        const st = document.getElementById('pay-coupon-status');
+        if (st) {
+            const auto = (p.applied || []).filter(a => a.auto);
+            st.innerHTML = (auto.length ? `<span class="text-green-600 font-bold">🎁 ${auto.map(a => esc(a.title)).join('، ')}</span> ` : '')
+                + (PaymentState.couponCode ? `<span class="text-green-600 font-bold">✓ ${esc(PaymentState.couponCode)}</span> <button type="button" class="underline text-gray-500" onclick="PaymentSystem.removeCoupon()">${isAr ? 'إزالة' : 'Remove'}</button>` : '');
+        }
+    }
+    async function _refreshPreview(code, silent) {
+        try { _paint(await _previewFromServer(code)); return true; }
+        catch (e) { if (!silent) throw e; return false; }
+    }
+    async function removeCoupon() {
+        PaymentState.couponCode = '';
+        const inp = document.getElementById('couponInput'); if (inp) inp.value = '';
+        await _refreshPreview('', true);
     }
 
     // ── Render Payment Page ───────────────────────────────────────────────────
@@ -178,6 +246,7 @@
                       ${isAr ? 'تطبيق' : 'Apply'}
                     </button>
                   </div>
+                  <div id="pay-coupon-status" class="mt-2 text-xs"></div>
                 </div>
 
                 <!-- Pay Button -->
@@ -225,16 +294,7 @@
                       </div>`).join('')}
                   </div>
                   <div class="border-t border-gray-100 pt-4 space-y-2">
-                    <div class="flex justify-between text-sm text-gray-600">
-                      <span>${isAr ? 'المجموع الفرعي' : 'Subtotal'}</span>
-                      <span>${formatCurrency(subtotal)}</span>
-                    </div>
-                    ${(items[0] && Number(items[0].shippingOnline) > 0) ? `<p class="text-xs text-gray-400">${isAr ? 'شامل الشحن' : 'incl. shipping'} ${formatCurrency(items[0].shippingOnline)}</p>` : ''}
-                    ${(items[0] && items[0].shippingMode === 'cod' && Number(items[0].shippingFee) > 0) ? `<p class="text-xs text-amber-700 font-bold">${isAr ? `+ ${formatCurrency(items[0].shippingFee)} شحن كاش للمندوب عند الاستلام` : `+ ${formatCurrency(items[0].shippingFee)} shipping in cash on delivery`}</p>` : ''}
-                    ${fees > 0 ? `<div class="flex justify-between text-sm text-gray-600">
-                      <span>${isAr ? 'رسوم المنصة' : 'Platform Fee'} (${window._feeLabel()})</span>
-                      <span>${formatCurrency(fees)}</span>
-                    </div>` : ''}
+                    <div id="pay-rows">${_rowsHtml({ subtotal, fees, shipOnline: (items[0] && Number(items[0].shippingOnline)) || 0, cod: (items[0] && items[0].shippingMode === 'cod' && Number(items[0].shippingFee) > 0) ? Number(items[0].shippingFee) : 0 })}</div>
                     <div class="flex justify-between font-black text-gray-900 text-xl border-t border-gray-100 pt-2 mt-2">
                       <span>${isAr ? 'الإجمالي' : 'Total'}</span>
                       <span class="text-navy-600" id="total-display">${formatCurrency(total)}</span>
@@ -284,6 +344,7 @@
                 body: JSON.stringify({
                     action: 'fawaterakPay',
                     ..._buildPaymentPayload(PaymentState.context),
+                    couponCode: PaymentState.couponCode || '',   // the server re-validates it and recomputes the price
                     // ⚠️ FIXED (found while auditing the phone-privacy change):
                     // AppState.currentUser stores this as `.phone`, never
                     // `.phoneNumber` (that property only exists on the raw
@@ -359,24 +420,23 @@
     }
 
     // ── Apply Coupon ──────────────────────────────────────────────────────────
+    // The code is checked and priced by the SERVER (api/payment.js previewPricing). Nothing about a coupon is read from
+    // Firestore in the browser any more, and the amount charged is recomputed again at payment time.
     async function applyCoupon() {
-        const code = document.getElementById('couponInput') ? document.getElementById('couponInput').value.trim().toUpperCase() : '';
+        const isAr = AppState.language !== 'en';
+        const inp  = document.getElementById('couponInput');
+        const code = inp ? inp.value.trim().toUpperCase() : '';
         if (!code) return;
         showLoading();
         try {
-            const snap = await window.db.collection(COLLECTIONS.COUPONS)
-                .where('code','==',code).where('active','==',true).get();
+            const p = await _previewFromServer(code);
             hideLoading();
-            if (snap.empty) { showToast(AppState.language === 'en' ? 'Invalid coupon' : 'كوبون غير صحيح', 'error'); return; }
-            const coupon   = snap.docs[0].data();
-            const discount = coupon.type === 'percent' ? PaymentState.amount * coupon.value / 100 : coupon.value;
-            PaymentState.amount = Math.max(0, PaymentState.amount - discount);
-            showToast((AppState.language === 'en' ? 'Saved ' : 'وفّرت ') + formatCurrency(discount), 'success');
-            const td = document.getElementById('total-display');
-            if (td) td.textContent = formatCurrency(PaymentState.amount);
-            const lb = document.getElementById('pay-btn-label');
-            if (lb) lb.textContent = t('pay.pay_now') + ' — ' + formatCurrency(PaymentState.amount);
-        } catch(err) { hideLoading(); showToast(t('general.error'), 'error'); }
+            if (p.error) { showToast(p.error, 'error'); return; }
+            PaymentState.couponCode = code;
+            _paint(p);
+            const saved = (p.storeDiscount || 0) + (p.platformDiscount || 0);
+            showToast((isAr ? 'وفّرت ' : 'Saved ') + formatCurrency(saved), 'success');
+        } catch (err) { hideLoading(); showToast(err.message || t('general.error'), 'error'); }
     }
 
     // ── Check redirect result (Fawaterak redirect back to the site) ──────────
@@ -398,7 +458,7 @@
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
-    window.PaymentSystem   = { openPaymentPage, processPayment, applyCoupon, payForOrder, state: PaymentState };
+    window.PaymentSystem   = { openPaymentPage, processPayment, applyCoupon, removeCoupon, payForOrder, state: PaymentState };
     window.openPaymentModal = function(s) { openPaymentPage('service', s); };
     window.checkout         = function(s) { openPaymentPage(s ? 'service' : 'cart', s); };
     window.processPayment   = processPayment;

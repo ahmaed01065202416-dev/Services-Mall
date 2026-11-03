@@ -18,7 +18,7 @@ const BLOCKED_EXACT = new Set([
   '/tailwind.config.js', '/seed.js', '/seed-blog.js',
   '/README.md', '/SETUP.md', '/DEPLOY_CLOUDFLARE.md', '/DEPLOY_RULES.md',
   '/FIXES_APPLIED.md', '/SECURITY_FIX_PAYMENT.md',
-  '/CHANGES_V15.md', '/CHANGES_V16.md', '/CHANGES_V17.md', '/MARKETER_PROGRAM.md', '/THEME_CHANGES.md',
+  '/CHANGES_V15.md', '/CHANGES_V16.md', '/CHANGES_V17.md', '/CHANGES_V22.md', '/MARKETER_PROGRAM.md', '/THEME_CHANGES.md',
   '/.env.example',
 ]);
 const BLOCKED_PREFIX = ['/functions/', '/cron-worker/', '/tests/'];

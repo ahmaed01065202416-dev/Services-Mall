@@ -2,7 +2,8 @@
  * js/seller-kyc.js — Seller identity verification (توثيق البائعين)
  * ----------------------------------------------------------------------------
  *  • SellerKYC.open()                    → applicant form / status (called by "كن بائع")
- *  • SellerKYC.renderAdminTab(el, isAr)  → admin tab: review queue + approve / reject
+ *  • SellerKYC.renderAdminTab(el, isAr)  → admin tab: ON/OFF switch, search, review queue + approve / reject,
+ *                                          full ID data + export file for a legal authority
  *
  * All data goes through /api/kyc (functions/api/kyc.js). Nothing is written to Firestore from here:
  * the national-ID number is hashed server-side, the 3 photos are readable only by admins through the API
@@ -73,8 +74,26 @@
                 <p class="text-gray-600 text-sm">${isAr() ? 'فريقنا بيراجع بياناتك. هيجيلك إشعار أول ما نخلّص.' : 'Our team is reviewing your details. You will be notified as soon as we are done.'}</p></div>`);
             return;
         }
+        if (st.required === false) { renderDirect(); return; }       // admin switched verification OFF
         photos = {};
         renderForm(st);
+    }
+
+    function renderDirect() {
+        const el = modal(`<div class="text-center py-4">
+            <div class="text-5xl mb-3">🏪</div>
+            <h3 class="text-xl font-bold text-navy-800 mb-2">${isAr() ? 'فعّل حسابك كبائع' : 'Become a seller'}</h3>
+            <p class="text-gray-600 text-sm mb-4">${isAr() ? 'تقدر تبدأ تضيف منتجاتك وخدماتك وتفتح متجرك دلوقتي.' : 'You can start adding your products and services and open your store now.'}</p>
+            <button type="button" id="kycDirect" class="btn-primary w-full py-3 rounded-xl font-bold">${isAr() ? 'تفعيل حساب البائع' : 'Activate seller account'}</button></div>`);
+        el.querySelector('#kycDirect').addEventListener('click', async () => {
+            try {
+                busy(true, isAr() ? 'جاري التفعيل...' : 'Activating...');
+                await api({ action: 'becomeSeller' });
+                busy(false); closeModal();
+                toast(isAr() ? '✅ تم تفعيل حسابك كبائع — هنحدّث الصفحة' : '✅ You are a seller now — reloading', 'success');
+                setTimeout(() => location.reload(), 1200);
+            } catch (e) { busy(false); toast(e.message, 'error'); }
+        });
     }
 
     function renderForm(st) {
@@ -160,19 +179,33 @@
     };
     const fmt = (ms) => { if (!ms) return '—'; try { return new Date(ms).toLocaleString(isAr() ? 'ar-EG' : 'en-GB'); } catch (_) { return '—'; } };
 
-    async function renderAdminTab(container, ar, status) {
+    async function renderAdminTab(container, ar, status, foundItems) {
         status = status || 'pending';
         container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
-        let items = [];
-        try { items = (await api({ action: 'adminList', status: status === 'all' ? '' : status })).items || []; }
-        catch (e) { container.innerHTML = `<div class="p-4 rounded-xl bg-red-50 text-red-700 text-sm">${esc(e.message)}</div>`; return; }
+        let items = [], required = true;
+        try {
+            const [cfg, list] = await Promise.all([api({ action: 'config' }), foundItems ? Promise.resolve({ items: foundItems }) : api({ action: 'adminList', status: status === 'all' ? '' : status })]);
+            required = cfg.required !== false; items = list.items || [];
+        } catch (e) { container.innerHTML = `<div class="p-4 rounded-xl bg-red-50 text-red-700 text-sm">${esc(e.message)}</div>`; return; }
 
         const tabs = ['pending', 'approved', 'rejected', 'all'].map(s => `<button type="button" data-kyc-filter="${s}" class="px-3 py-1.5 rounded-full text-sm border ${s === status ? 'bg-navy-700 text-white border-navy-700' : 'bg-white text-gray-600 border-gray-200'}">${
             s === 'all' ? (ar ? 'الكل' : 'All') : (ar ? STATUS_LABEL[s].ar : STATUS_LABEL[s].en)}</button>`).join('');
         container.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-3 p-4 mb-4 rounded-2xl border ${required ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}">
+                <div><div class="font-black text-gray-900">${ar ? 'نظام توثيق البائعين' : 'Seller verification system'}: ${required ? (ar ? 'مفعّل' : 'ON') : (ar ? 'متوقف' : 'OFF')}</div>
+                    <div class="text-xs text-gray-600 mt-0.5">${required
+                        ? (ar ? 'محدش يبقى بائع غير بعد موافقتك على بطاقته وسيلفيه.' : 'Nobody becomes a seller before you approve their ID and selfie.')
+                        : (ar ? 'أي مستخدم بريده مفعّل يقدر يبقى بائع مباشرة من غير توثيق. الطلبات اللي اتبعتت قبل كده لسه ممكن تتراجع.' : 'Any user with a verified e-mail can become a seller directly. Applications already sent can still be reviewed.')}</div></div>
+                <button type="button" id="kycSwitch" class="px-4 py-2 rounded-xl font-bold text-white ${required ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}">${required ? (ar ? 'إيقاف التوثيق' : 'Turn off') : (ar ? 'تفعيل التوثيق' : 'Turn on')}</button>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-2 mb-4">
+                <input id="kycSearch" type="search" placeholder="${ar ? 'بحث بالاسم / الموبايل / المتجر / آخر 4 أرقام' : 'Search name / phone / store / last 4'}" class="px-3 py-2 border rounded-xl text-sm">
+                <div class="flex gap-2"><input id="kycFindId" type="text" inputmode="numeric" maxlength="14" dir="ltr" placeholder="${ar ? 'بحث برقم البطاقة كامل (14 رقم)' : 'Find by full ID number'}" class="flex-1 px-3 py-2 border rounded-xl text-sm">
+                    <button type="button" id="kycFindBtn" class="px-3 py-2 rounded-xl bg-navy-700 text-white text-sm">${ar ? 'بحث' : 'Find'}</button></div>
+            </div>
             <div class="flex flex-wrap items-center gap-2 mb-4">${tabs}</div>
             <div class="p-3 mb-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs">🔒 ${ar
-                ? 'صور البطاقات خاصة: فتحها بيتسجّل باسمك وبالوقت. ممنوع تصويرها أو مشاركتها — استخدمها للمراجعة وللجهات القانونية بس.'
+                ? 'بيانات البطاقات خاصة: فتحها أو تصديرها بيتسجّل باسمك وبالوقت. ممنوع مشاركتها — استخدمها للمراجعة وتسليمها للجهات القانونية بس.'
                 : 'ID photos are private: each opening is logged with your name and time. Do not copy or share them — use only for review and legal authorities.'}</div>
             ${items.length ? `<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-gray-500 text-xs border-b">
                 <th class="p-2 text-start">${ar ? 'الاسم' : 'Name'}</th><th class="p-2 text-start">${ar ? 'البطاقة' : 'ID'}</th>
@@ -186,6 +219,24 @@
                     <td class="p-2"><button type="button" data-kyc-open="${esc(a.uid)}" class="px-3 py-1.5 rounded-lg bg-navy-700 text-white text-xs">${ar ? 'مراجعة' : 'Review'}</button></td></tr>`; }).join('')}
                 </tbody></table></div>` : `<div class="text-center text-gray-400 py-10">${ar ? 'مفيش طلبات' : 'No applications'}</div>`}`;
 
+        container.querySelector('#kycSwitch').addEventListener('click', async () => {
+            const to = !required;
+            if (!confirm(to ? (ar ? 'تفعيل التوثيق؟ البائعين الجدد هيحتاجوا موافقتك.' : 'Turn verification ON?') : (ar ? 'إيقاف التوثيق؟ أي مستخدم هيقدر يبقى بائع مباشرة.' : 'Turn verification OFF? Anyone can become a seller directly.'))) return;
+            try { busy(true); await api({ action: 'adminSetRequired', required: to }); busy(false); toast(to ? (ar ? '✅ التوثيق مفعّل' : '✅ ON') : (ar ? 'التوثيق متوقف' : 'OFF'), 'success'); renderAdminTab(container, ar, status); }
+            catch (e) { busy(false); toast(e.message, 'error'); }
+        });
+        container.querySelector('#kycSearch').addEventListener('input', (e) => {
+            const q = e.target.value.trim().toLowerCase();
+            container.querySelectorAll('tbody tr').forEach(tr => { tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+        });
+        container.querySelector('#kycFindBtn').addEventListener('click', async () => {
+            const nid = container.querySelector('#kycFindId').value.replace(/\s+/g, '');
+            if (!/^\d{14}$/.test(nid)) { toast(ar ? 'اكتب رقم البطاقة 14 رقم' : 'Enter the 14-digit number', 'warning'); return; }
+            try { busy(true); const r = await api({ action: 'adminFindByNationalId', nationalId: nid }); busy(false);
+                if (!r.items.length) { toast(ar ? 'مفيش حد مسجّل بالرقم ده' : 'No applicant with this number', 'info'); return; }
+                renderAdminTab(container, ar, 'all', r.items); }
+            catch (e) { busy(false); toast(e.message, 'error'); }
+        });
         container.querySelectorAll('[data-kyc-filter]').forEach(b => b.addEventListener('click', () => renderAdminTab(container, ar, b.getAttribute('data-kyc-filter'))));
         container.querySelectorAll('[data-kyc-open]').forEach(b => b.addEventListener('click', () => openReview(b.getAttribute('data-kyc-open'), container, ar, status)));
     }
@@ -196,19 +247,25 @@
         try { res = await api({ action: 'adminGet', uid }); }
         catch (e) { busy(false); toast(e.message, 'error'); return; }
         busy(false);
-        const a = res.app, im = res.images || {};
+        const a = res.app, im = res.images || {}, hist = res.history || [];
+        const ACTION_AR = { view: 'فتح الملف', export: 'تصدير الملف', approve: 'قبول', reject: 'رفض', search_id: 'بحث برقم البطاقة' };
         const photoBox = (k, label) => `<div class="text-center"><div class="text-xs text-gray-500 mb-1">${label}</div>
             <a href="${window.safeUrl(im[k]) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(im[k])}" class="w-full max-h-64 object-contain rounded-xl border bg-gray-50" alt=""></a></div>`;
         const el = modal(`
             <h3 class="text-lg font-bold text-navy-800 mb-3">${ar ? 'مراجعة طلب توثيق' : 'Review application'}</h3>
             <div class="grid sm:grid-cols-2 gap-2 text-sm mb-4">
                 <div><span class="text-gray-500">${ar ? 'الاسم:' : 'Name:'}</span> <b>${esc(a.fullName)}</b></div>
-                <div><span class="text-gray-500">${ar ? 'آخر 4 أرقام:' : 'ID last 4:'}</span> <b dir="ltr">${esc(a.idLast4)}</b></div>
+                <div class="sm:col-span-2"><span class="text-gray-500">${ar ? 'رقم البطاقة:' : 'National ID:'}</span> ${res.nationalIdAvailable
+                    ? `<b dir="ltr" class="select-all">${esc(res.nationalId)}</b>`
+                    : `<span class="text-amber-600 text-xs">${ar ? 'الرقم مش محفوظ كنص لهذا الطلب (اتقدّم قبل التشفير) — شوفه من صورة البطاقة. آخر 4:' : 'Not stored as text for this older application — read it from the photo. Last 4:'} <b dir="ltr">${esc(a.idLast4)}</b></span>`}</div>
+                <div><span class="text-gray-500">${ar ? 'البريد:' : 'E-mail:'}</span> <b dir="ltr">${esc((res.account && res.account.email) || a.email || '—')}</b></div>
                 <div><span class="text-gray-500">${ar ? 'الموبايل:' : 'Phone:'}</span> <b dir="ltr">${esc(a.phone)}</b></div>
                 <div><span class="text-gray-500">${ar ? 'المتجر:' : 'Store:'}</span> <b>${esc(a.storeName || '—')}</b></div>
                 <div class="sm:col-span-2"><span class="text-gray-500">${ar ? 'العنوان:' : 'Address:'}</span> <b>${esc(a.address)}</b></div></div>
             <div class="grid grid-cols-3 gap-2 mb-4">${photoBox('front', ar ? 'الوش' : 'Front')}${photoBox('back', ar ? 'الضهر' : 'Back')}${photoBox('selfie', ar ? 'السيلفي' : 'Selfie')}</div>
             <div class="text-xs text-gray-500 mb-3">${ar ? 'اتأكد إن: الاسم والرقم في الصورة نفس المكتوب • السيلفي لنفس الشخص • البطاقة سارية وواضحة.' : 'Check: name/number match the form • selfie is the same person • ID is valid and legible.'}</div>
+            <div class="mb-3"><button type="button" id="kycExport" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold">🖨️ ${ar ? 'تصدير ملف للجهة الأمنية (طباعة / PDF)' : 'Export file for a legal authority (print / PDF)'}</button></div>
+            ${hist.length ? `<details class="mb-3 text-xs text-gray-600"><summary class="cursor-pointer font-bold">${ar ? `سجل الاطلاع على الملف (${hist.length})` : `Access log (${hist.length})`}</summary><ul class="mt-1 space-y-0.5">${hist.slice(0, 15).map(h => `<li>${esc(fmt(h.at))} — ${esc(ar ? (ACTION_AR[h.action] || h.action) : h.action)} <span dir="ltr" class="text-gray-400">(${esc((h.adminUid || '').slice(0, 8))})</span></li>`).join('')}</ul></details>` : ''}
             ${a.status === 'pending' ? `
                 <textarea id="kycNote" rows="2" maxlength="300" class="w-full border rounded-xl p-2 text-sm mb-3" placeholder="${ar ? 'ملاحظة (مطلوبة عند الرفض)' : 'Note (required when rejecting)'}"></textarea>
                 <div class="flex gap-2">
@@ -228,8 +285,32 @@
                 renderAdminTab(container, ar, status);
             } catch (e) { busy(false); toast(e.message, 'error'); }
         };
+        el.querySelector('#kycExport')?.addEventListener('click', async () => {
+            try { busy(true, ar ? 'جاري تجهيز الملف...' : 'Preparing...'); const full = await api({ action: 'adminExport', uid }); busy(false); printFile(full, ar); }
+            catch (e) { busy(false); toast(e.message, 'error'); }
+        });
         el.querySelector('#kycApprove')?.addEventListener('click', () => decide('approve'));
         el.querySelector('#kycReject')?.addEventListener('click', () => decide('reject'));
+    }
+
+    // Printable file for a legal authority: every data field, the full ID number, the 3 photos and the access log.
+    function printFile(full, ar) {
+        const a = full.app, im = full.images || {}, acc = full.account || {};
+        const w = window.open('', '_blank');
+        if (!w) { toast(ar ? 'اسمح بالنوافذ المنبثقة عشان يفتح الملف' : 'Allow pop-ups to open the file', 'warning'); return; }
+        const row = (k, v) => `<tr><th>${esc(k)}</th><td dir="auto">${esc(v == null || v === '' ? '—' : v)}</td></tr>`;
+        const img = (k, label) => im[k] ? `<figure><img src="${window.safeUrl(im[k])}" alt=""><figcaption>${esc(label)}</figcaption></figure>` : '';
+        w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف بيانات بائع — ${esc(a.fullName)}</title>
+            <style>body{font-family:Tahoma,Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #bbb;padding:6px 10px;text-align:start;font-size:14px}th{background:#f3f3f3;width:32%}
+            .imgs{display:flex;gap:12px;flex-wrap:wrap}figure{margin:0;flex:1;min-width:220px}img{width:100%;max-height:340px;object-fit:contain;border:1px solid #bbb}figcaption{font-size:12px;text-align:center;color:#555}.note{font-size:12px;color:#555;margin-top:16px}@media print{button{display:none}}</style></head><body>
+            <button onclick="print()">طباعة / حفظ PDF</button>
+            <h1>ملف بيانات بائع — منصة مول الخدمات</h1>
+            <table>${row('الاسم بالكامل', a.fullName)}${row('رقم البطاقة القومي', full.nationalIdAvailable ? full.nationalId : ('غير محفوظ كنص — آخر 4 أرقام: ' + a.idLast4))}${row('الموبايل', a.phone)}${row('العنوان', a.address)}${row('البريد الإلكتروني', acc.email || a.email)}${row('اسم المتجر', a.storeName)}${row('معرّف الحساب (UID)', a.uid)}${row('حالة الطلب', a.status)}${row('تاريخ التقديم', fmt(a.submittedAt))}${row('تاريخ المراجعة', fmt(a.reviewedAt))}${row('ملاحظة المراجعة', a.reviewNote)}${row('تاريخ فتح الحساب', fmt(acc.createdAt))}</table>
+            <div class="imgs">${img('front', 'البطاقة — الوش')}${img('back', 'البطاقة — الضهر')}${img('selfie', 'السيلفي')}</div>
+            <h2 style="font-size:16px">سجل الاطلاع على الملف</h2>
+            <table>${(full.history || []).slice(0, 30).map(h => row(fmt(h.at), h.action + ' — ' + (h.adminUid || '').slice(0, 8))).join('') || row('—', '—')}</table>
+            <p class="note">تاريخ استخراج الملف: ${esc(new Date().toLocaleString('ar-EG'))}. المستند سري ويُسلَّم للجهة القانونية المختصة فقط، وعملية الاستخراج مسجّلة باسم المسؤول.</p></body></html>`);
+        w.document.close();
     }
 
     window.SellerKYC = { open, renderAdminTab: (c, ar) => renderAdminTab(c, ar) };

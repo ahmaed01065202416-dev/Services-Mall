@@ -27,6 +27,10 @@ const STATIC_ARTICLES = [
 
 const toDate = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? new Date(t).toISOString().split('T')[0] : ''; };
 
+// Returns { ok, posts }. ok=false means Firestore did not answer properly (timeout / error): the sitemap is still served
+// (static articles stay listed) but is NOT edge-cached for an hour, so a short Firestore hiccup can't hide the AI articles
+// from Google for the next 60 minutes.
+const FIRESTORE_TIMEOUT_MS = 4000;   // Google gives up on a slow sitemap → "Couldn't fetch"; never wait longer than this
 async function getFirestorePosts(projectId) {
   // Uses runQuery with a field projection instead of listing the whole collection: the old
   // ".../documents/blog_posts?pageSize=500" downloaded every article WITH its full HTML body (megabytes) on every
@@ -40,16 +44,20 @@ async function getFirestorePosts(projectId) {
       select: { fields: [{ fieldPath: 'slug' }, { fieldPath: 'updatedAt' }, { fieldPath: 'createdAt' }] },
       limit: 5000,   // a sitemap file may hold 50,000 URLs; 5000 articles is far beyond what this site will publish
     } };
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FIRESTORE_TIMEOUT_MS);
+    let res;
+    try { res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctrl.signal }); }
+    finally { clearTimeout(timer); }
     if (!res.ok) {
       // Don't silently publish a sitemap without articles: leave a trace in the Cloudflare logs.
       console.error('[sitemap] Firestore blog_posts request failed:', res.status, res.statusText);
-      return [];
+      return { ok: false, posts: [] };
     }
     const rows = await res.json();
     const staticSlugs = new Set(STATIC_ARTICLES.map(a => a[0]));
     const seen = new Set();
-    return (Array.isArray(rows) ? rows : []).map(r => r && r.document).filter(Boolean).map(doc => {
+    const posts = (Array.isArray(rows) ? rows : []).map(r => r && r.document).filter(Boolean).map(doc => {
       const f = doc.fields || {};
       const dateOf = (k) => toDate(f[k] && (f[k].timestampValue || f[k].stringValue));
       return {
@@ -57,9 +65,10 @@ async function getFirestorePosts(projectId) {
         updated: dateOf('updatedAt') || dateOf('createdAt'),   // '' → lastmod omitted (never invented)
       };
     }).filter(d => d.slug && !staticSlugs.has(d.slug) && !seen.has(d.slug) && seen.add(d.slug));   // no duplicates, no hand-written slugs
+    return { ok: true, posts };
   } catch (err) {
-    console.error('[sitemap] could not load blog posts:', err && err.message ? err.message : err);
-    return [];   // the static articles are still listed, so the sitemap stays valid
+    console.error('[sitemap] could not load blog posts:', err && err.name === 'AbortError' ? 'timeout' : (err && err.message ? err.message : err));
+    return { ok: false, posts: [] };   // the static articles are still listed, so the sitemap stays valid
   }
 }
 
@@ -77,7 +86,7 @@ export async function onRequest(context) {
   // Real production domain as the fallback; trailing slashes removed so we never emit "//blog".
   const site = String(env.SITE_URL || 'https://mall-services.pages.dev').trim().replace(/\/+$/, '');
   const projectId = env.FIREBASE_PROJECT_ID || 'services-mall';
-  const posts = await getFirestorePosts(projectId);
+  const { ok: postsOk, posts } = await getFirestorePosts(projectId);
 
   const entry = (path, lastmod, freq, pri) => `\n  <url><loc>${site}${path}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}<changefreq>${freq}</changefreq><priority>${pri}</priority></url>`;
   // /blog changes whenever an article is published → newest article date (or the fixed fallback).
@@ -94,8 +103,9 @@ export async function onRequest(context) {
 
   const response = new Response(xml, {
     status: 200,
-    headers: { 'Content-Type': 'application/xml;charset=UTF-8', 'Cache-Control': 'public,max-age=3600' },
+    headers: { 'Content-Type': 'application/xml;charset=UTF-8', 'Cache-Control': postsOk ? 'public,max-age=3600' : 'public,max-age=300' },
   });
-  try { if (cache && cacheKey && context.waitUntil) context.waitUntil(cache.put(cacheKey, response.clone())); } catch (_) { /* caching is best-effort */ }
+  // only a COMPLETE sitemap is kept in the edge cache
+  try { if (postsOk && cache && cacheKey && context.waitUntil) context.waitUntil(cache.put(cacheKey, response.clone())); } catch (_) { /* caching is best-effort */ }
   return response;
 }

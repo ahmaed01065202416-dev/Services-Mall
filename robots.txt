@@ -6,6 +6,7 @@ Disallow: /orders
 Disallow: /workspace
 Disallow: /dashboard
 Disallow: /api/
+Allow: /api/sitemap-dynamic
 Disallow: /*.env
 
 # Sitemaps: the index (core pages + the live blog sitemap) and the live sitemap itself.

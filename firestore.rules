@@ -470,10 +470,23 @@ service cloud.firestore {
     }
 
     // ── coupons ───────────────────────────────────────────────────────────────
+    // Closed to browsers: every coupon is created/changed through functions/api/coupons.js (merchants manage their own,
+    // the admin can pause/cancel any of them) and applied ONLY by functions/api/payment.js. Reading was open to every
+    // signed-in user before, which exposed all discount codes.
     match /coupons/{couponId} {
-      allow read:  if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if false;
     }
+    match /coupon_uses/{useId} {
+      allow read, write: if false;
+    }
+
+    // ── visit analytics (functions/api/analytics.js is the only reader/writer) ──────────────────────
+    // visitors/{browserId}, store_visitors/{sellerId_browserId}, analytics_daily/{day}, store_daily/{sellerId_day}
+    // Closed to browsers on purpose: merchants get their OWN numbers through the API, the admin gets everything.
+    match /visitors/{id}        { allow read, write: if false; }
+    match /store_visitors/{id}  { allow read, write: if false; }
+    match /analytics_daily/{id} { allow read, write: if false; }
+    match /store_daily/{id}     { allow read, write: if false; }
 
     // ── disputes ──────────────────────────────────────────────────────────────
     match /disputes/{disputeId} {

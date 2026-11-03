@@ -20,6 +20,8 @@
 import { verifyIdToken, getAccessToken, fsGet, fsCreate, fsSet, fsCommit, fsQuery, writeIncrement, writeUpdate, writeCreate } from '../_shared/gcp.js'
 import { assertDropshipPurchasable, computeSplit, getDropshipSettings, syncListings } from '../_shared/dropship.js';
 import { getDisputeCfg, recordFault } from '../_shared/trust.js';
+import { priceWithCoupons, normCode, REASON_AR, r2 as _r2 } from '../_shared/coupons.js';
+import { loadCouponsForPayment, recordCouponUses } from '../_shared/coupons-store.js';
 
 // IDs coming from the browser are interpolated into Firestore REST paths
 // (`services/${id}`) — without validation an id like "../users/xyz" or one
@@ -126,7 +128,7 @@ export async function onRequest(context) {
     console.log(`[Payment] Action: ${action} | IP: ${ip}`);
 
     // Actions that touch money/orders require a verified Firebase ID token.
-    const AUTH_REQUIRED = new Set(['fawaterakPay', 'kashierPay', 'releaseEscrow', 'requestWithdrawal', 'resolveDispute']);
+    const AUTH_REQUIRED = new Set(['fawaterakPay', 'kashierPay', 'previewPricing', 'releaseEscrow', 'requestWithdrawal', 'resolveDispute']);
     let auth = null;
     if (AUTH_REQUIRED.has(action)) {
         const authHeader = request.headers.get('Authorization') || '';
@@ -146,6 +148,7 @@ export async function onRequest(context) {
 
     try {
         switch (action) {
+            case 'previewPricing': return await handlePreviewPricing(body, env, CORS, auth);
             case 'fawaterakPay':   return await handleFawaterak(body, env, CORS, auth);
             case 'kashierPay':     return await handleKashier(body, env, CORS, auth);
             case 'releaseEscrow':  return await handleReleaseEscrow(body, env, CORS, auth);
@@ -289,18 +292,82 @@ async function resolveExistingOrder(orderId, auth, env) {
     };
 }
 
-async function resolvePaymentTarget(body, env, auth) {
-    if (body.existingOrderId) return await resolveExistingOrder(body.existingOrderId, auth, env);
-    const { resolved, subtotal, fees, total } = await resolveOrderItems(body.items, env, auth);
-    return { mode: 'items', resolved, subtotal, fees, total };
+async function resolvePaymentTarget(body, env, auth, opts = {}) {
+    let target;
+    if (body.existingOrderId) target = await resolveExistingOrder(body.existingOrderId, auth, env);
+    else {
+        const { resolved, subtotal, fees, total } = await resolveOrderItems(body.items, env, auth);
+        target = { mode: 'items', resolved, subtotal, fees, total };
+    }
+    return await applyDiscounts(target, body, env, auth, !!opts.preview);
+}
+
+// ── Coupons / discounts (see functions/_shared/coupons.js for the money model) ───────────────────────────
+// Store coupons & automatic store discounts lower the item price (the merchant bears them); a platform coupon is paid
+// from the platform's commission. EVERYTHING is decided here from Firestore — the browser only sends the code text.
+async function applyDiscounts(target, body, env, auth, preview) {
+    const cfg = await getPlatformConfig(env);
+    const code = String(body.couponCode || '').trim();
+    const isItems = target.mode === 'items';
+    const lines = isItems
+        ? target.resolved.map((it, i) => ({ key: i, sellerId: it.sellerId, price: it.price, shipOnline: 0 }))
+        : [{ key: 0, sellerId: target.item.sellerId, price: target.item.price, shipOnline: Number(target.item.shippingOnline) || 0, dropship: !!target.item.dropship }];
+    const listSum = _r2(lines.reduce((a, l) => a + l.price, 0));
+    const disc = { enabled: cfg.COUPONS_ENABLED !== false, applied: [], listSum, storeDiscount: 0, platformDiscount: 0, error: null };
+    target.discount = disc;
+    const fail = (msg) => { if (preview) { disc.error = msg; return false; } throw new Error(msg); };
+
+    if (!disc.enabled) { if (code) fail(REASON_AR.disabled_all); return target; }
+    const found = await loadCouponsForPayment(env, { code, sellerIds: lines.map((l) => l.sellerId), uid: auth.uid });
+    if (code && found.error) fail(found.error);
+    const res = priceWithCoupons({
+        lines, storeCoupons: found.storeCoupons, platformCoupon: found.platformCoupon,
+        fees: { buyerFee: (a) => buyerFee(a, cfg) },
+    });
+    if (code && !found.error && !res.applied.some((a) => a.code && normCode(a.code) === normCode(code))) {
+        fail(res.notes.includes('min_order') ? REASON_AR.min_order : 'الكوبون ده مش هيدّي خصم على الطلب ده');
+    }
+
+    if (isItems) {
+        target.resolved.forEach((it, i) => {
+            const l = res.lines[i];
+            it.listPrice = l.listPrice; it.price = l.price; it.storeDiscount = l.storeDiscount;
+            it.platformDiscount = l.platformDiscount;
+        });
+        target.subtotal = res.priceSum;
+    } else {
+        const l = res.lines[0];
+        Object.assign(target.item, { listPrice: l.listPrice, price: l.price, storeDiscount: l.storeDiscount, platformDiscount: l.platformDiscount });
+        target.subtotal = _r2(res.priceSum + res.shipSum);
+    }
+    target.fees = res.buyerFee;
+    target.total = res.total;
+    Object.assign(disc, { applied: res.applied, storeDiscount: res.storeDiscount, platformDiscount: res.platformDiscount });
+    if (target.total <= 0) throw new Error('قيمة الطلب غير صحيحة');
+    return target;
+}
+
+// What the checkout page shows BEFORE the buyer pays — computed by the very same function that computes the real charge.
+async function handlePreviewPricing(body, env, CORS, auth) {
+    const target = await resolvePaymentTarget(body, env, auth, { preview: true });
+    const d = target.discount || {};
+    return json(200, CORS, {
+        success: true, enabled: d.enabled !== false, error: d.error || null,
+        listSubtotal: d.listSum, ship: target.mode === 'items' ? 0 : (Number(target.item.shippingOnline) || 0),
+        storeDiscount: d.storeDiscount || 0, platformDiscount: d.platformDiscount || 0,
+        subtotal: target.subtotal, fees: target.fees, total: target.total,
+        applied: (d.applied || []).map((a) => ({ scope: a.scope, code: a.code, title: a.title, auto: a.auto, amount: a.amount, cappedByCommission: !!a.cappedByCommission })),
+    });
 }
 
 function buildPendingPaymentDoc(target, auth, currency, method) {
     const base = { uid: auth.uid, currency, status: 'pending', method, createdAt: new Date(), mode: target.mode };
+    const d = target.discount || {};
+    const discount = { applied: d.applied || [], listSum: d.listSum || 0, storeDiscount: d.storeDiscount || 0, platformDiscount: d.platformDiscount || 0 };
     if (target.mode === 'existing_order') {
-        return Object.assign(base, { orderId: target.orderId, item: target.item, subtotal: target.subtotal, fees: target.fees, total: target.total });
+        return Object.assign(base, { orderId: target.orderId, item: target.item, subtotal: target.subtotal, fees: target.fees, total: target.total, discount });
     }
-    return Object.assign(base, { items: target.resolved, subtotal: target.subtotal, fees: target.fees, total: target.total });
+    return Object.assign(base, { items: target.resolved, subtotal: target.subtotal, fees: target.fees, total: target.total, discount });
 }
 
 async function getPlatformConfig(env) {
@@ -308,7 +375,9 @@ async function getPlatformConfig(env) {
     return Object.assign({ FEE_TYPE: 'percent', FEE_PERCENT: 5, FEE_FIXED: 0, FEE_MIN: 0, FEE_MAX: 0, TIERS_ENABLED: false, TIERS: [],
         // Who pays the platform fee — each side can be switched on/off from the admin panel, and each can have its own
         // percentage (null = use the main fee settings above). Defaults keep the previous behaviour (both sides charged).
-        FEE_BUYER_ENABLED: true, FEE_SELLER_ENABLED: true, BUYER_FEE_PERCENT: null, SELLER_FEE_PERCENT: null }, doc || {});
+        FEE_BUYER_ENABLED: true, FEE_SELLER_ENABLED: true, BUYER_FEE_PERCENT: null, SELLER_FEE_PERCENT: null,
+        // global switch for ALL coupons & discounts (admin) — see functions/_shared/coupons.js
+        COUPONS_ENABLED: true }, doc || {});
 }
 // ⚠️ FIXED (found in audit): the client's calcPlatformFee() (js/constants.js)
 // has supported commission Tiers for a while — but this server function,
@@ -354,6 +423,17 @@ const sellerFee = (amount, cfg) => sideFee(amount, cfg, 'seller');
 
 function genOrderId() {
     return 'MS_' + Date.now().toString(36).toUpperCase() + '_' + crypto.randomUUID().slice(0, 8).toUpperCase();
+}
+
+// Discount info copied onto the order / escrow at payment time (read from the server-built pending doc, never the browser).
+function discountFields(item, pending) {
+    const store = Number(item.storeDiscount) || 0, plat = Number(item.platformDiscount) || 0;
+    if (store <= 0 && plat <= 0) return {};
+    const codes = ((pending.discount && pending.discount.applied) || []).map((a) => a.code || a.title).filter(Boolean).join(', ');
+    return {
+        originalPrice: Number(item.listPrice) || item.price, storeDiscount: store, platformDiscount: plat,
+        couponCodes: codes,
+    };
 }
 
 // Once a real payment is confirmed (webhook), this is the ONLY place that
@@ -437,7 +517,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             ? {
                 status: 'delivered', paymentMethod: method, paymentId: String(paymentId),
                 merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
-                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra,
+                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra, ...discountFields(item, pending),
                 chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
                 listingType: 'product', deliveredAt: new Date(), autoDelivered: true,
                 digitalDelivery: productDelivery,
@@ -445,7 +525,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             : {
                 status: 'payment_held', paymentMethod: method, paymentId: String(paymentId),
                 merchantOrderId: pendingId, paymentStatus: 'paid', currency: pending.currency,
-                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra,
+                escrowHeld: true, escrowAmount: Number((item.price + shipOnline).toFixed(2)), price: item.price, ...shipExtra, ...discountFields(item, pending),
                 chatEnabled: true, filesEnabled: true, updatedAt: new Date(),
             };
         await fsSet(env, `orders/${orderId}`, orderUpdate, true);
@@ -519,6 +599,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             orderId, read: false, createdAt: new Date(),
         });
 
+        await recordCouponUses(env, pendingId, pending.uid, pending.discount && pending.discount.applied);
         await fsSet(env, `pending_payments/${pendingId}`, { status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds: [orderId] }, true);
         return { ok: true, orderIds: [orderId] };
     }
@@ -567,7 +648,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
             status: productDelivery ? 'delivered' : 'payment_held',
             paymentMethod: method, paymentId: String(paymentId),
             merchantOrderId: pendingId,
-            currency: pending.currency, escrowHeld: true, escrowAmount: item.price,
+            currency: pending.currency, escrowHeld: true, escrowAmount: item.price, ...discountFields(item, pending),
             chatEnabled: true, filesEnabled: true, buyerFiles: [],
             deliveryDeadline: new Date(Date.now() + (item.deliveryDays || 3) * 86400000).toISOString(),
             createdAt: new Date(), updatedAt: new Date(),
@@ -609,6 +690,7 @@ async function finalizePendingPayment(pendingId, env, { paymentId, method }) {
         orderIds.push(orderId);
     }
 
+    await recordCouponUses(env, pendingId, pending.uid, pending.discount && pending.discount.applied);
     await fsSet(env, `pending_payments/${pendingId}`, {
         status: 'processed', paymentId: String(paymentId), processedAt: new Date(), orderIds,
     }, true);
@@ -995,22 +1077,23 @@ async function handleResolveDispute(body, env, CORS, auth) {
         responsePayload = { refundedAmount: refund, shippingCharged: fee };
     } else if (resolution === 'refund_buyer') {
         const txId = crypto.randomUUID();
+        const refundAmt = escrow.amount;
         await fsCommit(env, [
             ...disputeWrites,
-            writeIncrement(env, `wallets/${escrow.buyerId}`, 'balance', escrow.amount),
+            writeIncrement(env, `wallets/${escrow.buyerId}`, 'balance', refundAmt),
             writeUpdate(env, `escrow/${orderId}`, { status: 'refunded', resolvedAt: new Date() }, { updateTime: escrow._updateTime }),
             writeUpdate(env, `orders/${orderId}`, { status: 'refunded', updatedAt: new Date() }),
             writeCreate(env, `transactions/${txId}`, {
-                userId: escrow.buyerId, type: 'refund', amount: escrow.amount, orderId,
+                userId: escrow.buyerId, type: 'refund', amount: refundAmt, orderId,
                 description: 'استرداد بعد حل نزاع', status: 'completed', createdAt: new Date(),
             }),
             writeCreate(env, `notifications/${crypto.randomUUID()}`, {
                 userId: escrow.buyerId, type: 'dispute_resolved', title: '↩️ تم استرداد أموالك',
-                message: `تم حل النزاع لصالحك واسترداد ${escrow.amount}`, orderId, read: false, createdAt: new Date(),
+                message: `تم حل النزاع لصالحك واسترداد ${refundAmt}`, orderId, read: false, createdAt: new Date(),
             }),
         ]);
         await recordFault(env, dcfg, { outcome: 'seller_fault', buyerId: escrow.buyerId, sellerId: escrow.sellerId });
-        responsePayload = { refundedAmount: escrow.amount };
+        responsePayload = { refundedAmount: refundAmt };
     } else {
         const cfg = await getPlatformConfig(env);
         const dsCfg = escrow.supplierId ? await getDropshipSettings(env) : null;

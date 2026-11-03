@@ -373,6 +373,12 @@
             // ── SELLER IDENTITY VERIFICATION (js/seller-kyc.js) ─────────────────
             if (tab === 'kyc') { window.SellerKYC.renderAdminTab(container, isAr); return; }
 
+            // ── COUPONS & DISCOUNTS (js/coupons.js → /api/coupons) ─────────────
+            if (tab === 'coupons') { window.MallCoupons.renderAdminTab(container, isAr); return; }
+
+            // ── CUSTOMERS & VISITORS (js/insights.js → /api/analytics) ─────────
+            if (tab === 'insights') { window.MallInsights.renderAdminTab(container); return; }
+
             // ── ORDERS ────────────────────────────────────────────────────────
             if (tab === 'orders') {
                 const ordersSnap = await window.db.collection(COLLECTIONS.ORDERS).orderBy('createdAt','desc').limit(100).get();
@@ -748,87 +754,6 @@
                     <span class="text-xs font-bold px-2 py-1 rounded-lg ${r.status==='completed'?'bg-green-100 text-green-700':r.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}">${r.status==='completed'?(isAr?'✓ اتدفعت':'Paid'):r.status==='rejected'?(isAr?'مرفوض':'Rejected'):(isAr?'معلق':'Pending')}</span>
                   </div>`).join('')}
                 </div>`;
-
-            // ── COUPONS ───────────────────────────────────────────────────────
-            } else if (tab === 'coupons') {
-                const couponsSnap = await window.db.collection(COLLECTIONS.COUPONS).get();
-                const coupons = couponsSnap.docs.map(d=>({id:d.id,...d.data()}));
-                container.innerHTML = `
-                <div class="flex items-center justify-between mb-6">
-                  <h3 class="font-black text-gray-900">${isAr?`الكوبونات (${coupons.length})`:`Coupons (${coupons.length})`}</h3>
-                  <button onclick="window._adminAddCoupon()" class="btn-primary text-sm px-4 py-2"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة كوبون':'Add Coupon'}</button>
-                </div>
-                <div class="space-y-2" id="couponsList">
-                ${coupons.length===0 ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد كوبونات':'No coupons yet'}</p>` : coupons.map(c=>`
-                  <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                    <div class="w-20 bg-navy-100 rounded-lg text-center py-2"><p class="font-black text-navy-700 text-sm tracking-widest">${c.code||'—'}</p></div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-bold text-gray-800">${c.type==='percent'?`${c.value}% خصم`:c.type==='fixed'?`خصم ${formatCurrency(c.value)}`:'—'}</p>
-                      ${c.minOrder?`<p class="text-xs text-gray-400">${isAr?'حد أدنى':'Min'}: ${formatCurrency(c.minOrder)}</p>`:''}
-                      ${c.usageLimit?`<p class="text-xs text-gray-400">${isAr?'الحد':'Limit'}: ${c.usageCount||0}/${c.usageLimit}</p>`:''}
-                    </div>
-                    <button onclick="window._adminToggleCoupon('${c.id}',${!c.active})" class="text-xs px-3 py-1.5 ${c.active?'bg-green-100 text-green-700':'bg-red-100 text-red-700'} rounded-lg font-bold hover:opacity-80 transition">${c.active?(isAr?'نشط':'Active'):(isAr?'موقوف':'Inactive')}</button>
-                    <button onclick="window._adminDeleteCoupon('${c.id}')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
-                  </div>`).join('')}
-                </div>`;
-
-                window._adminAddCoupon = () => {
-                    const existing = document.getElementById('couponFormModal');
-                    if (existing) existing.remove();
-                    const modal = document.createElement('div');
-                    modal.id = 'couponFormModal';
-                    modal.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
-                    modal.innerHTML = `
-                    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
-                      <h3 class="text-xl font-black text-gray-900 mb-6">${isAr?'إضافة كوبون جديد':'Add New Coupon'}</h3>
-                      <div class="space-y-4">
-                        <div><label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'كود الكوبون':'Coupon Code'}</label>
-                          <input type="text" id="cpn_code" class="form-input w-full uppercase" placeholder="SAVE20" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-                        <div class="grid grid-cols-2 gap-3">
-                          <div><label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'النوع':'Type'}</label>
-                            <select id="cpn_type" class="form-input w-full"><option value="percent">${isAr?'نسبة مئوية':'Percent %'}</option><option value="fixed">${isAr?'مبلغ ثابت':'Fixed Amount'}</option></select></div>
-                          <div><label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'القيمة':'Value'}</label>
-                            <input type="number" id="cpn_value" class="form-input w-full" min="1" placeholder="20"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                          <div><label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'حد أدنى للطلب':'Min Order'}</label>
-                            <input type="number" id="cpn_min" class="form-input w-full" min="0" placeholder="0"></div>
-                          <div><label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'حد الاستخدام':'Usage Limit'}</label>
-                            <input type="number" id="cpn_limit" class="form-input w-full" min="0" placeholder="${isAr?'غير محدود':'Unlimited'}"></div>
-                        </div>
-                      </div>
-                      <div class="flex gap-3 mt-6">
-                        <button onclick="document.getElementById('couponFormModal').remove()" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
-                        <button onclick="window._adminSaveCoupon()" class="btn-primary flex-1 py-3">${isAr?'إضافة':'Add'}</button>
-                      </div>
-                    </div>`;
-                    document.body.appendChild(modal);
-                };
-
-                window._adminSaveCoupon = async () => {
-                    const code  = document.getElementById('cpn_code')?.value?.trim().toUpperCase();
-                    const type  = document.getElementById('cpn_type')?.value;
-                    const value = parseFloat(document.getElementById('cpn_value')?.value);
-                    const min   = parseFloat(document.getElementById('cpn_min')?.value)||0;
-                    const limit = parseInt(document.getElementById('cpn_limit')?.value)||null;
-                    if (!code||!type||isNaN(value)||value<=0) { showToast(isAr?'أدخل بيانات صحيحة':'Fill all fields','warning'); return; }
-                    try {
-                        await window.db.collection(COLLECTIONS.COUPONS).doc(code).set({ code, type, value, minOrder:min, usageLimit:limit, usageCount:0, active:true, createdAt:serverTimestamp() });
-                        document.getElementById('couponFormModal')?.remove();
-                        showToast(isAr?`✅ تم إضافة كوبون ${code}`:`✅ Coupon ${code} added`,'success');
-                        adminTab('coupons');
-                    } catch(e) { showToast(e.message,'error'); }
-                };
-
-                window._adminToggleCoupon = async (id, val) => {
-                    try { await window.db.collection(COLLECTIONS.COUPONS).doc(id).update({ active: val }); showToast(isAr?'✅ تم التحديث':'✅ Updated','success'); adminTab('coupons'); }
-                    catch(e) { showToast(e.message,'error'); }
-                };
-                window._adminDeleteCoupon = async (id) => {
-                    if (!confirm(isAr?'حذف الكوبون نهائياً؟':'Delete coupon permanently?')) return;
-                    try { await window.db.collection(COLLECTIONS.COUPONS).doc(id).delete(); showToast(isAr?'✅ تم الحذف':'✅ Deleted','success'); adminTab('coupons'); }
-                    catch(e) { showToast(e.message,'error'); }
-                };
 
             // ── CATEGORIES ────────────────────────────────────────────────────
             } else if (tab === 'categories') {
@@ -1957,6 +1882,7 @@
               <button onclick="adminTab('coupons')"    class="tab-btn admin-pill-tab" id="adminTab_coupons"><i class="fa-solid fa-ticket"></i>${isAr?'الكوبونات':'Coupons'}</button>
               <button onclick="adminTab('categories')" class="tab-btn admin-pill-tab" id="adminTab_categories"><i class="fa-solid fa-tags"></i>${isAr?'الفئات':'Categories'}</button>
               <button onclick="adminTab('analytics')"  class="tab-btn admin-pill-tab" id="adminTab_analytics"><i class="fa-solid fa-chart-line"></i>${isAr?'التحليلات':'Analytics'}</button>
+              <button onclick="adminTab('insights')"   class="tab-btn admin-pill-tab" id="adminTab_insights"><i class="fa-solid fa-users-viewfinder text-teal-600"></i>${isAr?'العملاء والزوار':'Customers & visitors'}</button>
               <button onclick="adminTab('reviews')"    class="tab-btn admin-pill-tab" id="adminTab_reviews"><i class="fa-solid fa-star text-amber-400"></i>${isAr?'التقييمات':'Reviews'}</button>
               <button onclick="adminTab('reports')"    class="tab-btn admin-pill-tab" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation"></i>${isAr?'البلاغات':'Reports'}</button>
               <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>

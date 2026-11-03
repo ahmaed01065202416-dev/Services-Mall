@@ -11,18 +11,35 @@
  *
  * RETENTION (decided by the site owner): documents are KEPT — they are never deleted by any code path — so that if a
  * problem happens with a merchant, the platform can hand the data to the competent legal authority.
- * The applicant explicitly consents to this in the form, and the Terms/Privacy pages should say so.
+ * The applicant explicitly consents to this in the form, and the Terms/Privacy pages say so.
+ *
+ * FOR A LEGAL AUTHORITY: the admin can open every field of an applicant — the full national-ID number too. The number is
+ * stored ENCRYPTED (AES-256-GCM, key from KYC_ENC_KEY) in a sub-document no browser can read, and decrypted only inside
+ * this API for an admin; every opening / export is written to `kyc_access_log`. An authority that only knows the ID
+ * number can be matched with `adminFindByNationalId` (it uses the keyed hash, no decryption needed).
+ *
+ * ADMIN SWITCH: settings/platform.KYC_REQUIRED (default true). While ON, nobody becomes a seller without an approved
+ * application. While OFF, a signed-in user with a verified e-mail can become a seller at once (`becomeSeller`) — the
+ * review queue keeps working for applications that were already sent.
  *
  * Actions (POST, JSON, Bearer Firebase ID token):
+ *   config        → { required }  is verification currently required?
  *   status        → my application state
- *   submit        → create / re-submit my application (buyers only)
+ *   submit        → create / re-submit my application (buyers only; only while verification is required)
+ *   becomeSeller  → become a seller directly (only while the admin has verification switched OFF)
  *   adminList     → admin: applications by status (no images)
- *   adminGet      → admin: one application WITH the 3 images (logged)
+ *   adminGet      → admin: one application WITH the 3 images + the full ID number + access history (logged)
+ *   adminExport   → admin: the complete file for a legal authority (logged)
+ *   adminFindByNationalId → admin: find an applicant from a full ID number (keyed hash)
  *   adminReview   → admin: approve | reject
+ *   adminSetRequired → admin: switch verification ON / OFF
  *
  * Env: FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT, ADMIN_UIDS (as the other admin APIs),
  *      KYC_PEPPER  (long random secret used to key the ID-number hash — REQUIRED for `submit`;
  *                   falls back to ADMIN_SECRET if you prefer not to add a new variable).
+ *      KYC_ENC_KEY (long random secret that encrypts the ID number so an admin can read it back — recommended;
+ *                   if missing, a different key is derived from KYC_PEPPER / ADMIN_SECRET. ⚠️ never change it
+ *                   afterwards: numbers encrypted with the old key could no longer be read).
  */
 import { verifyIdToken, fsGet, fsSet, fsQuery, fsCreate } from '../_shared/gcp.js';
 
@@ -53,6 +70,27 @@ export async function hmacHex(secret, message) {
     const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
     return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
+// ── reversible encryption for the ID number (so an admin can hand the full number to an authority) ──────
+const b64 = (u8) => btoa(String.fromCharCode(...u8));
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+async function aesKey(secret, usage) {
+    const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('mall-kyc-idnum-v1|' + secret));
+    return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, [usage]);
+}
+export async function encryptText(secret, text) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aesKey(secret, 'encrypt'), new TextEncoder().encode(String(text))));
+    return 'v1:' + b64(iv) + ':' + b64(ct);
+}
+export async function decryptText(secret, packed) {
+    const [v, iv, ct] = String(packed || '').split(':');
+    if (v !== 'v1' || !iv || !ct) throw new Error('bad format');
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, await aesKey(secret, 'decrypt'), unb64(ct));
+    return new TextDecoder().decode(pt);
+}
+/** key used for encryption: KYC_ENC_KEY, else derived (differently from the hash key) from KYC_PEPPER / ADMIN_SECRET */
+export const encSecret = (env) => env.KYC_ENC_KEY || ((env.KYC_PEPPER || env.ADMIN_SECRET) ? 'derived|' + (env.KYC_PEPPER || env.ADMIN_SECRET) : '');
+
 export function validateSubmission(body) {
     const fullName = clean(body.fullName, 80);
     if (fullName.split(' ').filter(Boolean).length < 3 || fullName.length < 8) return { error: 'اكتب الاسم الثلاثي على الأقل زي ما هو في البطاقة' };
@@ -73,9 +111,11 @@ export function validateSubmission(body) {
     return { ok: { fullName, nationalId, phone, address, storeName: clean(body.storeName, 60), images } };
 }
 
+const kycRequired = async (env) => { const d = await fsGet(env, 'settings/platform').catch(() => null); return !(d && d.KYC_REQUIRED === false); };
+
 const toMs = (t) => { if (!t) return 0; const d = (t instanceof Date) ? t : new Date(t); const n = d.getTime(); return Number.isNaN(n) ? 0 : n; };
 const publicApp = (a) => ({
-    uid: a.id, fullName: a.fullName || '', idLast4: a.idLast4 || '', phone: a.phone || '', address: a.address || '',
+    uid: a.id, fullName: a.fullName || '', idLast4: a.idLast4 || '', phone: a.phone || '', address: a.address || '', email: a.email || '',
     storeName: a.storeName || '', status: a.status || 'pending', attempts: a.attempts || 1,
     submittedAt: toMs(a.submittedAt), reviewedAt: toMs(a.reviewedAt), reviewNote: a.reviewNote || '', reviewedBy: a.reviewedBy || '',
 });
@@ -107,6 +147,20 @@ export async function onRequest(context) {
         const adminUids = (env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
         const isAdmin = adminUids.includes(auth.uid);
 
+        // ── is verification required right now? (admin switch) ───────────────
+        if (action === 'config') return json(200, CORS, { success: true, required: await kycRequired(env) });
+
+        // ── become a seller WITHOUT verification (only while the admin switch is OFF) ─
+        if (action === 'becomeSeller') {
+            if (await kycRequired(env)) return json(403, CORS, { error: 'توثيق البائعين مفعّل حاليًا — لازم تقدّم طلب توثيق' });
+            if (!auth.emailVerified) return json(403, CORS, { error: 'لازم تفعّل بريدك الإلكتروني الأول', code: 'EMAIL_NOT_VERIFIED' });
+            const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
+            if (!user) return json(404, CORS, { error: 'الحساب غير موجود' });
+            if (user.role === 'seller' || user.role === 'admin') return json(200, CORS, { success: true, role: user.role });
+            await fsSet(env, `users/${auth.uid}`, { role: 'seller', sellerStatus: 'no_kyc', sellerApprovedAt: new Date(), updatedAt: new Date() }, true);
+            return json(200, CORS, { success: true, role: 'seller' });
+        }
+
         // ── my status ────────────────────────────────────────────────────────
         if (action === 'status') {
             const app = await fsGet(env, `seller_applications/${auth.uid}`).catch(() => null);
@@ -118,11 +172,13 @@ export async function onRequest(context) {
                 reviewNote: app?.reviewNote || '',
                 attempts: app?.attempts || 0,
                 canApply: !app || app.status === 'rejected',
+                required: await kycRequired(env),
             });
         }
 
         // ── submit ───────────────────────────────────────────────────────────
         if (action === 'submit') {
+            if (!(await kycRequired(env))) return json(409, CORS, { error: 'التوثيق مش مطلوب حاليًا — تقدر تفعّل حسابك كبائع مباشرة' });
             const secret = env.KYC_PEPPER || env.ADMIN_SECRET;
             if (!secret) return json(500, CORS, { error: 'السيرفر غير مجهّز لاستقبال التوثيق (KYC_PEPPER مش متضبط)' });
             const user = await fsGet(env, `users/${auth.uid}`).catch(() => null);
@@ -152,6 +208,8 @@ export async function onRequest(context) {
             for (const k of FILE_KINDS) {
                 await fsSet(env, `seller_applications/${auth.uid}/files/${k}`, { kind: k, dataUrl: d.images[k], savedAt: new Date() });
             }
+            // full ID number, encrypted (readable only by an admin through this API — see header)
+            await fsSet(env, `seller_applications/${auth.uid}/files/idnum`, { kind: 'idnum', enc: await encryptText(encSecret(env), d.nationalId), savedAt: new Date() });
             await fsSet(env, `seller_applications/${auth.uid}`, {
                 uid: auth.uid, status: 'pending', attempts: (prev?.attempts || 0) + 1,
                 fullName: d.fullName, idHash, idLast4: d.nationalId.slice(-4),
@@ -173,19 +231,51 @@ export async function onRequest(context) {
             return json(200, CORS, { success: true, items: rows.map(publicApp).sort((a, b) => b.submittedAt - a.submittedAt) });
         }
 
+        if (action === 'adminSetRequired') {
+            const on = body.required === true;
+            await fsSet(env, 'settings/platform', { KYC_REQUIRED: on, kycToggledBy: auth.uid, kycToggledAt: new Date() }, true);
+            await fsCreate(env, 'kyc_access_log', { adminUid: auth.uid, targetUid: '', action: on ? 'kyc_on' : 'kyc_off', at: new Date() }).catch(() => {});
+            return json(200, CORS, { success: true, required: on });
+        }
+
+        if (action === 'adminFindByNationalId') {
+            const nid = validNationalId(body.nationalId);
+            if (!nid) return json(400, CORS, { error: 'رقم البطاقة لازم يكون 14 رقم صحيح' });
+            const secret = env.KYC_PEPPER || env.ADMIN_SECRET;
+            if (!secret) return json(500, CORS, { error: 'KYC_PEPPER مش متضبط' });
+            const idHash = await hmacHex(secret, nid);
+            const rows = (await fsQuery(env, { from: [{ collectionId: 'seller_applications' }],
+                where: { fieldFilter: { field: { fieldPath: 'idHash' }, op: 'EQUAL', value: { stringValue: idHash } } }, limit: 10 }).catch(() => [])) || [];
+            await fsCreate(env, 'kyc_access_log', { adminUid: auth.uid, targetUid: rows[0] ? rows[0].id : '', action: 'search_id', at: new Date() }).catch(() => {});
+            return json(200, CORS, { success: true, items: rows.map(publicApp) });
+        }
+
         const uid = String(body.uid || '');
         if (!/^[A-Za-z0-9_-]{6,128}$/.test(uid)) return json(400, CORS, { error: 'uid غير صالح' });
 
-        if (action === 'adminGet') {
+        // full record of one applicant: data + ID photos + the decrypted ID number (+ who opened it before)
+        const loadFull = async (logAction) => {
             const app = await fsGet(env, `seller_applications/${uid}`);
-            if (!app) return json(404, CORS, { error: 'الطلب غير موجود' });
-            const files = await Promise.all(FILE_KINDS.map(k => fsGet(env, `seller_applications/${uid}/files/${k}`).catch(() => null)));
-            // every time someone opens the documents it is written down (who / whose / when)
-            await fsCreate(env, 'kyc_access_log', { adminUid: auth.uid, targetUid: uid, action: 'view', at: new Date() }).catch(() => {});
-            return json(200, CORS, {
-                success: true, app: publicApp(app),
+            if (!app) return null;
+            const files = await Promise.all([...FILE_KINDS, 'idnum'].map(k => fsGet(env, `seller_applications/${uid}/files/${k}`).catch(() => null)));
+            let nationalId = '';
+            if (files[3] && files[3].enc) { try { nationalId = await decryptText(encSecret(env), files[3].enc); } catch (_) { nationalId = ''; } }
+            const history = (await fsQuery(env, { from: [{ collectionId: 'kyc_access_log' }],
+                where: { fieldFilter: { field: { fieldPath: 'targetUid' }, op: 'EQUAL', value: { stringValue: uid } } }, limit: 100 }).catch(() => [])) || [];
+            await fsCreate(env, 'kyc_access_log', { adminUid: auth.uid, targetUid: uid, action: logAction, at: new Date() }).catch(() => {});
+            return {
+                app: publicApp(app), nationalId, nationalIdAvailable: !!nationalId,
                 images: { front: files[0]?.dataUrl || '', back: files[1]?.dataUrl || '', selfie: files[2]?.dataUrl || '' },
-            });
+                history: history.map(h => ({ adminUid: h.adminUid || '', action: h.action || '', at: toMs(h.at) })).sort((a, b) => b.at - a.at).slice(0, 50),
+            };
+        };
+
+        if (action === 'adminGet' || action === 'adminExport') {
+            // every time someone opens or exports the documents it is written down (who / whose / when)
+            const full = await loadFull(action === 'adminExport' ? 'export' : 'view');
+            if (!full) return json(404, CORS, { error: 'الطلب غير موجود' });
+            const user = await fsGet(env, `users/${uid}`).catch(() => null);
+            return json(200, CORS, { success: true, ...full, account: { email: (user && user.email) || full.app.email, role: (user && user.role) || '', createdAt: toMs(user && user.createdAt) } });
         }
 
         if (action === 'adminReview') {

@@ -29,6 +29,8 @@
                 ['orders', 'fa-cart-shopping', isAr ? 'إدارة الطلبات' : 'Order Management'],
                 ['returns', 'fa-rotate-left', isAr ? 'المرتجعات' : 'Returns'],
                 ['analytics', 'fa-chart-line', isAr ? 'الإحصائيات والتحليلات' : 'Analytics'],
+                ['insights', 'fa-users-viewfinder', isAr ? 'العملاء والزوار' : 'Customers & Visitors'],
+                ['coupons', 'fa-ticket', isAr ? 'الكوبونات والخصومات' : 'Coupons & Discounts'],
                 ['escrow', 'fa-shield-halved', isAr ? 'سجل الضمان' : 'Escrow Log'],
                 ['dropship', 'fa-boxes-packing', isAr ? 'دروبشيبنج' : 'Dropshipping'],
                 ['ads', 'fa-bullhorn', isAr ? 'الإعلانات' : 'Ads'],
@@ -77,6 +79,8 @@
             else if (name === 'returns')   await this.renderReturns(container);
             else if (name === 'analytics') await this.renderAnalytics(container);
             else if (name === 'escrow')    await this.renderEscrowLedger(container);
+            else if (name === 'coupons')   { if (window.MallCoupons) await window.MallCoupons.renderSellerTab(container); }
+            else if (name === 'insights')  { if (window.MallInsights) await window.MallInsights.renderSellerTab(container); }
             else if (name === 'ads')       { if (window.AdsSystem) await window.AdsSystem.renderSellerTab(container); }
             else if (name === 'dropship')  { if (window.DropshipUI) await window.DropshipUI.renderSellerTab(container); }
             // Back-compat: some older links may still call 'my-services'/'activity'
