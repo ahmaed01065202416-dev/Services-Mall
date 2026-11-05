@@ -4,7 +4,7 @@
   var MallHome=window.MallHome={_done:false,_boot:null};
 
 MallHome._boot=function(){
-  var LOGO='icons/logo-mark.png';
+  var LOGO='icons/logo-mark.webp';
   document.querySelectorAll('#mallDesign [data-logo],#mallDesignEnd [data-logo]').forEach(function(i){i.src=LOGO;});
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   gsap.registerPlugin(ScrollTrigger);

@@ -104,7 +104,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://services-mall.firebaseapp.com" crossorigin>
+  <link rel="dns-prefetch" href="https://apis.google.com">
 
   <noscript><style>#appLoadingScreen{display:none!important}</style></noscript>
 
@@ -121,12 +123,13 @@
        icons only everywhere else). -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-  <!-- Firebase SDK (compat - no CSP issues) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <!-- Firebase SDK is no longer render-blocking: the five SDK tags moved to just before the
+       Firebase init script (first consumer, body bottom). Preload fetches them early in parallel. -->
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js">
 
   <!-- ⚠️ PERFORMANCE FIX: this used to load cdn.tailwindcss.com and compile
        Tailwind live in the browser on every single page view — flagged
@@ -382,7 +385,7 @@
   </style>
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
-  <link rel="stylesheet" href="/css/mall-home.css?v=2">
+  <link rel="stylesheet" href="/css/mall-home.css?v=3">
   <link rel="stylesheet" href="/css/mall-extra.css?v=3">
   <link rel="stylesheet" href="/css/mall-home-b.css?v=2">
   <link rel="stylesheet" href="/css/mall-home-sections.css?v=1">
@@ -420,7 +423,7 @@
 <!-- ── App Loading Screen (shown until Firebase auth state resolves) ── -->
 <div id="appLoadingScreen">
   <div style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px;padding:16px">
-    <img src="/icons/logo-mark.png" alt="مول الخدمات" style="width:100%;height:100%;object-fit:contain">
+    <img width="320" height="320" src="/icons/logo-mark.webp" alt="مول الخدمات" style="width:100%;height:100%;object-fit:contain">
   </div>
   <div class="spinner"></div>
   <p style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
@@ -459,7 +462,7 @@
          story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
       <div class="m-logo">
-        <img src="/icons/logo-mark.png" alt="مول الخدمات" class="w-full h-full object-contain">
+        <img width="320" height="320" src="/icons/logo-mark.webp" alt="مول الخدمات" class="w-full h-full object-contain">
       </div>
       <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
@@ -542,8 +545,8 @@
       </div>
 
       <!-- Mobile Menu Toggle -->
-      <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 bg-gray-100 rounded-xl text-gray-700">
-        <i class="fa-solid fa-bars"></i>
+      <button onclick="toggleMobileMenu()" aria-label="فتح القائمة" class="md:hidden p-2.5 bg-gray-100 rounded-xl text-gray-700">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
       </button>
     </div>
   </div>
@@ -577,7 +580,7 @@
 ══════════════════════════════════════════════════════════════ -->
 
 <!-- ─── HOME ──────────────────────────────────────────────── -->
-<div id="page-home" class="page">
+<div id="page-home" class="page" role="main">
   <!-- ══ Featured (paid) stores — always first ══ -->
   <section id="homeStoresSection" class="hidden max-w-7xl mx-auto mt-6 px-1">
     <div class="flex items-center justify-between mb-3">
@@ -664,7 +667,7 @@
 <div class="mb-bgfx" aria-hidden="true"><i class="mb-o1"></i><i class="mb-o2"></i><i class="mb-o3"></i><svg class="mb-ga" viewBox="0 0 400 470"><path d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path opacity=".7" d="M60,462 V208 A140,140 0 0 1 340,208 V462"/><path opacity=".45" d="M96,462 V212 A104,104 0 0 1 304,212 V462"/></svg></div>
 
 <section class="mb-hero mb-pad"><div><span class="mb-eyebrow">منصة عربية للخدمات والمنتجات</span><h1>حيث يلتقي <em>الإبداع</em> والبرمجة والتجارة</h1><p>مدخل واحد لكل مبدع: صمّم، برمج، وبيع بثقة. فلوسك محمية بنظام Escrow لحد ما العميل يستلم.</p><div id="mb-msearch"></div><div class="mb-acts"><a class="mb-btn" href="#" data-go="register">افتح متجرك</a><a class="mb-btn mb-o" href="#mb-brand">تعرّف على الهوية</a></div></div>
-<div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img src="/icons/logo-mark.png" loading="lazy" alt="شعار مول الخدمات"></div>
+<div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img src="/icons/logo-mark.webp" loading="lazy" alt="شعار مول الخدمات"></div>
 <span class="mb-chip" data-p style="--c:var(--em);--s:90px;top:12%;inset-inline-start:-6%">تصميم</span><span class="mb-chip" data-p style="--c:var(--navy);--s:-70px;top:44%;inset-inline-end:-8%">برمجة</span><span class="mb-chip" data-p style="--c:var(--gold);--s:60px;bottom:10%;inset-inline-start:-4%">تجارة</span></div></section>
 <div class="mb-band" data-p><span>الإبداع ✦ البرمجة ✦ التجارة ✦ الإبداع ✦ البرمجة ✦ التجارة</span></div>
 <section class="mb-sec mb-pad mb-story" id="mb-story"><svg class="mb-weave" data-d viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" stroke="#B8935A" d="M0,520 C250,420 350,120 500,120 S750,420 1000,520"/><path pathLength="1" stroke="#0F7A6C" d="M0,560 C250,470 350,170 500,170 S750,470 1000,560"/></svg>
@@ -678,7 +681,7 @@
 <section class="mb-sec mb-bk" id="mb-brand"><span class="mb-eyebrow mb-rv">دليل الهوية</span><h2 class="mb-rv">خواص البراند</h2><p class="mb-sub mb-rv">ألوان وخطوط ونبرة موحّدة في كل صفحة. اضغط على أي لون لنسخ الكود.</p>
 <div class="mb-sw mb-rv"><button style="--c:#0C1830;--t:#F7F1E3;box-shadow:inset 0 0 0 1px rgba(247,241,227,.3)" data-c="#0C1830"><b>كحلي الثقة</b>#0C1830</button><button style="--c:#0F7A6C;--t:#fff" data-c="#0F7A6C"><b>زمردي النمو</b>#0F7A6C</button><button style="--c:#B8935A;--t:#0C1830" data-c="#B8935A"><b>ذهبي القيمة</b>#B8935A</button><button style="--c:#E6F0EA;--t:#0C1830" data-c="#E6F0EA"><b>نعناع الصفاء</b>#E6F0EA</button></div>
 <div class="mb-bg3"><div class="mb-bx mb-rv mb-tp"><h3>الخطوط</h3><div class="mb-a">Reem Kufi</div><div class="mb-b">للعناوين: هندسي بروح عربية<br>Readex Pro للنصوص: واضح ومريح</div></div>
-<div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img src="/icons/logo-mark.png" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img src="/icons/logo-mark.png" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
+<div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img src="/icons/logo-mark.webp" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img src="/icons/logo-mark.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img src="/icons/logo-mark.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
 <div class="mb-bx mb-rv"><h3>نبرة الصوت</h3><ul class="mb-vo"><li>واضح ودافئ: «ابدأ متجرك النهاردة»</li><li>واثق من غير مبالغة</li><li class="mb-n">لا وعود وهمية أو لغة معقّدة</li></ul></div></div></section>
 
 
@@ -898,22 +901,22 @@
 </div>
 <!-- ══ END CTA (design B) ══ -->
 <div id="mallDesignBEnd" data-home-sec="cta">
-<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.png" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك</a></div></section>
+<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.webp" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك</a></div></section>
 </div>
 
 <footer class="m-footer py-14 px-4 -mx-4">
-    <p id="buildStamp" class="text-center text-[10px] text-gray-600 mb-2" dir="ltr"></p>
+    <p id="buildStamp" class="text-center text-[10px] text-navy-200/60 mb-2" dir="ltr"></p>
     <div class="max-w-6xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
         <div class="lg:col-span-2">
-          <div class="m-flogo"><div class="m-logo"><img src="/icons/logo-mark.png" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
+          <div class="m-flogo"><div class="m-logo"><img width="320" height="320" src="/icons/logo-mark.webp" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
           <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">منصة عربية للخدمات والمنتجات، بنظام ضمان مالي (Escrow) تُحجز فيه قيمة الطلب إلى أن يؤكد المشتري الاستلام.</p>
           <div class="inline-flex items-center gap-2 bg-turquoise-500/10 text-turquoise-400 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-shield-halved"></i> معاملات محمية بالكامل
           </div>
         </div>
         <div>
-          <h4 class="text-white font-bold text-sm mb-3">روابط سريعة</h4>
+          <h3 class="text-white font-bold text-sm mb-3">روابط سريعة</h3>
           <ul class="space-y-2 text-sm text-navy-200/70">
             <li><a href="/" class="hover:text-white transition">الرئيسية</a></li>
             <li><a href="/blog" class="hover:text-white transition">المدونة</a></li>
@@ -922,7 +925,7 @@
           </ul>
         </div>
         <div>
-          <h4 class="text-white font-bold text-sm mb-3">الضمان والدعم</h4>
+          <h3 class="text-white font-bold text-sm mb-3">الضمان والدعم</h3>
           <ul class="space-y-2 text-sm text-navy-200/70">
             <li><a href="/terms" target="_blank" class="hover:text-white transition">الشروط والأحكام</a></li>
             <li><a href="/privacy" target="_blank" class="hover:text-white transition">سياسة الخصوصية</a></li>
@@ -944,7 +947,7 @@
 </div>
 
 <!-- ─── SERVICES ───────────────────────────────────────────── -->
-<div id="page-services" class="page">
+<div id="page-services" class="page" role="main">
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Header & Search -->
     <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
@@ -1000,7 +1003,7 @@
 <!-- ⚠️ ADDED: category='digital' listings used to appear in the regular
      products grid too; now this is their only home, reached via its own
      nav link/route (initDigitalProductsPage in services.js). -->
-<div id="page-digital-products" class="page">
+<div id="page-digital-products" class="page" role="main">
   <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="flex flex-wrap gap-4 items-center justify-between mb-8">
       <div>
@@ -1026,7 +1029,7 @@
 </div>
 
 <!-- ─── CART (rendered dynamically, hidden until populated) ─── -->
-<div id="page-cart" class="page">
+<div id="page-cart" class="page" role="main">
   <div class="max-w-5xl mx-auto px-4 py-10">
     <h2 class="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
       <i class="fa-solid fa-cart-shopping text-navy-700"></i>
@@ -1067,27 +1070,27 @@
 </div>
 
 <!-- ─── PAYMENT (rendered dynamically by PaymentSystem) ──────── -->
-<div id="page-payment" class="page"></div>
+<div id="page-payment" class="page" role="main"></div>
 
 <!-- ─── ORDERS ──────────────────────────────────────────────── -->
-<div id="page-orders" class="page">
+<div id="page-orders" class="page" role="main">
   <!-- Rendered dynamically by initOrdersPage() -->
 </div>
 
 <!-- ─── WORKSPACE ───────────────────────────────────────────── -->
-<div id="page-workspace" class="page">
+<div id="page-workspace" class="page" role="main">
   <!-- Rendered dynamically by openWorkspace() -->
 </div>
 
 <!-- ─── DASHBOARD ───────────────────────────────────────────── -->
-<div id="page-dashboard" class="page">
+<div id="page-dashboard" class="page" role="main">
   <div class="max-w-7xl mx-auto px-4 py-8">
     <div id="dashboardContent"></div>
   </div>
 </div>
 
 <!-- ─── LOGIN ───────────────────────────────────────────────── -->
-<div id="page-login" class="page">
+<div id="page-login" class="page" role="main">
   <div class="min-h-[85vh] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
       <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
@@ -1119,7 +1122,7 @@
 </div>
 
 <!-- ─── REGISTER ─────────────────────────────────────────────── -->
-<div id="page-register" class="page">
+<div id="page-register" class="page" role="main">
   <div class="min-h-[85vh] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
       <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
@@ -1170,14 +1173,14 @@
 </div>
 
 <!-- ─── PROFILE ──────────────────────────────────────────────── -->
-<div id="page-profile" class="page">
+<div id="page-profile" class="page" role="main">
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div id="profileContent"></div>
   </div>
 </div>
 
 <!-- ─── WALLET ───────────────────────────────────────────────── -->
-<div id="page-wallet" class="page">
+<div id="page-wallet" class="page" role="main">
   <div class="max-w-3xl mx-auto px-4 py-8">
     <div id="walletContent"></div>
   </div>
@@ -1375,7 +1378,7 @@
 </div>
 
 <!-- ─── SELLER PANEL ─────────────────────────────────────────── -->
-<div id="page-seller" class="page">
+<div id="page-seller" class="page" role="main">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div id="sellerContent">
       <!-- Same as seller dashboard -->
@@ -1385,7 +1388,7 @@
 
 <!-- ─── ADD SERVICE ──────────────────────────────────────────── -->
 <!-- ══ STORES ══ -->
-<div id="page-stores" class="page">
+<div id="page-stores" class="page" role="main">
   <div class="max-w-7xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-store text-secondary"></i><span>المتاجر</span></h2>
     <p class="text-sm text-gray-500 mb-5">تصفّح متاجر البائعين — المتاجر المميزة بتظهر الأول</p>
@@ -1396,7 +1399,7 @@
     <div id="storesGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
   </div>
 </div>
-<div id="page-store" class="page">
+<div id="page-store" class="page" role="main">
   <div id="storeThemeWrap" class="max-w-7xl mx-auto px-4 py-8">
     <button id="storeThemeBack" onclick="navigateTo('stores')" class="text-sm font-bold text-navy-700 mb-4 hover:underline"><i class="fa-solid fa-arrow-right"></i> كل المتاجر</button>
     <div id="storeHeader" class="mb-8"></div>
@@ -1405,14 +1408,14 @@
     <div id="storeAffGrid"></div>
   </div>
 </div>
-<div id="page-my-store" class="page">
+<div id="page-my-store" class="page" role="main">
   <div class="max-w-5xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-black text-gray-900 mb-5 flex items-center gap-2"><i class="fa-solid fa-shop text-secondary"></i><span>متجري</span></h2>
     <div id="myStoreContent"></div>
   </div>
 </div>
 
-<div id="page-add-service" class="page">
+<div id="page-add-service" class="page" role="main">
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div id="addServiceContent">
       <div class="text-center py-12">
@@ -1643,6 +1646,13 @@
 <!-- ══════════════════════════════════════════════════════════
      SCRIPTS — Load order matters!
 ══════════════════════════════════════════════════════════════ -->
+
+<!-- Firebase SDK (compat) — executes before the init script below, same order as before -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 
 <!-- 1. Firebase Config — Single source of truth, multi-domain support -->
 <script>
@@ -2802,7 +2812,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
-<script defer src="/js/mall-home.js?v=2"></script>
+<script defer src="/js/mall-home.js?v=3"></script>
 <script defer src="/js/mall-home-b.js?v=2"></script>
 <script defer src="/js/mall-charts.js?v=1"></script>
 <script defer src="/js/store-extras.js?v=1"></script>

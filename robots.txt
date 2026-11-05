@@ -9,6 +9,5 @@ Disallow: /api/
 Allow: /api/sitemap-dynamic
 Disallow: /*.env
 
-# Sitemaps: the index (core pages + the live blog sitemap) and the live sitemap itself.
+# Sitemap index (core pages + the live blog sitemap, which is listed inside it).
 Sitemap: https://mall-services.pages.dev/sitemap.xml
-Sitemap: https://mall-services.pages.dev/sitemap-live.xml
