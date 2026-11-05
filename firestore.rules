@@ -679,19 +679,25 @@ service cloud.firestore {
       allow create: if isSeller() && !sellerBlocked()
                     && (storeId == request.auth.uid || storeId.matches(request.auth.uid + '_[2-5]'))
                     && request.resource.data.ownerId == request.auth.uid
-                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','createdAt','updatedAt'])
+                    && request.resource.data.keys().hasOnly(['ownerId','name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','categories','status','createdAt','updatedAt'])
                     && request.resource.data.keys().hasAll(['ownerId','name','createdAt'])
                     && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
                     && request.resource.data.get('status', 'active') in ['active','paused']
                     && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']
                       && request.resource.data.get('theme', 'classic') in ['classic','midnight','minimal','bold','elegant','playful','modern','neon','royal','market','hero','organic','vintage','hud','kids','sport','oled','magazine']
-                    && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$'));
+                    && (!('themeColor' in request.resource.data) || request.resource.data.themeColor.matches('^#[0-9a-fA-F]{6}$'))
+                      && (!('categories' in request.resource.data) || (request.resource.data.categories is list
+                          && request.resource.data.categories.size() >= 1 && request.resource.data.categories.size() <= 3
+                          && request.resource.data.categories.hasOnly(['fashion','accessories','shoes_bags','sports','electronics','mobiles','home','beauty','food','kids','books','digital','services','auto','health','handmade','other'])));
       allow update: if isAdmin() || (
                       isSellerOwner(resource.data.ownerId) && isSeller() && !sellerBlocked()
                       && request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','status','updatedAt','productAnim','customTheme'])
+                           .hasOnly(['name','description','logo','banner','tagline','themeColor','theme','layout','announcement','shippingPolicy','returnPolicy','country','city','categories','status','updatedAt','productAnim','customTheme'])
                       && request.resource.data.get('productAnim', 'fade') in ['none','fade','zoom','flip','slide','wave','blur','spin','bounce','tilt','shine']
                       && (request.resource.data.get('customTheme', null) == null || request.resource.data.customTheme is map)
+                      && (!('categories' in request.resource.data) || (request.resource.data.categories is list
+                          && request.resource.data.categories.size() >= 1 && request.resource.data.categories.size() <= 3
+                          && request.resource.data.categories.hasOnly(['fashion','accessories','shoes_bags','sports','electronics','mobiles','home','beauty','food','kids','books','digital','services','auto','health','handmade','other'])))
                       && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
                       && request.resource.data.get('status', 'active') in ['active','paused']
                       && request.resource.data.get('layout', 'grid3') in ['grid3','grid4','list']

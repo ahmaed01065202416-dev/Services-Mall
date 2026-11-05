@@ -15,7 +15,35 @@
         ['EG', 'مصر', 'Egypt'], ['SA', 'السعودية', 'Saudi Arabia'], ['AE', 'الإمارات', 'UAE'], ['KW', 'الكويت', 'Kuwait'],
         ['QA', 'قطر', 'Qatar'], ['BH', 'البحرين', 'Bahrain'], ['OM', 'عُمان', 'Oman'], ['JO', 'الأردن', 'Jordan'], ['OTHER', 'دولة أخرى', 'Other'],
     ];
+    // Store types a seller picks when opening a store (1–3). IDs are stored in stores/{id}.categories and
+    // MUST match the allow-list in firestore.rules. [id, Arabic, English, Font Awesome icon]
+    const CATEGORIES = [
+        ['fashion', 'ملابس وأزياء', 'Clothing & Fashion', 'fa-shirt'],
+        ['accessories', 'إكسسوارات ومجوهرات', 'Accessories & Jewelry', 'fa-gem'],
+        ['shoes_bags', 'أحذية وحقائب', 'Shoes & Bags', 'fa-bag-shopping'],
+        ['sports', 'رياضة ولياقة', 'Sports & Fitness', 'fa-dumbbell'],
+        ['electronics', 'إلكترونيات', 'Electronics', 'fa-microchip'],
+        ['mobiles', 'موبايلات وملحقاتها', 'Mobiles & Accessories', 'fa-mobile-screen'],
+        ['home', 'أدوات منزلية وديكور', 'Home & Decor', 'fa-couch'],
+        ['beauty', 'تجميل وعناية', 'Beauty & Care', 'fa-spa'],
+        ['food', 'أطعمة ومشروبات', 'Food & Drinks', 'fa-utensils'],
+        ['kids', 'أطفال وألعاب', 'Kids & Toys', 'fa-baby'],
+        ['books', 'كتب وقرطاسية', 'Books & Stationery', 'fa-book'],
+        ['digital', 'منتجات رقمية', 'Digital Products', 'fa-download'],
+        ['services', 'خدمات', 'Services', 'fa-handshake'],
+        ['auto', 'سيارات وقطع غيار', 'Auto & Parts', 'fa-car'],
+        ['health', 'صحة ومكملات', 'Health & Supplements', 'fa-heart-pulse'],
+        ['handmade', 'منتجات يدوية', 'Handmade', 'fa-hands'],
+        ['other', 'أخرى', 'Other', 'fa-ellipsis'],
+    ];
+    const MAX_CATS = 3;
     const isAr = () => AppState.language !== 'en';
+    const isCat = (id) => CATEGORIES.some(c => c[0] === id);
+    const catOf = (id) => CATEGORIES.find(c => c[0] === id);
+    const catLabel = (id) => { const c = catOf(id); return c ? (isAr() ? c[1] : c[2]) : ''; };
+    const catIds = (s) => (Array.isArray(s && s.categories) ? s.categories : []).filter(isCat).slice(0, MAX_CATS);
+    const catPicker = (selected, id) => `<div id="${id}" class="cat-picker">${CATEGORIES.map(c => `<button type="button" class="cat-chip${selected.includes(c[0]) ? ' on' : ''}" data-cat="${c[0]}" onclick="StoresManager.toggleCat(this)"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])}</button>`).join('')}</div>`;
+    const pickedCats = (id) => Array.from(document.querySelectorAll('#' + id + ' .cat-chip.on')).map(b => b.dataset.cat).filter(isCat).slice(0, MAX_CATS);
     const esc = (v) => (window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v));
     const countryName = (c) => { const x = COUNTRIES.find(k => k[0] === c); return x ? (isAr() ? x[1] : x[2]) : ''; };
     const toMs = (ts) => { if (!ts) return 0; if (ts.toDate) return ts.toDate().getTime(); if (ts.seconds) return ts.seconds * 1000; const t = new Date(ts).getTime(); return isNaN(t) ? 0 : t; };
@@ -42,12 +70,14 @@
               <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-location-dot"></i> ${esc([countryName(s.country), s.city].filter(Boolean).join(' — ') || '—')}</p></div>
           </div>
           <p class="text-xs text-gray-500 line-clamp-2 min-h-[2rem]">${esc(s.description || '')}</p>
+          ${catIds(s).length ? `<div class="st-tags">${catIds(s).slice(0, 2).map(id => `<span class="st-tag">${esc(catLabel(id))}</span>`).join('')}</div>` : ''}
         </button>`;
     }
 
     const StoresManager = {
-        COUNTRIES, countryName, isFeatured,
+        COUNTRIES, countryName, isFeatured, CATEGORIES,
         _all: [],
+        _cat: '',
         _TTL: 60000,
         _cacheGet(k) { try { const o = JSON.parse(sessionStorage.getItem('stc_' + k) || 'null'); return o && Date.now() - o.t < this._TTL ? o.v : null; } catch (_) { return null; } },
         _cacheSet(k, v) { try { sessionStorage.setItem('stc_' + k, JSON.stringify({ t: Date.now(), v })); } catch (_) {} },
@@ -77,18 +107,44 @@
                 sel.innerHTML = `<option value="">${isAr() ? 'كل الدول' : 'All countries'}</option>` + COUNTRIES.map(c => `<option value="${c[0]}">${isAr() ? c[1] : c[2]}</option>`).join('');
                 sel.dataset.ready = '1';
             }
+            const si = document.getElementById('storesSearch');
+            if (si) si.placeholder = isAr() ? 'ابحث باسم المتجر أو نوعه (ملابس، رياضة، إكسسوارات...)' : 'Search by store name or type (clothing, sports, accessories...)';
             try {
                 let raw = this._cacheGet('all');
                 if (!raw) { const snap = await window.db.collection(COLLECTIONS.STORES).limit(200).get(); raw = snap.docs.map(d => ({ id: d.id, ...d.data() })); this._cacheSet('all', raw); }
                 this._all = raw.filter(s => s.status !== 'paused');
             } catch (e) { grid.innerHTML = `<p class="col-span-full text-center text-red-500 py-8">${esc(e.message)}</p>`; return; }
+            this._renderCats();
             this.filterStores();
+        },
+        // Type chips on the stores page — only types that at least one store uses, with a count.
+        _renderCats() {
+            const box = document.getElementById('storesCats'); if (!box) return;
+            const counts = {};
+            this._all.forEach(s => catIds(s).forEach(id => { counts[id] = (counts[id] || 0) + 1; }));
+            const present = CATEGORIES.filter(c => counts[c[0]]);
+            const cur = this._cat || '';
+            box.innerHTML = present.length
+                ? `<button type="button" class="cat-chip${cur ? '' : ' on'}" onclick="StoresManager.setCat('')">${isAr() ? 'الكل' : 'All'} <span class="cat-n">${this._all.length}</span></button>`
+                  + present.map(c => `<button type="button" class="cat-chip${cur === c[0] ? ' on' : ''}" onclick="StoresManager.setCat('${c[0]}')"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])} <span class="cat-n">${counts[c[0]]}</span></button>`).join('')
+                : '';
+        },
+        setCat(id) { this._cat = (this._cat === id) ? '' : id; this._renderCats(); this.filterStores(); },
+        // Used by the type picker in the create-store dialog and in store settings (max 3 selected).
+        toggleCat(btn) {
+            if (btn.classList.contains('on')) { btn.classList.remove('on'); return; }
+            const box = btn.closest('.cat-picker');
+            if (box && box.querySelectorAll('.cat-chip.on').length >= MAX_CATS) { showToast(isAr() ? 'تقدر تختار 3 أنواع كحد أقصى' : 'You can pick up to 3 types', 'warning'); return; }
+            btn.classList.add('on');
         },
         filterStores() {
             const grid = document.getElementById('storesGrid'); if (!grid) return;
             const q = (document.getElementById('storesSearch')?.value || '').trim().toLowerCase();
             const c = document.getElementById('storesCountry')?.value || '';
-            const list = this._all.filter(s => (!q || String(s.name || '').toLowerCase().includes(q)) && (!c || s.country === c)).sort(sortStores);
+            const cat = this._cat || '';
+            // text search matches the store's name, tagline, description AND its type names (Arabic + English)
+            const hay = (s) => [s.name, s.tagline, s.description, ...catIds(s).flatMap(id => { const k = catOf(id); return [k[1], k[2]]; })].join(' ').toLowerCase();
+            const list = this._all.filter(s => (!q || hay(s).includes(q)) && (!c || s.country === c) && (!cat || catIds(s).includes(cat))).sort(sortStores);
             this._shown = list; this._n = 24; grid.innerHTML = list.length ? list.slice(0, 24).map(storeCard).join('') + (list.length > 24 ? `<button onclick="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : '') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
         },
 
@@ -219,20 +275,45 @@
             });
         },
 
+        _createStoreModal() {
+            return new Promise(resolve => {
+                const ov = document.createElement('div');
+                ov.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
+                ov.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full p-6" style="max-width:34rem;max-height:90vh;overflow-y:auto"><h3 class="text-lg font-black text-gray-900 mb-3">${isAr() ? 'متجر جديد' : 'New store'}</h3>
+                  <label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'اسم المتجر' : 'Store name'}</label><input id="miv" maxlength="60" class="form-input w-full mb-4" placeholder="${isAr() ? 'مثال: متجر الأناقة' : ''}">
+                  <label class="text-xs font-bold text-gray-600 block mb-2">${isAr() ? 'إيه اللي بيقدّمه متجرك؟ (اختار من 1 لـ 3 أنواع)' : 'What does your store sell? (pick 1–3 types)'}</label>
+                  ${catPicker([], 'miCats')}
+                  <p class="text-[11px] text-gray-400 mt-2 mb-4">${isAr() ? 'بيساعد العملاء يلاقوا متجرك في البحث، وتقدر تغيّره بعدين من إعدادات المتجر.' : 'Helps customers find your store in search. You can change it later in store settings.'}</p>
+                  <div class="flex gap-3"><button id="mic" class="btn-secondary flex-1 py-2.5">${isAr() ? 'إلغاء' : 'Cancel'}</button><button id="mio" class="btn-primary flex-1 py-2.5">${isAr() ? 'إنشاء' : 'Create'}</button></div></div>`;
+                document.body.appendChild(ov);
+                const done = (v) => { ov.remove(); resolve(v); };
+                ov.querySelector('#mic').onclick = () => done(null);
+                ov.querySelector('#mio').onclick = () => {
+                    const name = ov.querySelector('#miv').value.trim(), cats = pickedCats('miCats');
+                    if (name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
+                    if (!cats.length) { showToast(isAr() ? 'اختار نوع واحد على الأقل لمتجرك' : 'Pick at least one store type', 'warning'); return; }
+                    done({ name, categories: cats });
+                };
+                setTimeout(() => ov.querySelector('#miv').focus(), 50);
+            });
+        },
+
         async createStore() {
             const user = AppState.currentUser, D = this._D;
             const taken = new Set(D.stores.map(x => x.id));
             const id = [user.uid, ...[2, 3, 4, 5].map(n => user.uid + '_' + n)].find(x => !taken.has(x));
             if (!id) { showToast(isAr() ? 'وصلت للحد الأقصى: 5 متاجر' : 'Limit reached: 5 stores', 'warning'); return; }
-            const name = await this._modalInput(isAr() ? 'متجر جديد' : 'New store', isAr() ? 'اسم المتجر' : 'Store name', isAr() ? 'مثال: متجر الإلكترونيات' : '');
-            if (name === null) return;
-            const clean = sanitizeInput(name, 60);
+            const res = await this._createStoreModal();
+            if (res === null) return;
+            const clean = sanitizeInput(res.name, 60);
+            const categories = res.categories.filter(isCat).slice(0, MAX_CATS);
+            if (!categories.length) { showToast(isAr() ? 'اختار نوع واحد على الأقل لمتجرك' : 'Pick at least one store type', 'warning'); return; }
             if (clean.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
             const leak = window.scanFieldsForContactLeak && window.scanFieldsForContactLeak([clean]);
             if (leak) { showToast(window.contactLeakWarning(isAr()), 'error'); return; }
             showLoading();
             try {
-                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); this._cacheBust();
+                await window.db.collection(COLLECTIONS.STORES).doc(id).set({ ownerId: user.uid, name: clean, description: '', logo: '', country: 'EG', city: '', categories, status: 'active', themeColor: '#0f172a', layout: 'grid3', theme: 'classic', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); this._cacheBust();
                 this._D.cur = id; this._D.tab = 'settings';
                 await this._reloadDash(); hideLoading(); this._renderDash();
                 showToast(isAr() ? '✅ تم إنشاء المتجر — كمّل بياناته وتصميمه' : '✅ Store created', 'success');
@@ -351,6 +432,7 @@
                 <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'الدولة' : 'Country'}</label><select id="stCountry" class="form-input w-full">${COUNTRIES.map(c => `<option value="${c[0]}" ${(st.country || 'EG') === c[0] ? 'selected' : ''}>${isAr() ? c[1] : c[2]}</option>`).join('')}</select></div>
                 ${inp('stCity', isAr() ? 'المدينة' : 'City', st.city, 40)}
               </div>
+              <div><label class="text-xs font-bold text-gray-600 block mb-2">${isAr() ? 'نوع المتجر — إيه اللي بتبيعه؟ (من 1 لـ 3)' : 'Store type — what do you sell? (1–3)'}</label>${catPicker(catIds(st), 'stCats')}</div>
               <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'سياسة الشحن' : 'Shipping policy'}</label><textarea id="stShipPol" rows="2" maxlength="400" class="form-input w-full" placeholder="${isAr() ? 'مثال: الشحن خلال 2-4 أيام عمل لكل المحافظات' : ''}">${esc(st.shippingPolicy || '')}</textarea></div>
               <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'سياسة الاسترجاع' : 'Return policy'}</label><textarea id="stRetPol" rows="2" maxlength="400" class="form-input w-full" placeholder="${isAr() ? 'مثال: استرجاع خلال 14 يوم لو المنتج غير مطابق' : ''}">${esc(st.returnPolicy || '')}</textarea></div>
               <p class="text-xs text-gray-400"><i class="fa-solid fa-shield-halved me-1"></i>${isAr() ? 'ممنوع كتابة أرقام هاتف أو روابط تواصل — كل التواصل داخل المنصة.' : 'Contact details are not allowed — keep communication on the platform.'}</p>
@@ -438,6 +520,9 @@
                     country: v('stCountry') || 'EG', city: sanitizeInput(v('stCity'), 40), shippingPolicy: sanitizeInput(v('stShipPol'), 400), returnPolicy: sanitizeInput(v('stRetPol'), 400),
                     status: document.getElementById('stPaused')?.checked ? 'paused' : 'active' };
                 if (patch.name.length < 2) { showToast(isAr() ? 'اكتب اسم المتجر' : 'Enter a store name', 'warning'); return; }
+                const cats = pickedCats('stCats');
+                if (!cats.length) { showToast(isAr() ? 'اختار نوع المتجر (من 1 لـ 3)' : 'Pick your store type (1–3)', 'warning'); return; }
+                patch.categories = cats;
             } else {
                 patch = { theme: this._draft.theme, themeColor: this._draft.themeColor, logo: this._draft.logo, banner: this._draft.banner, layout: this._draft.layout, announcement: sanitizeInput(v('stAnn'), 120),
                     productAnim: (window.StoreExtras ? StoreExtras.validAnim(this._draft.productAnim) : 'fade'), customTheme: (window.StoreExtras && StoreExtras.safeCT(this._draft.customTheme)) || null };

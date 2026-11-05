@@ -44,10 +44,6 @@ MallHome._boot=function(){
   gsap.timeline({defaults:{ease:'power3.out'}}).from('#md-kk',{y:16,opacity:0,duration:.6},'-=.3').to(hw,{yPercent:0,duration:1,stagger:.07},'-=.3').from('#md-lead,#md-acts',{y:20,opacity:0,duration:.7,stagger:.1},'-=.6')
     .from('#md-hWin',{y:60,opacity:0,duration:1},'-=1').from('#md-hPhone',{x:-60,opacity:0,duration:.9},'-=.7').from('#md-hToast',{y:-30,opacity:0,duration:.7},'-=.5').from('#md-hWin .pd',{y:16,opacity:0,stagger:.06,duration:.5},'-=.7')
     .from('#md-hLogoIn',{scale:0,rotation:-160,duration:1.2,ease:'back.out(1.7)'},'-=.9');
-  /* أقواس الخلفية */
-  gsap.set('#md-deco path',{strokeDasharray:1,strokeDashoffset:1});
-  gsap.to('#md-deco path',{strokeDashoffset:0,duration:1.8,ease:'power2.inOut',stagger:.25,delay:.4});
-  gsap.to('#md-deco',{opacity:.55,duration:3,ease:'sine.inOut',yoyo:true,repeat:-1,delay:3});
   gsap.to('#md-hLogo',{yPercent:-12,ease:'none',scrollTrigger:{trigger:'#mallDesign .hero',start:'top top',end:'bottom top',scrub:true}});
   /* حركة مستمرة للوجو */
   gsap.to('#md-hRing',{rotation:360,duration:22,ease:'none',repeat:-1});
@@ -66,10 +62,10 @@ MallHome._boot=function(){
   /* برالاكس بالماوس */
   if(matchMedia('(hover:hover)').matches){
     var q=function(sel,p,d){return gsap.quickTo(sel,p,{duration:d||.9,ease:'power3'});};
-    var wx=q('#md-hWin','x'),wry=q('#md-hWin','rotationY'),wrx=q('#md-hWin','rotationX'),px=q('#md-hPhone','x'),tx=q('#md-hToast','x'),lx=q('#md-hLogo','x'),dx=q('#md-deco','x');
+    var wx=q('#md-hWin','x'),wry=q('#md-hWin','rotationY'),wrx=q('#md-hWin','rotationX'),px=q('#md-hPhone','x'),tx=q('#md-hToast','x'),lx=q('#md-hLogo','x');
     gsap.set('#md-hWin',{transformPerspective:1000});
     document.querySelector('#mallDesign .hero').addEventListener('pointermove',function(e){var k=(e.clientX/innerWidth-.5)*2,ky=(e.clientY/innerHeight-.5)*2;
-      wx(k*-8);wry(k*7);wrx(ky*-5);px(k*-20);tx(k*-26);lx(k*-34);dx(k*12);});
+      wx(k*-8);wry(k*7);wrx(ky*-5);px(k*-20);tx(k*-26);lx(k*-34);});
   }
   gsap.to('#md-hWin',{yPercent:-6,ease:'none',scrollTrigger:{trigger:'#mallDesign .hero',start:'top top',end:'bottom top',scrub:true}});
   gsap.to('#md-hPhone',{yPercent:-18,ease:'none',scrollTrigger:{trigger:'#mallDesign .hero',start:'top top',end:'bottom top',scrub:true}});

@@ -385,8 +385,8 @@
   </style>
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
-  <link rel="stylesheet" href="/css/mall-home.css?v=3">
-  <link rel="stylesheet" href="/css/mall-extra.css?v=3">
+  <link rel="stylesheet" href="/css/mall-home.css?v=4">
+  <link rel="stylesheet" href="/css/mall-extra.css?v=4">
   <link rel="stylesheet" href="/css/mall-home-b.css?v=2">
   <link rel="stylesheet" href="/css/mall-home-sections.css?v=1">
   <link rel="stylesheet" href="/css/mall-design-mint.css?v=2">
@@ -636,7 +636,6 @@
     </div>
   </div>
   <div class="vis" id="md-vis">
-    <svg class="deco" id="md-deco" viewBox="0 0 400 480" aria-hidden="true"><path pathLength="1" stroke="rgba(20,184,166,.45)" stroke-width="1.6" d="M20,470 V200 A180,180 0 0 1 380,200 V470"/><path pathLength="1" stroke="rgba(224,184,114,.4)" stroke-width="1.6" d="M60,470 V200 A140,140 0 0 1 340,200 V470"/><path pathLength="1" stroke="rgba(244,238,225,.22)" stroke-width="1.6" d="M100,470 V200 A100,100 0 0 1 300,200 V470"/></svg>
     <div class="win" id="md-hWin"></div>
     <div class="phone" id="md-hPhone"></div>
     <div class="toast" id="md-hToast"></div>
@@ -1392,10 +1391,11 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-black text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-store text-secondary"></i><span>المتاجر</span></h2>
     <p class="text-sm text-gray-500 mb-5">تصفّح متاجر البائعين — المتاجر المميزة بتظهر الأول</p>
-    <div class="flex flex-col sm:flex-row gap-3 mb-6">
-      <input id="storesSearch" oninput="StoresManager.filterStores()" class="form-input flex-1" placeholder="ابحث باسم المتجر...">
-      <select id="storesCountry" onchange="StoresManager.filterStores()" class="form-input sm:w-56"></select>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+      <input id="storesSearch" oninput="StoresManager.filterStores()" class="form-input" style="flex:1 1 260px;min-width:0;width:auto" placeholder="ابحث باسم المتجر أو نوعه (ملابس، رياضة، إكسسوارات...)">
+      <select id="storesCountry" onchange="StoresManager.filterStores()" class="form-input" style="flex:0 0 220px;width:220px;max-width:100%"></select>
     </div>
+    <div id="storesCats" class="cat-picker" style="margin-bottom:20px"></div>
     <div id="storesGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
   </div>
 </div>
@@ -1767,7 +1767,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script src="js/non-receipt.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes-pro.js?v=2026-10-31-sec1"></script>
-<script src="js/stores.js?v=2026-10-31-sec1"></script>
+<script src="js/stores.js?v=2026-11-05-cat1"></script>
 <script src="js/reviews.js?v=2026-10-31-sec1"></script>
 
 <!-- 7b. Dedicated Chat Module -->
@@ -2812,7 +2812,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
-<script defer src="/js/mall-home.js?v=3"></script>
+<script defer src="/js/mall-home.js?v=4"></script>
 <script defer src="/js/mall-home-b.js?v=2"></script>
 <script defer src="/js/mall-charts.js?v=1"></script>
 <script defer src="/js/store-extras.js?v=1"></script>
