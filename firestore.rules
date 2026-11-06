@@ -397,12 +397,11 @@ service cloud.firestore {
     }
 
     // ── analytics ─────────────────────────────────────────────────────────────
+    // Nothing in the app reads or writes this collection (page tracking goes through /api/analytics and the
+    // `insights` data is server-side), so it is admin-only: it used to let ANY signed-in user read every
+    // document and create unlimited documents with arbitrary content (storage/cost abuse).
     match /analytics/{docId} {
-      allow read:   if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() &&
-                       (request.auth.uid == resource.data.userId || isAdmin());
-      allow delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     // ── subscriptions ─────────────────────────────────────────────────────────
