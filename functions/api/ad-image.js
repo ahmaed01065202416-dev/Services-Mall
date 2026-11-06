@@ -9,6 +9,8 @@ import { fsGet } from '../_shared/gcp.js';
 export async function onRequest(context) {
     const { request, env } = context;
     const params = new URL(request.url).searchParams;
+    // a numeric ?v=<updateTime> means the URL changes whenever the image does -> a longer browser cache is safe
+    const IMG_CACHE = /^\d{1,15}$/.test(params.get('v') || '') ? 'public, max-age=86400, s-maxage=86400' : 'public, max-age=3600, s-maxage=3600';
     const adParam = params.get('a') || '';
     const id = params.get('s') || '';
     // ?a=<adId> → the uploaded image/poster of an ACTIVE media ad
@@ -24,6 +26,20 @@ export async function onRequest(context) {
             return new Response(bytes, { status: 200, headers: { 'Content-Type': mm[1], 'Cache-Control': 'public, max-age=600, s-maxage=600', 'X-Content-Type-Options': 'nosniff' } });
         } catch (e) { return new Response('error', { status: 500, headers: { 'Cache-Control': 'no-store' } }); }
     }
+    // ?st=<storeId> → the store's logo (used by /api/home-feed so the homepage never has to download base64 logos)
+    const stParam = params.get('st') || '';
+    if (stParam) {
+        if (!/^[A-Za-z0-9_\-]{1,128}$/.test(stParam)) return new Response('bad id', { status: 400 });
+        try {
+            const st = await fsGet(env, `stores/${stParam}`);
+            const data = st && st.status !== 'paused' && typeof st.logo === 'string' ? st.logo : '';
+            const mm = data && /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(data);
+            if (!mm) return new Response('not found', { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } });
+            const bin = atob(mm[2]), bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new Response(bytes, { status: 200, headers: { 'Content-Type': mm[1], 'Cache-Control': IMG_CACHE, 'X-Content-Type-Options': 'nosniff' } });
+        } catch (e) { return new Response('error', { status: 500, headers: { 'Cache-Control': 'no-store' } }); }
+    }
     if (!/^[A-Za-z0-9_\-]{1,128}$/.test(id)) return new Response('bad id', { status: 400 });
     try {
         const svc = await fsGet(env, `services/${id}`);
@@ -33,7 +49,7 @@ export async function onRequest(context) {
         if (m) {
             const bin = atob(m[2]), bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            return new Response(bytes, { status: 200, headers: { 'Content-Type': m[1], 'Cache-Control': 'public, max-age=3600, s-maxage=3600', 'X-Content-Type-Options': 'nosniff' } });
+            return new Response(bytes, { status: 200, headers: { 'Content-Type': m[1], 'Cache-Control': IMG_CACHE, 'X-Content-Type-Options': 'nosniff' } });
         }
         if (/^https:\/\//i.test(img)) {
             // SECURITY: sellers control `img`, so this endpoint must not work as an open redirect for links

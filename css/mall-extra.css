@@ -2,7 +2,9 @@
 
 /* ── hero search card inside the dark design hero ── */
 #mallDesign .msearch .bg-gray-50{background:rgba(244,238,225,.96);color:#0E1A33}
-#mallDesign .msearch .text-gray-400{color:#5b6679}
+/* light mode only: the theme remaps these muted classes to #8A91A3 with !important (2.8:1 on the cream card);
+   #5b6679 is 5.15:1. Dark mode keeps the theme's lighter muted colour. */
+html:not(.dark) #mallDesign .msearch :is(.text-gray-400,.text-navy-300,.text-navy-400,.text-textmuted){color:#5b6679!important}
 #mallDesign .msearch input{font-size:16px}
 .m-stats-strip p{line-height:1.5}
 

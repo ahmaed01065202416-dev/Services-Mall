@@ -86,10 +86,16 @@
         // ── Home: featured stores at the very top ───────────────────────────
         async loadHomeStrip() {
             const sec = document.getElementById('homeStoresSection'), grid = document.getElementById('homeStoresGrid');
-            if (!sec || !grid || !window.db || PLATFORM.STORES_ENABLED === false) return;
+            if (!sec || !grid || PLATFORM.STORES_ENABLED === false) return;
             try {
                 let raw = this._cacheGet('home');
-                if (!raw) { const snap = await window.db.collection(COLLECTIONS.STORES).where('featuredUntil', '>', new Date()).limit(24).get(); raw = snap.docs.map(d => ({ id: d.id, ...d.data() })); this._cacheSet('home', raw); }
+                if (!raw) {
+                    const feed = window.fetchHomeFeed ? await window.fetchHomeFeed('stores') : null;   // small JSON, logos served as cacheable images
+                    if (feed && Array.isArray(feed.items)) raw = feed.items;
+                    else if (window.db) { const snap = await window.db.collection(COLLECTIONS.STORES).where('featuredUntil', '>', new Date()).limit(24).get(); raw = snap.docs.map(d => ({ id: d.id, ...d.data() })); }
+                    else return;
+                    this._cacheSet('home', raw);
+                }
                 const list = raw.filter(s => s.status !== 'paused').sort(sortStores).slice(0, 8);
                 if (!list.length) { sec.classList.add('hidden'); return; }
                 grid.innerHTML = list.map(storeCard).join('');

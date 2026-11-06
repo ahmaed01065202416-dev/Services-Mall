@@ -104,8 +104,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://services-mall.firebaseapp.com" crossorigin>
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="dns-prefetch" href="https://services-mall.firebaseapp.com">
   <link rel="dns-prefetch" href="https://apis.google.com">
 
   <noscript><style>#appLoadingScreen{display:none!important}</style></noscript>
@@ -386,7 +386,7 @@
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
   <link rel="stylesheet" href="/css/mall-theme.css?v=1">
   <link rel="stylesheet" href="/css/mall-home.css?v=4">
-  <link rel="stylesheet" href="/css/mall-extra.css?v=4">
+  <link rel="stylesheet" href="/css/mall-extra.css?v=5">
   <link rel="stylesheet" href="/css/mall-home-b.css?v=2">
   <link rel="stylesheet" href="/css/mall-home-sections.css?v=1">
   <link rel="stylesheet" href="/css/mall-design-mint.css?v=2">
@@ -462,7 +462,7 @@
          story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
       <div class="m-logo">
-        <img width="320" height="320" src="/icons/logo-mark.webp" alt="مول الخدمات" class="w-full h-full object-contain">
+        <img width="320" height="320" src="/icons/logo-mark.webp" alt="" class="w-full h-full object-contain">
       </div>
       <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
@@ -1721,7 +1721,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 2. Constants & Utilities -->
-<script src="js/constants.js?v=2026-10-31-sec1"></script>
+<script src="js/constants.js?v=2026-11-06-feed1"></script>
 
 <script>
 // Load live platform settings BEFORE any page renders
@@ -1767,7 +1767,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script src="js/non-receipt.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes.js?v=2026-10-31-sec1"></script>
 <script src="js/store-themes-pro.js?v=2026-10-31-sec1"></script>
-<script src="js/stores.js?v=2026-11-05-cat1"></script>
+<script src="js/stores.js?v=2026-11-06-feed1"></script>
 <script src="js/reviews.js?v=2026-10-31-sec1"></script>
 
 <!-- 7b. Dedicated Chat Module -->
@@ -1930,11 +1930,19 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     window.addEventListener('popstate', handleHash);
 
     // ── Featured Services Loader ──────────────────────────────────────────────
+    // Homepage data comes from /api/home-feed via the global fetchHomeFeed() (js/constants.js): same public listings without the
+    // multi-MB base64 photos; it returns null on failure so each loader falls back to its previous direct-Firestore path.
+
     async function loadFeaturedServices() {
         try {
             const container = document.getElementById('featuredServices');
             if (!container) return;
 
+            let docs;
+            const feed = await fetchHomeFeed('services');
+            if (feed && Array.isArray(feed.items)) {
+                docs = feed.items.map(it => ({ id: it.id, data: () => it }));
+            } else {
             const snap = await db.collection(COLLECTIONS.SERVICES)
                 .where('active','==',true)
                 .where('featured','==',true)
@@ -1943,11 +1951,12 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
             // Filter out product listings client-side (no extra composite
             // index needed) — this section is "custom services" only, real
             // digital products get their own dedicated grid (loadHomeProducts).
-            let docs = snap.docs.filter(d => (d.data().listingType||'service') !== 'product');
+            docs = snap.docs.filter(d => (d.data().listingType||'service') !== 'product');
 
             if (docs.length === 0) {
                 const allSnap = await db.collection(COLLECTIONS.SERVICES).where('active','==',true).limit(20).get();
                 docs = allSnap.docs.filter(d => (d.data().listingType||'service') !== 'product');
+            }
             }
 
             if (docs.length === 0) { container.innerHTML = `<p class="text-gray-400 col-span-3 text-center py-8">لا توجد خدمات بعد</p>`; return; }
@@ -2011,13 +2020,20 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         try {
             const container = document.getElementById('homeProductsGrid');
             if (!container) return;
-            const snap = await db.collection(COLLECTIONS.SERVICES)
-                .where('active', '==', true)
-                .where('listingType', '==', 'product')
-                .limit(8).get();
-            if (snap.empty) { container.innerHTML = `<p class="text-gray-400 col-span-4 text-center py-8">لا توجد منتجات بعد</p>`; return; }
+            let pdocs;
+            const pfeed = await fetchHomeFeed('products');
+            if (pfeed && Array.isArray(pfeed.items)) {
+                pdocs = pfeed.items.map(it => ({ id: it.id, data: () => it }));
+            } else {
+                const snap = await db.collection(COLLECTIONS.SERVICES)
+                    .where('active', '==', true)
+                    .where('listingType', '==', 'product')
+                    .limit(8).get();
+                pdocs = snap.docs;
+            }
+            if (!pdocs.length) { container.innerHTML = `<p class="text-gray-400 col-span-4 text-center py-8">لا توجد منتجات بعد</p>`; return; }
             const isAr = AppState.language !== 'en';
-            container.innerHTML = snap.docs.map(doc => {
+            container.innerHTML = pdocs.map(doc => {
                 const s = { id: doc.id, ...doc.data() };
                 const cartData = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[]}).replace(/"/g,'&quot;');
                 return `

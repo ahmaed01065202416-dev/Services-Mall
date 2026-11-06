@@ -100,16 +100,36 @@ const PLATFORM = {
 // Called once at app start (before DOMContentLoaded).
 // All existing code uses PLATFORM.FEE_PERCENT etc. and will automatically
 // get the live values after this resolves.
+// Public homepage data comes from /api/home-feed (see functions/api/home-feed.js). It returns the same data the
+// browser could already read from Firestore, minus the multi-MB base64 photos, and — because it is a plain HTTPS
+// request — it avoids opening Firestore's long-lived streaming connection on a first visit. Resolves to the parsed
+// JSON ({success:true, ...}) or null on ANY failure, so callers always fall back to the old direct-Firestore path.
+async function fetchHomeFeed(section) {
+    try {
+        const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 8000);
+        const r = await fetch('/api/home-feed?section=' + encodeURIComponent(section), { signal: ctl.signal });
+        clearTimeout(to);
+        const j = await r.json();
+        return j && j.success ? j : null;
+    } catch (e) { return null; }
+}
+window.fetchHomeFeed = fetchHomeFeed;
+
+function applyPlatformSettings(data) {
+    Object.keys(data).forEach(k => { if (k in PLATFORM) PLATFORM[k] = data[k]; });
+    if (data.SITE_DESIGN && window.MallDesign) window.MallDesign.sync(data.SITE_DESIGN);
+    if (data.HOME_SECTIONS && window.MallDesign) window.MallDesign.syncSections(data.HOME_SECTIONS);
+    console.log('[Settings] Platform config loaded | type:', PLATFORM.FEE_TYPE, '| %:', PLATFORM.FEE_PERCENT, '| fixed:', PLATFORM.FEE_FIXED);
+}
+
 async function loadPlatformSettings() {
     try {
+        const feed = await fetchHomeFeed('platform');
+        if (feed && feed.item) { applyPlatformSettings(feed.item); return; }
         if (!window.db) return;
         const snap = await window.db.collection('settings').doc('platform').get();
         if (snap.exists) {
-            const data = snap.data();
-            Object.keys(data).forEach(k => { if (k in PLATFORM) PLATFORM[k] = data[k]; });
-            if (data.SITE_DESIGN && window.MallDesign) window.MallDesign.sync(data.SITE_DESIGN);
-            if (data.HOME_SECTIONS && window.MallDesign) window.MallDesign.syncSections(data.HOME_SECTIONS);
-            console.log('[Settings] Platform config loaded | type:', PLATFORM.FEE_TYPE, '| %:', PLATFORM.FEE_PERCENT, '| fixed:', PLATFORM.FEE_FIXED);
+            applyPlatformSettings(snap.data());
         } else {
             // First run — write the defaults so the admin panel can display them
             await window.db.collection('settings').doc('platform').set(PLATFORM);
