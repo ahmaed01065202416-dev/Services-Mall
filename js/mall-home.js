@@ -4,7 +4,7 @@
   var MallHome=window.MallHome={_done:false,_boot:null};
 
 MallHome._boot=function(){
-  var LOGO='icons/logo-mark.webp';
+  var LOGO='/icons/logo-mark-184.webp';
   document.querySelectorAll('#mallDesign [data-logo],#mallDesignEnd [data-logo]').forEach(function(i){i.src=LOGO;});
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   gsap.registerPlugin(ScrollTrigger);
@@ -35,13 +35,13 @@ MallHome._boot=function(){
   for(var r=0;r<6;r++)tk.forEach(function(x){t+='<span>'+x+'</span><b>◆</b>';});document.getElementById('md-tk').innerHTML=t;
 
   function split(el){var ws=el.textContent.trim().split(/\s+/);el.innerHTML=ws.map(function(w){return '<span class="w"><i>'+w+'</i></span> ';}).join('');return el.querySelectorAll('.w>i');}
-  var hw=split(document.getElementById('md-h1')),ew=split(document.getElementById('md-eh'));
+  var ew=split(document.getElementById('md-eh'));   /* md-h1 is NOT split any more: rewriting the LCP heading after GSAP boots made the browser count a brand-new (late) LCP */
 
   if(reduce){gsap.set('#mallDesign .stp',{opacity:0});gsap.set('#mallDesign .stp:last-child',{opacity:1});gsap.set('#md-sSheet',{yPercent:0});return;}
 
   /* هيرو */
-  gsap.set(hw,{yPercent:115});
-  gsap.timeline({defaults:{ease:'power3.out'}}).from('#md-kk',{y:16,opacity:0,duration:.6},'-=.3').to(hw,{yPercent:0,duration:1,stagger:.07},'-=.3').from('#md-lead,#md-acts',{y:20,opacity:0,duration:.7,stagger:.1},'-=.6')
+  /* h1 / lead / buttons are the page's LCP elements: they stay visible from the first paint (no hide-then-reveal), the rest of the hero still animates in */
+  gsap.timeline({defaults:{ease:'power3.out'}}).from('#md-kk',{y:16,opacity:0,duration:.6},'-=.3')
     .from('#md-hWin',{y:60,opacity:0,duration:1},'-=1').from('#md-hPhone',{x:-60,opacity:0,duration:.9},'-=.7').from('#md-hToast',{y:-30,opacity:0,duration:.7},'-=.5').from('#md-hWin .pd',{y:16,opacity:0,stagger:.06,duration:.5},'-=.7')
     .from('#md-hLogoIn',{scale:0,rotation:-160,duration:1.2,ease:'back.out(1.7)'},'-=.9');
   gsap.to('#md-hLogo',{yPercent:-12,ease:'none',scrollTrigger:{trigger:'#mallDesign .hero',start:'top top',end:'bottom top',scrub:true}});

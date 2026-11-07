@@ -33,15 +33,17 @@
 # It returns a REAL 404 for unknown slugs and injects canonical/og/JSON-LD per article. The old blanket rule
 # "/blog/:slug /blog/index.html 200" was removed on purpose: it answered 200 for every slug (soft 404).
 
-# Legacy standalone legal pages — superseded by the redesigned /terms and
+# Legacy standalone legal pages — redirect STRAIGHT to the canonical folder URL (with the trailing slash) so there is
+# only ONE hop (/x.html -> /x/). Pointing at /x made a 2-hop chain (/x.html -> /x -> 308 -> /x/) that Search Console reports.
+# (superseded by the redesigned /terms and
 # /privacy folders below. Kept as 301s (not deleted) so old bookmarks/backlinks
 # and any URL already indexed by Google land on the current page instead of
 # a stale duplicate with an outdated design (was previously reachable and
 # linked from index.html's footer/signup-modal by mistake — now fixed to
 # point at /terms and /privacy directly, this redirect is the safety net).
-/terms.html /terms 301
-/privacy.html /privacy 301
-/refund-policy.html /refund-policy 301
+/terms.html /terms/ 301
+/privacy.html /privacy/ 301
+/refund-policy.html /refund-policy/ 301
 
 # Static pages
 /about /about/index.html 200

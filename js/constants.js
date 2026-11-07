@@ -104,7 +104,7 @@ const PLATFORM = {
 // browser could already read from Firestore, minus the multi-MB base64 photos, and — because it is a plain HTTPS
 // request — it avoids opening Firestore's long-lived streaming connection on a first visit. Resolves to the parsed
 // JSON ({success:true, ...}) or null on ANY failure, so callers always fall back to the old direct-Firestore path.
-async function fetchHomeFeed(section) {
+async function _fetchHomeFeedRaw(section) {
     try {
         const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 8000);
         const r = await fetch('/api/home-feed?section=' + encodeURIComponent(section), { signal: ctl.signal });
@@ -113,12 +113,26 @@ async function fetchHomeFeed(section) {
         return j && j.success ? j : null;
     } catch (e) { return null; }
 }
+// ONE request per section is shared by every caller that asks within 4 s (and by concurrent callers while it is in flight).
+// `section=platform` used to be requested 3 times on every first visit (index.html boot, the auth-state handler and
+// dropship.js), each one a slow Function → Firestore round-trip. A failed request (null) is never remembered.
+const _feedMemo = {};
+function fetchHomeFeed(section) {
+    const m = _feedMemo[section];
+    if (m && Date.now() - m.t < 4000) return m.p;
+    const entry = _feedMemo[section] = { t: Date.now(), p: _fetchHomeFeedRaw(section) };
+    entry.p.then(r => { if (r === null && _feedMemo[section] === entry) delete _feedMemo[section]; });
+    return entry.p;
+}
 window.fetchHomeFeed = fetchHomeFeed;
 
 function applyPlatformSettings(data) {
     Object.keys(data).forEach(k => { if (k in PLATFORM) PLATFORM[k] = data[k]; });
     if (data.SITE_DESIGN && window.MallDesign) window.MallDesign.sync(data.SITE_DESIGN);
     if (data.HOME_SECTIONS && window.MallDesign) window.MallDesign.syncSections(data.HOME_SECTIONS);
+    // Remember the maintenance flag so the NEXT visit knows, before the settings arrive, whether the loading screen has
+    // to stay up until the maintenance gate can be decided (see the auth-state handler in index.html).
+    try { localStorage.setItem('mall_maint', PLATFORM.MAINTENANCE ? '1' : '0'); } catch (_) {}
     console.log('[Settings] Platform config loaded | type:', PLATFORM.FEE_TYPE, '| %:', PLATFORM.FEE_PERCENT, '| fixed:', PLATFORM.FEE_FIXED);
 }
 

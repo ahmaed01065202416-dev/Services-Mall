@@ -139,7 +139,7 @@ async function readAsset(env, origin, path) {
   return null;
 }
 
-const FALLBACK_404 = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>الصفحة غير موجودة — ${BRAND}</title></head><body style="font-family:sans-serif;text-align:center;padding:80px 20px"><h1>404</h1><p>المقال غير موجود.</p><p><a href="/blog">العودة للمدونة</a></p></body></html>`;
+const FALLBACK_404 = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>الصفحة غير موجودة — ${BRAND}</title></head><body style="font-family:sans-serif;text-align:center;padding:80px 20px"><h1>404</h1><p>المقال غير موجود.</p><p><a href="/blog/">العودة للمدونة</a></p></body></html>`;
 
 export async function onRequestGet(context) {
   const { request, env, params } = context;

@@ -99,6 +99,7 @@
   <meta name="apple-mobile-web-app-title" content="مول الخدمات">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
+  <link rel="preload" as="image" href="/icons/logo-mark-184.webp" type="image/webp" fetchpriority="high">
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,6 +118,8 @@
   <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+  <!-- Font Awesome ships font-display:block (icons invisible until the font arrives). Re-declared AFTER the FA <link> so it wins: swap. -->
+  <style>@font-face{font-family:"Font Awesome 6 Free";font-style:normal;font-weight:900;font-display:swap;src:url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2) format("woff2")}@font-face{font-family:"Font Awesome 6 Free";font-style:normal;font-weight:400;font-display:swap;src:url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-regular-400.woff2) format("woff2")}@font-face{font-family:"Font Awesome 6 Brands";font-style:normal;font-weight:400;font-display:swap;src:url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.woff2) format("woff2")}</style>
 
   <!-- Chart.js — real charting library for dashboard/wallet charts (no custom
        AI-generated-looking graphics; standard bar/line charts, Font Awesome
@@ -401,12 +404,12 @@
     <p>كل عملية دفع محمية بنظام ضمان (Escrow): يُحجز المبلغ داخل المنصة ولا يُحوَّل للبائع إلا بعد تأكيدك الاستلام، ويمكنك فتح نزاع تراجعه الإدارة إذا حدثت مشكلة. يمكن للبائعين إنشاء متاجرهم الخاصة وعرض منتجاتهم وتلقّي تقييمات العملاء.</p>
     <p style="margin-top:14px"><strong>هذا الموقع يحتاج تفعيل JavaScript لعرض الخدمات والمنتجات والمتاجر.</strong> يمكنك في الأثناء قراءة الصفحات التالية:</p>
     <ul style="padding-inline-start:20px">
-      <li><a href="/blog">المدونة — مقالات ونصائح عن العمل الحر والتسويق الرقمي والتجارة الإلكترونية</a></li>
-      <li><a href="/about">من نحن</a></li>
-      <li><a href="/contact">تواصل معنا</a></li>
-      <li><a href="/privacy">سياسة الخصوصية</a></li>
-      <li><a href="/terms">الشروط والأحكام</a></li>
-      <li><a href="/refund-policy">سياسة الاسترجاع والإلغاء</a></li>
+      <li><a href="/blog/">المدونة — مقالات ونصائح عن العمل الحر والتسويق الرقمي والتجارة الإلكترونية</a></li>
+      <li><a href="/about/">من نحن</a></li>
+      <li><a href="/contact/">تواصل معنا</a></li>
+      <li><a href="/privacy/">سياسة الخصوصية</a></li>
+      <li><a href="/terms/">الشروط والأحكام</a></li>
+      <li><a href="/refund-policy/">سياسة الاسترجاع والإلغاء</a></li>
     </ul>
   </div>
 </noscript>
@@ -423,7 +426,7 @@
 <!-- ── App Loading Screen (shown until Firebase auth state resolves) ── -->
 <div id="appLoadingScreen">
   <div style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px;padding:16px">
-    <img width="320" height="320" src="/icons/logo-mark.webp" alt="مول الخدمات" style="width:100%;height:100%;object-fit:contain">
+    <img width="184" height="184" src="/icons/logo-mark-184.webp" alt="مول الخدمات" style="width:100%;height:100%;object-fit:contain">
   </div>
   <div class="spinner"></div>
   <p style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
@@ -442,6 +445,14 @@
   }
   window.__hideAppLoading = hide;
   setTimeout(hide, 4000);
+  // A visitor who was NOT signed in last time (or is new) has nothing to wait for: the guest UI is the default, so the screen
+  // goes as soon as the page is built instead of waiting for Firebase Auth's iframe (≈2 s on mobile). Returning signed-in users
+  // (hint saved by the auth-state handler) still wait for the auth state so they never see the guest buttons flash.
+  var hint = null; try { hint = localStorage.getItem('mall_authed'); } catch (e) {}
+  if (hint !== '1') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(hide, 0); });
+    else setTimeout(hide, 0);
+  }
 })();
 </script>
 
@@ -460,9 +471,9 @@
 
     <!-- Logo — new mark: the same "seal" glyph used for the escrow trust
          story throughout the app, now doubling as the logo (navy/turquoise) -->
-    <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0">
+    <button onclick="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0" aria-label="مول الخدمات — الرئيسية">
       <div class="m-logo">
-        <img width="320" height="320" src="/icons/logo-mark.webp" alt="" class="w-full h-full object-contain">
+        <img width="184" height="184" src="/icons/logo-mark-184.webp" alt="" class="w-full h-full object-contain">
       </div>
       <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
@@ -639,10 +650,24 @@
     <div class="win" id="md-hWin"></div>
     <div class="phone" id="md-hPhone"></div>
     <div class="toast" id="md-hToast"></div>
-    <div class="hlogo" id="md-hLogo"><div class="hlogo-in" id="md-hLogoIn"><div class="hpulse" id="md-hPulse"></div><svg class="rng" id="md-hRing" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="hbadge"><img data-logo alt="شعار مول الخدمات"></div></div></div>
+    <div class="hlogo" id="md-hLogo"><div class="hlogo-in" id="md-hLogoIn"><div class="hpulse" id="md-hPulse"></div><svg class="rng" id="md-hRing" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="hbadge"><img data-logo width="184" height="184" src="/icons/logo-mark-184.webp" alt="شعار مول الخدمات"></div></div></div>
   </div>
   </section>
 
+<script>
+/* Show the hero as soon as its HTML is parsed instead of after ~35 synchronous scripts (DOMContentLoaded is several seconds away on
+   a phone). Only for the plain home URL and visitors who were not signed in last time; everyone else keeps the normal flow
+   (navigateTo('home') on DOMContentLoaded stays and is idempotent). */
+(function () {
+  try {
+    if (location.hash && location.hash !== '#') return;
+    var h = null; try { h = localStorage.getItem('mall_authed'); } catch (e) {}
+    if (h === '1') return;
+    var p = document.getElementById('page-home'); if (p) p.classList.add('active');
+    if (window.__hideAppLoading) window.__hideAppLoading();
+  } catch (e) {}
+})();
+</script>
 <div class="tick"><div id="md-tk"></div></div>
 
 <section class="sell" id="md-sell"><div class="sstage pad">
@@ -666,7 +691,7 @@
 <div class="mb-bgfx" aria-hidden="true"><i class="mb-o1"></i><i class="mb-o2"></i><i class="mb-o3"></i><svg class="mb-ga" viewBox="0 0 400 470"><path d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path opacity=".7" d="M60,462 V208 A140,140 0 0 1 340,208 V462"/><path opacity=".45" d="M96,462 V212 A104,104 0 0 1 304,212 V462"/></svg></div>
 
 <section class="mb-hero mb-pad"><div><span class="mb-eyebrow">منصة عربية للخدمات والمنتجات</span><h1>حيث يلتقي <em>الإبداع</em> والبرمجة والتجارة</h1><p>مدخل واحد لكل مبدع: صمّم، برمج، وبيع بثقة. فلوسك محمية بنظام Escrow لحد ما العميل يستلم.</p><div id="mb-msearch"></div><div class="mb-acts"><a class="mb-btn" href="#" data-go="register">افتح متجرك</a><a class="mb-btn mb-o" href="#mb-brand">تعرّف على الهوية</a></div></div>
-<div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img src="/icons/logo-mark.webp" loading="lazy" alt="شعار مول الخدمات"></div>
+<div class="mb-arch" id="mb-ar" data-p><svg viewBox="0 0 400 470"><path pathLength="1" style="--k:0" stroke="#0C1830" class="mb-s1" d="M24,462 V205 A176,176 0 0 1 376,205 V462"/><path pathLength="1" style="--k:1" stroke="#0F7A6C" d="M52,462 V208 A148,148 0 0 1 348,208 V462"/><path pathLength="1" style="--k:2" stroke="#B8935A" d="M80,462 V212 A120,120 0 0 1 320,212 V462"/></svg><div class="mb-lg"><img width="184" height="184" src="/icons/logo-mark-184.webp" loading="lazy" alt="شعار مول الخدمات"></div>
 <span class="mb-chip" data-p style="--c:var(--em);--s:90px;top:12%;inset-inline-start:-6%">تصميم</span><span class="mb-chip" data-p style="--c:var(--navy);--s:-70px;top:44%;inset-inline-end:-8%">برمجة</span><span class="mb-chip" data-p style="--c:var(--gold);--s:60px;bottom:10%;inset-inline-start:-4%">تجارة</span></div></section>
 <div class="mb-band" data-p><span>الإبداع ✦ البرمجة ✦ التجارة ✦ الإبداع ✦ البرمجة ✦ التجارة</span></div>
 <section class="mb-sec mb-pad mb-story" id="mb-story"><svg class="mb-weave" data-d viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" stroke="#B8935A" d="M0,520 C250,420 350,120 500,120 S750,420 1000,520"/><path pathLength="1" stroke="#0F7A6C" d="M0,560 C250,470 350,170 500,170 S750,470 1000,560"/></svg>
@@ -680,7 +705,7 @@
 <section class="mb-sec mb-bk" id="mb-brand"><span class="mb-eyebrow mb-rv">دليل الهوية</span><h2 class="mb-rv">خواص البراند</h2><p class="mb-sub mb-rv">ألوان وخطوط ونبرة موحّدة في كل صفحة. اضغط على أي لون لنسخ الكود.</p>
 <div class="mb-sw mb-rv"><button style="--c:#0C1830;--t:#F7F1E3;box-shadow:inset 0 0 0 1px rgba(247,241,227,.3)" data-c="#0C1830"><b>كحلي الثقة</b>#0C1830</button><button style="--c:#0F7A6C;--t:#fff" data-c="#0F7A6C"><b>زمردي النمو</b>#0F7A6C</button><button style="--c:#B8935A;--t:#0C1830" data-c="#B8935A"><b>ذهبي القيمة</b>#B8935A</button><button style="--c:#E6F0EA;--t:#0C1830" data-c="#E6F0EA"><b>نعناع الصفاء</b>#E6F0EA</button></div>
 <div class="mb-bg3"><div class="mb-bx mb-rv mb-tp"><h3>الخطوط</h3><div class="mb-a">Reem Kufi</div><div class="mb-b">للعناوين: هندسي بروح عربية<br>Readex Pro للنصوص: واضح ومريح</div></div>
-<div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img src="/icons/logo-mark.webp" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img src="/icons/logo-mark.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img src="/icons/logo-mark.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
+<div class="mb-bx mb-rv"><h3>الشعار على الخلفيات</h3><div class="mb-lgs"><div style="background:#F7F1E3"><img width="184" height="184" src="/icons/logo-mark-184.webp" loading="lazy" alt=""></div><div style="background:#0F7A6C"><img width="184" height="184" src="/icons/logo-mark-184.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div><div style="background:#0C1830"><img width="184" height="184" src="/icons/logo-mark-184.webp" loading="lazy" alt="" style="background:#fff;border-radius:50%;padding:4px"></div></div><p style="margin-top:10px">مساحة فاضية حوله بقدر ارتفاع القوس.</p></div>
 <div class="mb-bx mb-rv"><h3>نبرة الصوت</h3><ul class="mb-vo"><li>واضح ودافئ: «ابدأ متجرك النهاردة»</li><li>واثق من غير مبالغة</li><li class="mb-n">لا وعود وهمية أو لغة معقّدة</li></ul></div></div></section>
 
 
@@ -854,7 +879,7 @@
           <h2 class="text-3xl font-black text-gray-900">من مدونتنا</h2>
           <p class="text-gray-500 mt-1 text-sm">مقالات SEO يومية — موضوعات الأعمال الرقمية في مصر</p>
         </div>
-        <a href="/blog" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm border border-navy-200 px-4 py-2 rounded-xl hover:bg-navy-50">
+        <a href="/blog/" class="text-navy-700 font-bold flex items-center gap-2 hover:gap-3 transition-all text-sm border border-navy-200 px-4 py-2 rounded-xl hover:bg-navy-50">
           <span>عرض جميع المقالات</span><i class="fa-solid fa-arrow-left"></i>
         </a>
       </div>
@@ -894,13 +919,13 @@
   <!-- ══ END CTA (design A) — last block of the home page ══ -->
 <div id="mallDesignEnd" data-home-sec="cta">
 <section class="end pad" id="md-end">
-  <img data-logo alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
+  <img data-logo width="184" height="184" src="/icons/logo-mark-184.webp" alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
   <div class="acts" style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل الآن</a><a class="btn2" href="#" data-go="products">تصفّح المنتجات</a></div>
 </section>
 </div>
 <!-- ══ END CTA (design B) ══ -->
 <div id="mallDesignBEnd" data-home-sec="cta">
-<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img src="/icons/logo-mark.webp" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك</a></div></section>
+<section class="mb-pad" style="padding-bottom:20px"><div class="mb-cta" data-p id="mb-cta"><img width="184" height="184" src="/icons/logo-mark-184.webp" loading="lazy" alt=""><h2>مدخلك للسوق مفتوح</h2><a class="mb-btn" href="#" data-go="register">افتح متجرك</a></div></section>
 </div>
 
 <footer class="m-footer py-14 px-4 -mx-4">
@@ -908,7 +933,7 @@
     <div class="max-w-6xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
         <div class="lg:col-span-2">
-          <div class="m-flogo"><div class="m-logo"><img width="320" height="320" src="/icons/logo-mark.webp" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
+          <div class="m-flogo"><div class="m-logo"><img width="184" height="184" src="/icons/logo-mark-184.webp" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
           <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">منصة عربية للخدمات والمنتجات، بنظام ضمان مالي (Escrow) تُحجز فيه قيمة الطلب إلى أن يؤكد المشتري الاستلام.</p>
           <div class="inline-flex items-center gap-2 bg-turquoise-500/10 text-turquoise-400 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-shield-halved"></i> معاملات محمية بالكامل
@@ -918,17 +943,17 @@
           <h3 class="text-white font-bold text-sm mb-3">روابط سريعة</h3>
           <ul class="space-y-2 text-sm text-navy-200/70">
             <li><a href="/" class="hover:text-white transition">الرئيسية</a></li>
-            <li><a href="/blog" class="hover:text-white transition">المدونة</a></li>
-            <li><a href="/about" class="hover:text-white transition">من نحن</a></li>
-            <li><a href="/contact" class="hover:text-white transition">تواصل معنا</a></li>
+            <li><a href="/blog/" class="hover:text-white transition">المدونة</a></li>
+            <li><a href="/about/" class="hover:text-white transition">من نحن</a></li>
+            <li><a href="/contact/" class="hover:text-white transition">تواصل معنا</a></li>
           </ul>
         </div>
         <div>
           <h3 class="text-white font-bold text-sm mb-3">الضمان والدعم</h3>
           <ul class="space-y-2 text-sm text-navy-200/70">
-            <li><a href="/terms" target="_blank" class="hover:text-white transition">الشروط والأحكام</a></li>
-            <li><a href="/privacy" target="_blank" class="hover:text-white transition">سياسة الخصوصية</a></li>
-            <li><a href="/refund-policy" target="_blank" class="hover:text-white transition">سياسة الاسترجاع</a></li>
+            <li><a href="/terms/" target="_blank" class="hover:text-white transition">الشروط والأحكام</a></li>
+            <li><a href="/privacy/" target="_blank" class="hover:text-white transition">سياسة الخصوصية</a></li>
+            <li><a href="/refund-policy/" target="_blank" class="hover:text-white transition">سياسة الاسترجاع</a></li>
             <li><a href="mailto:support@mall-services.com" class="hover:text-white transition">الدعم الفني</a></li>
           </ul>
         </div>
@@ -1155,9 +1180,9 @@
             <input type="checkbox" id="acceptTermsCheckbox" class="mt-0.5 accent-navy-600">
             <span>
               أوافق على
-              <a href="/terms" target="_blank" class="text-navy-600 font-bold underline">الشروط والأحكام</a>
+              <a href="/terms/" target="_blank" class="text-navy-600 font-bold underline">الشروط والأحكام</a>
               و
-              <a href="/privacy" target="_blank" class="text-navy-600 font-bold underline">سياسة الخصوصية</a>
+              <a href="/privacy/" target="_blank" class="text-navy-600 font-bold underline">سياسة الخصوصية</a>
             </span>
           </label>
           <button onclick="AuthManager.register()" class="btn-primary w-full py-4" data-i18n="auth.register">إنشاء الحساب</button>
@@ -1591,8 +1616,8 @@
         <label class="flex items-start gap-2 cursor-pointer select-none">
           <input type="checkbox" id="productAgreeRules" class="mt-1 w-4 h-4 accent-navy-700">
           <span class="text-xs text-gray-600 leading-relaxed">
-            أوافق على <a href="/terms" target="_blank" class="underline text-navy-600 font-bold">شروط وأحكام المنصة</a>
-            و<a href="/refund-policy" target="_blank" class="underline text-navy-600 font-bold">سياسة الاسترجاع</a>
+            أوافق على <a href="/terms/" target="_blank" class="underline text-navy-600 font-bold">شروط وأحكام المنصة</a>
+            و<a href="/refund-policy/" target="_blank" class="underline text-navy-600 font-bold">سياسة الاسترجاع</a>
             وشروط البائع الموضحة أعلاه (إن وُجدت)
           </span>
         </label>
@@ -1721,7 +1746,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 </script>
 
 <!-- 2. Constants & Utilities -->
-<script src="js/constants.js?v=2026-11-06-feed1"></script>
+<script src="js/constants.js?v=2026-11-07-perf1"></script>
 
 <script>
 // Load live platform settings BEFORE any page renders
@@ -1774,7 +1799,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 
 <!-- 7c. Blog Engine (Firestore-powered blog) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
-<script src="js/blog-engine.js?v=2026-10-31-sec1"></script>
+<script src="js/blog-engine.js?v=2026-11-07-perf1"></script>
 
 <!-- 8. Auth -->
 <script src="js/auth.js?v=2026-10-31-sec1"></script>
@@ -1783,7 +1808,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script src="js/services.js?v=2026-10-31-sec1"></script>
 <script src="js/ads-embed.js?v=2026-10-31-sec1"></script>
 <script src="js/ads-system.js?v=2026-10-31-sec1"></script>
-<script src="js/dropship.js?v=2026-10-19-marketer2"></script>
+<script src="js/dropship.js?v=2026-11-07-perf1"></script>
 <script src="js/affiliate.js?v=2026-10-19"></script>
 <script>
   // reveal «ابدأ كمسوّق» only while the program is enabled by the admin
@@ -2234,6 +2259,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
     let _authFirstRun = true;
 
     auth.onAuthStateChanged(async (user) => {
+        try { localStorage.setItem('mall_authed', user ? '1' : '0'); } catch (_) {}
         const isFirstRun = _authFirstRun;
         _authFirstRun = false;
         if (isFirstRun && typeof _resolveAuthReady === 'function') _resolveAuthReady();
@@ -2324,8 +2350,16 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
         // Firestore but nothing ever read it back — a real admin control with
         // zero actual effect on the site. Now enforced here, once we know
         // both the platform config and the visitor's role.
-        try { await loadPlatformSettings(); } catch (e) {}
-        _enforceMaintenanceGate();
+        // Platform settings (needed only for the maintenance gate) load in the background: the loading screen no longer waits
+        // for that slow Function → Firestore round-trip (it was the main reason the page stayed hidden for ~2 s).
+        // Exception: a returning visitor who last saw maintenance mode ON still waits, so the site never flashes before the gate.
+        const _settingsReady = (async () => {
+            try { await loadPlatformSettings(); } catch (e) {}
+            _enforceMaintenanceGate();
+        })();
+        let _wasMaint = false;
+        try { _wasMaint = localStorage.getItem('mall_maint') === '1'; } catch (_) {}
+        if (_wasMaint) { try { await _settingsReady; } catch (_) {} }
 
         // ── Hide loading screen ── (shared helper; a 4s safety timeout also calls it — see the script after #appLoadingScreen)
         if (window.__hideAppLoading) window.__hideAppLoading();
@@ -2828,7 +2862,7 @@ console.log('✅ Firebase v4.0 initialized | domain:', location.hostname);
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
-<script defer src="/js/mall-home.js?v=4"></script>
+<script defer src="/js/mall-home.js?v=7"></script>
 <script defer src="/js/mall-home-b.js?v=2"></script>
 <script defer src="/js/mall-charts.js?v=1"></script>
 <script defer src="/js/store-extras.js?v=1"></script>

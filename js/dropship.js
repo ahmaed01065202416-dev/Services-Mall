@@ -32,7 +32,16 @@
     }
     async function settings() {
         var out = Object.assign({}, DEFAULTS);
-        try { var d = await window.db.collection('settings').doc('platform').get(); if (d.exists) { var c = d.data(); Object.keys(DEFAULTS).forEach(function (k) { if (c[k] !== undefined && c[k] !== null) out[k] = c[k]; }); } } catch (e) {}
+        function merge(c) { Object.keys(DEFAULTS).forEach(function (k) { if (c[k] !== undefined && c[k] !== null) out[k] = c[k]; }); }
+        try {
+            // Same public settings/platform document, but through the shared /api/home-feed request (one HTTPS call that every
+            // other loader already makes) — a first-time visitor no longer opens a Firestore stream just to learn whether the
+            // marketer button should show. Direct Firestore stays as the fallback if the feed is unavailable.
+            var feed = window.fetchHomeFeed ? await window.fetchHomeFeed('platform') : null;
+            if (feed && feed.item) { merge(feed.item); return out; }
+            var d = await window.db.collection('settings').doc('platform').get();
+            if (d.exists) merge(d.data());
+        } catch (e) {}
         return out;
     }
     function floorPrice(w, ds) { w = Number(w) || 0; return Number((w + Math.max(Number(ds.DROPSHIP_MIN_MARGIN_FIXED) || 0, w * (Number(ds.DROPSHIP_MIN_MARGIN_PERCENT) || 0) / 100, 0.01)).toFixed(2)); }

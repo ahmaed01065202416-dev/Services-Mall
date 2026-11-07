@@ -378,7 +378,7 @@
   }
 
   function showBlogList() {
-    window.history.pushState({}, '', '/blog');
+    window.history.pushState({}, '', '/blog/');
     document.getElementById('blog-post-view')  && (document.getElementById('blog-post-view').style.display = 'none');
     document.getElementById('blog-list-view')  && (document.getElementById('blog-list-view').style.display = 'block');
     document.title = 'المدونة | مول الخدمات';
