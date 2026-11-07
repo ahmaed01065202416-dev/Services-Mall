@@ -59,7 +59,8 @@
 
 /*.xml
   Cache-Control: public, max-age=3600
-  Content-Type: application/xml; charset=UTF-8
+  # No Content-Type override here on purpose: Cloudflare Pages already serves .xml as application/xml, and an override on top of the
+  # built-in header risks a duplicated/merged Content-Type that a browser tolerates but a crawler may not.
 
 /robots.txt
   Cache-Control: public, max-age=3600
