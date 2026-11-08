@@ -104,7 +104,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://firestore.googleapis.com">
   <link rel="dns-prefetch" href="https://services-mall.firebaseapp.com">
   <link rel="dns-prefetch" href="https://apis.google.com">
@@ -112,7 +111,8 @@
   <noscript><style>#appLoadingScreen{display:none!important}</style></noscript>
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap"></noscript>
 
   <!-- Font Awesome -->
   <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -128,6 +128,10 @@
 
   <!-- Firebase SDK is no longer render-blocking: the five SDK tags moved to just before the
        Firebase init script (first consumer, body bottom). Preload fetches them early in parallel. -->
+  <!-- GSAP + home scroll-story are `defer` scripts at the very end of <body>; preload so they download in parallel with the rest instead of being discovered last -->
+  <link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js">
+  <link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js">
+  <link rel="preload" as="script" href="/js/mall-home.js?v=7">
   <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js">
   <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js">
   <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js">
@@ -146,8 +150,7 @@
        Rebuild after any class/theme change with:
          npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
   -->
-  <link rel="stylesheet" href="/css/tailwind.css?v=v3">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=1">
+  <link rel="stylesheet" href="/css/bundle-base.css?v=07065f75">
   <script>
     /* Apply saved theme before paint to avoid a light-mode flash */
     (function(){
@@ -387,12 +390,7 @@
     }
   </style>
   <!-- Theme layer (نهاري / ليلي) — keep AFTER the inline <style> above -->
-  <link rel="stylesheet" href="/css/mall-theme.css?v=1">
-  <link rel="stylesheet" href="/css/mall-home.css?v=4">
-  <link rel="stylesheet" href="/css/mall-extra.css?v=5">
-  <link rel="stylesheet" href="/css/mall-home-b.css?v=2">
-  <link rel="stylesheet" href="/css/mall-home-sections.css?v=1">
-  <link rel="stylesheet" href="/css/mall-design-mint.css?v=2">
+  <link rel="stylesheet" href="/css/bundle-mall.css?v=7109f6f7">
   <script src="/js/theme.js?v=1"></script>
   <script src="/js/design.js?v=2"></script>
 </head>
