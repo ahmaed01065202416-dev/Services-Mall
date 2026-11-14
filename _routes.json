@@ -3,6 +3,9 @@
   "include": [
     "/api/*",
     "/blog/*",
+    "/s/*",
+    "/service/*",
+    "/c/*",
     "/sitemap-live.xml",
     "/functions/*",
     "/cron-worker/*",

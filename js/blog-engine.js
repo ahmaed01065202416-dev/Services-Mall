@@ -173,9 +173,34 @@
   }
 
   // ── Single Post Page ───────────────────────────────────────────────────────
+
+  // ── Internal links: services + categories under every article (real hrefs → crawlable, and useful to readers) ──
+  const _CAT_LABELS = { design:'تصميم', programming:'برمجة', marketing:'تسويق', writing:'كتابة', video:'فيديو', seo:'SEO', audio:'صوتيات', data:'بيانات', clothing:'ملابس', electronics:'إلكترونيات', home:'مستلزمات منزلية', beauty:'مستحضرات تجميل', food:'أطعمة ومشروبات', accessories:'إكسسوارات' };
+  async function _appendRelated(container) {
+    try {
+      const res = await fetch('/api/home-feed?section=services');
+      const data = res.ok ? await res.json() : null;
+      const items = ((data && data.items) || []).filter(x => x && /^[A-Za-z0-9_\-]{1,128}$/.test(String(x.id || '')) && x.title).slice(0, 6);
+      if (!items.length) return;
+      const cats = [...new Set(items.map(x => x.category).filter(c => _CAT_LABELS[c]))];
+      const chip = 'display:inline-block;padding:6px 14px;margin:4px;border-radius:999px;background:#f3f4f6;color:#374151;font-size:13px;font-weight:700;text-decoration:none';
+      const html = `<section style="max-width:1100px;margin:0 auto;padding:0 20px 28px">
+        <h2 style="font-size:18px;font-weight:900;margin:0 0 12px;color:#0F172A">خدمات قد تهمك</h2>
+        <div>${items.map(x => `<a href="/service/${encodeURIComponent(x.id)}" style="${chip}">${escapeHtml(String(x.title).slice(0, 70))}</a>`).join('')}</div>
+        ${cats.length ? `<div style="margin-top:8px">${cats.map(c => `<a href="/c/${c}" style="${chip};background:#fff7e6">${_CAT_LABELS[c]}</a>`).join('')}</div>` : ''}
+      </section>`;
+      const anchor = container.querySelector('button[onclick="BlogEngine.showBlogList()"]');
+      const host = anchor && anchor.parentElement;
+      if (host) host.insertAdjacentHTML('beforebegin', html); else container.insertAdjacentHTML('beforeend', html);
+    } catch (_) { /* optional block: never break the article */ }
+  }
+
   async function renderPost(slug, containerId) {
     const container = document.getElementById(containerId);
     if (!container || !slug) return;
+    // a slug taken from location.pathname arrives percent-encoded; the stored slug is the raw text
+    if (/%[0-9A-Fa-f]{2}/.test(slug)) { try { slug = decodeURIComponent(slug); } catch (_) { /* keep as is */ } }
+    slug = String(slug).replace(/\/+$/, '');
 
     // Loading state
     container.innerHTML = `
@@ -352,6 +377,7 @@
           }
         }`;
       container.appendChild(style);
+      _appendRelated(container);
 
       // Update page title + meta
       document.title = `${post.title} | مول الخدمات`;

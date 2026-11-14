@@ -7,6 +7,7 @@ Disallow: /workspace
 Disallow: /dashboard
 Disallow: /api/
 Allow: /api/sitemap-dynamic
+Allow: /api/ad-image
 Disallow: /*.env
 
 # Sitemap index (core pages + the live blog sitemap, which is listed inside it).

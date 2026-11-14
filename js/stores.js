@@ -205,6 +205,7 @@
                 desc: store && store.description, announcement: store && store.announcement,
                 shippingPolicy: store && store.shippingPolicy, returnPolicy: store && store.returnPolicy, hero,
             }) : '';
+            if (head && store && !head.querySelector('[data-store-share]')) { head.insertAdjacentHTML('beforeend', `<div data-store-share class="max-w-5xl mx-auto px-4">${this.shareBarHtml(storeId, name, true)}</div>`); }
             const grid = document.getElementById('storeProductsGrid');
             if (grid) {
                 const layout = (store && store.layout) || 'grid3';
@@ -222,6 +223,37 @@
             const list = needle ? this._items.filter(x => String(x.title || '').toLowerCase().includes(needle) || String(x.category || '').toLowerCase().includes(needle)) : this._items;
             ServicesManager._renderServiceCards(list, 'storeProductsGrid', 'storeProductsEmpty');
         },
+
+        // ── Shareable store link (/s/<id>: real page with its own title + preview image for Facebook / WhatsApp / Google) ──
+        storeLink(id) { return location.origin + '/s/' + encodeURIComponent(id); },
+        shareBarHtml(id, name, compact) {
+            id = window.safeId ? window.safeId(id) : id;
+            if (!id) return '';
+            (this._shareNames = this._shareNames || {})[id] = name || '';
+            const link = this.storeLink(id);
+            const btn = (bg, ic, label, fn) => `<button type="button" onclick="StoresManager.${fn}('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl" style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
+            return `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 ${compact ? 'mt-4' : 'mb-6'}" dir="${isAr() ? 'rtl' : 'ltr'}">
+              <p class="font-black text-gray-900 text-sm mb-1"><i class="fa-solid fa-link me-1 text-navy-600"></i>${isAr() ? 'رابط متجرك — شاركه على فيسبوك وواتساب وأي مكان' : 'Your store link — share it anywhere'}</p>
+              ${compact ? '' : `<p class="text-xs text-gray-500 mb-2">${isAr() ? 'أي حد يفتح الرابط هيشوف متجرك مباشرة، وهيظهر باسم المتجر وشعاره لما تنشره.' : 'Anyone opening it lands on your store; it previews with your store name and logo.'}</p>`}
+              <div class="flex flex-wrap items-center gap-2">
+                <input readonly value="${esc(link)}" onclick="this.select()" dir="ltr" class="form-input flex-1 min-w-[12rem] text-xs">
+                <button type="button" onclick="StoresManager.copyLink('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-navy-800 text-white"><i class="fa-solid fa-copy me-1"></i>${isAr() ? 'نسخ' : 'Copy'}</button>
+                ${btn('#1877F2', 'fa-brands fa-facebook-f', 'Facebook', 'shareFacebook')}
+                ${btn('#25D366', 'fa-brands fa-whatsapp', 'WhatsApp', 'shareWhatsApp')}
+                ${navigator.share ? btn('#475569', 'fa-solid fa-share-nodes', isAr() ? 'مشاركة' : 'Share', 'shareNative') : ''}
+              </div>
+            </div>`;
+        },
+        async copyLink(id) {
+            const link = this.storeLink(id);
+            try { await navigator.clipboard.writeText(link); }
+            catch (_) { const i = document.createElement('input'); i.value = link; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); } catch (__) {} i.remove(); }
+            showToast(isAr() ? '✅ تم نسخ رابط المتجر' : '✅ Store link copied', 'success');
+        },
+        _shareText(id) { const n = (this._shareNames || {})[id]; return (n ? n + ' — ' : '') + (isAr() ? 'تسوّق من متجري على مول الخدمات' : 'Shop my store on Mall Services'); },
+        shareFacebook(id) { window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(this.storeLink(id)), '_blank', 'noopener,noreferrer,width=640,height=560'); },
+        shareWhatsApp(id) { window.open('https://wa.me/?text=' + encodeURIComponent(this._shareText(id) + '\n' + this.storeLink(id)), '_blank', 'noopener,noreferrer'); },
+        shareNative(id) { try { navigator.share({ title: (this._shareNames || {})[id] || '', text: this._shareText(id), url: this.storeLink(id) }); } catch (_) {} },
 
         // ═════════════════════════════════════════════════════════════════
         //  SELLER DASHBOARD — «متجري»
@@ -379,6 +411,7 @@
             ];
             const card = (ic, col, v, l) => `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"><div class="w-10 h-10 rounded-xl ${col} flex items-center justify-center mb-2"><i class="fa-solid ${ic}"></i></div><p class="text-2xl font-black text-gray-900">${v}</p><p class="text-xs text-gray-500">${l}</p></div>`;
             body.innerHTML = `
+            ${this.shareBarHtml(st.id, st.name)}
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               ${card('fa-box', 'bg-blue-50 text-blue-600', list.length, isAr() ? 'منتجات وخدمات' : 'Listings')}
               ${card('fa-bag-shopping', 'bg-amber-50 text-amber-600', open, isAr() ? 'طلبات جارية' : 'Open orders')}

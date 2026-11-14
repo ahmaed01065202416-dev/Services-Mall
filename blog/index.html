@@ -194,7 +194,7 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js"></script>
 
 <!-- Blog Engine -->
-<script src="/js/blog-engine.js"></script>
+<script src="/js/blog-engine.js?v=2026-11-13-rel1"></script>
 
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
@@ -333,14 +333,22 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
     window.scrollTo({ top:0, behavior:'smooth' });
   };
 
+  // window.location.pathname is PERCENT-ENCODED for Arabic slugs (%D9%83…). Firestore stores the raw slug, so the
+  // lookup used to fail for every directly opened /blog/<arabic-slug> link ("المقال غير موجود") while the same
+  // article opened fine from the list (which passes the raw slug). Always decode before querying.
+  function slugFromPath() {
+    const m = window.location.pathname.match(/^\/blog\/(.+?)\/?$/);
+    if (!m) return '';
+    try { return decodeURIComponent(m[1]); } catch (_) { return m[1]; }
+  }
+
   // ── Handle direct /blog/:slug URLs ─────────────────────────────────────────
   (function init() {
-    const path = window.location.pathname;
-    const slugMatch = path.match(/^\/blog\/(.+)$/);
-    if (slugMatch && slugMatch[1]) {
+    const slugFromUrl = slugFromPath();
+    if (slugFromUrl) {
       document.getElementById('blog-list-view').style.display = 'none';
       document.getElementById('blog-post-view').style.display = 'block';
-      BlogEngine.renderPost(slugMatch[1], 'blog-post-container');
+      BlogEngine.renderPost(slugFromUrl, 'blog-post-container');
     } else {
       loadPosts(true);
     }
@@ -348,7 +356,7 @@ body{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;background:va
 
   // ── Handle browser back/forward ────────────────────────────────────────────
   window.addEventListener('popstate', (e) => {
-    const slug = e.state?.blogSlug || window.location.pathname.match(/^\/blog\/(.+)$/)?.[1];
+    const slug = e.state?.blogSlug || slugFromPath();
     if (slug) {
       document.getElementById('blog-list-view').style.display = 'none';
       document.getElementById('blog-post-view').style.display = 'block';
