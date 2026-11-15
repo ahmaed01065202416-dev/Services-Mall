@@ -243,6 +243,22 @@ async function fsQuery(env, structuredQuery) {
         .map(r => ({ id: r.document.name.split('/').pop(), _updateTime: r.document.updateTime, ...fromFields(r.document.fields) }));
 }
 
+/** Like fsQuery, but an error response (missing index, quota, auth) THROWS instead of looking like "no documents".
+ *  Used where an empty result would be cached or mistaken for "the list ended". */
+async function fsQueryStrict(env, structuredQuery) {
+    const token = await getAccessToken(env);
+    const resp = await fetch(`${fsBase(env)}:runQuery`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery }),
+    });
+    const rows = await resp.json();
+    if (!resp.ok || !Array.isArray(rows)) throw new Error('firestore query failed: ' + resp.status);
+    return rows
+        .filter(r => r.document)
+        .map(r => ({ id: r.document.name.split('/').pop(), _updateTime: r.document.updateTime, ...fromFields(r.document.fields) }));
+}
+
 // ── Aggregation count — cheap server-side COUNT(*) for a filtered collection,
 // e.g. active services or completed orders. Used by functions/api/home-stats.js
 // so the public homepage can show real numbers without needing broad client-side
@@ -336,6 +352,7 @@ async function rtdbUpdate(env, path, data) {
 }
 
 export {
+    fsQueryStrict,
     getAccessToken, verifyIdToken,
     fsGet, fsCreate, fsSet, fsDelete, fsCommit, fsQuery, fsCount, fsAggregate,
     writeIncrement, writeUpdate, writeCreate,

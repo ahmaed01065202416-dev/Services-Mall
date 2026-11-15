@@ -1,3 +1,4 @@
+import { edgeCached } from '../_shared/edge-cache.js';
 // functions/api/home-stats.js — Cloudflare Pages Function
 // Live, REAL counters for the homepage (users, active services, completed
 // orders, reviews + their true average) — never hardcoded marketing numbers.
@@ -23,7 +24,7 @@ const CORS = {
     'Cache-Control': 'public, max-age=30, s-maxage=30',
 };
 
-export async function onRequest(context) {
+async function handle(context) {
     const { request, env } = context;
     if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
 
@@ -57,3 +58,4 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { ...CORS, 'Cache-Control': 'no-store' } });
     }
 }
+export const onRequest = (context) => edgeCached(context, { params: [], cap: 120, ttl: 120, swr: 600 }, () => handle(context));

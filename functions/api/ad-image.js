@@ -1,3 +1,4 @@
+import { edgeCached } from '../_shared/edge-cache.js';
 /**
  * functions/api/ad-image.js — Route: GET /api/ad-image?s=<serviceId>
  * Serves a listing's cover photo as a real, browser-cacheable image. Photos in this app are stored as
@@ -6,7 +7,7 @@
  */
 import { fsGet } from '../_shared/gcp.js';
 
-export async function onRequest(context) {
+async function handle(context) {
     const { request, env } = context;
     const params = new URL(request.url).searchParams;
     // a numeric ?v=<updateTime> means the URL changes whenever the image does -> a longer browser cache is safe
@@ -64,3 +65,4 @@ export async function onRequest(context) {
         return new Response('error', { status: 500, headers: { 'Cache-Control': 'no-store' } });
     }
 }
+export const onRequest = (context) => edgeCached(context, { params: ['a', 's', 'st', 'v'], cap: 86400, limit: 200 }, () => handle(context));

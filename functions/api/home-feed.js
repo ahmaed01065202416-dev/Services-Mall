@@ -15,6 +15,7 @@
  * publicly readable.
  */
 import { fsQuery, fsGet } from '../_shared/gcp.js';
+import { edgeCached } from '../_shared/edge-cache.js';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff' };
 const ok = (body, maxAge) => new Response(JSON.stringify({ success: true, ...body }), { status: 200, headers: { ...JSON_HEADERS, 'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}` } });
@@ -70,40 +71,64 @@ const str = (s) => ({ stringValue: s });
 const and = (...filters) => ({ compositeFilter: { op: 'AND', filters } });
 const isProduct = (d) => (d.listingType || 'service') === 'product';
 
-export async function onRequest(context) {
+/** One section of the public feed → { body, maxAge } (null for an unknown section). Throws on Firestore errors. */
+async function sectionBody(env, section) {
+    if (section === 'services') {
+        // Same logic the browser had: featured+active first (excluding product listings), else any active listing.
+        let docs = (await fsQuery(env, { from: [{ collectionId: 'services' }], where: and(eq('active', bool(true)), eq('featured', bool(true))), limit: 12 })).filter(d => !isProduct(d));
+        if (!docs.length) docs = (await fsQuery(env, { from: [{ collectionId: 'services' }], where: eq('active', bool(true)), limit: 20 })).filter(d => !isProduct(d));
+        return { body: { items: docs.slice(0, 6).map(shapeService) }, maxAge: 60 };
+    }
+    if (section === 'products') {
+        const docs = await fsQuery(env, { from: [{ collectionId: 'services' }], where: and(eq('active', bool(true)), eq('listingType', str('product'))), limit: 8 });
+        return { body: { items: docs.map(shapeService) }, maxAge: 60 };
+    }
+    if (section === 'stores') {
+        const docs = await fsQuery(env, {
+            from: [{ collectionId: 'stores' }],
+            where: { fieldFilter: { field: { fieldPath: 'featuredUntil' }, op: 'GREATER_THAN', value: { timestampValue: new Date().toISOString() } } },
+            limit: 24,
+        });
+        return { body: { items: docs.map(shapeStore) }, maxAge: 60 };
+    }
+    if (section === 'platform') {
+        const doc = await fsGet(env, 'settings/platform');
+        if (!doc) return { body: { item: null }, maxAge: 30 };
+        const { _updateTime, id, ...settings } = doc;
+        return { body: { item: settings }, maxAge: 30 };
+    }
+    return null;
+}
+
+// The browser used to call stores + services + products as three separate Function invocations on every first visit.
+// `section=bundle` returns them together (one invocation; `platform` stays separate: it is tiny and boot-critical).
+export const BUNDLE_SECTIONS = ['stores', 'services', 'products'];
+export function assembleBundle(entries) {
+    const sections = {};
+    for (const [name, r] of entries) if (r && r.body) sections[name] = r.body;
+    return Object.keys(sections).length ? sections : null;
+}
+
+async function handle(context) {
     const { request, env } = context;
     if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: { ...JSON_HEADERS, 'Access-Control-Allow-Methods': 'GET, OPTIONS' } });
     if (request.method !== 'GET') return fail(405, 'method not allowed');
     const section = new URL(request.url).searchParams.get('section') || '';
 
     try {
-        if (section === 'services') {
-            // Same logic the browser had: featured+active first (excluding product listings), else any active listing.
-            let docs = (await fsQuery(env, { from: [{ collectionId: 'services' }], where: and(eq('active', bool(true)), eq('featured', bool(true))), limit: 12 })).filter(d => !isProduct(d));
-            if (!docs.length) docs = (await fsQuery(env, { from: [{ collectionId: 'services' }], where: eq('active', bool(true)), limit: 20 })).filter(d => !isProduct(d));
-            return ok({ items: docs.slice(0, 6).map(shapeService) }, 60);
+        if (section === 'bundle') {
+            // a failing section is simply left out: the browser asks for that one on its own
+            const entries = await Promise.all(BUNDLE_SECTIONS.map(n => sectionBody(env, n).then(r => [n, r], err => { console.error('[home-feed]', n, err && err.message); return [n, null]; })));
+            const sections = assembleBundle(entries);
+            return sections ? ok({ sections }, 120) : fail(500, 'feed unavailable');
         }
-        if (section === 'products') {
-            const docs = await fsQuery(env, { from: [{ collectionId: 'services' }], where: and(eq('active', bool(true)), eq('listingType', str('product'))), limit: 8 });
-            return ok({ items: docs.map(shapeService) }, 60);
-        }
-        if (section === 'stores') {
-            const docs = await fsQuery(env, {
-                from: [{ collectionId: 'stores' }],
-                where: { fieldFilter: { field: { fieldPath: 'featuredUntil' }, op: 'GREATER_THAN', value: { timestampValue: new Date().toISOString() } } },
-                limit: 24,
-            });
-            return ok({ items: docs.map(shapeStore) }, 60);
-        }
-        if (section === 'platform') {
-            const doc = await fsGet(env, 'settings/platform');
-            if (!doc) return ok({ item: null }, 30);
-            const { _updateTime, id, ...settings } = doc;
-            return ok({ item: settings }, 30);
-        }
-        return fail(400, 'unknown section');
+        const r = await sectionBody(env, section);
+        if (!r) return fail(400, 'unknown section');
+        return ok(r.body, r.maxAge);
     } catch (err) {
         console.error('[home-feed]', section, err && err.message);
         return fail(500, 'feed unavailable');
     }
 }
+
+export const onRequest = (context) => edgeCached(context, { params: ['section'], cap: 300, ttl: 300, swr: 900 }, () => handle(context));

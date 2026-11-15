@@ -1,3 +1,4 @@
+import { edgeCached } from '../_shared/edge-cache.js';
 /**
  * functions/blog/[slug].js — Cloudflare Pages Function, route: /blog/:slug
  * ============================================================================
@@ -141,7 +142,7 @@ async function readAsset(env, origin, path) {
 
 const FALLBACK_404 = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>الصفحة غير موجودة — ${BRAND}</title></head><body style="font-family:sans-serif;text-align:center;padding:80px 20px"><h1>404</h1><p>المقال غير موجود.</p><p><a href="/blog/">العودة للمدونة</a></p></body></html>`;
 
-export async function onRequestGet(context) {
+async function renderBlog(context) {
   const { request, env, params } = context;
   const slug = decodeSlug(params.slug);
 
@@ -181,4 +182,11 @@ async function notFound(env, request) {
   });
 }
 
+export async function onRequestGet(context) {
+  const slug = decodeSlug(context.params.slug);
+  // Static articles / real files are served by the asset layer (already CDN-cached): never put them through the cache.
+  if (STATIC_SLUGS.has(slug) || /\.[a-z0-9]{2,5}$/i.test(slug)) return context.next();
+  // Article pages are the same for everybody → render once per Cloudflare location per TTL (protects Firestore reads).
+  return edgeCached(context, { params: [], cap: 600, limit: 60, swr: 3600 }, () => renderBlog(context));
+}
 export const onRequestHead = onRequestGet;

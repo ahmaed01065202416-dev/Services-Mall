@@ -5,7 +5,7 @@
  *   store missing / paused → REAL 404 (noindex) · Firestore error → 503 + Retry-After
  */
 import { fsGet, fsQuery } from '../_shared/gcp.js';
-import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, eq, and, str, bool } from '../_shared/seo-shell.js';
+import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, cachedPage, eq, and, str, bool } from '../_shared/seo-shell.js';
 
 /** Pure function (unit-testable): turns the SPA shell + store data into this store's page. */
 export function buildStorePage(html, { id, store, items, site }) {
@@ -26,7 +26,7 @@ export function buildStorePage(html, { id, store, items, site }) {
     });
 }
 
-export async function onRequestGet(context) {
+async function render(context) {
     const { request, env, params } = context;
     const id = String(Array.isArray(params.id) ? params.id[0] : params.id || '');
     if (!SAFE_ID.test(id)) return notFound(env, request, 'المتجر');
@@ -47,4 +47,5 @@ export async function onRequestGet(context) {
     if (!tpl || !tpl.ok) return unavailable();
     return htmlResponse(buildStorePage(await tpl.text(), { id, store, items, site: siteUrl(env) }));
 }
+export const onRequestGet = (context) => cachedPage(context, () => render(context));
 export const onRequestHead = onRequestGet;

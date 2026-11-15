@@ -1,3 +1,4 @@
+import { edgeCached } from '../_shared/edge-cache.js';
 /**
  * functions/api/ads-feed.js — Route: GET /api/ads-feed
  * ============================================================================
@@ -20,7 +21,7 @@ const CORS = {
     'Cache-Control': 'public, max-age=60, s-maxage=60',
 };
 
-export async function onRequest(context) {
+async function handle(context) {
     const { request, env } = context;
     if (request.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
     const fail = (e) => new Response(JSON.stringify({ enabled: false, placements: [], ads: [], error: e }), { status: 200, headers: { ...CORS, 'Cache-Control': 'no-store' } });
@@ -85,3 +86,4 @@ export async function onRequest(context) {
         return fail(err.message);
     }
 }
+export const onRequest = (context) => edgeCached(context, { params: [], cap: 300, ttl: 300, swr: 900 }, () => handle(context));

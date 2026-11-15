@@ -72,6 +72,8 @@
             if (!container) return;
             container.innerHTML = `<div class="text-center py-12"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
 
+            // ads / coupons / insights modules are loaded on first dashboard use (see __ensureDashModules in index.html)
+            if (window.__ensureDashModules) await window.__ensureDashModules();
             if (name === 'overview')       await this.renderOverview(container);
             else if (name === 'services')  await this.renderServices(container);
             else if (name === 'products')  await this.renderProducts(container);
@@ -564,6 +566,10 @@
                       class="flex items-center gap-1.5 text-xs px-3 py-2 ${isPaused ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} rounded-xl font-bold transition">
                       <i class="fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}"></i>
                       ${isPaused ? (isAr?'إعادة تفعيل':'Activate') : (isAr?'إيقاف مؤقت':'Pause')}
+                    </button>
+                    <button onclick="ServicesManager.copyServiceLink('${s.id}')"
+                      class="flex items-center gap-1.5 text-xs px-3 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
+                      <i class="fa-solid fa-link"></i>${isAr?'نسخ الرابط':'Copy link'}
                     </button>
                     <button onclick="AdsSystem.openPromote('${s.id}')"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-turquoise-50 text-turquoise-700 rounded-xl font-bold hover:bg-turquoise-100 transition">

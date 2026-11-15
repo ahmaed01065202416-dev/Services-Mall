@@ -93,3 +93,22 @@ test('sitemap: lists active stores, skips paused, survives store failure', async
     assert.equal(res.headers.get('Cache-Control'), 'public,max-age=300');
     globalThis.fetch = orig;
 });
+
+test('public pages: edge cache serves repeat URLs, per-IP throttle returns 429', async () => {
+    const { cachedPage } = await import('../functions/_shared/seo-shell.js');
+    const store = new Map();
+    const origCaches = globalThis.caches;
+    globalThis.caches = { default: { match: async (k) => store.get(k.url)?.clone(), put: async (k, r) => { store.set(k.url, r); } } };
+    let calls = 0;
+    const ctx = (path, ip) => ({ request: new Request('https://x.dev' + path, { headers: { 'CF-Connecting-IP': ip } }), waitUntil: () => {} });
+    const render = async () => { calls++; return new Response('hi', { status: 200, headers: { 'Cache-Control': 'public, max-age=300' } }); };   // like htmlResponse()
+    await cachedPage(ctx('/service/a', '1.1.1.1'), render);
+    await cachedPage(ctx('/service/a', '1.1.1.1'), render);
+    assert.equal(calls, 1, 'second request must come from the cache');
+    const r503 = await cachedPage(ctx('/service/b', '2.2.2.2'), async () => new Response('x', { status: 503 }));
+    assert.equal(r503.status, 503); assert.equal(store.has('https://x.dev/service/b'), false, '503 is never cached');
+    let last;
+    for (let i = 0; i < 45; i++) last = await cachedPage(ctx('/service/z' + i, '9.9.9.9'), render);
+    assert.equal(last.status, 429);
+    globalThis.caches = origCaches;
+});

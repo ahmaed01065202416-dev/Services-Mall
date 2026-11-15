@@ -36,6 +36,18 @@
     }
     window._removeTierRow = function(btn) { btn.closest('.tier-row').remove(); };
 
+        /* Admin screens read WHOLE collections (users / services / orders / escrow / transactions) to compute totals — every
+         * click re-billed the entire platform as Firestore reads. Reads are now shared for 5 minutes across the overview,
+         * analytics and broadcast screens (same numbers, up to 5 min old; reloading the page always refetches). */
+        const _adminReadCache = {};
+        async function adminReadAll(key, makeQuery) {
+            const hit = _adminReadCache[key];
+            if (hit && Date.now() - hit.t < 300000) return hit.snap;
+            const snap = await makeQuery().get();
+            _adminReadCache[key] = { t: Date.now(), snap };
+            return snap;
+        }
+
         const DashboardManager = {
 
         async initDashboardPage() {
@@ -233,10 +245,10 @@
             if (!row) return;
             try {
                 const [usersSnap, servicesSnap, ordersSnap, escrowSnap, disputesOpenSnap] = await Promise.all([
-                    window.db.collection(COLLECTIONS.USERS).get(),
-                    window.db.collection(COLLECTIONS.SERVICES).get(),
-                    window.db.collection(COLLECTIONS.ORDERS).get(),
-                    window.db.collection(COLLECTIONS.ESCROW).get(),
+                    adminReadAll('users', () => window.db.collection(COLLECTIONS.USERS)),
+                    adminReadAll('services', () => window.db.collection(COLLECTIONS.SERVICES)),
+                    adminReadAll('orders', () => window.db.collection(COLLECTIONS.ORDERS)),
+                    adminReadAll('escrow', () => window.db.collection(COLLECTIONS.ESCROW)),
                     window.db.collection(COLLECTIONS.DISPUTES).where('status','==','open').get(),
                 ]);
 
@@ -365,6 +377,7 @@
         if (!container) return;
         const isAr = AppState.language !== 'en';
         container.innerHTML = `<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
+        if (window.__ensureDashModules) await window.__ensureDashModules();   // ads / coupons / insights: loaded on first dashboard use
         try {
 
             // ── SITE DESIGN (js/design.js) ────────────────────────────────────
@@ -860,9 +873,9 @@
             // ── ANALYTICS ─────────────────────────────────────────────────────
             } else if (tab === 'analytics') {
                 const [ordersSnap, usersSnap, servicesSnap, txSnap] = await Promise.all([
-                    window.db.collection(COLLECTIONS.ORDERS).get(),
-                    window.db.collection(COLLECTIONS.USERS).get(),
-                    window.db.collection(COLLECTIONS.SERVICES).get(),
+                    adminReadAll('orders', () => window.db.collection(COLLECTIONS.ORDERS)),
+                    adminReadAll('users', () => window.db.collection(COLLECTIONS.USERS)),
+                    adminReadAll('services', () => window.db.collection(COLLECTIONS.SERVICES)),
                     window.db.collection(COLLECTIONS.TRANSACTIONS).where('type','==','earning').get(),
                 ]);
                 const allOrders = ordersSnap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1057,7 +1070,7 @@
 
             // ── BROADCAST ─────────────────────────────────────────────────────
             } else if (tab === 'broadcast') {
-                const broadcastUsersSnap = await window.db.collection(COLLECTIONS.USERS).get();
+                const broadcastUsersSnap = await adminReadAll('users', () => window.db.collection(COLLECTIONS.USERS));
                 const totalUsers = broadcastUsersSnap.size;
                 container.innerHTML = `
                 <div class="max-w-xl mx-auto space-y-5">

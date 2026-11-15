@@ -10,6 +10,8 @@
     let _allServices   = [];
     let _filtered      = [];
     let _lastDoc       = null;
+    let _nextCursor = '';   // cursor of the cached public listing (/api/services-list)
+    let _apiMode = true, _apiUsed = false;   // false once the endpoint failed → the browser uses its own Firestore query
     let _loading       = false;
     let _expressOnly   = false;
     let _activeCat     = '';
@@ -111,10 +113,17 @@
             if (!grid) return;
             grid.innerHTML = `<div class="col-span-full text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div>`;
             try {
-                const snap = await window.db.collection(COLLECTIONS.SERVICES)
-                    .where('active', '==', true).limit(200).get();
-                const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                    .filter(s => s.listingType === 'product' && (s.category||'').trim() === 'digital');
+                // Ask Firestore for the digital listings directly (<=60 reads) instead of downloading 200 active docs and
+                // filtering in the browser (which also hid digital products beyond the first 200). If nothing matches (e.g. a
+                // category stored with stray spaces) fall back to the old broad read.
+                const isDigital = d => d.listingType === 'product' && (d.category||'').trim() === 'digital';
+                let snap = await window.db.collection(COLLECTIONS.SERVICES)
+                    .where('active', '==', true).where('category', '==', 'digital').limit(60).get();
+                let items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(isDigital);
+                if (!items.length) {
+                    snap = await window.db.collection(COLLECTIONS.SERVICES).where('active', '==', true).limit(200).get();
+                    items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(isDigital);
+                }
                 _digitalProducts = items;
                 this._renderServiceCards(items, 'digitalProductsGrid', 'digitalProductsEmpty');
             } catch (err) {
@@ -135,21 +144,37 @@
             if (_loading) return;
             _loading = true;
 
-            if (reset) { _allServices = []; _filtered = []; _lastDoc = null; _hasMore = false; }
+            if (reset) { _allServices = []; _filtered = []; _lastDoc = null; _nextCursor = ''; _apiUsed = false; _hasMore = false; }
 
             try {
-                let query = window.db.collection(COLLECTIONS.SERVICES)
-                    .where('active', '==', true)
-                    .orderBy('createdAt', 'desc')
-                    .limit(PAGE_SIZE);
+                // 1) The cached public listing (shared by every visitor → almost no Firestore reads per visit).
+                let newServices = null;
+                if (_apiMode) {
+                    try {
+                        const r = await fetch('/api/services-list' + (!reset && _nextCursor ? '?cursor=' + encodeURIComponent(_nextCursor) : ''));
+                        const j = r.ok ? await r.json() : null;
+                        if (j && j.success && Array.isArray(j.items)) { newServices = j.items; _nextCursor = j.next || ''; _hasMore = !!j.hasMore; _apiUsed = true; }
+                    } catch (_) { /* fall through to Firestore */ }
+                    if (newServices === null) {
+                        if (_apiUsed && !reset) { newServices = []; _hasMore = false; }   // a later page failed: stop paging instead of restarting at page 1
+                        else _apiMode = false;                                             // endpoint unavailable: use Firestore from now on
+                    }
+                }
+                // 2) Fallback: the original direct Firestore query.
+                if (newServices === null) {
+                    let query = window.db.collection(COLLECTIONS.SERVICES)
+                        .where('active', '==', true)
+                        .orderBy('createdAt', 'desc')
+                        .limit(PAGE_SIZE);
 
-                if (_lastDoc && !reset) query = query.startAfter(_lastDoc);
+                    if (_lastDoc && !reset) query = query.startAfter(_lastDoc);
 
-                const snap = await query.get();
-                _lastDoc   = snap.docs[snap.docs.length - 1] || null;
-                _hasMore   = snap.docs.length >= PAGE_SIZE;
+                    const snap = await query.get();
+                    _lastDoc   = snap.docs[snap.docs.length - 1] || null;
+                    _hasMore   = snap.docs.length >= PAGE_SIZE;
 
-                const newServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    newServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                }
                 _allServices = reset ? newServices : [..._allServices, ...newServices];
 
                 // ⚠️ FIXED: this used to render `_allServices` as-is, ignoring the
@@ -358,6 +383,52 @@
         // even though the click was registered (title + active pill DID
         // update — only the grid didn't). Each card is now built in its own
         // try/catch so one bad listing can't block the rest.
+        // ── Shareable listing link (/service/<id>: real page with its own title + preview image) ──────────────────────
+        serviceLink(id) { return location.origin + '/service/' + encodeURIComponent(id); },
+        shareRowHtml(id, title) {
+            if (!/^[A-Za-z0-9_\-]{1,128}$/.test(String(id || ''))) return '';
+            (this._shareTitles = this._shareTitles || {})[id] = title || '';
+            const isAr = AppState.language !== 'en';
+            const b = (bg, ic, label, fn) => `<button type="button" onclick="ServicesManager.${fn}('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl" style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
+            return `<div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold text-gray-500"><i class="fa-solid fa-share-nodes me-1"></i>${isAr ? 'شارك:' : 'Share:'}</span>
+              <button type="button" onclick="ServicesManager.copyServiceLink('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-gray-100 text-gray-700"><i class="fa-solid fa-copy me-1"></i>${isAr ? 'نسخ الرابط' : 'Copy link'}</button>
+              ${b('#1877F2', 'fa-brands fa-facebook-f', 'Facebook', 'shareServiceFacebook')}
+              ${b('#25D366', 'fa-brands fa-whatsapp', 'WhatsApp', 'shareServiceWhatsApp')}
+            </div>`;
+        },
+        async copyServiceLink(id) {
+            const link = this.serviceLink(id);
+            try { await navigator.clipboard.writeText(link); }
+            catch (_) { const i = document.createElement('input'); i.value = link; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); } catch (__) {} i.remove(); }
+            showToast(AppState.language !== 'en' ? '✅ تم نسخ الرابط' : '✅ Link copied', 'success');
+        },
+        shareServiceFacebook(id) { window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(this.serviceLink(id)), '_blank', 'noopener,noreferrer,width=640,height=560'); },
+        shareServiceWhatsApp(id) {
+            const n = (this._shareTitles || {})[id];
+            window.open('https://wa.me/?text=' + encodeURIComponent((n ? n + '\n' : '') + this.serviceLink(id)), '_blank', 'noopener,noreferrer');
+        },
+
+        // ── Empty list: say why, and point to categories that do have listings ────────────────────────────────────────
+        async _fillEmptyHint(empty) {
+            if (!empty) return;
+            let box = empty.querySelector('[data-empty-hint]');
+            if (!box) { box = document.createElement('div'); box.setAttribute('data-empty-hint', ''); box.className = 'mt-4'; empty.appendChild(box); }
+            const isAr = AppState.language !== 'en';
+            const labels = { design:'تصميم', programming:'برمجة', marketing:'تسويق', writing:'كتابة', video:'فيديو', seo:'SEO', audio:'صوتيات', data:'بيانات', clothing:'ملابس', electronics:'إلكترونيات', home:'مستلزمات منزلية', beauty:'مستحضرات تجميل', food:'أطعمة ومشروبات', accessories:'إكسسوارات' };
+            const showAll = `<button type="button" onclick="ServicesManager.filterCategory('')" class="px-4 py-2 text-sm font-bold rounded-xl bg-navy-600 text-white">${isAr ? 'عرض كل الخدمات' : 'Show all'}</button>`;
+            box.innerHTML = `<p class="text-sm text-gray-400 mb-3">${_activeCat ? (isAr ? 'مفيش نتايج في التصنيف ده حاليًا.' : 'Nothing in this category yet.') : (isAr ? 'جرّب تغيّر البحث أو الفلاتر.' : 'Try a different search or filters.')}</p>${showAll}`;
+            try {
+                if (!this._hintCats) {
+                    const r = await fetch('/api/home-feed?section=services');
+                    const d = r.ok ? await r.json() : null;
+                    this._hintCats = [...new Set(((d && d.items) || []).map(x => x && x.category).filter(c => labels[c]))];
+                }
+                const cats = this._hintCats.filter(c => c !== _activeCat);
+                if (cats.length && box.isConnected) box.insertAdjacentHTML('beforeend', `<div class="mt-4 flex flex-wrap justify-center gap-2">${cats.map(c => `<button type="button" onclick="ServicesManager.filterCategory('${c}')" class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 text-gray-700">${labels[c]}</button>`).join('')}</div>`);
+            } catch (_) { /* hint is optional */ }
+        },
+
         _renderServiceCards(services, gridId = 'servicesGrid', emptyId = 'servicesEmpty') {
             const grid  = document.getElementById(gridId);
             const empty = document.getElementById(emptyId);
@@ -366,6 +437,7 @@
             if (!services || services.length === 0) {
                 grid.innerHTML = '';
                 if (empty) empty.classList.remove('hidden');
+                if (emptyId === 'servicesEmpty') this._fillEmptyHint(empty);
                 return;
             }
             if (empty) empty.classList.add('hidden');
@@ -594,6 +666,8 @@
                           <h3 class="font-black text-gray-900 mb-2">${isAr ? 'وصف الخدمة' : 'Service Description'}</h3>
                           <p class="text-gray-600 leading-relaxed text-sm">${escapeHtml(s.description || '—')}</p>
                         </div>
+
+                        ${ServicesManager.shareRowHtml(s.id, s.title)}
 
                         <!-- Meta -->
                         <div class="grid grid-cols-3 gap-3">

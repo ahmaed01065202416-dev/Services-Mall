@@ -104,7 +104,29 @@ const PLATFORM = {
 // browser could already read from Firestore, minus the multi-MB base64 photos, and — because it is a plain HTTPS
 // request — it avoids opening Firestore's long-lived streaming connection on a first visit. Resolves to the parsed
 // JSON ({success:true, ...}) or null on ANY failure, so callers always fall back to the old direct-Firestore path.
+// stores + services + products are fetched together (ONE Function invocation instead of three; every invocation counts
+// against the free daily quota). `platform` stays separate: tiny and needed first. Any problem → the old per-section request.
+let _bundleP = null;
+function _fetchBundle() {
+    if (_bundleP) return _bundleP;
+    const p = _bundleP = (async () => {
+        try {
+            const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 8000);
+            const r = await fetch('/api/home-feed?section=bundle', { signal: ctl.signal });
+            clearTimeout(to);
+            const j = await r.json();
+            return j && j.success && j.sections ? j.sections : null;
+        } catch (e) { return null; }
+    })();
+    p.then(r => { if (r === null && _bundleP === p) _bundleP = null; });
+    setTimeout(() => { if (_bundleP === p) _bundleP = null; }, 60000);   // later navigations ask again
+    return p;
+}
 async function _fetchHomeFeedRaw(section) {
+    if (section === 'stores' || section === 'services' || section === 'products') {
+        const b = await _fetchBundle();
+        if (b && b[section]) return { success: true, ...b[section] };
+    }
     try {
         const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 8000);
         const r = await fetch('/api/home-feed?section=' + encodeURIComponent(section), { signal: ctl.signal });

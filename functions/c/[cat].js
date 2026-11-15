@@ -6,7 +6,7 @@
  */
 import { fsQuery } from '../_shared/gcp.js';
 import { CATEGORIES, isCategory } from '../_shared/catalog.js';
-import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, eq, and, str, bool } from '../_shared/seo-shell.js';
+import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, cachedPage, eq, and, str, bool } from '../_shared/seo-shell.js';
 
 export function buildCategoryPage(html, { cat, items, site }) {
     const label = CATEGORIES[cat];
@@ -25,7 +25,7 @@ export function buildCategoryPage(html, { cat, items, site }) {
     });
 }
 
-export async function onRequestGet(context) {
+async function render(context) {
     const { request, env, params } = context;
     const cat = String(Array.isArray(params.cat) ? params.cat[0] : params.cat || '');
     if (!isCategory(cat)) return notFound(env, request, 'الصفحة');
@@ -40,4 +40,5 @@ export async function onRequestGet(context) {
     if (!tpl || !tpl.ok) return unavailable();
     return htmlResponse(buildCategoryPage(await tpl.text(), { cat, items, site: siteUrl(env) }));
 }
+export const onRequestGet = (context) => cachedPage(context, () => render(context));
 export const onRequestHead = onRequestGet;

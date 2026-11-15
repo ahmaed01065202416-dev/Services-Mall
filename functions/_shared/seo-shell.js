@@ -3,6 +3,8 @@
  * Serves the SPA shell (index.html) with a page-specific <title>, description, canonical, Open Graph / Twitter tags,
  * JSON-LD and a crawlable text block, plus a tiny boot script that opens the right screen inside the app.
  */
+import { edgeCached } from './edge-cache.js';
+
 export const BRAND = 'مول الخدمات';
 export const SAFE_ID = /^[A-Za-z0-9_\-]{1,128}$/;
 export const SAFE_HTTPS = /^https:\/\/[^\s"'<>\\]{1,1900}$/i;
@@ -89,3 +91,8 @@ export function buildShell(html, o) {
     const seo = `<div id="seoPage" role="region" aria-label="${esc(o.title)}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">${o.seoHtml || ''}</div>`;
     return page.replace(/<body[^>]*>/i, (m) => m + '\n' + seo);
 }
+
+// ── Protection for the public pages that read Firestore (/s/, /service/, /c/) ───────────────────────────────────
+// Same edge cache as the public APIs (see edge-cache.js): rendered once per TTL per Cloudflare location, expired copies are
+// served instantly while refreshed in the background, uncached work is throttled per IP.
+export const cachedPage = (context, render) => edgeCached(context, { params: [], cap: 300, limit: 40, swr: 1800 }, render);

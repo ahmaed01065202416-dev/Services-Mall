@@ -6,7 +6,7 @@
  */
 import { fsGet, fsQuery } from '../_shared/gcp.js';
 import { CATEGORIES, isCategory } from '../_shared/catalog.js';
-import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, eq, and, str, bool } from '../_shared/seo-shell.js';
+import { BRAND, SAFE_ID, esc, clip, siteUrl, imageUrl, readAsset, notFound, unavailable, htmlResponse, buildShell, cachedPage, eq, and, str, bool } from '../_shared/seo-shell.js';
 
 const firstImage = (d) => d.image || (Array.isArray(d.images) ? d.images[0] : '') || '';
 
@@ -44,7 +44,7 @@ export function buildServicePage(html, { id, svc, store, related, site }) {
     });
 }
 
-export async function onRequestGet(context) {
+async function render(context) {
     const { request, env, params } = context;
     const id = String(Array.isArray(params.id) ? params.id[0] : params.id || '');
     if (!SAFE_ID.test(id)) return notFound(env, request, 'الصفحة');
@@ -67,4 +67,5 @@ export async function onRequestGet(context) {
     if (!tpl || !tpl.ok) return unavailable();
     return htmlResponse(buildServicePage(await tpl.text(), { id, svc, store, related, site: siteUrl(env) }));
 }
+export const onRequestGet = (context) => cachedPage(context, () => render(context));
 export const onRequestHead = onRequestGet;
