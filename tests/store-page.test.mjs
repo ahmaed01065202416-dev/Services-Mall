@@ -22,7 +22,7 @@ test('store page: own head tags, no duplicates, absolute assets, escaped', () =>
     assert.ok(head.includes(`${site}/api/ad-image?st=abc_2&v=`));
     assert.ok(html.includes('href="/service/it1"'), 'store page links to its services');
     assert.ok(!head.includes('<b>') && !html.includes('<script>x</script>'));
-    assert.ok(head.includes('#store-abc_2'));
+    assert.ok(head.includes('"k":"store"') && head.includes('"v":"abc_2"'));
     assert.ok(!/(?:src|href)="(?:js|css|icons)\//.test(html), 'relative asset path left');
     assert.ok(html.includes('src="/js/constants.js'));
     assert.ok(html.includes('id="seoPage"'));
@@ -49,7 +49,7 @@ test('service page: Product vs Service JSON-LD, breadcrumb, internal links, boot
     assert.equal(main.provider.url, `${site}/s/st1`); assert.equal(bc.itemListElement.length, 3);
     assert.ok(html.includes('href="/c/design"') && html.includes('href="/s/st1"') && html.includes('href="/service/sv2"'));
     assert.ok(!html.includes('href="/service/sv1"') || head.includes('rel="canonical"'), 'no self-link in related');
-    assert.ok(head.includes("ServicesManager.openServiceDetail('sv1')"));
+    assert.ok(head.includes('id="__boot"') && head.includes('"k":"svc"') && head.includes('"v":"sv1"'));  // CSP: JSON data block, not inline JS
     assert.ok(!head.includes('<b>'));
     const prod = buildServicePage(shell, { id: 'p1', svc: { title: 'x', listingType: 'product', price: 0, category: 'weird' }, site });
     assert.ok(/"@type":"Product"/.test(prod) && !/"offers"/.test(prod) && !/"aggregateRating"/.test(prod));
@@ -58,7 +58,7 @@ test('service page: Product vs Service JSON-LD, breadcrumb, internal links, boot
 test('category page: ItemList, noindex when empty, boot filter', () => {
     const full = buildCategoryPage(shell, { cat: 'design', items: [{ id: 'a1', title: 'أ' }, { id: 'b2', title: 'ب' }], site });
     const h = full.slice(0, full.indexOf('</head>'));
-    assert.ok(h.includes(`href="${site}/c/design"`) && h.includes("filterByCategory('design')") && h.includes('"ItemList"'));
+    assert.ok(h.includes(`href="${site}/c/design"`) && h.includes('"k":"cat"') && h.includes('"v":"design"') && h.includes('"ItemList"'));
     assert.ok(!/name="robots" content="noindex/.test(h) && full.includes('href="/service/a1"'));
     const empty = buildCategoryPage(shell, { cat: 'design', items: [], site });
     assert.ok(/name="robots" content="noindex,follow"/.test(empty.slice(0, empty.indexOf('</head>'))));

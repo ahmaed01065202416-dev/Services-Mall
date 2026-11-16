@@ -303,11 +303,11 @@
         w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف بيانات بائع — ${esc(a.fullName)}</title>
             <style>body{font-family:Tahoma,Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #bbb;padding:6px 10px;text-align:start;font-size:14px}th{background:#f3f3f3;width:32%}
             .imgs{display:flex;gap:12px;flex-wrap:wrap}figure{margin:0;flex:1;min-width:220px}img{width:100%;max-height:340px;object-fit:contain;border:1px solid #bbb}figcaption{font-size:12px;text-align:center;color:#555}.note{font-size:12px;color:#555;margin-top:16px}@media print{button{display:none}}</style></head><body>
-            <button onclick="print()">طباعة / حفظ PDF</button>
+            <button data-on-click="print()">طباعة / حفظ PDF</button>
             <h1>ملف بيانات بائع — منصة مول الخدمات</h1>
             <table>${row('الاسم بالكامل', a.fullName)}${row('رقم البطاقة القومي', full.nationalIdAvailable ? full.nationalId : ('غير محفوظ كنص — آخر 4 أرقام: ' + a.idLast4))}${row('الموبايل', a.phone)}${row('العنوان', a.address)}${row('البريد الإلكتروني', acc.email || a.email)}${row('اسم المتجر', a.storeName)}${row('معرّف الحساب (UID)', a.uid)}${row('حالة الطلب', a.status)}${row('تاريخ التقديم', fmt(a.submittedAt))}${row('تاريخ المراجعة', fmt(a.reviewedAt))}${row('ملاحظة المراجعة', a.reviewNote)}${row('تاريخ فتح الحساب', fmt(acc.createdAt))}</table>
             <div class="imgs">${img('front', 'البطاقة — الوش')}${img('back', 'البطاقة — الضهر')}${img('selfie', 'السيلفي')}</div>
-            <h2 style="font-size:16px">سجل الاطلاع على الملف</h2>
+            <h2 data-style="font-size:16px">سجل الاطلاع على الملف</h2>
             <table>${(full.history || []).slice(0, 30).map(h => row(fmt(h.at), h.action + ' — ' + (h.adminUid || '').slice(0, 8))).join('') || row('—', '—')}</table>
             <p class="note">تاريخ استخراج الملف: ${esc(new Date().toLocaleString('ar-EG'))}. المستند سري ويُسلَّم للجهة القانونية المختصة فقط، وعملية الاستخراج مسجّلة باسم المسؤول.</p></body></html>`);
         w.document.close();

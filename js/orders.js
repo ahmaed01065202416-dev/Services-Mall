@@ -104,7 +104,7 @@
                 <!-- Image -->
                 <img src="${window.safeUrl(order.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
                   class="w-16 h-16 rounded-xl object-cover flex-shrink-0"
-                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+                  data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
@@ -156,28 +156,28 @@
 
                 <!-- Actions -->
                 <div class="flex flex-col gap-2 flex-shrink-0">
-                  <button onclick="openWorkspace('${order.id}')"
+                  <button data-on-click="openWorkspace('${order.id}')"
                     class="btn-primary text-sm px-5 py-2.5 flex items-center gap-2">
                     <i class="fa-solid fa-briefcase"></i>
                     <span>${t('orders.workspace')}</span>
                   </button>
 
                   ${isBuyer && order.status === ORDER_STATUS.DELIVERED ? `
-                  <button onclick="EscrowManager.confirmDelivery('${order.id}')"
+                  <button data-on-click="EscrowManager.confirmDelivery('${order.id}')"
                     class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center gap-2">
                     <i class="fa-solid fa-check"></i>${t('escrow.confirm')}
                   </button>
-                  ${isBuyer && order.status === ORDER_STATUS.COMPLETED && !order.reviewed && window.ReviewsUI ? `<button onclick="ReviewsUI.open('${order.id}')" class="text-sm px-4 py-2 bg-amber-400 text-white rounded-xl font-bold hover:bg-amber-500 transition flex items-center gap-2"><i class="fa-solid fa-star"></i>${isAr?'قيّم':'Rate'}</button>` : ''}
+                  ${isBuyer && order.status === ORDER_STATUS.COMPLETED && !order.reviewed && window.ReviewsUI ? `<button data-on-click="ReviewsUI.open('${order.id}')" class="text-sm px-4 py-2 bg-amber-400 text-white rounded-xl font-bold hover:bg-amber-500 transition flex items-center gap-2"><i class="fa-solid fa-star"></i>${isAr?'قيّم':'Rate'}</button>` : ''}
                   ${window.NonReceipt ? NonReceipt.buttonHtml(order, 'text-sm px-4 py-2 border-2 border-red-400 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition flex items-center gap-2') : ''}` : ''}
 
                   ${needsShipping ? `
-                  <button onclick="OrdersManager.quickMarkShipped('${order.id}', event)"
+                  <button data-on-click="OrdersManager.quickMarkShipped('${order.id}', event)"
                     class="text-sm px-4 py-2 bg-navy-700 text-white rounded-xl hover:bg-navy-800 transition flex items-center gap-2">
                     <i class="fa-solid fa-truck"></i>${isAr ? 'تحديد كـ: شُحن' : 'Mark shipped'}
                   </button>` : ''}
 
                   ${isAdmin ? `
-                  <button onclick="OrdersManager.adminViewOrder('${order.id}')"
+                  <button data-on-click="OrdersManager.adminViewOrder('${order.id}')"
                     class="btn-secondary text-sm px-4 py-2">
                     ${isAr ? 'إدارة' : 'Manage'}
                   </button>` : ''}
@@ -286,7 +286,7 @@
               <!-- Filters -->
               <div class="flex gap-2 overflow-x-auto pb-1">
                 ${statuses.map(s => `
-                  <button onclick="OrdersManager.filterOrders('${s.key}')"
+                  <button data-on-click="OrdersManager.filterOrders('${s.key}')"
                     data-status="${s.key}"
                     class="order-filter-btn flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 transition ${s.key === 'all' ? 'bg-navy-600 text-white border-navy-600' : 'bg-white text-gray-600'}">
                     ${s.label}
@@ -303,7 +303,7 @@
                 <i class="fa-solid fa-bag-shopping text-gray-400 text-4xl"></i>
               </div>
               <h3 class="text-xl font-black text-gray-500 mb-2">${t('orders.empty')}</h3>
-              <button onclick="navigateTo('services')" class="btn-primary mt-4 px-8">
+              <button data-on-click="navigateTo('services')" class="btn-primary mt-4 px-8">
                 ${isAr ? 'استعرض الخدمات' : 'Browse Services'}
               </button>
             </div>

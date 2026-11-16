@@ -201,7 +201,7 @@
             ${items.length ? `<div class="space-y-2">${items.map((c, i) => `
                 <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-gray-100 bg-white">
                     <div class="min-w-0">
-                        <div class="font-bold text-gray-900" dir="ltr" style="text-align:start">${c.auto ? esc(c.title) + ` <span class="text-xs text-sky-600">(${ar ? 'تلقائي' : 'auto'})</span>` : esc(c.code)} ${badge(c.state)}</div>
+                        <div class="font-bold text-gray-900" dir="ltr" data-style="text-align:start">${c.auto ? esc(c.title) + ` <span class="text-xs text-sky-600">(${ar ? 'تلقائي' : 'auto'})</span>` : esc(c.code)} ${badge(c.state)}</div>
                         <div class="text-xs text-gray-500 mt-0.5">${esc(valueText(c))}${c.minOrder ? ` • ${ar ? 'من' : 'min'} ${esc(money(c.minOrder))}` : ''} • ${ar ? 'استُخدم' : 'used'} ${c.usageCount}${c.usageLimit ? '/' + c.usageLimit : ''}${c.discountTotal ? ` • ${ar ? 'إجمالي الخصم' : 'total'} ${esc(money(c.discountTotal))}` : ''} • ${esc(dateFmt(c.startsAt))} → ${esc(dateFmt(c.expiresAt))}</div>
                         ${c.disabledByAdmin ? `<div class="text-xs text-red-600 mt-1">⛔ ${ar ? 'موقوف من الإدارة' : 'Paused by admin'}${c.disabledReason ? ': ' + esc(c.disabledReason) : ''}</div>` : ''}
                     </div>

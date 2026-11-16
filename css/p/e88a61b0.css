@@ -1,0 +1,227 @@
+    /* ── Reset & Base ────────────────────────────── */
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;
+      background:#F8FAFC;
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      color:#0F172A;
+    }
+
+    /* ── Page System ──────────────────────────────── */
+    .page{display:none;opacity:0;transition:opacity .3s ease-in-out}
+    .page.active{display:block;opacity:1;animation:fadeIn .4s ease-out}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Typography ─────────────────────────────── */
+    [lang=en] body,[lang=en] .en-only{font-family:'IBM Plex Sans',sans-serif}
+    .gradient-text{
+      background:linear-gradient(135deg,#0F172A 0%,#0D9488 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+    }
+
+    /* ── Buttons ─────────────────────────────────── */
+    .btn-primary{
+      background:#4F46E5;
+      color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;
+      transition:all .2s ease;box-shadow:0 1px 3px rgba(15,23,42,.1);
+      border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px
+    }
+    .btn-primary:hover{background:#4338CA;box-shadow:0 4px 12px rgba(79,70,229,.25)}
+    .btn-primary:active{transform:translateY(1px)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+    .btn-secondary{
+      background:#fff;color:#0F172A;padding:12px 24px;border-radius:8px;font-weight:600;
+      transition:all .2s ease;border:1px solid #CBD5E1;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;gap:8px
+    }
+    .btn-secondary:hover{background:#F1F5F9;border-color:#94A3B8}
+
+    /* ── Forms ───────────────────────────────────── */
+    .form-input{
+      width:100%;padding:12px 16px;background:#fff;
+      border:1px solid #CBD5E1;border-radius:8px;transition:all .2s ease;
+      font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif;font-size:15px;color:#0F172A
+    }
+    .form-input:focus{border-color:#4F46E5;outline:none;box-shadow:0 0 0 3px rgba(79,70,229,.12);background:#fff}
+    .form-input::placeholder{color:#94A3B8}
+
+    /* ── Cards ───────────────────────────────────── */
+    .card{transition:all .25s ease;border:1px solid #E2E8F0}
+    .card:hover{transform:translateY(-3px);box-shadow:0 10px 15px -3px rgba(15,23,42,.08),0 4px 6px -4px rgba(15,23,42,.04)}
+
+    /* ── Glass ───────────────────────────────────── */
+    .glass{background:rgba(248,250,252,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #E2E8F0}
+
+    /* ── Modal ───────────────────────────────────── */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+      backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .3s ease}
+    .modal.active{display:flex;opacity:1}
+    .modal-content{background:#fff;border-radius:16px;max-width:600px;width:100%;max-height:90vh;
+      overflow-y:auto;transform:scale(.9) translateY(20px);transition:transform .3s ease}
+    .modal.active .modal-content{transform:scale(1) translateY(0)}
+
+    /* ── Toast ───────────────────────────────────── */
+    .toast{
+      position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
+      background:#0F172A;color:#fff;
+      padding:14px 24px;border-radius:8px;z-index:100001;opacity:0;visibility:hidden;
+      transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 20px 25px -5px rgba(15,23,42,.15);
+      display:flex;align-items:center;gap:12px;min-width:280px;max-width:90vw;font-weight:600
+    }
+    .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    .toast.success{background:#0F766E}
+    .toast.error{background:#EF4444}
+    .toast.warning{background:#F59E0B}
+
+    /* ── Status Badges (DESIGN.md state tokens) ──── */
+    .status-badge{padding:5px 12px;border-radius:9999px;font-size:12px;font-weight:600;display:inline-block;white-space:nowrap;border:1px solid transparent}
+    .status-pending{background:#FFFBEB;color:#B45309;border-color:#FDE68A}
+    .status-in-progress{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE}
+    .status-delivered{background:#ECFDF5;color:#0F766E;border-color:#A7F3D0}
+    .status-completed{background:#10B981;color:#fff}
+    .status-cancelled{background:#FEF2F2;color:#B91C1C;border-color:#FECACA}
+    .status-review{background:#EEF2FF;color:#3730A3;border-color:#C7D2FE}
+
+    /* ── Chat Bubbles ────────────────────────────── */
+    .chat-bubble{max-width:75%;padding:12px 16px;border-radius:14px;position:relative;word-break:normal;overflow-wrap:break-word;line-height:1.6}
+    .chat-bubble.sent{background:#0F172A;color:#fff;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(15,23,42,.2)}
+    .chat-bubble.received{background:#F1F5F9;color:#0F172A;border-bottom-right-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+    /* ── Skeleton ────────────────────────────────── */
+    .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton-loading 1.5s infinite;border-radius:8px}
+    @keyframes skeleton-loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* ── Scrollbar ───────────────────────────────── */
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:linear-gradient(135deg,#0F172A,#0B1220);border-radius:10px}
+
+    /* ── Tab System ──────────────────────────────── */
+    .tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .2s ease}
+    .tab-btn.active{color:#0F172A;border-bottom-color:#0F172A}
+
+    /* ── Admin: Super Admin pill tabs & stat cards ── */
+    .admin-pill-tab{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap;color:#475569;background:#fff;border:1px solid transparent;transition:all .15s ease}
+    .admin-pill-tab:hover{background:#f1f5f9;color:#0f172a}
+    .admin-pill-tab.active{background:#0f172a;color:#fff;box-shadow:0 1px 4px rgba(15,23,42,.15)}
+    .admin-pill-tab .pill-count{background:#f1f5f9;color:#0f172a;font-size:10px;font-weight:800;padding:1px 7px;border-radius:9999px;margin-inline-start:2px}
+    .admin-pill-tab.active .pill-count{background:#fff;color:#0f172a}
+    .stat-card-glow{transition:all .22s cubic-bezier(.4,0,.2,1)}
+    .stat-card-glow:hover{transform:translateY(-2px);box-shadow:0 12px 24px -10px rgba(15,23,42,.08)}
+
+    /* ── Dropdown ────────────────────────────────── */
+    .dropdown{display:none;position:absolute;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);z-index:1000;min-width:200px;overflow:hidden;border:1px solid #e5e7eb}
+    .dropdown.active{display:block;animation:fadeIn .2s ease-out}
+    .dropdown a,.dropdown button{display:block;width:100%;padding:12px 18px;text-align:right;color:#374151;text-decoration:none;transition:all .2s ease;border:none;background:none;cursor:pointer;font-family:'Cairo','Inter',sans-serif;font-size:14px}
+    .dropdown a:hover,.dropdown button:hover{background:#f3f4f6;color:#0F172A}
+
+    /* ── LTR overrides (English mode) ───────────────*/
+    html[dir=ltr] .dropdown a,html[dir=ltr] .dropdown button{text-align:left}
+    html[dir=ltr] .chat-bubble.sent{border-bottom-right-radius:4px;border-bottom-left-radius:18px}
+    html[dir=ltr] .chat-bubble.received{border-bottom-left-radius:4px;border-bottom-right-radius:18px}
+
+    /* ── Chat Enhancements ─────────────────────────── */
+    .chat-messages-area{scroll-behavior:smooth}
+    .chat-messages-area::-webkit-scrollbar{width:4px}
+    .chat-messages-area::-webkit-scrollbar-track{background:transparent}
+    .chat-messages-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:4px}
+    .chat-text-input:focus{outline:none;border-color:#0F172A;box-shadow:0 0 0 3px rgba(2,132,199,.1)}
+    .chat-send-btn:active{transform:scale(.92)}
+    .chat-file-input{display:none !important}
+    .emoji-quick{transition:transform .15s}
+    .emoji-quick:hover{transform:scale(1.25)}
+
+    /* ── Star Rating ─────────────────────────────── */
+    .rating-stars{display:flex;gap:4px}
+    .rating-stars i{color:#fbbf24}
+    .rating-stars i.empty{color:#d1d5db}
+
+    /* ── Nav ─────────────────────────────────────── */
+    .nav-link{position:relative;transition:all .3s ease}
+    .nav-link::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:3px;background:linear-gradient(135deg,#0F172A,#0D9488);border-radius:2px;transition:width .3s ease}
+    html[dir=ltr] .nav-link::after{right:auto;left:0}
+    .nav-link.active::after{width:100%}
+
+    /* ── Image preview ───────────────────────────── */
+    .image-upload-preview{width:100%;height:200px;object-fit:cover;border-radius:16px;margin-top:12px;display:none}
+    .image-upload-preview.show{display:block;animation:fadeIn .3s ease-out}
+
+    /* ── Payment Options ─────────────────────────── */
+    .payment-option{transition:all .25s ease}
+    .payment-option:hover{transform:translateX(-2px)}
+    html[dir=ltr] .payment-option:hover{transform:translateX(2px)}
+
+    /* ── Service Card ────────────────────────────── */
+    .service-card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid #e5e7eb;transition:all .3s ease}
+    .service-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(0,0,0,.1);border-color:#bae6fd}
+
+    /* ── Order Card ──────────────────────────────── */
+    .order-card{transition:all .3s ease}
+    .order-card:hover{border-color:#7dd3fc}
+
+    /* ── Notification badge ──────────────────────── */
+    [data-cart-count],[data-notif-count]{
+      background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;
+      font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+      position:absolute;top:-6px;right:-6px;animation:fadeIn .3s ease
+    }
+    html[dir=ltr] [data-cart-count],html[dir=ltr] [data-notif-count]{right:auto;left:-6px}
+
+    /* ── App Loading Screen ──────────────────────── */
+    #appLoadingScreen{
+      position:fixed;inset:0;z-index:99999;
+      background:linear-gradient(135deg,#0F172A 0%,#0B1220 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+      transition:opacity .5s ease;
+    }
+    #appLoadingScreen.fade-out{opacity:0;pointer-events:none}
+    #appLoadingScreen .spinner{
+      width:56px;height:56px;border:4px solid rgba(255,255,255,.3);
+      border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Offline Banner ──────────────────────────── */
+    #offlineBanner{
+      position:fixed;bottom:0;left:0;right:0;z-index:9999;
+      background:#ef4444;color:#fff;text-align:center;
+      padding:12px;font-weight:700;font-size:14px;
+      transform:translateY(100%);transition:transform .3s ease;
+    }
+    #offlineBanner.show{transform:translateY(0)}
+
+    /* ── Skeleton ────────────────────────────────── */
+    /* ⚠️ PERFORMANCE FIX: animating `background-position` forces the browser
+       to repaint every frame (not GPU-composited) — flagged by GTmetrix as
+       "non-composited animations" across every skeleton on the page. Same
+       shimmer look, now done with `transform: translateX()` on an overlay
+       pseudo-element instead, which the browser can composite on the GPU. */
+    .skeleton{
+      position:relative;
+      overflow:hidden;
+      background:#eef1f5;
+      border-radius:8px;
+    }
+    .skeleton::after{
+      content:'';
+      position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.6) 50%,transparent 100%);
+      transform:translateX(-100%);
+      animation:shimmer 1.5s infinite;
+      will-change:transform;
+    }
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+
+    /* ── Terms Modal ─────────────────────────────── */
+    #termsModal{
+      position:fixed;inset:0;z-index:99998;
+      background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+    #termsModal .terms-box{
+      background:#fff;border-radius:24px;max-width:600px;width:100%;
+      max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);
+    }
+  

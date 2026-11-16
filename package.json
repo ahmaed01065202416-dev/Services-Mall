@@ -11,7 +11,10 @@
     "deploy:rules": "npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project services-mall",
     "deploy": "npm run build && npm run deploy:rules && npx wrangler pages deploy . --project-name=mall-services",
     "bundle:css": "node scripts/bundle-css.mjs",
-    "build:dist": "node scripts/build-dist.mjs"
+    "build:dist": "node scripts/build-dist.mjs",
+    "check:csp": "node scripts/check-csp.mjs",
+    "deploy:prod": "npm run check:csp && npm run check:seo && npm run build:dist && npx wrangler pages deploy dist --project-name=mall-services",
+    "check:seo": "node scripts/check-seo.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",

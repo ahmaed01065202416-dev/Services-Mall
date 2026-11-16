@@ -41,7 +41,7 @@
         });
         g += `<text x="${P.l - 4}" y="${P.t + 8}" font-size="9" text-anchor="end" fill="currentColor" opacity=".55">${max}</text><text x="${P.l - 4}" y="${P.t + ih}" font-size="9" text-anchor="end" fill="currentColor" opacity=".55">0</text>`;
         return `<svg viewBox="0 0 ${W} ${H}" class="w-full text-gray-700" role="img">${g}</svg>
-            <div class="flex gap-4 text-xs text-gray-500 mt-1"><span><i class="inline-block w-3 h-3 rounded-sm align-middle" style="background:#E0B872"></i> ${ar ? 'زوار جدد' : 'New'}</span><span><i class="inline-block w-3 h-3 rounded-sm align-middle" style="background:#14B8A6"></i> ${ar ? 'زوار عائدون' : 'Returning'}</span></div>`;
+            <div class="flex gap-4 text-xs text-gray-500 mt-1"><span><i class="inline-block w-3 h-3 rounded-sm align-middle" data-style="background:#E0B872"></i> ${ar ? 'زوار جدد' : 'New'}</span><span><i class="inline-block w-3 h-3 rounded-sm align-middle" data-style="background:#14B8A6"></i> ${ar ? 'زوار عائدون' : 'Returning'}</span></div>`;
     }
 
     function retentionBars(ret) {
@@ -49,13 +49,13 @@
         const lbl = { 1: ar ? 'خلال يوم' : 'within 1 day', 7: ar ? 'خلال أسبوع' : 'within 1 week', 30: ar ? 'خلال شهر' : 'within 1 month' };
         return ret.map(r => `<div class="mb-3"><div class="flex justify-between text-sm"><span class="font-semibold">${ar ? 'رجعوا' : 'Came back'} ${lbl[r.days]}</span>
             <span class="text-gray-600">${r.rate === null ? (ar ? 'لسه بدري' : 'too early') : r.rate + '%'} <span class="text-xs text-gray-400">(${r.returned}/${r.eligible})</span></span></div>
-            <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden"><div class="h-full rounded-full" style="width:${r.rate || 0}%;background:#14B8A6"></div></div></div>`).join('')
+            <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden"><div class="h-full rounded-full" data-style="width:${r.rate || 0}%;background:#14B8A6"></div></div></div>`).join('')
             + `<p class="text-xs text-gray-400">${ar ? 'النسبة من الزوار اللي عدّى على أول زيارة ليهم المدة دي، ورجعوا في يوم تاني جوّا المدة.' : 'Share of visitors whose first visit is at least that old and who visited again on a later day inside the period.'}</p>`;
     }
 
     function funnelBlock(f, ar, storeLevel) {
         const pct = (a, b) => b ? Math.round(a * 100 / b) : 0;
-        const row = (label, v, p, color) => `<div class="mb-2"><div class="flex justify-between text-sm"><span>${label}</span><b>${num(v)} <span class="text-xs text-gray-400 font-normal">${p}%</span></b></div><div class="h-2 rounded-full bg-gray-100 overflow-hidden"><div class="h-full rounded-full" style="width:${p}%;background:${color}"></div></div></div>`;
+        const row = (label, v, p, color) => `<div class="mb-2"><div class="flex justify-between text-sm"><span>${label}</span><b>${num(v)} <span class="text-xs text-gray-400 font-normal">${p}%</span></b></div><div class="h-2 rounded-full bg-gray-100 overflow-hidden"><div class="h-full rounded-full" data-style="width:${p}%;background:${color}"></div></div></div>`;
         return row(storeLevel ? (ar ? 'زاروا متجرك' : 'Visited your store') : (ar ? 'زوار' : 'Visitors'), f.visitors, 100, '#94a3b8')
             + row(ar ? 'عندهم حساب على المنصة' : 'Have an account', f.withAccount, pct(f.withAccount, f.visitors), '#E0B872')
             + row(storeLevel ? (ar ? 'اشتروا منك' : 'Bought from you') : (ar ? 'اشتروا فعلًا' : 'Actually bought'), f.bought, pct(f.bought, f.visitors), '#14B8A6')

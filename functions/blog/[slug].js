@@ -91,7 +91,7 @@ export function injectSeo(html, post, site) {
   const url = `${site}/blog/${encodeURIComponent(post.slug)}`;
   const title = `${post.title} | ${BRAND}`;
   const desc = (post.metaDescription || post.excerpt || plain(post.content).slice(0, 155) || post.title).slice(0, 160);
-  const image = isHttps(post.image) ? post.image : `${site}/icons/icon-512.png`;
+  const image = isHttps(post.image) ? post.image : `${site}/icons/og-cover.png`;
   const published = toIso(post.createdAt), modified = toIso(post.updatedAt) || published;
 
   const ld = {
@@ -140,7 +140,7 @@ async function readAsset(env, origin, path) {
   return null;
 }
 
-const FALLBACK_404 = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>الصفحة غير موجودة — ${BRAND}</title></head><body style="font-family:sans-serif;text-align:center;padding:80px 20px"><h1>404</h1><p>المقال غير موجود.</p><p><a href="/blog/">العودة للمدونة</a></p></body></html>`;
+const FALLBACK_404 = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>الصفحة غير موجودة — ${BRAND}</title></head><body><h1>404</h1><p>المقال غير موجود.</p><p><a href="/blog/">العودة للمدونة</a></p></body></html>`;
 
 async function renderBlog(context) {
   const { request, env, params } = context;
@@ -153,7 +153,7 @@ async function renderBlog(context) {
   const found = await findPost(env, slug);
 
   if (found.error) {
-    return new Response('<!DOCTYPE html><meta charset="utf-8"><title>خدمة مؤقتًا غير متاحة</title><p style="font-family:sans-serif;text-align:center;padding:60px">المدونة غير متاحة مؤقتًا، حاول بعد قليل.</p>', {
+    return new Response('<!DOCTYPE html><meta charset="utf-8"><title>خدمة مؤقتًا غير متاحة</title><p>المدونة غير متاحة مؤقتًا، حاول بعد قليل.</p>', {
       status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '120', 'Cache-Control': 'no-store' },
     });
   }

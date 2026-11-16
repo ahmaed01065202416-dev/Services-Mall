@@ -27,7 +27,7 @@ export function imageUrl(site, raw, apiQuery, updateTime) {
     const v = Date.parse(updateTime || '');
     if (typeof raw === 'string' && DATA_IMG.test(raw)) return `${site}/api/ad-image?${apiQuery}${Number.isFinite(v) ? '&v=' + v : ''}`;
     if (typeof raw === 'string' && SAFE_HTTPS.test(raw)) return raw;
-    return `${site}/icons/icon-512.png`;
+    return `${site}/icons/og-cover.png`;   // 1200×630 brand card (was the 512px square icon)
 }
 
 export async function readAsset(env, origin, path) {
@@ -41,7 +41,7 @@ export async function readAsset(env, origin, path) {
 }
 
 export async function notFound(env, request, what = 'الصفحة') {
-    let body = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>${esc(what)} غير موجودة — ${BRAND}</title></head><body style="font-family:sans-serif;text-align:center;padding:80px 20px"><h1>404</h1><p>${esc(what)} غير موجودة.</p><p><a href="/">العودة للرئيسية</a></p></body></html>`;
+    let body = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>${esc(what)} غير موجودة — ${BRAND}</title></head><body><h1>404</h1><p>${esc(what)} غير موجودة.</p><p><a href="/">العودة للرئيسية</a></p></body></html>`;
     try {
         const res = await readAsset(env, new URL(request.url).origin, '/404.html');
         if (res && res.ok) body = await res.text();
@@ -52,7 +52,7 @@ export async function notFound(env, request, what = 'الصفحة') {
 export const unavailable = () => new Response('Service temporarily unavailable', { status: 503, headers: { 'Retry-After': '120', 'Cache-Control': 'no-store' } });
 export const htmlResponse = (html) => new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300, s-maxage=300' } });
 
-/** Pure (unit-testable). o = { title, desc, url, image, ogType, ld:[objects], boot:'js', seoHtml:'<h2>…', noindex } */
+/** Pure (unit-testable). o = { title, desc, url, image, ogType, ld:[objects], boot:{k,v}, seoHtml:'<h2>…', noindex } */
 export function buildShell(html, o) {
     const tags = [
         `<title>${esc(o.title)}</title>`,
@@ -70,7 +70,7 @@ export function buildShell(html, o) {
         `<meta name="twitter:description" content="${esc(o.desc)}">`,
         `<meta name="twitter:image" content="${esc(o.image)}">`,
         ...(o.ld || []).map((x) => `<script type="application/ld+json">${ldJson(x)}</script>`),
-        o.boot ? `<script>${o.boot}</script>` : '',
+        o.boot ? `<script type="application/json" id="__boot">${ldJson(o.boot)}</script>` : '',
     ].filter(Boolean).join('\n  ');
 
     const cut = html.indexOf('</head>');
@@ -88,7 +88,7 @@ export function buildShell(html, o) {
 
     // The shell uses relative asset paths (js/…, css/…): under /s/<id>, /service/<id>, /c/<x> they must be absolute.
     const page = (head + rest).replace(/\b(src|href)="(?!https?:|\/|#|data:|mailto:|tel:|javascript:|\{|\$)/gi, '$1="/');
-    const seo = `<div id="seoPage" role="region" aria-label="${esc(o.title)}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">${o.seoHtml || ''}</div>`;
+    const seo = `<div id="seoPage" role="region" aria-label="${esc(o.title)}" class="seo-hidden">${o.seoHtml || ''}</div>`;
     return page.replace(/<body[^>]*>/i, (m) => m + '\n' + seo);
 }
 

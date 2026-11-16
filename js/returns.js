@@ -372,10 +372,10 @@
                     <p class="text-xs text-gray-400 mb-3">${isAr ? 'بانتظار رد البائع على الطلب' : "Awaiting the seller's response"}</p>
                     ${isSeller ? `
                     <div class="flex gap-2">
-                      <button onclick="ReturnsManager.approveReturn('${activeReturn.id}')" class="flex-1 text-sm font-bold bg-green-600 text-white py-2.5 rounded-xl hover:bg-green-700 transition">
+                      <button data-on-click="ReturnsManager.approveReturn('${activeReturn.id}')" class="flex-1 text-sm font-bold bg-green-600 text-white py-2.5 rounded-xl hover:bg-green-700 transition">
                         <i class="fa-solid fa-check"></i> ${isAr ? 'موافقة' : 'Approve'}
                       </button>
-                      <button onclick="ReturnsManager.rejectReturn('${activeReturn.id}')" class="flex-1 text-sm font-bold border-2 border-red-400 text-red-600 py-2.5 rounded-xl hover:bg-red-600 hover:text-white transition">
+                      <button data-on-click="ReturnsManager.rejectReturn('${activeReturn.id}')" class="flex-1 text-sm font-bold border-2 border-red-400 text-red-600 py-2.5 rounded-xl hover:bg-red-600 hover:text-white transition">
                         <i class="fa-solid fa-xmark"></i> ${isAr ? 'رفض' : 'Reject'}
                       </button>
                     </div>` : ''}
@@ -400,7 +400,7 @@
                         <i class="fa-solid fa-box-open text-amber-500"></i>${isAr ? 'مش عاجبك المنتج؟' : "Don't like the product?"}
                       </h3>
                       <p class="text-sm text-gray-500 mb-3">${isAr ? 'تقدر تطلب استرجاعه وهيتم مراجعة الطلب من البائع.' : 'You can request a return — the seller will review your request.'}</p>
-                      <button onclick="ReturnsManager.requestReturn('${order.id}')" class="w-full py-3 text-sm font-bold border-2 border-amber-400 text-amber-700 rounded-2xl hover:bg-amber-500 hover:text-white transition flex items-center justify-center gap-2">
+                      <button data-on-click="ReturnsManager.requestReturn('${order.id}')" class="w-full py-3 text-sm font-bold border-2 border-amber-400 text-amber-700 rounded-2xl hover:bg-amber-500 hover:text-white transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-rotate-left"></i>${isAr ? 'طلب استرجاع المنتج' : 'Request a return'}
                       </button>
                     </div>`;

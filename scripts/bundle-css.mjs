@@ -1,4 +1,4 @@
-// Concatenates the home-page CSS (and inlines js/theme.js + js/design.js into index.html) into two files (2 requests instead of 9) and re-stamps their ?v= hash in index.html + sw.js.
+// Concatenates the home-page CSS into two files (2 requests instead of 9) and re-stamps their ?v= hash in index.html + sw.js.
 // Order is preserved exactly (same cascade as the separate <link>s). Run automatically by `npm run build` / `npm run deploy`.
 // Edit the individual css/*.css files as before — never edit css/bundle-*.css by hand.
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -19,14 +19,6 @@ for (const [out, parts] of Object.entries(BUNDLES)) {
   sw = sw.replace(re, `/${out}?v=${v}`);
   console.log(`${out}  ${(css.length / 1024).toFixed(1)} KiB  v=${v}`);
 }
-// Inline the two tiny head scripts that set <html> theme/design attributes before first paint (saves 2 render-blocking requests).
-for (const f of ['js/theme.js', 'js/design.js']) {
-  const js = readFileSync(f, 'utf8');
-  if (/<\/script/i.test(js)) throw new Error(f + ' contains </script — cannot inline');
-  const re = new RegExp(`<!--inline:${f.replace('.', '\\.')}--><script>[\\s\\S]*?</script><!--/inline-->`);
-  if (!re.test(html)) throw new Error('inline marker for ' + f + ' missing in index.html');
-  html = html.replace(re, () => `<!--inline:${f}--><script>${js}</script><!--/inline-->`);
-  console.log('inlined ' + f);
-}
+// NOTE: js/theme.js + js/design.js are no longer inlined into index.html (strict CSP forbids inline scripts) — they load as normal <script src>.
 writeFileSync('index.html', html);
 writeFileSync('sw.js', sw);

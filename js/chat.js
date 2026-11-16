@@ -80,7 +80,7 @@
 
           <!-- Messages area -->
           <div class="chat-messages-area flex-1 overflow-y-auto p-4 space-y-2 scroll-smooth bg-gray-50"
-            style="scroll-behavior:smooth">
+            data-style="scroll-behavior:smooth">
             <div class="chat-messages-inner space-y-2"></div>
             <div class="chat-empty-state text-center py-10 text-gray-400">
               <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -96,8 +96,8 @@
             <div class="flex items-center gap-2 text-xs text-gray-400">
               <div class="flex gap-0.5">
                 <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.12s"></span>
-                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.24s"></span>
+                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" data-style="animation-delay:.12s"></span>
+                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" data-style="animation-delay:.24s"></span>
               </div>
               <span class="chat-typing-text">${isAr ? 'يكتب...' : 'typing...'}</span>
             </div>
@@ -106,7 +106,7 @@
           <!-- Input area -->
           <div class="chat-input-area border-t border-gray-200 bg-white p-3">
             <!-- Quick emojis -->
-            <div class="flex gap-1 mb-2 overflow-x-auto" style="scrollbar-width:none;-ms-overflow-style:none">
+            <div class="flex gap-1 mb-2 overflow-x-auto" data-style="scrollbar-width:none;-ms-overflow-style:none">
               ${emojis.map(e =>
                 `<button class="emoji-quick flex-shrink-0 w-7 h-7 text-base hover:bg-gray-100 rounded-lg transition hover:scale-110" data-emoji="${e}">${e}</button>`
               ).join('')}
@@ -117,7 +117,7 @@
               <div class="flex-1 relative">
                 <textarea class="chat-text-input form-input w-full resize-none text-sm py-2.5 px-3 pr-10"
                   rows="1" placeholder="${isAr ? 'اكتب رسالة...' : 'Type a message...'}"
-                  style="max-height:120px"></textarea>
+                  data-style="max-height:120px"></textarea>
               </div>
 
               <!-- Attach file -->
@@ -251,7 +251,7 @@
                 <a href="${window.safeUrl(msg.file?.url) || '#'}" target="_blank" rel="noopener">
                   <img src="${window.safeUrl(msg.file?.url)}" alt="${_esc(msg.file?.name||'image')}"
                     class="rounded-2xl border border-gray-200 shadow-sm hover:opacity-90 transition cursor-zoom-in object-cover"
-                    loading="lazy" style="max-width:220px;max-height:180px">
+                    loading="lazy" data-style="max-width:220px;max-height:180px">
                 </a>
                 <p class="text-xs text-gray-400 mt-0.5 px-1 ${isMine?'text-right':'text-left'}">${_ago(msg.createdAt)}</p>
               </div>

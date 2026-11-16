@@ -36,7 +36,7 @@
     R.querySelectorAll('.mb-sec h2, .mb-bk h2').forEach(function (h) {
       var k = 0;
       h.innerHTML = h.textContent.trim().split(/\s+/).map(function (w) {
-        return '<span class="mb-wd"><i style="--i:' + (k++) + '">' + w + '</i></span>';
+        return '<span class="mb-wd"><i data-style="--i:' + (k++) + '">' + w + '</i></span>';
       }).join(' ');
     });
     // reveal on enter (+ count-up for any [data-n])

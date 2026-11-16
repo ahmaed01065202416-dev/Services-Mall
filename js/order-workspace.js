@@ -93,7 +93,7 @@
           <!-- ── Top Bar ─────────────────────────────────────────────────── -->
           <div class="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-40 shadow-sm">
             <div class="max-w-6xl mx-auto flex items-center gap-4">
-              <button onclick="navigateTo('orders')"
+              <button data-on-click="navigateTo('orders')"
                 class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-200 transition">
                 <i class="fa-solid fa-arrow-${isAr ? 'right' : 'left'}"></i>
               </button>
@@ -113,12 +113,12 @@
               </span>
               ${isAdmin ? `
               <div class="flex gap-1.5 flex-shrink-0 border-s border-gray-200 ps-3">
-                <button onclick="window.AdminActions.deleteOrderOrChat('${orderId}','chat').then(ok=>ok&&navigateTo('orders'))"
+                <button data-on-click="window.AdminActions.deleteOrderOrChat('${orderId}','chat').then(ok=>ok&&navigateTo('orders'))"
                   title="${isAr?'حذف الشات فقط (أدمن)':'Delete chat only (admin)'}"
                   class="w-9 h-9 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center hover:bg-amber-100 transition">
                   <i class="fa-solid fa-comment-slash"></i>
                 </button>
-                <button onclick="window.AdminActions.deleteOrderOrChat('${orderId}','order').then(ok=>ok&&navigateTo('orders'))"
+                <button data-on-click="window.AdminActions.deleteOrderOrChat('${orderId}','order').then(ok=>ok&&navigateTo('orders'))"
                   title="${isAr?'حذف الطلب نهائيًا (أدمن)':'Delete order permanently (admin)'}"
                   class="w-9 h-9 bg-red-50 text-red-700 rounded-xl flex items-center justify-center hover:bg-red-100 transition">
                   <i class="fa-solid fa-trash-can"></i>
@@ -137,7 +137,7 @@
               <div id="escrowBannerWS" class="mb-4"></div>
 
               <!-- Tabs -->
-              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style="height:72vh">
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" data-style="height:72vh">
 
                 <!-- Tab buttons -->
                 <div class="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
@@ -162,8 +162,8 @@
                     <div class="flex items-center gap-2 text-xs text-gray-400">
                       <div class="flex gap-1">
                         <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
-                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.15s"></span>
-                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:.3s"></span>
+                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" data-style="animation-delay:.15s"></span>
+                        <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" data-style="animation-delay:.3s"></span>
                       </div>
                       <span>${isAr ? 'يكتب...' : 'typing...'}</span>
                     </div>
@@ -175,26 +175,26 @@
                       <div class="flex-1">
                         <textarea id="chatInput" rows="2"
                           class="form-input resize-none text-base w-full rounded-2xl border-gray-300 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 px-4 py-3 leading-relaxed"
-                          style="min-height:52px;max-height:160px"
+                          data-style="min-height:52px;max-height:160px"
                           placeholder="${t('orders.send_msg')}"
-                          onkeydown="OrderWorkspace.handleChatKeydown(event)"
-                          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
+                          data-on-keydown="OrderWorkspace.handleChatKeydown(event)"
+                          data-on-input="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
                       </div>
                       <div class="flex gap-2 flex-shrink-0">
                         <!-- Attach file -->
                         <label class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition cursor-pointer"
                           title="${isAr ? 'إرفاق ملف' : 'Attach file'}">
                           <i class="fa-solid fa-paperclip"></i>
-                          <input type="file" class="hidden" onchange="OrderWorkspace.sendFile(this)" multiple accept="*/*">
+                          <input type="file" class="hidden" data-on-change="OrderWorkspace.sendFile(this)" multiple accept="*/*">
                         </label>
                         <!-- Image attach -->
                         <label class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition cursor-pointer"
                           title="${isAr ? 'إرفاق صورة' : 'Attach image'}">
                           <i class="fa-solid fa-image"></i>
-                          <input type="file" class="hidden" onchange="OrderWorkspace.sendFile(this)" multiple accept="image/*">
+                          <input type="file" class="hidden" data-on-change="OrderWorkspace.sendFile(this)" multiple accept="image/*">
                         </label>
                         <!-- Send -->
-                        <button onclick="OrderWorkspace.sendMessage()"
+                        <button data-on-click="OrderWorkspace.sendMessage()"
                           class="w-10 h-10 bg-secondary text-white rounded-xl flex items-center justify-center hover:bg-secondary-600 transition active:scale-95">
                           <i class="fa-solid fa-paper-plane"></i>
                         </button>
@@ -325,11 +325,11 @@
                   ${isAr ? 'راجع تفاصيل الطلب في المحادثة، وبعد موافقتك هتظهر بوابة الدفع للعميل — والفلوس هتتحجز في الموقع لحد ما تسلّم وتتأكد الاستلام.' : 'Review the request details in the chat. Once you accept, the payment gateway appears for the buyer — funds are held here until you deliver and the buyer confirms.'}
                 </p>
                 <div class="flex gap-3">
-                  <button onclick="OrderWorkspace.respondToRequest('${orderId}','accept')"
+                  <button data-on-click="OrderWorkspace.respondToRequest('${orderId}','accept')"
                     class="btn-primary flex-1 py-3 text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i>${isAr ? 'قبول الطلب' : 'Accept Request'}
                   </button>
-                  <button onclick="OrderWorkspace.respondToRequest('${orderId}','reject')"
+                  <button data-on-click="OrderWorkspace.respondToRequest('${orderId}','reject')"
                     class="btn-secondary flex-1 py-3 text-sm border-red-300 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center gap-2">
                     <i class="fa-solid fa-xmark"></i>${isAr ? 'رفض' : 'Decline'}
                   </button>
@@ -357,7 +357,7 @@
                 <p class="text-sm text-gray-500 mb-4">
                   ${isAr ? 'ادفع دلوقتي — فلوسك هتتحجز في الموقع ومش هتتحول للبائع إلا بعد ما تتأكد إنك استلمت الخدمة.' : 'Pay now — your money is held on the platform and only released to the seller once you confirm you received the service.'}
                 </p>
-                <button onclick="PaymentSystem.payForOrder('${orderId}')"
+                <button data-on-click="PaymentSystem.payForOrder('${orderId}')"
                   class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                   <i class="fa-solid fa-lock"></i>${isAr ? 'ادفع الآن' : 'Pay Now'}
                 </button>
@@ -393,15 +393,15 @@
                 <!-- Drop zone -->
                 <div id="deliveryDropZone"
                   class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-navy-400 hover:bg-navy-50 transition cursor-pointer mb-3"
-                  onclick="document.getElementById('deliveryFiles').click()"
-                  ondragover="event.preventDefault();this.classList.add('border-navy-500','bg-navy-50')"
-                  ondragleave="this.classList.remove('border-navy-500','bg-navy-50')"
-                  ondrop="event.preventDefault();this.classList.remove('border-navy-500','bg-navy-50');OrderWorkspace.handleDeliveryDrop(event)">
+                  data-on-click="document.getElementById('deliveryFiles').click()"
+                  data-on-dragover="event.preventDefault();this.classList.add('border-navy-500','bg-navy-50')"
+                  data-on-dragleave="this.classList.remove('border-navy-500','bg-navy-50')"
+                  data-on-drop="event.preventDefault();this.classList.remove('border-navy-500','bg-navy-50');OrderWorkspace.handleDeliveryDrop(event)">
                   <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
                   <p class="text-sm text-gray-500 font-bold">${isAr ? 'اسحب الملفات هنا أو انقر للاختيار' : 'Drag files here or click to browse'}</p>
                   <p class="text-xs text-gray-400 mt-1">${isAr ? 'الحد الأقصى 50MB لكل ملف' : 'Max 50MB per file'}</p>
                   <input type="file" id="deliveryFiles" multiple class="hidden" accept="*/*"
-                    onchange="OrderWorkspace.previewDeliveryFiles(this)">
+                    data-on-change="OrderWorkspace.previewDeliveryFiles(this)">
                 </div>
 
                 <div id="deliveryFilesList" class="space-y-2 mb-3"></div>
@@ -409,7 +409,7 @@
                 <textarea id="deliveryNote" rows="3" class="form-input text-sm mb-3 w-full"
                   placeholder="${isAr ? 'رسالة التسليم للعميل (اختياري إذا رفعت ملفات)...' : 'Delivery note to client (optional if files are uploaded)...'}"></textarea>
 
-                <button onclick="OrderWorkspace.deliverService()"
+                <button data-on-click="OrderWorkspace.deliverService()"
                   class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                   <i class="fa-solid fa-box-open"></i>
                   ${t('orders.deliver')}
@@ -439,15 +439,15 @@
 
                 <!-- File upload -->
                 <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center mb-3 hover:border-navy-400 hover:bg-navy-50 transition cursor-pointer"
-                  onclick="document.getElementById('buyer-files-input').click()">
+                  data-on-click="document.getElementById('buyer-files-input').click()">
                   <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-400 mb-1 block"></i>
                   <p class="text-xs text-gray-500 font-bold">${isAr ? 'ارفع ملفات (صور، PDF، ZIP، فيديو) — حد 50MB' : 'Upload files (images, PDF, ZIP, video) — max 50MB'}</p>
                   <input type="file" id="buyer-files-input" multiple class="hidden" accept="*/*"
-                    onchange="OrderWorkspace.previewBuyerFiles(this)">
+                    data-on-change="OrderWorkspace.previewBuyerFiles(this)">
                 </div>
                 <div id="buyer-files-preview" class="space-y-2 mb-3"></div>
 
-                <button onclick="OrderWorkspace.sendBuyerInstructions('${orderId}')"
+                <button data-on-click="OrderWorkspace.sendBuyerInstructions('${orderId}')"
                   class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                   <i class="fa-solid fa-paper-plane"></i>
                   ${isAr ? 'إرسال التعليمات والملفات' : 'Send Instructions & Files'}
@@ -503,7 +503,7 @@
                    attempt, harassment, fake service...) and doesn't touch
                    funds. Available to both sides at any order stage. -->
               <div class="text-center">
-                <button onclick="OrderWorkspace.reportOtherParty('${orderId}')" class="text-xs text-gray-400 hover:text-red-500 transition inline-flex items-center gap-1.5">
+                <button data-on-click="OrderWorkspace.reportOtherParty('${orderId}')" class="text-xs text-gray-400 hover:text-red-500 transition inline-flex items-center gap-1.5">
                   <i class="fa-solid fa-flag"></i>${isAr ? `الإبلاغ عن ${isBuyer ? 'البائع' : 'المشتري'}` : `Report the ${isBuyer ? 'seller' : 'buyer'}`}
                 </button>
               </div>
@@ -523,15 +523,15 @@
                   ${isAr ? 'استلام الخدمة' : 'Service Delivery'}
                 </h3>
                 <div class="space-y-3">
-                  <button onclick="EscrowManager.confirmDelivery('${orderId}')"
+                  <button data-on-click="EscrowManager.confirmDelivery('${orderId}')"
                     class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i>${t('escrow.confirm')}
                   </button>
-                  <button onclick="OrderWorkspace.requestRevision('${orderId}')"
+                  <button data-on-click="OrderWorkspace.requestRevision('${orderId}')"
                     class="btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-rotate-left"></i>${t('orders.revision')}
                   </button>
-                  ${window.NonReceipt && NonReceipt.isPhysical(order) ? NonReceipt.buttonHtml(order) : `<button onclick="EscrowManager.openDispute('${orderId}')"
+                  ${window.NonReceipt && NonReceipt.isPhysical(order) ? NonReceipt.buttonHtml(order) : `<button data-on-click="EscrowManager.openDispute('${orderId}')"
                     class="w-full py-3 text-sm border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-flag"></i>${t('escrow.dispute')}
                   </button>`}
@@ -575,7 +575,7 @@
               ${[ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.REVISION].includes(order.status) ? `
               <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
                 <p class="text-xs text-gray-500">${isAr ? 'في مشكلة في الطلب؟ متستناش لحد التسليم.' : "Having a problem with this order? You don't have to wait until delivery."}</p>
-                <button onclick="EscrowManager.openDispute('${orderId}')"
+                <button data-on-click="EscrowManager.openDispute('${orderId}')"
                   class="shrink-0 px-3.5 py-2 text-xs font-bold border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition flex items-center gap-1.5">
                   <i class="fa-solid fa-flag"></i>${isAr ? 'فتح نزاع' : 'Open Dispute'}
                 </button>
@@ -595,7 +595,7 @@
                   ${isAr ? 'في انتظار تأكيد العميل' : 'Waiting for buyer confirmation'}
                 </h3>
                 <p class="text-gray-500 text-sm mb-4">${isAr ? 'العميل مستلم التسليم وقدامه مهلة يراجع فيها. لو مش بيرد أو في مشكلة، افتح نزاع وإدارة الموقع هتراجع الطلب.' : "The buyer has your delivery and a review window. If they're unresponsive or there's an issue, open a dispute for admin review."}</p>
-                <button onclick="EscrowManager.openDispute('${orderId}')"
+                <button data-on-click="EscrowManager.openDispute('${orderId}')"
                   class="w-full py-3 text-sm border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2">
                   <i class="fa-solid fa-flag"></i>${isAr ? 'فتح نزاع' : 'Open Dispute'}
                 </button>
@@ -610,12 +610,12 @@
                 <div id="starRating" class="flex gap-2 mb-4 text-2xl cursor-pointer justify-center">
                   ${[1,2,3,4,5].map(i =>
                     `<i class="fa-regular fa-star text-gray-300 hover:text-yellow-400 transition"
-                      data-star="${i}" onclick="OrderWorkspace.setRating(${i})"></i>`
+                      data-star="${i}" data-on-click="OrderWorkspace.setRating(${i})"></i>`
                   ).join('')}
                 </div>
                 <textarea id="reviewText" rows="3" class="form-input text-sm mb-3 w-full"
                   placeholder="${isAr ? 'اكتب تقييمك هنا...' : 'Write your review here...'}"></textarea>
-                <button onclick="OrderWorkspace.submitReview('${orderId}')"
+                <button data-on-click="OrderWorkspace.submitReview('${orderId}')"
                   class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
                   <i class="fa-solid fa-paper-plane"></i>
                   ${isAr ? 'إرسال التقييم' : 'Submit Review'}
@@ -637,7 +637,7 @@
 
     // ── Tab Builder ───────────────────────────────────────────────────────────
     function _tab(id, i18nKey, icon) {
-        return `<button onclick="wsActivateTab('${id}')" id="ws-tab-btn-${id}"
+        return `<button data-on-click="wsActivateTab('${id}')" id="ws-tab-btn-${id}"
           class="ws-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-navy-600 hover:bg-navy-50 transition flex items-center justify-center gap-2 border-b-2 border-transparent">
           <i class="fa-solid ${icon}"></i>
           <span>${t(i18nKey)}</span>
@@ -890,7 +890,7 @@
                 <div class="flex items-center gap-1 ${isMine ? 'flex-row-reverse' : ''}">
                   <div class="max-w-xs">${_fileDownloadCard(msg.file)}</div>
                   ${isMine ? `
-                  <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+                  <button data-on-click="OrderWorkspace.deleteMessage('${msgId}')"
                     class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
                     title="${isAr ? 'حذف' : 'Delete'}"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
                 </div>
@@ -909,10 +909,10 @@
                   <a href="${window.safeUrl(msg.file?.url) || '#'}" target="_blank" rel="noopener">
                     <img src="${window.safeUrl(msg.file?.url)}" alt="${_escapeHtml(msg.file?.name || 'image')}"
                       class="max-w-xs rounded-2xl border border-gray-200 hover:opacity-90 transition cursor-pointer"
-                      loading="lazy" style="max-height:200px;object-fit:cover">
+                      loading="lazy" data-style="max-height:200px;object-fit:cover">
                   </a>
                   ${isMine ? `
-                  <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+                  <button data-on-click="OrderWorkspace.deleteMessage('${msgId}')"
                     class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
                     title="${isAr ? 'حذف' : 'Delete'}"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
                 </div>
@@ -931,7 +931,7 @@
                 <p class="text-sm leading-relaxed whitespace-pre-wrap break-words">${_linkify(_escapeHtml(msg.text || ''))}</p>
               </div>
               ${isMine ? `
-              <button onclick="OrderWorkspace.deleteMessage('${msgId}')"
+              <button data-on-click="OrderWorkspace.deleteMessage('${msgId}')"
                 class="opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center flex-shrink-0"
                 title="${isAr ? 'حذف الرسالة' : 'Delete message'}">
                 <i class="fa-solid fa-trash-can text-xs"></i>
@@ -1669,11 +1669,11 @@
             ${isSeller && !order.dropship && status !== 'delivered' ? `
             <div class="flex gap-2 border-t border-gray-100 pt-3">
               ${(status === 'processing' || !order.trackingNumber) ? `
-              <button onclick="OrderWorkspace.markProductShipped('${order.id}')"
+              <button data-on-click="OrderWorkspace.markProductShipped('${order.id}')"
                 class="flex-1 text-sm font-bold bg-navy-700 text-white py-2.5 rounded-xl hover:bg-navy-800 transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-truck"></i>${isAr ? 'تحديد كـ: تم الشحن' : 'Mark as shipped'}
               </button>` : ''}
-              <button onclick="OrderWorkspace.markProductDelivered('${order.id}')"
+              <button data-on-click="OrderWorkspace.markProductDelivered('${order.id}')"
                 class="flex-1 text-sm font-bold bg-turquoise-600 text-white py-2.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-house-circle-check"></i>${isAr ? 'تحديد كـ: تم التسليم' : 'Mark as delivered'}
               </button>
@@ -1745,7 +1745,7 @@
                 <div id="stageEditorList" class="space-y-2 mb-3">
                   ${stages.map((name, i) => `
                     <div class="flex items-center gap-2">
-                      <button onclick="OrderWorkspace.setOrderStage('${order.id}',${i})"
+                      <button data-on-click="OrderWorkspace.setOrderStage('${order.id}',${i})"
                         class="w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-black transition ${i < current ? 'bg-turquoise-500 text-white' : i === current ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-400'}">
                         ${i < current ? '<i class="fa-solid fa-check"></i>' : i + 1}
                       </button>
@@ -1753,8 +1753,8 @@
                     </div>`).join('')}
                 </div>
                 <div class="flex gap-2">
-                  <button onclick="OrderWorkspace.addStageField('${order.id}')" class="text-xs font-bold text-navy-700 hover:underline">+ ${isAr?'إضافة مرحلة':'Add stage'}</button>
-                  <button onclick="OrderWorkspace.saveCustomStages('${order.id}')" class="mr-auto text-xs font-bold bg-secondary text-white px-4 py-2 rounded-xl hover:bg-secondary-600 transition">${isAr?'حفظ المراحل':'Save stages'}</button>
+                  <button data-on-click="OrderWorkspace.addStageField('${order.id}')" class="text-xs font-bold text-navy-700 hover:underline">+ ${isAr?'إضافة مرحلة':'Add stage'}</button>
+                  <button data-on-click="OrderWorkspace.saveCustomStages('${order.id}')" class="mr-auto text-xs font-bold bg-secondary text-white px-4 py-2 rounded-xl hover:bg-secondary-600 transition">${isAr?'حفظ المراحل':'Save stages'}</button>
                 </div>
               </div>`;
         }

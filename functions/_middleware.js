@@ -12,6 +12,8 @@
 // (Cleaner long-term fix: set the Pages "build output directory" to a dedicated
 // public/ folder, then this file and _routes.json's block list can go away.)
 // ─────────────────────────────────────────────────────────────────────────────
+import { hardenResponse } from './_shared/security-headers.js';
+
 const BLOCKED_EXACT = new Set([
   '/.firebaserc', '/firebase.json', '/firestore.rules', '/firestore.indexes.json',
   '/database.rules.json', '/package.json', '/package-lock.json', '/wrangler.toml',
@@ -26,7 +28,7 @@ const BLOCKED_PREFIX = ['/functions/', '/cron-worker/', '/tests/', '/scripts/'];
 export async function onRequest(context) {
   const { pathname } = new URL(context.request.url);
   if (BLOCKED_EXACT.has(pathname) || BLOCKED_PREFIX.some(p => pathname.startsWith(p))) {
-    return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    return hardenResponse(context.request, context.env, new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } }));
   }
-  return context.next();
+  return hardenResponse(context.request, context.env, await context.next());
 }

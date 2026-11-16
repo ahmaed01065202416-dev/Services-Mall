@@ -262,13 +262,13 @@
             const container = document.getElementById('categoryPillsContainer');
             if (!container) return;
             const isAr = AppState.language !== 'en';
-            const allBtn = `<button onclick="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition">${isAr ? 'الكل' : 'All'}</button>`;
+            const allBtn = `<button data-on-click="ServicesManager.filterCategory('')" data-cat="" class="cat-btn flex-shrink-0 px-4 py-2 bg-navy-600 text-white rounded-xl text-sm font-bold transition">${isAr ? 'الكل' : 'All'}</button>`;
             if (!type) { container.innerHTML = allBtn; return; }
             const list = type === 'product'
                 ? _getProductCategories().filter(c => c.value !== 'digital') // ⚠️ isolated to its own page — see initDigitalProductsPage
                 : _getServiceCategories();
             container.innerHTML = allBtn + list.map(c => `
-                <button onclick="ServicesManager.filterCategory('${c.value}')" data-cat="${c.value}"
+                <button data-on-click="ServicesManager.filterCategory('${c.value}')" data-cat="${c.value}"
                   class="cat-btn flex-shrink-0 px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-sm font-bold hover:border-navy-400 transition">
                   <i class="fa-solid ${c.icon} me-1.5"></i>${c.label}
                 </button>`).join('');
@@ -389,10 +389,10 @@
             if (!/^[A-Za-z0-9_\-]{1,128}$/.test(String(id || ''))) return '';
             (this._shareTitles = this._shareTitles || {})[id] = title || '';
             const isAr = AppState.language !== 'en';
-            const b = (bg, ic, label, fn) => `<button type="button" onclick="ServicesManager.${fn}('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl" style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
+            const b = (bg, ic, label, fn) => `<button type="button" data-on-click="ServicesManager.${fn}('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl" data-style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
             return `<div class="flex flex-wrap items-center gap-2">
               <span class="text-xs font-bold text-gray-500"><i class="fa-solid fa-share-nodes me-1"></i>${isAr ? 'شارك:' : 'Share:'}</span>
-              <button type="button" onclick="ServicesManager.copyServiceLink('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-gray-100 text-gray-700"><i class="fa-solid fa-copy me-1"></i>${isAr ? 'نسخ الرابط' : 'Copy link'}</button>
+              <button type="button" data-on-click="ServicesManager.copyServiceLink('${id}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-gray-100 text-gray-700"><i class="fa-solid fa-copy me-1"></i>${isAr ? 'نسخ الرابط' : 'Copy link'}</button>
               ${b('#1877F2', 'fa-brands fa-facebook-f', 'Facebook', 'shareServiceFacebook')}
               ${b('#25D366', 'fa-brands fa-whatsapp', 'WhatsApp', 'shareServiceWhatsApp')}
             </div>`;
@@ -416,7 +416,7 @@
             if (!box) { box = document.createElement('div'); box.setAttribute('data-empty-hint', ''); box.className = 'mt-4'; empty.appendChild(box); }
             const isAr = AppState.language !== 'en';
             const labels = { design:'تصميم', programming:'برمجة', marketing:'تسويق', writing:'كتابة', video:'فيديو', seo:'SEO', audio:'صوتيات', data:'بيانات', clothing:'ملابس', electronics:'إلكترونيات', home:'مستلزمات منزلية', beauty:'مستحضرات تجميل', food:'أطعمة ومشروبات', accessories:'إكسسوارات' };
-            const showAll = `<button type="button" onclick="ServicesManager.filterCategory('')" class="px-4 py-2 text-sm font-bold rounded-xl bg-navy-600 text-white">${isAr ? 'عرض كل الخدمات' : 'Show all'}</button>`;
+            const showAll = `<button type="button" data-on-click="ServicesManager.filterCategory('')" class="px-4 py-2 text-sm font-bold rounded-xl bg-navy-600 text-white">${isAr ? 'عرض كل الخدمات' : 'Show all'}</button>`;
             box.innerHTML = `<p class="text-sm text-gray-400 mb-3">${_activeCat ? (isAr ? 'مفيش نتايج في التصنيف ده حاليًا.' : 'Nothing in this category yet.') : (isAr ? 'جرّب تغيّر البحث أو الفلاتر.' : 'Try a different search or filters.')}</p>${showAll}`;
             try {
                 if (!this._hintCats) {
@@ -425,7 +425,7 @@
                     this._hintCats = [...new Set(((d && d.items) || []).map(x => x && x.category).filter(c => labels[c]))];
                 }
                 const cats = this._hintCats.filter(c => c !== _activeCat);
-                if (cats.length && box.isConnected) box.insertAdjacentHTML('beforeend', `<div class="mt-4 flex flex-wrap justify-center gap-2">${cats.map(c => `<button type="button" onclick="ServicesManager.filterCategory('${c}')" class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 text-gray-700">${labels[c]}</button>`).join('')}</div>`);
+                if (cats.length && box.isConnected) box.insertAdjacentHTML('beforeend', `<div class="mt-4 flex flex-wrap justify-center gap-2">${cats.map(c => `<button type="button" data-on-click="ServicesManager.filterCategory('${c}')" class="px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 text-gray-700">${labels[c]}</button>`).join('')}</div>`);
             } catch (_) { /* hint is optional */ }
         },
 
@@ -455,27 +455,27 @@
             const stars = Math.round(s.rating || 0);
             const price = formatCurrency(s.price || 0);
             return `
-            <div class="service-card card group cursor-pointer" onclick="ServicesManager.openServiceDetail('${s.id}')">
+            <div class="service-card card group cursor-pointer" data-on-click="ServicesManager.openServiceDetail('${s.id}')">
               <!-- Thumbnail -->
               <div class="relative overflow-hidden">
                 <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'}"
                   class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
-                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
+                  data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'">
                 ${s.featured ? '<span class="absolute top-3 start-3 bg-gradient-to-r from-navy-700 to-turquoise-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow"><i class="fa-solid fa-star"></i> مميز</span>' : ''}
                 ${(Number(s.deliveryDays) || 3) <= 1 ? '<span class="absolute top-3 end-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1"><i class="fa-solid fa-bolt"></i> سريع</span>' : ''}
-                ${s.recurring ? '<span class="absolute top-3 end-3 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1" style="' + ((Number(s.deliveryDays)||3)<=1 ? 'top:2.6rem' : '') + '"><i class="fa-solid fa-rotate"></i> اشتراك شهري</span>' : ''}
+                ${s.recurring ? '<span class="absolute top-3 end-3 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1" data-style="' + ((Number(s.deliveryDays)||3)<=1 ? 'top:2.6rem' : '') + '"><i class="fa-solid fa-rotate"></i> اشتراك شهري</span>' : ''}
                 <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
-                  <button onclick="event.stopPropagation();ServicesManager.openServiceDetail('${s.id}')"
+                  <button data-on-click="event.stopPropagation();ServicesManager.openServiceDetail('${s.id}')"
                     class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-eye text-navy-700"></i>
                   </button>
                   ${s.dropship ? '' : s.listingType === 'product' ? `
-                  <button onclick="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                  <button data-on-click="event.stopPropagation();addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 bg-turquoise-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid fa-cart-plus text-white"></i>
                   </button>` : `
-                  <button onclick="event.stopPropagation();${s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                  <button data-on-click="event.stopPropagation();${s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal'}(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                     class="w-10 h-10 ${s.orderMode==='instant'?'bg-secondary':'bg-navy-800'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition">
                     <i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-white"></i>
                   </button>`}
@@ -485,16 +485,16 @@
               <!-- Body -->
               <div class="p-4">
                 <!-- Seller -->
-                <div class="flex items-center gap-2 mb-3" onclick="event.stopPropagation();StoresManager.openStore('${window.safeId(s.storeId||s.sellerId||'')}')" title="${isAr?'زيارة المتجر':'Visit store'}">
+                <div class="flex items-center gap-2 mb-3" data-on-click="event.stopPropagation();StoresManager.openStore('${window.safeId(s.storeId||s.sellerId||'')}')" title="${isAr?'زيارة المتجر':'Visit store'}">
                   <img src="${window.safeUrl(s.sellerAvatar) || `https://ui-avatars.com/api/?name=${window.encName(s.sellerName||'U')}&background=0284c7&color=fff`}"
                     class="w-7 h-7 rounded-full object-cover flex-shrink-0" loading="lazy"
-                    onerror="this.src='https://ui-avatars.com/api/?name=U&background=0284c7&color=fff'">
+                    data-on-error="this.src='https://ui-avatars.com/api/?name=U&background=0284c7&color=fff'">
                   <span class="text-xs text-gray-600 font-semibold truncate">${escapeHtml(s.sellerName || '—')}</span>
                   ${s.sellerVerified ? '<i class="fa-solid fa-circle-check text-turquoise-600 text-xs flex-shrink-0"></i>' : ''}
                 </div>
 
                 <!-- Title -->
-                <h3 class="font-black text-gray-900 text-sm leading-snug mb-3 line-clamp-2" style="min-height:2.5rem">${escapeHtml(s.title || '—')}</h3>
+                <h3 class="font-black text-gray-900 text-sm leading-snug mb-3 line-clamp-2" data-style="min-height:2.5rem">${escapeHtml(s.title || '—')}</h3>
 
                 <!-- Rating -->
                 <div class="flex items-center gap-1 mb-3">
@@ -532,19 +532,19 @@
                     var cartDataStr = JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||''}).replace(/"/g,'&quot;');
                     var lang = AppState.language;
                     if (isOwnService || isAdm) {
-                      return '<button onclick="event.stopPropagation();ServicesManager.deleteService(\'' + s.id + '\')" class="flex-1 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-trash text-xs\"></i>' + (lang !== 'en' ? 'حذف الإعلان' : 'Delete') + '</button>'
-                           + '<button onclick="event.stopPropagation();navigateTo(\'add-service\', ' + editDataStr + ')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
+                      return '<button data-on-click="event.stopPropagation();ServicesManager.deleteService(\'' + s.id + '\')" class="flex-1 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl py-2.5 text-sm font-bold hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-trash text-xs\"></i>' + (lang !== 'en' ? 'حذف الإعلان' : 'Delete') + '</button>'
+                           + '<button data-on-click="event.stopPropagation();navigateTo(\'add-service\', ' + editDataStr + ')" class="w-10 h-10 flex-shrink-0 border-2 border-gray-200 text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition"><i class=\"fa-solid fa-pen text-xs\"></i></button>';
                     }
                     if (s.dropship) {
-                      return '<button onclick="event.stopPropagation();ServicesManager.openServiceDetail(\'' + s.id + '\')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class="fa-solid fa-bolt text-xs"></i>' + (lang !== 'en' ? 'اشترِ الآن' : 'Buy now') + '</button>';
+                      return '<button data-on-click="event.stopPropagation();ServicesManager.openServiceDetail(\'' + s.id + '\')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class="fa-solid fa-bolt text-xs"></i>' + (lang !== 'en' ? 'اشترِ الآن' : 'Buy now') + '</button>';
                     }
                     if (s.listingType === 'product') {
-                      return '<button onclick="event.stopPropagation();addToCart(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-plus text-xs\"></i>' + (lang !== 'en' ? 'أضف للسلة' : 'Add to Cart') + '</button>';
+                      return '<button data-on-click="event.stopPropagation();addToCart(' + serviceDataStr + ')" class="flex-1 bg-turquoise-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-turquoise-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-cart-plus text-xs\"></i>' + (lang !== 'en' ? 'أضف للسلة' : 'Add to Cart') + '</button>';
                     }
                     if (s.recurring) {
-                      return '<button onclick="event.stopPropagation();SubscriptionSystem.subscribe(\'' + s.id + '\',' + serviceDataStr + ')" class="flex-1 bg-purple-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-purple-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-rotate text-xs\"></i>' + (lang !== 'en' ? 'اشترك شهرياً' : 'Subscribe monthly') + '</button>';
+                      return '<button data-on-click="event.stopPropagation();SubscriptionSystem.subscribe(\'' + s.id + '\',' + serviceDataStr + ')" class="flex-1 bg-purple-600 text-white rounded-xl py-2.5 text-sm font-bold hover:bg-purple-700 transition flex items-center justify-center gap-1"><i class=\"fa-solid fa-rotate text-xs\"></i>' + (lang !== 'en' ? 'اشترك شهرياً' : 'Subscribe monthly') + '</button>';
                     }
-                    return '<button onclick="event.stopPropagation();' + (s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal') + '(' + serviceDataStr + ')" class="flex-1 btn-primary py-2.5 text-sm"><i class=\"fa-solid ' + (s.orderMode==='instant'?'fa-lock':'fa-paper-plane') + ' me-1\"></i>' + (s.orderMode==='instant' ? (lang !== 'en' ? 'اطلب وادفع' : 'Pay & Request') : (lang !== 'en' ? 'طلب الخدمة' : 'Request Service')) + '</button>';
+                    return '<button data-on-click="event.stopPropagation();' + (s.orderMode==='instant'?'RequestSystem.openInstantModal':'RequestSystem.openRequestModal') + '(' + serviceDataStr + ')" class="flex-1 btn-primary py-2.5 text-sm"><i class=\"fa-solid ' + (s.orderMode==='instant'?'fa-lock':'fa-paper-plane') + ' me-1\"></i>' + (s.orderMode==='instant' ? (lang !== 'en' ? 'اطلب وادفع' : 'Pay & Request') : (lang !== 'en' ? 'طلب الخدمة' : 'Request Service')) + '</button>';
                   })()}
                 </div>
               </div>
@@ -568,19 +568,19 @@
             return `
             <div class="relative bg-gray-900 select-none" id="svcGallery">
               <div class="absolute inset-0 overflow-hidden"><img id="svcGalBg" src="${list[0]}" class="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt=""></div>
-              <div class="relative h-80 sm:h-96 flex items-center justify-center cursor-zoom-in" onclick="ServicesManager.openLightbox()">
+              <div class="relative h-80 sm:h-96 flex items-center justify-center cursor-zoom-in" data-on-click="ServicesManager.openLightbox()">
                 <img id="serviceDetailMainImg" src="${list[0]}" class="max-h-full max-w-full object-contain" alt=""
-                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
+                  data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
               </div>
-              <button onclick="closeModal('serviceModal')" class="absolute top-4 end-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-black/70 transition z-10"><i class="fa-solid fa-xmark text-lg"></i></button>
-              <button onclick="ServicesManager.openLightbox()" class="absolute top-4 start-4 h-10 px-3 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center gap-2 text-xs font-bold hover:bg-black/70 transition z-10"><i class="fa-solid fa-expand"></i>${AppState.language==='en'?'Zoom':'تكبير'}</button>
+              <button data-on-click="closeModal('serviceModal')" class="absolute top-4 end-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-black/70 transition z-10"><i class="fa-solid fa-xmark text-lg"></i></button>
+              <button data-on-click="ServicesManager.openLightbox()" class="absolute top-4 start-4 h-10 px-3 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center gap-2 text-xs font-bold hover:bg-black/70 transition z-10"><i class="fa-solid fa-expand"></i>${AppState.language==='en'?'Zoom':'تكبير'}</button>
               ${many ? `
-              <button onclick="ServicesManager.galleryStep(-1)" class="absolute start-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-left"></i></button>
-              <button onclick="ServicesManager.galleryStep(1)" class="absolute end-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-right"></i></button>
+              <button data-on-click="ServicesManager.galleryStep(-1)" class="absolute start-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-left"></i></button>
+              <button data-on-click="ServicesManager.galleryStep(1)" class="absolute end-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 text-gray-800 rounded-full shadow flex items-center justify-center hover:bg-white z-10"><i class="fa-solid fa-chevron-right"></i></button>
               <span id="svcGalCount" class="absolute bottom-3 end-3 bg-black/60 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">1 / ${list.length}</span>` : ''}
             </div>
             ${many ? `<div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto" id="svcGalThumbs">
-              ${list.map((u, i) => `<img src="${u}" onclick="ServicesManager.galleryGo(${i})" data-gi="${i}" class="w-16 h-16 object-cover rounded-lg border-2 ${i === 0 ? 'border-navy-500' : 'border-transparent'} cursor-pointer flex-shrink-0 hover:border-navy-400">`).join('')}
+              ${list.map((u, i) => `<img src="${u}" data-on-click="ServicesManager.galleryGo(${i})" data-gi="${i}" class="w-16 h-16 object-cover rounded-lg border-2 ${i === 0 ? 'border-navy-500' : 'border-transparent'} cursor-pointer flex-shrink-0 hover:border-navy-400">`).join('')}
             </div>` : ''}`;
         },
         galleryGo(i) {
@@ -703,19 +703,19 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                           </div>
                           <div class="flex gap-3">
                             ${s.listingType === 'product' ? `
-                            ${s.dropship ? '' : `<button onclick="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
+                            ${s.dropship ? '' : `<button data-on-click="addToCart(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-cart-plus"></i>${AppState.language === 'en' ? 'Add to Cart' : 'أضف للسلة'}
                             </button>`}
-                            <button onclick="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other',shippingFee:s.shippingFee||0,shippingMode:s.shippingMode||'online'}).replace(/"/g,'&quot;')})"
+                            <button data-on-click="closeModal('serviceModal');RequestSystem.openProductOrderModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||0,orderRules:s.orderRules||'',structuredFields:s.structuredFields||[],category:s.category||'other',shippingFee:s.shippingFee||0,shippingMode:s.shippingMode||'online'}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-turquoise-600 text-white font-black py-3.5 rounded-xl hover:bg-turquoise-700 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-bolt"></i>${AppState.language === 'en' ? 'Buy Now' : 'اشترِ فورًا'}
                             </button>` : s.orderMode === 'instant' ? `
-                            <button onclick="closeModal('serviceModal');RequestSystem.openInstantModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                            <button data-on-click="closeModal('serviceModal');RequestSystem.openInstantModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-lock"></i>${AppState.language === 'en' ? 'Pay & Request' : 'اطلب وادفع الآن'}
                             </button>` : `
-                            <button onclick="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
+                            <button data-on-click="closeModal('serviceModal');RequestSystem.openRequestModal(${JSON.stringify({id:s.id,title:s.title||'',price:s.price||0,image:getServiceImage(s),sellerId:s.sellerId||'',sellerName:s.sellerName||'',deliveryDays:s.deliveryDays||3}).replace(/"/g,'&quot;')})"
                               class="flex-1 bg-white text-navy-700 font-black py-3.5 rounded-xl hover:bg-navy-50 transition flex items-center justify-center gap-2">
                               <i class="fa-solid fa-paper-plane"></i>${AppState.language === 'en' ? 'Request Service' : 'طلب الخدمة'}
                             </button>`}
@@ -827,13 +827,13 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
             container.innerHTML = `
             <div class="max-w-2xl mx-auto">
               <div class="flex items-center gap-4 mb-8">
-                <button onclick="navigateTo('dashboard')" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition">
+                <button data-on-click="navigateTo('dashboard')" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition">
                   <i class="fa-solid fa-arrow-${isAr?'right':'left'}"></i>
                 </button>
                 <h1 class="text-2xl font-black text-gray-900">${isEdit ? (isAr?'تعديل الإعلان':'Edit Listing') : (wantsProduct ? (isAr?'إضافة منتج جديد':'Add New Product') : (isAr?'إضافة خدمة جديدة':'Add New Service'))}</h1>
               </div>
 
-              <form onsubmit="event.preventDefault();ServicesManager.saveService('${service?.id||''}')" class="space-y-6">
+              <form data-on-submit="event.preventDefault();ServicesManager.saveService('${service?.id||''}')" class="space-y-6">
                 <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
 
                   <!-- ⚠️ ADDED: listingType — "service" (custom work, needs a
@@ -845,11 +845,11 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                     <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'نوع الإعلان':'Listing Type'} *</label>
                     <div class="grid grid-cols-2 gap-3">
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-navy-700 has-[:checked]:bg-navy-50 border-gray-200">
-                        <input type="radio" name="svcListingType" value="service" id="svcTypeService" onchange="ServicesManager.toggleListingType()" ${!wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-navy-700">
+                        <input type="radio" name="svcListingType" value="service" id="svcTypeService" data-on-change="ServicesManager.toggleListingType()" ${!wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-navy-700">
                         <div><p class="font-bold text-gray-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-toolbox"></i>${isAr?'خدمة':'Service'}</p><p class="text-xs text-gray-400">${isAr?'شغل مخصص، محتاج موافقتك':'Custom work, needs your approval'}</p></div>
                       </label>
                       <label class="flex items-center gap-2 border-2 rounded-2xl p-4 cursor-pointer transition has-[:checked]:border-turquoise-500 has-[:checked]:bg-turquoise-50 border-gray-200">
-                        <input type="radio" name="svcListingType" value="product" id="svcTypeProduct" onchange="ServicesManager.toggleListingType()" ${wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-turquoise-600">
+                        <input type="radio" name="svcListingType" value="product" id="svcTypeProduct" data-on-change="ServicesManager.toggleListingType()" ${wantsProduct ? 'checked' : ''} class="w-4 h-4 accent-turquoise-600">
                         <div><p class="font-bold text-gray-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-box"></i>${isAr?'منتج جاهز':'Ready Product'}</p><p class="text-xs text-gray-400">${isAr?'تسليم فوري تلقائي':'Instant automatic delivery'}</p></div>
                       </label>
                     </div>
@@ -871,7 +871,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'التصنيف':'Category'} *</label>
-                      <select id="svcCategory" class="form-input" onchange="ServicesManager.onCategoryChange()">
+                      <select id="svcCategory" class="form-input" data-on-change="ServicesManager.onCategoryChange()">
                         ${(wantsProduct ? productCategories : categories).map(c => `<option value="${c.value}" ${service?.category===c.value?'selected':''}>${c.label}</option>`).join('')}
                       </select>
                     </div>
@@ -957,7 +957,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                     <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4">
                       <div class="flex items-center justify-between mb-2.5">
                         <p class="text-sm font-black text-gray-700"><i class="fa-solid fa-sliders me-1.5"></i>${isAr?'خصائص مخصصة إضافية (اختياري)':'Extra custom attributes (optional)'}</p>
-                        <button type="button" onclick="ServicesManager.addCustomField()" class="text-xs font-bold text-navy-700 hover:underline flex items-center gap-1"><i class="fa-solid fa-plus"></i>${isAr?'أضف خاصية':'Add attribute'}</button>
+                        <button type="button" data-on-click="ServicesManager.addCustomField()" class="text-xs font-bold text-navy-700 hover:underline flex items-center gap-1"><i class="fa-solid fa-plus"></i>${isAr?'أضف خاصية':'Add attribute'}</button>
                       </div>
                       <p class="text-xs text-gray-400 mb-2">${isAr?'مثال: الوزن، الحجم، النكهة، الطراز — أي حاجة تخص منتجك مهما كان نوعه.':'e.g. weight, size, flavor, model — anything specific to your product, whatever its category.'}</p>
                       <div id="svcCustomFieldsContainer" class="space-y-2"></div>
@@ -984,7 +984,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                       <input type="text" id="svcDeliveryLink" class="form-input mb-3" dir="ltr"
                         value="${service?.digitalDelivery?.type==='link' ? escapeHtml(service.digitalDelivery.value||'') : ''}"
                         placeholder="https://...">
-                      <div class="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-turquoise-400 transition cursor-pointer" onclick="document.getElementById('svcDeliveryFile').click()">
+                      <div class="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-turquoise-400 transition cursor-pointer" data-on-click="document.getElementById('svcDeliveryFile').click()">
                         <i class="fa-solid fa-file-arrow-up text-2xl text-gray-300 mb-1"></i>
                         <p class="text-xs text-gray-400" id="svcDeliveryFileLabel">${service?.digitalDelivery?.type==='file' ? (isAr?'ملف مرفوع بالفعل — اختر ملف جديد لاستبداله':'File already uploaded — choose a new one to replace it') : (isAr?'أو ارفع ملف هنا':'or upload a file here')}</p>
                         <input type="file" id="svcDeliveryFile" class="hidden">
@@ -1007,7 +1007,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                       <p class="text-xs text-gray-500 mb-3">${isAr?'اكتب تكلفة الشحن لهذا المنتج (0 = شحن مجاني) واختار طريقة دفعها.':'Enter the shipping cost for this product (0 = free) and choose how it is paid.'}</p>
                       <input type="number" id="svcShippingFee" class="form-input mb-2" min="0" max="2000" step="1" value="${service?.shippingFee ?? 0}" placeholder="0">
                       <div class="flex flex-wrap gap-2 mb-4">
-                        ${[0,30,50,70,100].map(v => `<button type="button" onclick="document.getElementById('svcShippingFee').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'مجاني':'Free'):v+' '+(isAr?'ج.م':'EGP')}</button>`).join('')}
+                        ${[0,30,50,70,100].map(v => `<button type="button" data-on-click="document.getElementById('svcShippingFee').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'مجاني':'Free'):v+' '+(isAr?'ج.م':'EGP')}</button>`).join('')}
                       </div>
                       <div class="space-y-2" id="svcShippingModeBox">
                         <label class="flex items-start gap-2 p-3 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50">
@@ -1024,7 +1024,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
 <p class="text-xs text-gray-500 mb-3">${isAr?'عدد الأيام اللي يقدر فيها العميل يرجّع المنتج بعد التسليم لو غيّر رأيه. 0 = بدون استرجاع. بلاغات «لم يصل / وصل تالف / غير مطابق للوصف» بتفضل متاحة من المنصة في كل الأحوال.':'Days after delivery in which the buyer may return the product if they changed their mind. 0 = no returns. Reports for not arrived / damaged / not as described stay available regardless.'}</p>
 <input type="number" id="svcReturnDays" class="form-input mb-2" min="0" max="90" step="1" value="${service?.returnDays ?? 0}" placeholder="0">
 <div class="flex flex-wrap gap-2">
-${[0,3,7,14,30].map(v => `<button type="button" onclick="document.getElementById('svcReturnDays').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'بدون استرجاع':'No returns'):(isAr?v+' أيام':v+' days')}</button>`).join('')}
+${[0,3,7,14,30].map(v => `<button type="button" data-on-click="document.getElementById('svcReturnDays').value=${v}" class="px-3 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">${v===0?(isAr?'بدون استرجاع':'No returns'):(isAr?v+' أيام':v+' days')}</button>`).join('')}
 </div>
 </div>
 </div>
@@ -1062,11 +1062,11 @@ ${[0,3,7,14,30].map(v => `<button type="button" onclick="document.getElementById
 
                   <div>
                     <label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'صور الإعلان':'Listing photos'} <span id="svcPhotoCount" class="text-xs font-normal text-gray-400"></span></label>
-                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-navy-400 transition cursor-pointer" onclick="document.getElementById('svcPhotoFiles').click()">
+                    <div class="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-navy-400 transition cursor-pointer" data-on-click="document.getElementById('svcPhotoFiles').click()">
                       <i class="fa-solid fa-images text-3xl text-gray-300 mb-2"></i>
                       <p id="svcPhotoHint" class="text-sm text-gray-400"></p>
                     </div>
-                    <input type="file" id="svcPhotoFiles" accept="image/*" multiple class="hidden" onchange="ServicesManager.onPhotosChosen(this)">
+                    <input type="file" id="svcPhotoFiles" accept="image/*" multiple class="hidden" data-on-change="ServicesManager.onPhotosChosen(this)">
                     <div id="svcPhotoPreview" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3"></div>
                   </div>
 
@@ -1163,7 +1163,7 @@ document.getElementById('svcDigitalNotice')?.classList.toggle('hidden', isProduc
                 <input type="text" class="form-input text-xs custom-field-label" value="${escapeHtml(label)}" placeholder="${isAr?'اسم الخاصية، مثال: الوزن':'Attribute name, e.g. Weight'}">
                 <input type="text" class="form-input text-xs custom-field-options" value="${escapeHtml(options)}" placeholder="${isAr?'خيارات مفصولة بفاصلة (اختياري) — سيبها فاضية لو المشتري هيكتب بنفسه':'Comma-separated options (optional) — leave blank for free text'}">
               </div>
-              <button type="button" onclick="this.closest('.custom-field-row').remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition mt-0.5"><i class="fa-solid fa-trash text-xs"></i></button>`;
+              <button type="button" data-on-click="this.closest('.custom-field-row').remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition mt-0.5"><i class="fa-solid fa-trash text-xs"></i></button>`;
             container.appendChild(row);
         },
 
@@ -1188,7 +1188,7 @@ document.getElementById('svcDigitalNotice')?.classList.toggle('hidden', isProduc
                         <label class="flex items-center gap-2 cursor-pointer mb-1.5">
                           <input type="checkbox" class="field-tpl-toggle w-4 h-4 accent-navy-700"
                             data-key="${f.key}" data-label="${escapeHtml(f.label)}" data-type="${f.type}"
-                            ${isOn?'checked':''} onchange="this.closest('.bg-white').querySelector('.field-tpl-options-wrap')?.classList.toggle('hidden', !this.checked)">
+                            ${isOn?'checked':''} data-on-change="this.closest('.bg-white').querySelector('.field-tpl-options-wrap')?.classList.toggle('hidden', !this.checked)">
                           <span class="font-bold text-sm text-gray-800">${escapeHtml(f.label)}</span>
                         </label>
                         <div class="field-tpl-options-wrap ${isOn?'':'hidden'} ps-6">
@@ -1246,8 +1246,8 @@ document.getElementById('svcDigitalNotice')?.classList.toggle('hidden', isProduc
                 <div class="relative ${unused ? 'opacity-40' : ''}">
                   <img src="${escapeHtml(src)}" class="w-full h-20 object-cover rounded-lg border-2 ${i === 0 ? 'border-turquoise-500' : 'border-gray-200'}">
                   ${i === 0 ? `<span class="absolute bottom-1 start-1 text-[10px] font-black bg-turquoise-600 text-white px-1.5 py-0.5 rounded">${isAr ? 'الغلاف' : 'Cover'}</span>`
-                            : `<button type="button" onclick="ServicesManager.makeCoverPhoto(${i})" title="${isAr ? 'اجعلها الغلاف' : 'Make cover'}" class="absolute bottom-1 start-1 text-[10px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">★</button>`}
-                  <button type="button" onclick="ServicesManager.removePhoto(${i})" class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
+                            : `<button type="button" data-on-click="ServicesManager.makeCoverPhoto(${i})" title="${isAr ? 'اجعلها الغلاف' : 'Make cover'}" class="absolute bottom-1 start-1 text-[10px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">★</button>`}
+                  <button type="button" data-on-click="ServicesManager.removePhoto(${i})" class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>
                 </div>`;
             }).join('');
             const hint = document.getElementById('svcPhotoHint');
@@ -1571,7 +1571,7 @@ data.returnDays = Math.max(0, Math.min(90, Math.round(parseFloat(document.getEle
                 <div class="text-center py-16">
                   <i class="fa-solid fa-lock text-gray-300 text-5xl mb-4"></i>
                   <h3 class="text-xl font-black text-gray-500 mb-3">${isAr?'يجب أن تكون بائعاً':'Seller Account Required'}</h3>
-                  <button onclick="AuthManager.upgradeToSeller()" class="btn-primary px-8">
+                  <button data-on-click="AuthManager.upgradeToSeller()" class="btn-primary px-8">
                     <i class="fa-solid fa-rocket me-2"></i>${isAr?'الترقية لبائع':'Upgrade to Seller'}
                   </button>
                 </div>`;
@@ -1642,7 +1642,7 @@ data.returnDays = Math.max(0, Math.min(90, Math.round(parseFloat(document.getEle
         if (grid) {
             const btn = document.createElement('div');
             btn.className = 'col-span-full text-center mt-8';
-            btn.innerHTML = `<button id="loadMoreBtn" onclick="loadMoreServices()" class="btn-secondary px-10 py-3 hidden">
+            btn.innerHTML = `<button id="loadMoreBtn" data-on-click="loadMoreServices()" class="btn-secondary px-10 py-3 hidden">
               ${AppState.language==='en'?'Load More':'تحميل المزيد'}
             </button>`;
             grid.parentNode?.appendChild(btn);

@@ -126,7 +126,7 @@
           '<div class="grid sm:grid-cols-2 gap-4" id="designCards">' + defs.map(function (x) {
             var on = sel === x.id;
             return '<button type="button" data-d="' + x.id + '" class="text-start rounded-2xl border-2 p-4 transition ' + (on ? 'border-amber-500 bg-amber-50' : 'border-gray-200 bg-white hover:border-gray-300') + '">' +
-              '<div class="flex gap-1.5 mb-3">' + x.c.map(function (c) { return '<span style="background:' + c + ';width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:inline-block"></span>'; }).join('') + '</div>' +
+              '<div class="flex gap-1.5 mb-3">' + x.c.map(function (c) { return '<span data-style="background:' + c + ';width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:inline-block"></span>'; }).join('') + '</div>' +
               '<div class="font-black text-gray-900 flex items-center gap-2">' + x.t + (on ? '<span class="text-xs font-bold bg-amber-500 text-white rounded-full px-2 py-0.5">' + (isAr ? 'المختار' : 'Selected') + '</span>' : '') + '</div>' +
               '<p class="text-sm text-gray-500 mt-1">' + x.d + '</p></button>';
           }).join('') + '</div>' +

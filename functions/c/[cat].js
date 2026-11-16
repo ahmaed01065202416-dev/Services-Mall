@@ -21,7 +21,7 @@ export function buildCategoryPage(html, { cat, items, site }) {
     return buildShell(html, {
         title, desc, url, image: imageUrl(site, list[0] && (list[0].image || (Array.isArray(list[0].images) ? list[0].images[0] : '')), list[0] ? `s=${encodeURIComponent(list[0].id)}` : '', list[0] && list[0]._updateTime),
         ld: [ld, bc], seoHtml, noindex: list.length === 0,
-        boot: `window.addEventListener('load',function(){try{if(window.filterByCategory)filterByCategory('${cat}')}catch(e){}})`,
+        boot: { k: 'cat', v: String(cat) },
     });
 }
 

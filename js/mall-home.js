@@ -16,7 +16,7 @@ MallHome._boot=function(){
   
   /* أمثلة للعرض فقط — بدون أسعار أو أرقام */
   var P=[['قالب موقع متجر','قوالب','code','#0F766E','#115E59',390],['كتاب التسويق الرقمي','كتب إلكترونية','write','#B8935A','#7A5C2E',120],['باقة هوية بصرية','تصميم','design','#2B4170','#0F766E',850],['كورس مونتاج فيديو','دورات','video','#8A6A3A','#2B4170',450],['إدارة حملة إعلانية','تسويق','market','#115E59','#B8935A',1200],['تطبيق موبايل جاهز','برمجة','code','#1B2A4A','#14B8A6',2500],['سماعات لاسلكية','إلكترونيات','product','#2B4170','#B8935A',680],['ترجمة ٥٠٠٠ كلمة','ترجمة','write','#B8935A','#0F766E',300]];
-  function th(p,k){return '<div class="th" style="--a:'+p[3]+';--b:'+p[4]+'">'+svg(k||p[2])+'</div>';}
+  function th(p,k){return '<div class="th" data-style="--a:'+p[3]+';--b:'+p[4]+'">'+svg(k||p[2])+'</div>';}
   function store(n){var c='';for(var i=0;i<n;i++){var p=P[i];c+='<div class="pd">'+th(p)+'<div class="pi"><b>'+p[0]+'</b><span class="skl"></span></div></div>';}
     return '<div class="wb"><i></i><i></i><i></i><span>متجرك.com</span></div><div class="sh"><div class="sh-h"><b class="sn"><img class="lgm" src="'+LOGO+'" alt="">متجرك</b><em><span class="ct">'+'السلة</span></em></div><div class="ban"><b>منتجات رقمية جاهزة</b><span>جديد</span><i class="bdc"></i></div><div class="gd">'+c+'</div></div>';}
   function phone(sheet){return '<div class="pt"><img class="lgm" src="'+LOGO+'" alt="">إتمام الطلب</div><div class="prow">'+th(P[0])+'<div><b>'+P[0][0]+'</b><small><span class="skl"></span></small></div></div><div class="escb">'+svg('shield')+'دفع محمي بنظام Escrow</div><button class="pay">ادفع الآن</button>'+(sheet?'<div class="sheet" id="md-sSheet"><div class="ok">'+svg('check')+'</div><b>تم حجز المبلغ بأمان</b><small>يتحرر بعد موافقتك</small></div>':'');}
@@ -30,7 +30,7 @@ MallHome._boot=function(){
   /* تيلت 3D خفيف */
   document.querySelectorAll('#mallDesign .pc').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform='rotateY('+x*8+'deg) rotateX('+(-y*8)+'deg)';});c.addEventListener('pointerleave',function(){c.style.transform='';});});
   document.getElementById('md-lst').innerHTML=['لوحة بكل الطلبات والمبيعات','رفع المنتجات الرقمية وتسليمها للعميل بعد الدفع','فلوسك محمية بنظام Escrow لحد التسليم','متجر بهويتك وروابط تشاركها مع عملائك'].map(function(t){return '<li><i>'+svg('check')+'</i>'+t+'</li>';}).join('');
-  var H=[30,48,40,66,55,82,95];document.getElementById('md-bars').innerHTML=H.map(function(h){return '<i style="height:'+h+'%"></i>';}).join('');
+  var H=[30,48,40,66,55,82,95];document.getElementById('md-bars').innerHTML=H.map(function(h){return '<i data-style="height:'+h+'%"></i>';}).join('');
   var tk=['قوالب مواقع','كتب إلكترونية','دورات','هويات بصرية','تطبيقات','متاجر إلكترونية','إلكترونيات','خدمات تسويق','ترجمة','مونتاج'],t='';
   for(var r=0;r<6;r++)tk.forEach(function(x){t+='<span>'+x+'</span><b>◆</b>';});document.getElementById('md-tk').innerHTML=t;
 

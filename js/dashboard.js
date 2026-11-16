@@ -27,7 +27,7 @@
                 '<div><label class="text-xs text-gray-500">%</label>' +
                 '<input type="number" class="form-input w-full tier-pct" value="' +
                 tier.feePercent + '" min="0" max="100" step="0.5"></div>' +
-                '<button type="button" onclick="window._removeTierRow(this)"' +
+                '<button type="button" data-on-click="window._removeTierRow(this)"' +
                 ' class="h-10 w-10 bg-red-100 text-red-600 rounded-xl' +
                 ' flex items-center justify-center hover:bg-red-200">' +
                 '<i class="fa-solid fa-trash text-xs"></i></button>' +
@@ -55,7 +55,7 @@
             if (!container) return;
             const user = AppState.currentUser;
             if (!user) {
-                container.innerHTML = `<div class="text-center py-20"><button onclick="navigateTo('login')" class="btn-primary px-8">${t('auth.login')}</button></div>`;
+                container.innerHTML = `<div class="text-center py-20"><button data-on-click="navigateTo('login')" class="btn-primary px-8">${t('auth.login')}</button></div>`;
                 return;
             }
             const role = user.role;
@@ -72,23 +72,23 @@
               <div class="flex items-center justify-between mb-8">
                 <div><h1 class="text-2xl font-black text-gray-900">${isAr?`مرحباً، ${escapeHtml(user.displayName?.split(' ')[0]||'')}! 👋`:`Welcome, ${escapeHtml(user.displayName?.split(' ')[0]||'')}! 👋`}</h1>
                   <p class="text-gray-500 text-sm">${isAr?'لوحة المشتري':'Buyer Dashboard'}</p></div>
-                <button onclick="navigateTo('services')" class="btn-primary px-5 py-2.5 text-sm"><i class="fa-solid fa-plus me-1"></i>${isAr?'طلب خدمة':'Order Service'}</button>
+                <button data-on-click="navigateTo('services')" class="btn-primary px-5 py-2.5 text-sm"><i class="fa-solid fa-plus me-1"></i>${isAr?'طلب خدمة':'Order Service'}</button>
               </div>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-bag-shopping text-blue-600 text-2xl mb-2"></i><p id="buyerTotalOrders" class="text-2xl font-black text-gray-900">—</p><p class="text-sm text-gray-500">${isAr?'الطلبات':'Orders'}</p></div>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-circle-check text-green-600 text-2xl mb-2"></i><p id="buyerCompletedOrders" class="text-2xl font-black text-gray-900">—</p><p class="text-sm text-gray-500">${isAr?'مكتملة':'Completed'}</p></div>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center"><i class="fa-solid fa-wallet text-amber-600 text-2xl mb-2"></i><p class="text-2xl font-black text-gray-900">${formatCurrency(wallet.balance||0)}</p><p class="text-sm text-gray-500">${isAr?'المحفظة':'Wallet'}</p></div>
-                <div class="bg-gradient-to-br from-navy-50 to-navy-100 rounded-2xl p-5 border border-navy-200 text-center cursor-pointer hover:border-navy-400 transition" onclick="DashboardManager.switchToSellerView()">
+                <div class="bg-gradient-to-br from-navy-50 to-navy-100 rounded-2xl p-5 border border-navy-200 text-center cursor-pointer hover:border-navy-400 transition" data-on-click="DashboardManager.switchToSellerView()">
   <i class="fa-solid fa-rocket text-navy-600 text-2xl mb-2"></i>
   <p class="font-black text-navy-700 text-sm">${isAr?'انتقل للبيع':'Start Selling'}</p>
   <p class="text-navy-500 text-xs mt-1">${isAr?'لوحة البائع':'Seller View'}</p>
 </div>
               </div>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <button onclick="navigateTo('orders')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-receipt text-navy-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('orders.title')}</p></button>
-                <button onclick="navigateTo('wallet')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-wallet text-green-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.wallet')}</p></button>
-                <button onclick="navigateTo('profile')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-user text-purple-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.profile')}</p></button>
-                <button onclick="navigateTo('services')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-store text-orange-500 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${isAr?'تصفح الخدمات':'Browse'}</p></button>
+                <button data-on-click="navigateTo('orders')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-receipt text-navy-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('orders.title')}</p></button>
+                <button data-on-click="navigateTo('wallet')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-wallet text-green-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.wallet')}</p></button>
+                <button data-on-click="navigateTo('profile')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-user text-purple-600 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${t('nav.profile')}</p></button>
+                <button data-on-click="navigateTo('services')" class="bg-white rounded-2xl p-5 text-center border border-gray-100 hover:border-navy-300 transition"><i class="fa-solid fa-store text-orange-500 text-2xl mb-2"></i><p class="font-bold text-gray-800 text-sm">${isAr?'تصفح الخدمات':'Browse'}</p></button>
               </div>
               <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"><h3 class="font-black text-gray-900 mb-4">${isAr?'آخر الطلبات':'Recent Orders'}</h3><div id="buyerRecentOrders"></div></div>
             </div>`;
@@ -105,7 +105,7 @@
                 const recent = snap.docs.slice(0,5).map(d=>({id:d.id,...d.data()}));
                 const c = document.getElementById('buyerRecentOrders');
                 if (c) c.innerHTML = recent.length===0 ? `<p class="text-gray-400 text-center py-4">${t('orders.empty')}</p>` : recent.map(o=>`
-                  <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2" onclick="openWorkspace('${o.id}')">
+                  <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2" data-on-click="openWorkspace('${o.id}')">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p><p class="text-xs text-gray-400">${formatDateAr(o.createdAt)}</p></div>
                     <span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span>
                   </div>`).join('');
@@ -130,16 +130,16 @@
                   <p class="text-gray-500 text-sm">${isAr?`أهلاً بعودتك يا`:`Welcome back,`} <span class="font-bold text-gray-800">${escapeHtml(user.displayName?.split(' ')[0]||'')}</span></p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                  <button onclick="ServicesManager.openAddServiceForm('service')" class="flex items-center gap-2 px-4 py-2.5 bg-navy-700 hover:bg-navy-800 text-white rounded-xl font-bold text-sm transition">
+                  <button data-on-click="ServicesManager.openAddServiceForm('service')" class="flex items-center gap-2 px-4 py-2.5 bg-navy-700 hover:bg-navy-800 text-white rounded-xl font-bold text-sm transition">
                     <i class="fa-solid fa-plus text-xs"></i><span>${isAr?'إضافة خدمة':'Add Service'}</span>
                   </button>
-                  <button onclick="ServicesManager.openAddServiceForm('product')" class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition">
+                  <button data-on-click="ServicesManager.openAddServiceForm('product')" class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition">
                     <i class="fa-solid fa-box-archive text-amber-400 text-xs"></i><span>${isAr?'إضافة منتج':'Add Product'}</span>
                   </button>
-                  <button onclick="WalletManager.openWithdrawForm()" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm transition">
+                  <button data-on-click="WalletManager.openWithdrawForm()" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm transition">
                     <i class="fa-solid fa-money-bill-transfer text-turquoise-600 text-xs"></i><span>${isAr?'سحب الأرباح':'Withdraw earnings'}</span>
                   </button>
-                  <button onclick="DashboardManager.switchToBuyerView()" class="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl transition">
+                  <button data-on-click="DashboardManager.switchToBuyerView()" class="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl transition">
                     <i class="fa-solid fa-store text-gray-500"></i><span>${isAr?'واجهة المشتري':'Buyer View'}</span>
                   </button>
                 </div>
@@ -171,8 +171,8 @@
                       <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                       <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(s.title||'—')}</p><p class="text-sm text-gray-500">${formatCurrency(s.price||0)} · ${s.orderCount||0} ${isAr?'طلب':'orders'}</p></div>
                       <div class="flex gap-2">
-                        <button onclick="navigateTo('add-service', ${editData})" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
-                        <button onclick="ServicesManager.deleteService('${s.id}')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-100 hover:text-red-600 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                        <button data-on-click="navigateTo('add-service', ${editData})" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button data-on-click="ServicesManager.deleteService('${s.id}')" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-100 hover:text-red-600 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                       </div>
                     </div>`;
                 }).join('');
@@ -195,7 +195,7 @@
                 const recent = ordersSnap.docs.slice(0,5).map(d=>({id:d.id,...d.data()}));
                 const c = document.getElementById('sellerRecentOrders');
                 if (c) c.innerHTML = recent.length===0 ? `<p class="text-gray-400 text-center py-4">${t('orders.empty')}</p>` : recent.map(o=>`
-                  <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2" onclick="openWorkspace('${o.id}')">
+                  <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-xl px-2" data-on-click="openWorkspace('${o.id}')">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(o.serviceTitle||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(o.buyerName||'—')} · ${formatDateAr(o.createdAt)}</p></div>
                     <div class="flex items-center gap-2"><span class="font-black text-navy-700 text-sm">${formatCurrency(o.price||0)}</span><span class="status-badge ${getStatusClass(o.status)} text-xs">${getStatusText(o.status)}</span></div>
                   </div>`).join('');
@@ -321,7 +321,7 @@
                         </div>
                       </div>
                       <div class="flex items-center gap-3 shrink-0">
-                        <button onclick="adminTab('disputes')" class="px-4 py-2 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+                        <button data-on-click="adminTab('disputes')" class="px-4 py-2 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
                           <i class="fa-solid fa-scale-balanced"></i><span>${isAr?'مراجعة النزاعات':'Review disputes'}</span>
                         </button>
                       </div>`;
@@ -411,7 +411,7 @@
                   const commission = calcSellerFee(o.price||0);
                   return `
                   <div class="p-4 hover:bg-gray-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer" onclick="openWorkspace('${o.id}')">
+                    <div class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer" data-on-click="openWorkspace('${o.id}')">
                       <div class="w-11 h-11 rounded-xl ${ic.bg} ${ic.color} flex items-center justify-center shrink-0"><i class="fa-solid ${ic.icon} text-lg"></i></div>
                       <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
@@ -428,10 +428,10 @@
                         <p class="text-[11px] text-teal-700 font-semibold">${isAr?'عمولة':'fee'}: ${formatCurrency(commission)}</p>
                       </div>
                       <div class="flex gap-1.5">
-                        <button title="${isAr?'إتمام قسري':'Force Complete'}" onclick="window._adminForceStatus('${o.id}','completed')" class="w-8 h-8 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs flex items-center justify-center hover:bg-emerald-600 hover:text-white transition"><i class="fa-solid fa-check"></i></button>
-                        <button title="${isAr?'إلغاء قسري':'Force Cancel'}" onclick="window._adminForceStatus('${o.id}','cancelled')" class="w-8 h-8 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs flex items-center justify-center hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
-                        <button title="${isAr?'حذف الشات فقط':'Delete chat only'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','chat').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs flex items-center justify-center hover:bg-amber-600 hover:text-white transition"><i class="fa-solid fa-comment-slash"></i></button>
-                        <button title="${isAr?'حذف الطلب نهائيًا':'Delete order permanently'}" onclick="window.AdminActions.deleteOrderOrChat('${o.id}','order').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs flex items-center justify-center hover:bg-rose-600 hover:text-white transition"><i class="fa-solid fa-trash-can"></i></button>
+                        <button title="${isAr?'إتمام قسري':'Force Complete'}" data-on-click="window._adminForceStatus('${o.id}','completed')" class="w-8 h-8 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs flex items-center justify-center hover:bg-emerald-600 hover:text-white transition"><i class="fa-solid fa-check"></i></button>
+                        <button title="${isAr?'إلغاء قسري':'Force Cancel'}" data-on-click="window._adminForceStatus('${o.id}','cancelled')" class="w-8 h-8 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs flex items-center justify-center hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                        <button title="${isAr?'حذف الشات فقط':'Delete chat only'}" data-on-click="window.AdminActions.deleteOrderOrChat('${o.id}','chat').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs flex items-center justify-center hover:bg-amber-600 hover:text-white transition"><i class="fa-solid fa-comment-slash"></i></button>
+                        <button title="${isAr?'حذف الطلب نهائيًا':'Delete order permanently'}" data-on-click="window.AdminActions.deleteOrderOrChat('${o.id}','order').then(ok=>ok&&adminTab('orders'))" class="w-8 h-8 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs flex items-center justify-center hover:bg-rose-600 hover:text-white transition"><i class="fa-solid fa-trash-can"></i></button>
                       </div>
                     </div>
                   </div>`;}).join('')}
@@ -471,10 +471,10 @@
                         <span class="text-xs bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full flex-shrink-0">${isAr?'مفتوح':'Open'}</span>
                       </div>
                       <div class="flex gap-2 flex-wrap">
-                        <button onclick="window._adminViewDisputeDetail('${d.id}')" class="text-sm px-4 py-2 bg-navy-800 text-white rounded-xl font-bold hover:bg-navy-900 transition"><i class="fa-solid fa-magnifying-glass"></i> ${isAr?'عرض كل التفاصيل':'View full details'}</button>
-                        <button onclick="EscrowManager.resolveDispute('${d.id}','refund_buyer','${d.orderId}')" class="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
-                        <button onclick="EscrowManager.resolveDispute('${d.id}','refund_minus_shipping','${d.orderId}')" class="text-sm px-4 py-2 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition" title="${isAr?'الخطأ على المشتري: استرداد بعد خصم الشحن':'Buyer at fault: refund minus shipping'}">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}${d.shippingDeduction?` (${formatCurrency(d.shippingDeduction)})`:''}</button>
-                        <button onclick="EscrowManager.resolveDispute('${d.id}','pay_seller','${d.orderId}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
+                        <button data-on-click="window._adminViewDisputeDetail('${d.id}')" class="text-sm px-4 py-2 bg-navy-800 text-white rounded-xl font-bold hover:bg-navy-900 transition"><i class="fa-solid fa-magnifying-glass"></i> ${isAr?'عرض كل التفاصيل':'View full details'}</button>
+                        <button data-on-click="EscrowManager.resolveDispute('${d.id}','refund_buyer','${d.orderId}')" class="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
+                        <button data-on-click="EscrowManager.resolveDispute('${d.id}','refund_minus_shipping','${d.orderId}')" class="text-sm px-4 py-2 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition" title="${isAr?'الخطأ على المشتري: استرداد بعد خصم الشحن':'Buyer at fault: refund minus shipping'}">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}${d.shippingDeduction?` (${formatCurrency(d.shippingDeduction)})`:''}</button>
+                        <button data-on-click="EscrowManager.resolveDispute('${d.id}','pay_seller','${d.orderId}')" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                       </div>
                     </div>`).join('')}</div>`}
                 <div id="trustPanel" class="mb-8"></div>
@@ -483,7 +483,7 @@
                   <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                     <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800">#${(d.orderId||'').substr(-8).toUpperCase()}</p><p class="text-xs text-gray-400">${escapeHtml(d.reason||'—')}</p></div>
                     <span class="text-xs font-bold px-2 py-1 rounded-lg ${d.status==='open'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${d.status==='open'?(isAr?'مفتوح':'Open'):(isAr?'محلول':'Resolved')}</span>
-                    <button onclick="window._adminViewDisputeDetail('${d.id}')" title="${isAr?'عرض التفاصيل':'View details'}" class="w-8 h-8 bg-navy-100 text-navy-700 rounded-lg flex items-center justify-center hover:bg-navy-200 transition flex-shrink-0"><i class="fa-solid fa-magnifying-glass text-xs"></i></button>
+                    <button data-on-click="window._adminViewDisputeDetail('${d.id}')" title="${isAr?'عرض التفاصيل':'View details'}" class="w-8 h-8 bg-navy-100 text-navy-700 rounded-lg flex items-center justify-center hover:bg-navy-200 transition flex-shrink-0"><i class="fa-solid fa-magnifying-glass text-xs"></i></button>
                   </div>`).join('')}
                 </div>`;
 
@@ -502,7 +502,7 @@
                             <label>${isAr?'أخطاء كبائع':'seller faults'} <input type="number" min="0" id="tf_s_${t.id}" value="${t.sellerFaults||0}" class="w-14 border rounded px-1"></label>
                             <label>${isAr?'أخطاء كمشتري':'buyer faults'} <input type="number" min="0" id="tf_b_${t.id}" value="${t.buyerFaults||0}" class="w-14 border rounded px-1"></label>
                             <label class="flex items-center gap-1"><input type="checkbox" id="tf_k_${t.id}" ${t.sellerBlocked?'checked':''}> ${isAr?'البائع محظور':'seller blocked'}</label>
-                            <button onclick="window._adminTrustSave('${t.id}')" class="px-3 py-1.5 bg-navy-800 text-white rounded-lg font-bold">${isAr?'حفظ':'Save'}</button>
+                            <button data-on-click="window._adminTrustSave('${t.id}')" class="px-3 py-1.5 bg-navy-800 text-white rounded-lg font-bold">${isAr?'حفظ':'Save'}</button>
                           </div>`).join('')}</div>` : `<p class="text-xs text-gray-400">${isAr?'لا توجد سجلات':'No records'}</p>`}`;
                     } catch (e) { box.innerHTML = `<p class="text-xs text-red-500">${escapeHtml(e.message)}</p>`; }
                 };
@@ -566,7 +566,7 @@
                         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
                           <div class="flex items-start justify-between mb-4">
                             <h3 class="text-xl font-black text-gray-900">${isAr?'تفاصيل النزاع الكاملة':'Full dispute details'} — #${(dp.orderId||'').slice(-8).toUpperCase()}</h3>
-                            <button onclick="this.closest('.fixed').remove()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
+                            <button data-on-click="this.closest('.fixed').remove()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark"></i></button>
                           </div>
 
                           <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
@@ -607,13 +607,13 @@
 
                           ${dp.status === 'open' ? `
                           <div class="flex gap-3">
-                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_buyer','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
-                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_minus_shipping','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}</button>
-                            <button onclick="EscrowManager.resolveDispute('${dp.id||disputeId}','pay_seller','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
+                            <button data-on-click="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_buyer','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">${isAr?'↩ استرداد للمشتري':'↩ Refund Buyer'}</button>
+                            <button data-on-click="EscrowManager.resolveDispute('${dp.id||disputeId}','refund_minus_shipping','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition">${isAr?'↩ استرداد − الشحن':'↩ Refund − shipping'}</button>
+                            <button data-on-click="EscrowManager.resolveDispute('${dp.id||disputeId}','pay_seller','${dp.orderId}');this.closest('.fixed').remove()" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ دفع للبائع':'✓ Pay Seller'}</button>
                           </div>` : `<p class="text-center text-xs text-gray-400">${isAr?'تم الفصل في هذا النزاع بالفعل':'This dispute was already resolved'}</p>`}
                         </div>`;
                     } catch (e) {
-                        overlay.querySelector('div').innerHTML = `<p class="text-red-500 py-6">${escapeHtml(e.message||(isAr?'تعذّر تحميل بيانات النزاع':'Could not load dispute data'))}</p><button onclick="this.closest('.fixed').remove()" class="btn-secondary px-6 py-2 mt-2">${isAr?'إغلاق':'Close'}</button>`;
+                        overlay.querySelector('div').innerHTML = `<p class="text-red-500 py-6">${escapeHtml(e.message||(isAr?'تعذّر تحميل بيانات النزاع':'Could not load dispute data'))}</p><button data-on-click="this.closest('.fixed').remove()" class="btn-secondary px-6 py-2 mt-2">${isAr?'إغلاق':'Close'}</button>`;
                     }
                 };
 
@@ -634,18 +634,18 @@
                     <img src="${window.safeUrl(u.avatar)||`https://ui-avatars.com/api/?name=${window.encName(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p>
                     </div>
-                    <select onchange="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
+                    <select data-on-change="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
                       <option value="buyer"  ${u.role==='buyer' ?'selected':''}>buyer</option>
                       <option value="seller" ${u.role==='seller'?'selected':''}>seller</option>
                       <option value="admin"  ${u.role==='admin' ?'selected':''}>admin</option>
                     </select>
-                    <button title="${isAr?'عرض المحفظة':'View Wallet'}" onclick="window._adminViewWallet('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center hover:bg-amber-200 transition"><i class="fa-solid fa-wallet text-xs"></i></button>
+                    <button title="${isAr?'عرض المحفظة':'View Wallet'}" data-on-click="window._adminViewWallet('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center hover:bg-amber-200 transition"><i class="fa-solid fa-wallet text-xs"></i></button>
                     <!-- ⚠️ CHANGED (privacy audit): payoutMethod/payoutAccount
                          moved out of this bulk-read list (see firestore.rules
                          — they're no longer on the doc this query reads) into
                          users/{uid}/private/contact, fetched only on demand
                          here so it's never pulled for every user at once. -->
-                    <button title="${isAr?'بيانات التواصل والدفع':'Contact & payout info'}" onclick="window._adminViewContactInfo('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center hover:bg-teal-200 transition"><i class="fa-solid fa-id-card text-xs"></i></button>
+                    <button title="${isAr?'بيانات التواصل والدفع':'Contact & payout info'}" data-on-click="window._adminViewContactInfo('${u.id}','${escapeHtml((u.name||'User').replace(/'/g,"\\'"))}')" class="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center hover:bg-teal-200 transition"><i class="fa-solid fa-id-card text-xs"></i></button>
                     <span class="text-xs text-gray-400 hidden md:block">${formatDateAr(u.createdAt)}</span>
                   </div>`).join('')}
                 </div>`;
@@ -704,15 +704,15 @@
                       <p class="text-xs text-gray-400">${escapeHtml(s.sellerName||'')} · ${formatCurrency(s.price||0)}</p>
                     </div>
                     <div class="flex items-center gap-1 flex-wrap">
-                      <button title="${s.featured?'إلغاء التمييز':'تمييز'}" onclick="window._adminToggleFeatured('${s.id}',${!s.featured})"
+                      <button title="${s.featured?'إلغاء التمييز':'تمييز'}" data-on-click="window._adminToggleFeatured('${s.id}',${!s.featured})"
                         class="text-xs px-2 py-1.5 ${s.featured?'bg-yellow-200 text-yellow-800':'bg-gray-200 text-gray-600'} rounded-lg font-bold hover:opacity-80 transition">
                         ${s.featured?'<i class=\'fa-solid fa-star\'></i> مميزة':'<i class=\'fa-regular fa-star\'></i> تمييز'}
                       </button>
-                      <button title="${s.active===false?'تفعيل':'إيقاف'}" onclick="window._adminToggleActive('${s.id}',${s.active!==false})"
+                      <button title="${s.active===false?'تفعيل':'إيقاف'}" data-on-click="window._adminToggleActive('${s.id}',${s.active!==false})"
                         class="text-xs px-2 py-1.5 ${s.active===false?'bg-red-100 text-red-700':'bg-green-100 text-green-700'} rounded-lg font-bold hover:opacity-80 transition">
                         ${s.active===false?(isAr?'موقوفة':'Inactive'):(isAr?'نشطة':'Active')}
                       </button>
-                      <button onclick="ServicesManager.deleteService('${s.id}')" class="text-xs px-2 py-1.5 bg-red-100 text-red-700 rounded-lg font-bold hover:bg-red-200 transition">${t('general.delete')}</button>
+                      <button data-on-click="ServicesManager.deleteService('${s.id}')" class="text-xs px-2 py-1.5 bg-red-100 text-red-700 rounded-lg font-bold hover:bg-red-200 transition">${t('general.delete')}</button>
                     </div>
                   </div>`).join('')}
                 </div>`;
@@ -755,8 +755,8 @@
                       </div>
                       <span class="font-black text-amber-700 text-xl">${formatCurrency(r.feeAmount ? r.netAmount : (r.amount||0))}</span>
                       <div class="flex gap-2">
-                        <button onclick="WalletManager.approveWithdrawal('${r.id}')" title="${isAr?'اضغط بعد ما تحوّل الفلوس فعليًا للبائع':'Click after you have actually paid the seller'}" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ تم استلام الأرباح':'✓ Seller Paid'}</button>
-                        <button onclick="WalletManager.rejectWithdrawal('${r.id}')" class="text-sm px-4 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">${isAr?'✕ رفض':'✕ Reject'}</button>
+                        <button data-on-click="WalletManager.approveWithdrawal('${r.id}')" title="${isAr?'اضغط بعد ما تحوّل الفلوس فعليًا للبائع':'Click after you have actually paid the seller'}" class="text-sm px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition">${isAr?'✓ تم استلام الأرباح':'✓ Seller Paid'}</button>
+                        <button data-on-click="WalletManager.rejectWithdrawal('${r.id}')" class="text-sm px-4 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">${isAr?'✕ رفض':'✕ Reject'}</button>
                       </div>
                     </div>`).join('')}</div>`}
                 <h4 class="font-black text-gray-700 mb-3 text-sm">${isAr?'سجل السحوبات':'Withdrawal History'}</h4>
@@ -794,14 +794,14 @@
                         <p class="font-bold text-gray-900">${escapeHtml(r.name)} <span class="text-xs font-normal text-gray-500">(${r.listingType==='product'?(isAr?'منتج':'product'):(isAr?'خدمة':'service')})</span></p>
                         <p class="text-xs text-gray-400">${isAr?'اقترحها':'suggested by'} ${escapeHtml(r.requestedByName||'—')} · ${formatDateAr(r.createdAt)}</p>
                       </div>
-                      <button onclick="window._adminApproveCategoryRequest('${r.id}','${escapeHtml(r.name).replace(/'/g,"\\'")}')" class="text-xs px-3 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'✓ موافقة وإضافة':'✓ Approve & add'}</button>
-                      <button onclick="window._adminRejectCategoryRequest('${r.id}')" class="text-xs px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition">${isAr?'رفض':'Dismiss'}</button>
+                      <button data-on-click="window._adminApproveCategoryRequest('${r.id}','${escapeHtml(r.name).replace(/'/g,"\\'")}')" class="text-xs px-3 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'✓ موافقة وإضافة':'✓ Approve & add'}</button>
+                      <button data-on-click="window._adminRejectCategoryRequest('${r.id}')" class="text-xs px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition">${isAr?'رفض':'Dismiss'}</button>
                     </div>`).join('')}
                   </div>
                 </div>` : ''}
                 <div class="flex items-center justify-between mb-6">
                   <h3 class="font-black text-gray-900">${isAr?`الفئات (${cats.length})`:`Categories (${cats.length})`}</h3>
-                  <button onclick="window._adminAddCategory()" class="btn-primary text-sm px-4 py-2"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة فئة':'Add Category'}</button>
+                  <button data-on-click="window._adminAddCategory()" class="btn-primary text-sm px-4 py-2"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة فئة':'Add Category'}</button>
                 </div>
                 <div class="space-y-2">
                 ${cats.map((c,i)=>`
@@ -809,8 +809,8 @@
                     <span class="text-2xl">${c.icon||'📦'}</span>
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900">${escapeHtml(c.name_ar||c.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(c.name_en||'')}</p></div>
                     <span class="text-xs text-gray-400 w-6 text-center">${c.order||i}</span>
-                    <button onclick="window._adminEditCategory('${c.id}','${(c.name_ar||'').replace(/'/g,"\\'")}','${(c.name_en||'').replace(/'/g,"\\'")}','${c.icon||''}',${c.order||0})" class="w-7 h-7 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
-                    <button onclick="window._adminDeleteCategory('${c.id}')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button data-on-click="window._adminEditCategory('${c.id}','${(c.name_ar||'').replace(/'/g,"\\'")}','${(c.name_en||'').replace(/'/g,"\\'")}','${c.icon||''}',${c.order||0})" class="w-7 h-7 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button data-on-click="window._adminDeleteCategory('${c.id}')" class="w-7 h-7 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                   </div>`).join('')}
                 </div>`;
 
@@ -829,8 +829,8 @@
                         <div><label class="block text-xs font-bold text-gray-600 mb-1">${isAr?'الترتيب':'Order'}</label><input type="number" id="cat_order" class="form-input w-full" value="${order}" min="0"></div>
                       </div>
                       <div class="flex gap-3 mt-5">
-                        <button onclick="document.getElementById('catFormModal').remove()" class="btn-secondary flex-1 py-2.5">${t('general.cancel')}</button>
-                        <button onclick="window._adminSaveCategory('${id}')" class="btn-primary flex-1 py-2.5">${isAr?'حفظ':'Save'}</button>
+                        <button data-on-click="document.getElementById('catFormModal').remove()" class="btn-secondary flex-1 py-2.5">${t('general.cancel')}</button>
+                        <button data-on-click="window._adminSaveCategory('${id}')" class="btn-primary flex-1 py-2.5">${isAr?'حفظ':'Save'}</button>
                       </div>
                     </div>`;
                     document.body.appendChild(modal);
@@ -921,7 +921,7 @@
                     <h3 class="font-black text-gray-900 mb-4">${isAr?'الإيرادات الشهرية':'Monthly Revenue'}</h3>
                     ${sortedMonths.length===0
                       ? `<p class="text-gray-400 text-center py-6">${isAr?'لا توجد بيانات':'No data yet'}</p>`
-                      : `<div style="height:220px"><canvas id="adminRevenueChart"></canvas></div>`}
+                      : `<div data-style="height:220px"><canvas id="adminRevenueChart"></canvas></div>`}
                   </div>
 
                   <div class="grid md:grid-cols-2 gap-4">
@@ -1004,7 +1004,7 @@
                       <p class="text-sm text-gray-700">${escapeHtml(r.comment||'—')}</p>
                       <p class="text-xs text-gray-400 mt-1">${formatDateAr(r.createdAt)}</p>
                     </div>
-                    <button onclick="window._adminDeleteReview('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition flex-shrink-0" title="${isAr?'حذف':'Delete'}"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button data-on-click="window._adminDeleteReview('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition flex-shrink-0" title="${isAr?'حذف':'Delete'}"><i class="fa-solid fa-trash text-xs"></i></button>
                   </div>`).join('')}
                 </div>`}`;
 
@@ -1048,9 +1048,9 @@
                       <p class="text-xs text-gray-400 mt-1">${isAr?'بواسطة:':'By:'} ${escapeHtml(r.reporterName||'—')} · ${formatDateAr(r.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-1 flex-shrink-0">
-                      ${r.orderId ? `<button onclick="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
-                      ${r.status!=='resolved'?`<button onclick="window._adminResolveReport('${r.id}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
-                      <button onclick="window._adminDeleteReport('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                      ${r.orderId ? `<button data-on-click="openWorkspace('${r.orderId}')" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold transition">${isAr?'عرض الطلب':'View order'}</button>` : ''}
+                      ${r.status!=='resolved'?`<button data-on-click="window._adminResolveReport('${r.id}')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">${isAr?'حل':'Resolve'}</button>`:''}
+                      <button data-on-click="window._adminDeleteReport('${r.id}')" class="w-8 h-8 bg-red-100 text-red-700 rounded-lg flex items-center justify-center hover:bg-red-200 transition"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                   </div>`).join('')}
                 </div>`}`;
@@ -1103,7 +1103,7 @@
                       <label class="block text-sm font-bold text-gray-700 mb-1">${isAr?'نص الإشعار':'Message'}</label>
                       <textarea id="bc_msg" class="form-input w-full h-28 resize-none" placeholder="${isAr?'اكتب الرسالة هنا...':'Write your message here...'}"></textarea>
                     </div>
-                    <button onclick="window._adminSendBroadcast(${totalUsers})" id="bcBtn" class="w-full py-3.5 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black rounded-xl hover:from-navy-600 hover:to-navy-800 transition flex items-center justify-center gap-2">
+                    <button data-on-click="window._adminSendBroadcast(${totalUsers})" id="bcBtn" class="w-full py-3.5 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black rounded-xl hover:from-navy-600 hover:to-navy-800 transition flex items-center justify-center gap-2">
                       <i class="fa-solid fa-paper-plane"></i>${isAr?'إرسال الإشعار':'Send Notification'}
                     </button>
                   </div>
@@ -1277,7 +1277,7 @@
                       <label class="block text-xs font-bold text-gray-600 mb-2">${isAr?'نوع العمولة':'Commission Type'}</label>
                       <div class="grid grid-cols-3 gap-2" id="feeTypeGroup">
                         ${['percent','fixed','both'].map(v=>`
-                          <button type="button" onclick="window._selectFeeType('${v}')"
+                          <button type="button" data-on-click="window._selectFeeType('${v}')"
                             id="feeTypeBtn_${v}"
                             class="feeTypBtn py-2 rounded-xl text-sm font-bold border transition-all ${(cfg.FEE_TYPE||'percent')===v?'bg-navy-600 text-white border-navy-600':'bg-gray-50 text-gray-600 border-gray-200 hover:border-navy-400'}">
                             ${v==='percent'?(isAr?'نسبة %':'Percent %'):v==='fixed'?(isAr?'مبلغ ثابت':'Fixed'):( isAr?'نسبة + ثابت':'Both')}
@@ -1291,7 +1291,7 @@
                       <div class="flex items-center gap-3">
                         <input type="range" id="cfg_fee" min="0" max="30" step="0.5"
                           value="${cfg.FEE_PERCENT??5}" class="flex-1 accent-navy-500"
-                          oninput="document.getElementById('cfg_fee_val').textContent=this.value+'%'">
+                          data-on-input="document.getElementById('cfg_fee_val').textContent=this.value+'%'">
                         <span id="cfg_fee_val" class="w-20 text-center font-black text-navy-700 text-xl bg-navy-50 rounded-xl py-2">${cfg.FEE_PERCENT??5}%</span>
                       </div>
                       <div class="flex justify-between text-xs text-gray-300 mt-1"><span>0%</span><span>15%</span><span>30%</span></div>
@@ -1322,7 +1322,7 @@
                     <!-- Tiers toggle -->
                     <div class="mt-4 border-t border-gray-100 pt-4">
                       <label class="flex items-center gap-3 cursor-pointer mb-3">
-                        <div class="relative"><input type="checkbox" id="cfg_tiers_enabled" ${cfg.TIERS_ENABLED?'checked':''} class="sr-only peer" onchange="document.getElementById('tiersEditor').classList.toggle('hidden',!this.checked)">
+                        <div class="relative"><input type="checkbox" id="cfg_tiers_enabled" ${cfg.TIERS_ENABLED?'checked':''} class="sr-only peer" data-on-change="document.getElementById('tiersEditor').classList.toggle('hidden',!this.checked)">
                         <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-navy-600"></div></div>
                         <span class="text-sm font-bold text-gray-700">${isAr?'شرائح العمولة (حسب قيمة الطلب)':'Commission Tiers (by order amount)'}</span>
                       </label>
@@ -1331,7 +1331,7 @@
                         <div id="tiersRows">
                           ${_renderTierRows(cfg,isAr)}
                         </div>
-                        <button type="button" onclick="window._addTierRow()" class="text-sm text-navy-600 font-bold hover:underline mt-1"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة شريحة':'Add Tier'}</button>
+                        <button type="button" data-on-click="window._addTierRow()" class="text-sm text-navy-600 font-bold hover:underline mt-1"><i class="fa-solid fa-plus me-1"></i>${isAr?'إضافة شريحة':'Add Tier'}</button>
                       </div>
                     </div>
                   </div>
@@ -1347,7 +1347,7 @@
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-rotate-left text-amber-500"></i>${isAr?'مرتجعات المنتجات':'Product Returns'}</h3>
                     <p class="text-xs text-gray-400 mb-4">${isAr?'تحكم في إتاحة طلب استرجاع المنتجات الفعلية وعدد الأيام المسموح بها بعد التسليم':'Control whether buyers can request a product return, and the allowed window after delivery'}</p>
                     <label class="flex items-center gap-3 cursor-pointer mb-4">
-                      <div class="relative"><input type="checkbox" id="cfg_returns_enabled" ${cfg.RETURNS_ENABLED!==false?'checked':''} class="sr-only peer" onchange="document.getElementById('returnsWindowRow').classList.toggle('hidden',!this.checked)">
+                      <div class="relative"><input type="checkbox" id="cfg_returns_enabled" ${cfg.RETURNS_ENABLED!==false?'checked':''} class="sr-only peer" data-on-change="document.getElementById('returnsWindowRow').classList.toggle('hidden',!this.checked)">
                       <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></div>
                       <span class="text-sm font-bold text-gray-700">${isAr?'تفعيل طلبات الاسترجاع':'Enable return requests'}</span>
                     </label>
@@ -1371,7 +1371,7 @@
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-teal-600"></i>${isAr?'خصوصية بيانات المستخدمين':'User data privacy'}</h3>
                     <p class="text-xs text-gray-400 mb-4">${isAr?'رقم الهاتف ووسيلة استلام الأرباح بقوا مخزّنين في مكان خاص محدود الوصول (المالك والأدمن بس) بدل الملف العام. الحسابات الجديدة بتتخزن صح من الأول — الزرار ده لترحيل الحسابات القديمة (لو موجودة) مرة واحدة بس. آمن تضغطه أكتر من مرة.':"Phone numbers and payout details now live in a restricted, owner+admin-only place instead of the public profile. New accounts are stored correctly automatically — this button migrates any older accounts (if any) once. Safe to click more than once."}</p>
-                    <button onclick="window._adminRunPrivacyMigration()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"><i class="fa-solid fa-lock"></i> ${isAr?'ترحيل بيانات الحسابات القديمة':'Migrate older accounts\' data'}</button>
+                    <button data-on-click="window._adminRunPrivacyMigration()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"><i class="fa-solid fa-lock"></i> ${isAr?'ترحيل بيانات الحسابات القديمة':'Migrate older accounts\' data'}</button>
                     <div id="privacyMigrationResult" class="text-xs text-gray-500 mt-3"></div>
                   </div>
                   <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -1404,12 +1404,12 @@
                       <div class="flex items-center gap-3">
                         <input type="range" id="cfg_affiliate_pct" min="0" max="50" step="1"
                           value="${cfg.AFFILIATE_COMMISSION_PERCENT??20}" class="flex-1 accent-purple-500"
-                          oninput="document.getElementById('cfg_affiliate_pct_val').textContent=this.value+'%'">
+                          data-on-input="document.getElementById('cfg_affiliate_pct_val').textContent=this.value+'%'">
                         <span id="cfg_affiliate_pct_val" class="w-16 text-center font-black text-purple-700 text-lg bg-purple-50 rounded-xl py-2">${cfg.AFFILIATE_COMMISSION_PERCENT??20}%</span>
                       </div>
                     </div>
                   </div>
-                  <button onclick="window._savePlatformSettings()" id="saveSettingsBtn" class="w-full py-4 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black text-lg rounded-2xl hover:from-navy-600 hover:to-navy-800 transition-all flex items-center justify-center gap-2">
+                  <button data-on-click="window._savePlatformSettings()" id="saveSettingsBtn" class="w-full py-4 bg-gradient-to-r from-navy-500 to-navy-700 text-white font-black text-lg rounded-2xl hover:from-navy-600 hover:to-navy-800 transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i>${isAr?'حفظ الإعدادات':'Save Settings'}
                   </button>
                 </div>`;
@@ -1448,7 +1448,7 @@
                     const isAr = AppState.language !== 'en';
                     const div = document.createElement('div');
                     div.className = 'grid grid-cols-4 gap-2 items-end tier-row';
-                    div.innerHTML = '<div><label class="text-xs text-gray-500">'+(isAr?'من':'From')+'</label><input type="number" class="form-input w-full tier-min" value="0" min="0"></div><div><label class="text-xs text-gray-500">'+(isAr?'إلى':'To')+'</label><input type="number" class="form-input w-full tier-max" value="1000" min="0"></div><div><label class="text-xs text-gray-500">%</label><input type="number" class="form-input w-full tier-pct" value="5" min="0" max="100" step="0.5"></div><button type="button" onclick="window._removeTierRow(this)" class="h-10 w-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center hover:bg-red-200"><i class="fa-solid fa-trash text-xs"></i></button>';
+                    div.innerHTML = '<div><label class="text-xs text-gray-500">'+(isAr?'من':'From')+'</label><input type="number" class="form-input w-full tier-min" value="0" min="0"></div><div><label class="text-xs text-gray-500">'+(isAr?'إلى':'To')+'</label><input type="number" class="form-input w-full tier-max" value="1000" min="0"></div><div><label class="text-xs text-gray-500">%</label><input type="number" class="form-input w-full tier-pct" value="5" min="0" max="100" step="0.5"></div><button type="button" data-on-click="window._removeTierRow(this)" class="h-10 w-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center hover:bg-red-200"><i class="fa-solid fa-trash text-xs"></i></button>';
                     container.appendChild(div);
                 };
                 // Live preview on input change
@@ -1550,7 +1550,7 @@
             const container = document.getElementById('walletContent');
             if (!container) return;
             const user = AppState.currentUser, isAr = AppState.language !== 'en', wallet = AppState.wallet||{};
-            if (!user) { container.innerHTML = `<div class="text-center py-16"><button onclick="navigateTo('login')" class="btn-primary">${t('auth.login')}</button></div>`; return; }
+            if (!user) { container.innerHTML = `<div class="text-center py-16"><button data-on-click="navigateTo('login')" class="btn-primary">${t('auth.login')}</button></div>`; return; }
             container.innerHTML = `
             <div>
               <h1 class="text-2xl font-black text-gray-900 mb-8">${t('nav.wallet')}</h1>
@@ -1560,13 +1560,13 @@
                   <p class="text-navy-200 text-sm mb-1">${isAr?'الرصيد المتاح':'Available Balance'}</p>
                   <p class="text-4xl font-black mb-6">${formatCurrency(wallet.balance||0)}</p>
                   <div class="flex gap-3 flex-wrap">
-                    <button onclick="WalletManager.openWithdrawForm()" class="bg-white text-navy-700 font-black px-6 py-3 rounded-xl hover:bg-navy-50 transition text-sm flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i>${t('dash.withdraw')}</button>
+                    <button data-on-click="WalletManager.openWithdrawForm()" class="bg-white text-navy-700 font-black px-6 py-3 rounded-xl hover:bg-navy-50 transition text-sm flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i>${t('dash.withdraw')}</button>
                   </div>
                 </div>
               </div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8">
                 <h3 class="font-black text-gray-900 mb-4">${isAr?'حركة المحفظة (آخر 6 شهور)':'Wallet Activity (last 6 months)'}</h3>
-                <div style="height:180px"><canvas id="walletChart"></canvas></div>
+                <div data-style="height:180px"><canvas id="walletChart"></canvas></div>
               </div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8" id="mySubscriptions"></div>
               <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8" id="affiliateCard"></div>
@@ -1599,7 +1599,7 @@
                   <p class="text-xs text-gray-400 mb-4">${isAr?`هتاخد نسبة من عمولة المنصة لأول 5 مبيعات لكل شخص بيسجل من رابطك (${cfg.AFFILIATE_COMMISSION_PERCENT||0}% من عمولة المنصة على كل عملية)`:`You earn a share of the platform fee for the first 5 sales of each person who signs up via your link (${cfg.AFFILIATE_COMMISSION_PERCENT||0}% of the platform fee per order)`}</p>
                   <div class="flex gap-2 mb-3">
                     <input type="text" readonly value="${link}" id="affiliateLinkInput" class="form-input flex-1 text-xs" dir="ltr">
-                    <button onclick="WalletManager.copyAffiliateLink()" class="btn-secondary px-4 text-sm whitespace-nowrap"><i class="fa-solid fa-copy"></i></button>
+                    <button data-on-click="WalletManager.copyAffiliateLink()" class="btn-secondary px-4 text-sm whitespace-nowrap"><i class="fa-solid fa-copy"></i></button>
                   </div>
                   <p class="text-xs text-gray-500">${isAr?'عدد اللي سجلوا من رابطك':'People who signed up via your link'}: <span class="font-bold text-gray-800">${referredSnap.size||0}</span></p>
                 `;
@@ -1699,7 +1699,7 @@
                 ${PLATFORM.PAYOUT_SCHEDULE_NOTE?`<div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 text-sm text-blue-700 flex items-start gap-2"><i class="fa-solid fa-calendar-days mt-0.5"></i><span>${escapeHtml(PLATFORM.PAYOUT_SCHEDULE_NOTE)}</span></div>`:''}
                 <div class="space-y-4">
                   <div><label class="block text-sm font-bold text-gray-700 mb-2">${isAr?'المبلغ (ج.م)':'Amount (EGP)'}</label>
-                    <input type="number" id="withdrawAmount" class="form-input" min="${PLATFORM.MIN_WITHDRAWAL}" max="${Math.min(balance,PLATFORM.MAX_WITHDRAWAL)}" value="${balance}" placeholder="${PLATFORM.MIN_WITHDRAWAL}" oninput="WalletManager.updateWithdrawPreview()">
+                    <input type="number" id="withdrawAmount" class="form-input" min="${PLATFORM.MIN_WITHDRAWAL}" max="${Math.min(balance,PLATFORM.MAX_WITHDRAWAL)}" value="${balance}" placeholder="${PLATFORM.MIN_WITHDRAWAL}" data-on-input="WalletManager.updateWithdrawPreview()">
                     <p class="text-xs text-gray-400 mt-1">${isAr?'الرصيد':'Balance'}: ${formatCurrency(balance)} · ${isAr?'الحد الأقصى':'Max'}: ${formatCurrency(PLATFORM.MAX_WITHDRAWAL)}</p></div>
                   <!-- ⚠️ ADDED: net-amount preview — the seller sees exactly what
                        will arrive after the payout provider's transfer fee, before
@@ -1711,8 +1711,8 @@
                     <input type="text" id="withdrawAccount" class="form-input" value="${escapeHtml(savedAccount)}" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}" dir="ltr"></div>
                 </div>
                 <div class="flex gap-3 mt-6">
-                  <button onclick="document.getElementById('withdrawModal').remove()" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
-                  <button onclick="WalletManager.submitWithdrawal()" class="btn-primary flex-1 py-3">${isAr?'إرسال الطلب':'Submit'}</button>
+                  <button data-on-click="document.getElementById('withdrawModal').remove()" class="btn-secondary flex-1 py-3">${t('general.cancel')}</button>
+                  <button data-on-click="WalletManager.submitWithdrawal()" class="btn-primary flex-1 py-3">${isAr?'إرسال الطلب':'Submit'}</button>
                 </div>
               </div>`;
             document.body.appendChild(modal);
@@ -1869,7 +1869,7 @@
                 </div>
                 <p class="text-slate-400 text-sm">${isAr?'تحكم كامل في الطلبات، النزاعات، المستخدمين والمحتوى':'Full control over orders, disputes, users and content'}</p>
               </div>
-              <button onclick="AdminAI.generateOne()" id="admin-gen-btn"
+              <button data-on-click="AdminAI.generateOne()" id="admin-gen-btn"
                 class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition shrink-0">
                 <i class="fa-solid fa-wand-magic-sparkles text-teal-300"></i><span>${isAr?'توليد مقال AI الآن':'Generate AI article'}</span>
               </button>
@@ -1886,26 +1886,26 @@
 
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <nav class="flex overflow-x-auto p-2 gap-1.5 border-b border-gray-100">
-              <button onclick="adminTab('orders')"     class="tab-btn admin-pill-tab active" id="adminTab_orders"><i class="fa-solid fa-bag-shopping"></i>${isAr?'الطلبات':'Orders'}</button>
-              <button onclick="adminTab('disputes')"   class="tab-btn admin-pill-tab" id="adminTab_disputes"><i class="fa-solid fa-flag text-red-500"></i>${isAr?'النزاعات':'Disputes'}</button>
-              <button onclick="adminTab('kyc')"        class="tab-btn admin-pill-tab" id="adminTab_kyc"><i class="fa-solid fa-id-card text-emerald-600"></i>${isAr?'توثيق البائعين':'Seller verification'}</button>
-              <button onclick="adminTab('users')"      class="tab-btn admin-pill-tab" id="adminTab_users"><i class="fa-solid fa-users"></i>${isAr?'المستخدمون':'Users'}</button>
-              <button onclick="adminTab('services')"   class="tab-btn admin-pill-tab" id="adminTab_services"><i class="fa-solid fa-layer-group"></i>${isAr?'الخدمات والمنتجات':'Services'}</button>
-              <button onclick="adminTab('withdraw')"   class="tab-btn admin-pill-tab" id="adminTab_withdraw"><i class="fa-solid fa-money-bill-transfer text-amber-500"></i>${isAr?'السحوبات':'Withdrawals'}</button>
-              <button onclick="adminTab('coupons')"    class="tab-btn admin-pill-tab" id="adminTab_coupons"><i class="fa-solid fa-ticket"></i>${isAr?'الكوبونات':'Coupons'}</button>
-              <button onclick="adminTab('categories')" class="tab-btn admin-pill-tab" id="adminTab_categories"><i class="fa-solid fa-tags"></i>${isAr?'الفئات':'Categories'}</button>
-              <button onclick="adminTab('analytics')"  class="tab-btn admin-pill-tab" id="adminTab_analytics"><i class="fa-solid fa-chart-line"></i>${isAr?'التحليلات':'Analytics'}</button>
-              <button onclick="adminTab('insights')"   class="tab-btn admin-pill-tab" id="adminTab_insights"><i class="fa-solid fa-users-viewfinder text-teal-600"></i>${isAr?'العملاء والزوار':'Customers & visitors'}</button>
-              <button onclick="adminTab('reviews')"    class="tab-btn admin-pill-tab" id="adminTab_reviews"><i class="fa-solid fa-star text-amber-400"></i>${isAr?'التقييمات':'Reviews'}</button>
-              <button onclick="adminTab('reports')"    class="tab-btn admin-pill-tab" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation"></i>${isAr?'البلاغات':'Reports'}</button>
-              <button onclick="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
-              <button onclick="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
-              <button onclick="adminTab('dropship')"   class="tab-btn admin-pill-tab" id="adminTab_dropship"><i class="fa-solid fa-boxes-packing text-turquoise-500"></i>${isAr?'دروبشيبنج':'Dropshipping'}</button>
-              <button onclick="adminTab('affiliate')"  class="tab-btn admin-pill-tab" id="adminTab_affiliate"><i class="fa-solid fa-link text-turquoise-500"></i>${isAr?'التسويق بالرابط':'Link marketing'}</button>
-              <button onclick="adminTab('stores')"     class="tab-btn admin-pill-tab" id="adminTab_stores"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'المتاجر':'Stores'}</button>
-              <button onclick="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
-              <button onclick="adminTab('design')"     class="tab-btn admin-pill-tab" id="adminTab_design"><i class="fa-solid fa-palette text-amber-500"></i>${isAr?'تصميم الموقع':'Site design'}</button>
-              <button onclick="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
+              <button data-on-click="adminTab('orders')"     class="tab-btn admin-pill-tab active" id="adminTab_orders"><i class="fa-solid fa-bag-shopping"></i>${isAr?'الطلبات':'Orders'}</button>
+              <button data-on-click="adminTab('disputes')"   class="tab-btn admin-pill-tab" id="adminTab_disputes"><i class="fa-solid fa-flag text-red-500"></i>${isAr?'النزاعات':'Disputes'}</button>
+              <button data-on-click="adminTab('kyc')"        class="tab-btn admin-pill-tab" id="adminTab_kyc"><i class="fa-solid fa-id-card text-emerald-600"></i>${isAr?'توثيق البائعين':'Seller verification'}</button>
+              <button data-on-click="adminTab('users')"      class="tab-btn admin-pill-tab" id="adminTab_users"><i class="fa-solid fa-users"></i>${isAr?'المستخدمون':'Users'}</button>
+              <button data-on-click="adminTab('services')"   class="tab-btn admin-pill-tab" id="adminTab_services"><i class="fa-solid fa-layer-group"></i>${isAr?'الخدمات والمنتجات':'Services'}</button>
+              <button data-on-click="adminTab('withdraw')"   class="tab-btn admin-pill-tab" id="adminTab_withdraw"><i class="fa-solid fa-money-bill-transfer text-amber-500"></i>${isAr?'السحوبات':'Withdrawals'}</button>
+              <button data-on-click="adminTab('coupons')"    class="tab-btn admin-pill-tab" id="adminTab_coupons"><i class="fa-solid fa-ticket"></i>${isAr?'الكوبونات':'Coupons'}</button>
+              <button data-on-click="adminTab('categories')" class="tab-btn admin-pill-tab" id="adminTab_categories"><i class="fa-solid fa-tags"></i>${isAr?'الفئات':'Categories'}</button>
+              <button data-on-click="adminTab('analytics')"  class="tab-btn admin-pill-tab" id="adminTab_analytics"><i class="fa-solid fa-chart-line"></i>${isAr?'التحليلات':'Analytics'}</button>
+              <button data-on-click="adminTab('insights')"   class="tab-btn admin-pill-tab" id="adminTab_insights"><i class="fa-solid fa-users-viewfinder text-teal-600"></i>${isAr?'العملاء والزوار':'Customers & visitors'}</button>
+              <button data-on-click="adminTab('reviews')"    class="tab-btn admin-pill-tab" id="adminTab_reviews"><i class="fa-solid fa-star text-amber-400"></i>${isAr?'التقييمات':'Reviews'}</button>
+              <button data-on-click="adminTab('reports')"    class="tab-btn admin-pill-tab" id="adminTab_reports"><i class="fa-solid fa-triangle-exclamation"></i>${isAr?'البلاغات':'Reports'}</button>
+              <button data-on-click="adminTab('broadcast')"  class="tab-btn admin-pill-tab" id="adminTab_broadcast"><i class="fa-solid fa-paper-plane"></i>${isAr?'الإشعارات':'Broadcast'}</button>
+              <button data-on-click="adminTab('payments')"   class="tab-btn admin-pill-tab" id="adminTab_payments"><i class="fa-solid fa-credit-card"></i>${isAr?'المدفوعات':'Payments'}</button>
+              <button data-on-click="adminTab('dropship')"   class="tab-btn admin-pill-tab" id="adminTab_dropship"><i class="fa-solid fa-boxes-packing text-turquoise-500"></i>${isAr?'دروبشيبنج':'Dropshipping'}</button>
+              <button data-on-click="adminTab('affiliate')"  class="tab-btn admin-pill-tab" id="adminTab_affiliate"><i class="fa-solid fa-link text-turquoise-500"></i>${isAr?'التسويق بالرابط':'Link marketing'}</button>
+              <button data-on-click="adminTab('stores')"     class="tab-btn admin-pill-tab" id="adminTab_stores"><i class="fa-solid fa-store text-amber-500"></i>${isAr?'المتاجر':'Stores'}</button>
+              <button data-on-click="adminTab('ads')"        class="tab-btn admin-pill-tab" id="adminTab_ads"><i class="fa-solid fa-bullhorn text-turquoise-500"></i>${isAr?'الإعلانات':'Ads'}</button>
+              <button data-on-click="adminTab('design')"     class="tab-btn admin-pill-tab" id="adminTab_design"><i class="fa-solid fa-palette text-amber-500"></i>${isAr?'تصميم الموقع':'Site design'}</button>
+              <button data-on-click="adminTab('settings')"   class="tab-btn admin-pill-tab" id="adminTab_settings"><i class="fa-solid fa-sliders"></i>${isAr?'الإعدادات':'Settings'}</button>
             </nav>
             <div class="p-5" id="adminTabContent"></div>
           </div>

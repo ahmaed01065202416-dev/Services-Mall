@@ -25,7 +25,7 @@
  *    assets (JS/CSS/images) stay cache-first for speed, since a stale JS
  *    file for a few minutes matters much less than a stale whole page.
  */
-const LOCAL_CACHE = 'mall-local-v3.29-perf2';
+const LOCAL_CACHE = 'mall-local-v3.30-csp1'; // bumped: JS now emits data-on-*/data-style (strict CSP) — old cached JS would emit blocked inline handlers
 
 const LOCAL_ASSETS = [
   '/index.html',
@@ -48,6 +48,8 @@ const LOCAL_ASSETS = [
   '/js/mall-charts.js',
   '/js/store-extras.js',
   '/js/theme.js',
+  '/js/csp-shim.js',
+  '/css/csp.css',
 ];
 
 // ── Install ──────────────────────────────────────────────────────────────────

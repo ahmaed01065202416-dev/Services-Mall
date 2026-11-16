@@ -57,7 +57,7 @@
         var wrap = document.createElement('div');
         wrap.id = 'adsPromoteModal';
         wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-        wrap.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:22px"><div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div></div>';
+        wrap.innerHTML = '<div data-style="background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:22px"><div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-navy-500 text-2xl"></i></div></div>';
         wrap.addEventListener('click', function (e) { if (e.target === wrap) closeModal(); });
         document.body.appendChild(wrap);
         var box = wrap.firstChild;
@@ -66,7 +66,7 @@
             var feed = await loadPlacements();
             var list = (feed.placements || []).filter(function (p) { return (p.allowedKinds || ['service']).indexOf('service') > -1 && p.pricing && p.pricing.length; });
             if (!feed.enabled || !list.length) {
-                box.innerHTML = '<p class="text-center text-gray-500 py-6">' + (ar() ? 'الإعلانات المدفوعة غير متاحة حالياً' : 'Paid ads are not available right now') + '</p><button class="btn-primary w-full" onclick="document.getElementById(\'adsPromoteModal\').remove()">' + (ar() ? 'إغلاق' : 'Close') + '</button>';
+                box.innerHTML = '<p class="text-center text-gray-500 py-6">' + (ar() ? 'الإعلانات المدفوعة غير متاحة حالياً' : 'Paid ads are not available right now') + '</p><button class="btn-primary w-full" data-on-click="document.getElementById(\'adsPromoteModal\').remove()">' + (ar() ? 'إغلاق' : 'Close') + '</button>';
                 return;
             }
             var rows = list.map(function (p, i) {
@@ -74,14 +74,14 @@
                 var opts = p.pricing.map(function (o) {
                     return '<option value="' + o.days + '">' + o.days + (ar() ? ' يوم — ' : ' days — ') + (o.price > 0 && p.requiresPayment ? money(o.price) : (ar() ? 'مجاناً' : 'Free')) + '</option>';
                 }).join('');
-                return '<label class="block border-2 rounded-2xl p-4 mb-3 ' + (full ? 'opacity-50' : 'cursor-pointer') + '" style="border-color:#e5e7eb">' +
+                return '<label class="block border-2 rounded-2xl p-4 mb-3 ' + (full ? 'opacity-50' : 'cursor-pointer') + '" data-style="border-color:#e5e7eb">' +
                     '<div class="flex items-center gap-3"><input type="radio" name="adsPlacement" value="' + esc(p.key) + '" ' + (full ? 'disabled' : (i === 0 ? 'checked' : '')) + '>' +
                     '<div class="flex-1"><p class="font-black text-gray-900 text-sm">' + esc(ar() ? p.nameAr : p.nameEn) + '</p>' +
                     '<p class="text-xs text-gray-400">' + (full ? (ar() ? 'كل الخانات ممتلئة حالياً' : 'All slots are taken') : (ar() ? 'المتاح: ' : 'Available: ') + (p.slots - p.used) + '/' + p.slots) + '</p></div></div>' +
                     (full ? '' : '<select id="adsDays_' + esc(p.key) + '" class="input-field w-full mt-3 text-sm">' + opts + '</select>') + '</label>';
             }).join('');
             box.innerHTML = '<div class="flex items-start justify-between mb-4"><div><h3 class="font-black text-lg text-gray-900">' + (ar() ? 'روّج لخدمتك' : 'Promote your listing') + '</h3>' +
-                '<p class="text-xs text-gray-500 mt-1">' + esc(title || '') + '</p></div><button onclick="document.getElementById(\'adsPromoteModal\').remove()" class="text-gray-400 hover:text-gray-700 text-xl">&times;</button></div>' + rows +
+                '<p class="text-xs text-gray-500 mt-1">' + esc(title || '') + '</p></div><button data-on-click="document.getElementById(\'adsPromoteModal\').remove()" class="text-gray-400 hover:text-gray-700 text-xl">&times;</button></div>' + rows +
                 '<p class="text-xs text-gray-400 mb-4">' + (ar() ? 'الإعلان بيظهر بعد موافقة الإدارة. لو اترفض، المبلغ بيرجع لمحفظتك بعد خصم رسوم البوابة فقط.' : 'Your ad goes live after admin approval. If rejected, the amount returns to your wallet minus only the gateway fee.') + '</p>' +
                 '<button id="adsSubmitBtn" class="btn-primary w-full">' + (ar() ? 'إرسال الطلب' : 'Submit request') + '</button>';
             document.getElementById('adsSubmitBtn').onclick = async function () {
@@ -351,21 +351,21 @@
     }
     function wireHtml(p) {
         if (!p) return '';
-        var pg = pageOf(p), box = function (h, bg, label) { return '<div style="height:' + h + 'px;background:' + bg + ';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280">' + (label || '') + '</div>'; };
+        var pg = pageOf(p), box = function (h, bg, label) { return '<div data-style="height:' + h + 'px;background:' + bg + ';border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#6b7280">' + (label || '') + '</div>'; };
         var rows = pg.blocks.map(function (b) {
             if (b === 'header') return box(16, '#cbd5e1', '');
             if (b === 'hero') return box(54, '#dbeafe', ar() ? 'قسم البداية' : 'Hero');
             if (b === 'filters') return box(18, '#e5e7eb', ar() ? 'الفلاتر' : 'Filters');
             if (b === 'title') return box(22, '#e5e7eb', ar() ? 'عنوان المقال' : 'Article title');
-            if (b === 'text') return '<div style="display:grid;gap:4px"><div style="height:6px;background:#e5e7eb;border-radius:3px"></div><div style="height:6px;background:#e5e7eb;border-radius:3px;width:80%"></div><div style="height:6px;background:#e5e7eb;border-radius:3px;width:90%"></div></div>';
-            if (b === 'cards') return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">' + [1, 2, 3, 4].map(function () { return '<div style="height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px"></div>'; }).join('') + '</div>';
+            if (b === 'text') return '<div data-style="display:grid;gap:4px"><div data-style="height:6px;background:#e5e7eb;border-radius:3px"></div><div data-style="height:6px;background:#e5e7eb;border-radius:3px;width:80%"></div><div data-style="height:6px;background:#e5e7eb;border-radius:3px;width:90%"></div></div>';
+            if (b === 'cards') return '<div data-style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">' + [1, 2, 3, 4].map(function () { return '<div data-style="height:38px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px"></div>'; }).join('') + '</div>';
             var key = b.slice(5);
             var mine = key === p.key;
-            if (!mine && pg.id !== 'custom') return '<div style="height:20px;border:1px dashed #cbd5e1;border-radius:6px;font-size:9px;color:#94a3b8;display:flex;align-items:center;justify-content:center">' + esc(key) + '</div>';
-            return '<div style="height:44px;border:2px dashed #f59e0b;background:#fffbeb;border-radius:8px;font-size:11px;font-weight:800;color:#b45309;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-bullhorn"></i>' + (ar() ? 'إعلانك هنا' : 'Your ad here') + '</div>';
+            if (!mine && pg.id !== 'custom') return '<div data-style="height:20px;border:1px dashed #cbd5e1;border-radius:6px;font-size:9px;color:#94a3b8;display:flex;align-items:center;justify-content:center">' + esc(key) + '</div>';
+            return '<div data-style="height:44px;border:2px dashed #f59e0b;background:#fffbeb;border-radius:8px;font-size:11px;font-weight:800;color:#b45309;display:flex;align-items:center;justify-content:center;gap:6px"><i class="fa-solid fa-bullhorn"></i>' + (ar() ? 'إعلانك هنا' : 'Your ad here') + '</div>';
         });
-        var extra = pg.id === 'custom' ? '<p style="font-size:11px;color:#6b7280;margin-top:6px">' + (p.selector ? (ar() ? 'يُدرج ' + esc(p.position || 'after') + ' العنصر: ' : 'Inserted ' + esc(p.position || 'after') + ': ') + '<code dir="ltr">' + esc(p.selector) + '</code>' : (ar() ? 'مكان يحدده الأدمن' : 'Admin-defined')) + '</p>' : '';
-        return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;display:grid;gap:6px"><p style="font-size:11px;font-weight:800;color:#374151">' + esc(pg.name) + '</p>' + rows.join('') + '</div>' + extra;
+        var extra = pg.id === 'custom' ? '<p data-style="font-size:11px;color:#6b7280;margin-top:6px">' + (p.selector ? (ar() ? 'يُدرج ' + esc(p.position || 'after') + ' العنصر: ' : 'Inserted ' + esc(p.position || 'after') + ': ') + '<code dir="ltr">' + esc(p.selector) + '</code>' : (ar() ? 'مكان يحدده الأدمن' : 'Admin-defined')) + '</p>' : '';
+        return '<div data-style="border:1px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;display:grid;gap:6px"><p data-style="font-size:11px;font-weight:800;color:#374151">' + esc(pg.name) + '</p>' + rows.join('') + '</div>' + extra;
     }
     function draftAd() {
         var ad = { id: 'preview', kind: 'media', mediaType: C.mediaType, title: C.title, linkUrl: C.linkPreview || '' };
@@ -377,7 +377,7 @@
         var host = document.getElementById('acCard'), wire = document.getElementById('acWire'); if (!host) return;
         var ad = draftAd(), ok = ad.mediaType === 'video' ? !!(ad.embedUrl || ad.videoUrl) : !!ad.imageUrl;
         host.innerHTML = '';
-        if (!ok) { host.innerHTML = '<div style="border:2px dashed #d1d5db;border-radius:16px;padding:34px 12px;text-align:center;color:#9ca3af;font-size:13px">' + (ar() ? 'ارفع صورة أو حط رابط الفيديو وهتشوف الإعلان هنا' : 'Add an image or a video link to preview it') + '</div>'; }
+        if (!ok) { host.innerHTML = '<div data-style="border:2px dashed #d1d5db;border-radius:16px;padding:34px 12px;text-align:center;color:#9ca3af;font-size:13px">' + (ar() ? 'ارفع صورة أو حط رابط الفيديو وهتشوف الإعلان هنا' : 'Add an image or a video link to preview it') + '</div>'; }
         else if (window.AdsEmbed && window.AdsEmbed.mediaCard) { var card = window.AdsEmbed.mediaCard(ad, ar()); card.style.maxWidth = '100%'; host.appendChild(card); }
         var p = C.placements.filter(function (x) { return x.key === C.pl; })[0];
         if (wire) wire.innerHTML = wireHtml(p);
@@ -482,7 +482,7 @@
                 var bar = document.createElement('div');
                 bar.id = 'acPrevBar';
                 bar.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:100001;background:#111827;color:#fff;border-radius:999px;padding:10px 12px 10px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:13px;font-weight:700';
-                bar.innerHTML = '<span>' + (shown ? (ar() ? '👁 معاينة — ده مكان إعلانك الحقيقي' : '👁 Preview — your ad\'s real spot') : (ar() ? 'مش لاقي المكان ده في الصفحة دي' : 'Spot not found on this page')) + '</span><button style="background:#f59e0b;color:#111;border:0;border-radius:999px;padding:6px 14px;font-weight:800;cursor:pointer">' + (ar() ? 'رجوع للتعديل' : 'Back to editing') + '</button>';
+                bar.innerHTML = '<span>' + (shown ? (ar() ? '👁 معاينة — ده مكان إعلانك الحقيقي' : '👁 Preview — your ad\'s real spot') : (ar() ? 'مش لاقي المكان ده في الصفحة دي' : 'Spot not found on this page')) + '</span><button data-style="background:#f59e0b;color:#111;border:0;border-radius:999px;padding:6px 14px;font-weight:800;cursor:pointer">' + (ar() ? 'رجوع للتعديل' : 'Back to editing') + '</button>';
                 bar.querySelector('button').onclick = function () {
                     if (window.AdsEmbed) window.AdsEmbed.endPreview();
                     bar.remove();
@@ -516,7 +516,7 @@
         var wrap = document.createElement('div');
         wrap.id = 'adsPromoteModal';
         wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-        wrap.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:980px;width:100%;max-height:92vh;overflow:auto;padding:22px;position:relative"><button onclick="document.getElementById(\'adsPromoteModal\').remove()" style="position:absolute;top:10px;inset-inline-end:14px;font-size:24px;color:#9ca3af">&times;</button><div id="acModalHost"></div></div>';
+        wrap.innerHTML = '<div data-style="background:#fff;border-radius:20px;max-width:980px;width:100%;max-height:92vh;overflow:auto;padding:22px;position:relative"><button data-on-click="document.getElementById(\'adsPromoteModal\').remove()" data-style="position:absolute;top:10px;inset-inline-end:14px;font-size:24px;color:#9ca3af">&times;</button><div id="acModalHost"></div></div>';
         wrap.addEventListener('click', function (e) { if (e.target === wrap) closeModal(); });
         document.body.appendChild(wrap);
         renderComposer(document.getElementById('acModalHost'), 'seller', null, function () { closeModal(); if (window.SellerDash && document.getElementById('sdTab_ads')) window.SellerDash.tab('ads'); });
@@ -529,7 +529,7 @@
         if (a.mediaType === 'video') {
             return '<div class="mt-3 text-xs bg-white border border-gray-200 rounded-xl p-3"><i class="fa-solid fa-film text-purple-500 me-1"></i>' + (ar() ? 'فيديو: ' : 'Video: ') + '<a href="' + esc(a.videoUrl) + '" target="_blank" rel="noopener" class="text-blue-600 underline break-all" dir="ltr">' + esc(a.videoUrl) + '</a>' + (a.linkUrl ? '<br>' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span>' : '') + '</div>';
         }
-        return src ? '<div class="mt-3"><img src="' + esc(src) + '" style="max-height:160px;border-radius:12px;border:1px solid #e5e7eb">' + (a.linkUrl ? '<p class="text-xs text-gray-500 mt-1">' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span></p>' : '') + '</div>' : '';
+        return src ? '<div class="mt-3"><img src="' + esc(src) + '" data-style="max-height:160px;border-radius:12px;border:1px solid #e5e7eb">' + (a.linkUrl ? '<p class="text-xs text-gray-500 mt-1">' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span></p>' : '') + '</div>' : '';
     }
 
     window.AdsSystem = { openPromote: openPromote, openComposer: openComposerModal, renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab };

@@ -355,7 +355,7 @@
         if (!user) {
             container.innerHTML = `<div class="text-center py-16">
               <p class="text-gray-500 mb-4">${t('general.login_req')}</p>
-              <button onclick="navigateTo('login')" class="btn-primary px-8">${t('auth.login')}</button>
+              <button data-on-click="navigateTo('login')" class="btn-primary px-8">${t('auth.login')}</button>
             </div>`;
             return;
         }
@@ -368,10 +368,10 @@
               <div class="relative">
                 <img id="profileAvatarPreview" src="${window.safeUrl(user.photoURL) || avatarFallback}"
                   class="w-20 h-20 rounded-2xl object-cover"
-                  onerror="this.src='${avatarFallback}'">
+                  data-on-error="this.src='${avatarFallback}'">
                 <label class="absolute bottom-0 end-0 w-7 h-7 bg-secondary text-white rounded-lg flex items-center justify-center cursor-pointer hover:bg-secondary-600 transition">
                   <i class="fa-solid fa-pen text-xs"></i>
-                  <input type="file" accept="image/*" class="hidden" id="avatarFileInput" onchange="AuthManager._uploadAvatar(this)">
+                  <input type="file" accept="image/*" class="hidden" id="avatarFileInput" data-on-change="AuthManager._uploadAvatar(this)">
                 </label>
               </div>
               <div>
@@ -395,14 +395,14 @@
               <label class="block text-sm font-bold text-gray-700 mb-2">${t('auth.phone')}</label>
               <input type="tel" id="profilePhone" class="form-input" value="${escapeHtml(user.phone || '')}" dir="ltr">
             </div>
-            <button onclick="AuthManager.updateProfile({name:document.getElementById('profileName').value,phone:document.getElementById('profilePhone').value})"
+            <button data-on-click="AuthManager.updateProfile({name:document.getElementById('profileName').value,phone:document.getElementById('profilePhone').value})"
               class="btn-primary w-full py-4">${t('general.save')}</button>
             ${user.role === 'buyer' ? `
-            <button onclick="AuthManager.upgradeToSeller()" class="btn-secondary w-full py-4 border-green-400 text-green-600 hover:bg-green-600 hover:text-white">
+            <button data-on-click="AuthManager.upgradeToSeller()" class="btn-secondary w-full py-4 border-green-400 text-green-600 hover:bg-green-600 hover:text-white">
               <i class="fa-solid fa-rocket me-2"></i>${isAr?'الترقية لحساب بائع':'Upgrade to Seller'}
             </button>` : ''}
             <hr class="border-gray-100">
-            <button onclick="AuthManager.logout()" class="w-full py-3 text-red-500 font-bold border-2 border-red-200 rounded-xl hover:bg-red-500 hover:text-white transition flex items-center justify-center gap-2">
+            <button data-on-click="AuthManager.logout()" class="w-full py-3 text-red-500 font-bold border-2 border-red-200 rounded-xl hover:bg-red-500 hover:text-white transition flex items-center justify-center gap-2">
               <i class="fa-solid fa-right-from-bracket"></i>${t('nav.logout')}
             </button>
           </div>

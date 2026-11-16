@@ -97,7 +97,7 @@
                   <div class="flex items-center gap-5 bg-amber-50 rounded-2xl p-4 mb-4">
                     <div class="text-center"><p class="text-4xl font-black text-gray-900">${avg.toFixed(1)}</p><div class="flex gap-0.5 justify-center">${starsHtml(avg)}</div>
                       <p class="text-xs text-gray-500 mt-1">${list.length} ${isAr() ? 'تقييم' : 'reviews'}</p></div>
-                    <div class="flex-1 space-y-1">${dist.map(d => `<div class="flex items-center gap-2 text-xs"><span class="w-3 text-gray-500">${d.n}</span><div class="flex-1 h-2 bg-white rounded-full overflow-hidden"><div class="h-full bg-yellow-400" style="width:${Math.round(d.c / list.length * 100)}%"></div></div><span class="w-5 text-gray-400">${d.c}</span></div>`).join('')}</div>
+                    <div class="flex-1 space-y-1">${dist.map(d => `<div class="flex items-center gap-2 text-xs"><span class="w-3 text-gray-500">${d.n}</span><div class="flex-1 h-2 bg-white rounded-full overflow-hidden"><div class="h-full bg-yellow-400" data-style="width:${Math.round(d.c / list.length * 100)}%"></div></div><span class="w-5 text-gray-400">${d.c}</span></div>`).join('')}</div>
                   </div>
                   <div class="space-y-3">${list.slice(0, 10).map(r => `
                     <div class="bg-gray-50 rounded-xl p-4">

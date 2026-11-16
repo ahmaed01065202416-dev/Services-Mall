@@ -12,19 +12,19 @@
 
 const BLOG_INDEX_FALLBACK_DATE = '2025-05-21';   // used only when there is no dated article to derive it from
 
-// Hand-written articles (blog/<slug>/index.html) with their real publication dates.
+// Hand-written articles (blog/<slug>/index.html) with their last REAL content update (8 were rewritten 2026-11-16).
 // Keep in sync with functions/blog/[slug].js (STATIC_SLUGS) if one is added.
 const STATIC_ARTICLES = [
   ['افضل-خدمات-رقمية-في-مصر-2025', '2025-05-21'],
-  ['كيفية-الربح-من-الانترنت-مصر', '2025-05-15'],
+  ['كيفية-الربح-من-الانترنت-مصر', '2026-11-16'],
   ['بوابات-الدفع-الالكتروني-مصر', '2025-05-10'],
-  ['تحسين-محركات-البحث-للمواقع-العربية', '2025-05-05'],
-  ['التجارة-الالكترونية-في-مصر', '2025-04-28'],
-  ['freelancing-egypt-2025', '2025-04-21'],
-  ['digital-marketing-arabic', '2025-04-14'],
-  ['escrow-payment-protection', '2025-04-07'],
-  ['web-design-trends-2025', '2025-03-31'],
-  ['paymob-instapay-guide', '2025-03-24'],
+  ['تحسين-محركات-البحث-للمواقع-العربية', '2026-11-16'],
+  ['التجارة-الالكترونية-في-مصر', '2026-11-16'],
+  ['freelancing-egypt-2025', '2026-11-16'],
+  ['digital-marketing-arabic', '2026-11-16'],
+  ['escrow-payment-protection', '2026-11-16'],
+  ['web-design-trends-2025', '2026-11-16'],
+  ['paymob-instapay-guide', '2026-11-16'],
 ];
 
 const toDate = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? new Date(t).toISOString().split('T')[0] : ''; };

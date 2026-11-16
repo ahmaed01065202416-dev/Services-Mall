@@ -78,7 +78,7 @@
                 return `<div class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                   <div><p class="font-bold text-gray-900 text-sm">${escapeHtml(s.title||'')}</p>
                     <p class="text-xs text-gray-400">${formatCurrency(s.amount||0)}/${isAr?'شهر':'mo'} · ${statusLabel[s.status]||s.status}</p></div>
-                  ${s.status === 'active' ? `<button onclick="SubscriptionSystem.cancel('${d.id}')" class="text-xs text-red-500 font-bold hover:underline">${isAr?'إلغاء':'Cancel'}</button>` : ''}
+                  ${s.status === 'active' ? `<button data-on-click="SubscriptionSystem.cancel('${d.id}')" class="text-xs text-red-500 font-bold hover:underline">${isAr?'إلغاء':'Cancel'}</button>` : ''}
                 </div>`;
               }).join('')}`;
         } catch (_) { container.innerHTML = ''; }

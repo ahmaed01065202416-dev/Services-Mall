@@ -41,7 +41,7 @@
               <!-- Tabs -->
               <div class="flex gap-2 overflow-x-auto pb-1 border-b border-gray-100">
                 ${tabs.map(([key, icon, label]) => `
-                <button onclick="SellerDash.tab('${key}')" id="sdTab_${key}"
+                <button data-on-click="SellerDash.tab('${key}')" id="sdTab_${key}"
                   class="sd-tab-btn ${key==='overview'?'active':''} flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-bold whitespace-nowrap border-b-2 transition ${key==='overview'?'border-navy-600 text-navy-700 bg-navy-50':'border-transparent text-gray-500 hover:text-navy-600'}">
                   <i class="fa-solid ${icon}"></i>${label}
                 </button>`).join('')}
@@ -152,7 +152,7 @@
                       </p>
                     </div>
                   </div>
-                  <button onclick="SellerDash.tab('escrow')" class="px-3.5 py-1.5 bg-white border border-turquoise-300 text-turquoise-700 hover:bg-turquoise-50 rounded-xl text-xs font-bold transition shrink-0">
+                  <button data-on-click="SellerDash.tab('escrow')" class="px-3.5 py-1.5 bg-white border border-turquoise-300 text-turquoise-700 hover:bg-turquoise-50 rounded-xl text-xs font-bold transition shrink-0">
                     ${isAr?'سجل الضمان بالتفصيل':'View escrow log'}
                   </button>
                 </div>
@@ -180,7 +180,7 @@
                           <h3 class="font-black text-gray-900">${isAr?'آخر الطلبات الواردة':'Recent Incoming Orders'}</h3>
                           <p class="text-xs text-gray-400 mt-0.5">${isAr?`${inProgressCount} قيد التنفيذ · ${awaitingPaymentCount} بانتظار الدفع`:`${inProgressCount} in progress · ${awaitingPaymentCount} awaiting payment`}</p>
                         </div>
-                        <button onclick="SellerDash.tab('orders')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'عرض كل الطلبات':'View all orders'}</button>
+                        <button data-on-click="SellerDash.tab('orders')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'عرض كل الطلبات':'View all orders'}</button>
                       </div>
                       ${recentOrders.length === 0
                         ? `<p class="text-gray-400 text-center py-10">${isAr?'لا توجد طلبات بعد':'No orders yet'}</p>`
@@ -193,7 +193,7 @@
                       <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
                           <h3 class="text-sm font-bold text-gray-900">${isAr?`خدماتي النشطة (${servicesCount})`:`My Services (${servicesCount})`}</h3>
-                          <a href="javascript:void(0)" onclick="SellerDash.tab('services')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'إدارة الكل':'Manage all'}</a>
+                          <a href="#" data-on-click="event.preventDefault();SellerDash.tab('services')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'إدارة الكل':'Manage all'}</a>
                         </div>
                         ${services.filter(s=>s.listingType!=='product').slice(0,2).map(s => `
                         <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between mb-2">
@@ -201,14 +201,14 @@
                           <span class="text-[11px] text-gray-500">${formatCurrency(s.price||0)} · ${s.ordersCount||s.orderCount||0} ${isAr?'طلب':'orders'}</span></div>
                           <span class="w-2.5 h-2.5 rounded-full ${s.active===false?'bg-amber-400':'bg-green-500'} ring-4 ${s.active===false?'ring-amber-100':'ring-green-100'} shrink-0"></span>
                         </div>`).join('') || `<p class="text-xs text-gray-400 text-center py-4">${isAr?'لا توجد خدمات بعد':'No services yet'}</p>`}
-                        <button onclick="ServicesManager.openAddServiceForm('service')" class="w-full mt-2 py-2 border-2 border-dashed border-gray-200 hover:border-navy-400 text-gray-600 hover:text-navy-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                        <button data-on-click="ServicesManager.openAddServiceForm('service')" class="w-full mt-2 py-2 border-2 border-dashed border-gray-200 hover:border-navy-400 text-gray-600 hover:text-navy-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
                           <i class="fa-solid fa-plus text-[10px]"></i> ${isAr?'إنشاء خدمة جديدة':'Create new service'}
                         </button>
                       </div>
                       <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
                           <h3 class="text-sm font-bold text-gray-900">${isAr?`المنتجات (${productsCount})`:`Products (${productsCount})`}</h3>
-                          <a href="javascript:void(0)" onclick="SellerDash.tab('products')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'إدارة الكل':'Manage all'}</a>
+                          <a href="#" data-on-click="event.preventDefault();SellerDash.tab('products')" class="text-xs font-bold text-navy-600 hover:underline">${isAr?'إدارة الكل':'Manage all'}</a>
                         </div>
                         ${services.filter(s=>s.listingType==='product').slice(0,2).map(s => `
                         <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between mb-2">
@@ -216,7 +216,7 @@
                           <span class="text-[11px] text-gray-500">${formatCurrency(s.price||0)} · ${s.ordersCount||s.orderCount||0} ${isAr?'شراء':'purchases'}</span></div>
                           <span class="text-[11px] font-bold ${s.active===false?'text-amber-600 bg-amber-50':'text-green-600 bg-green-50'} px-2 py-0.5 rounded shrink-0">${s.active===false?(isAr?'موقوف':'Paused'):(isAr?'نشط':'Active')}</span>
                         </div>`).join('') || `<p class="text-xs text-gray-400 text-center py-4">${isAr?'لا توجد منتجات بعد':'No products yet'}</p>`}
-                        <button onclick="ServicesManager.openAddServiceForm('product')" class="w-full mt-2 py-2 border-2 border-dashed border-gray-200 hover:border-turquoise-400 text-gray-600 hover:text-turquoise-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                        <button data-on-click="ServicesManager.openAddServiceForm('product')" class="w-full mt-2 py-2 border-2 border-dashed border-gray-200 hover:border-turquoise-400 text-gray-600 hover:text-turquoise-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
                           <i class="fa-solid fa-upload text-[10px]"></i> ${isAr?'إضافة منتج جديد':'Add new product'}
                         </button>
                       </div>
@@ -255,7 +255,7 @@
 
         _orderRowCompact(o, isAr) {
             return `
-            <div class="p-4 hover:bg-gray-50 transition flex items-center justify-between gap-3 cursor-pointer" onclick="openWorkspace('${o.id}')">
+            <div class="p-4 hover:bg-gray-50 transition flex items-center justify-between gap-3 cursor-pointer" data-on-click="openWorkspace('${o.id}')">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 flex-wrap mb-1">
                   <span class="status-badge ${getStatusClass(o.status)} text-[11px]">${getStatusText(o.status)}</span>
@@ -280,7 +280,7 @@
                 <span class="text-xs text-gray-400">${isAr?'الرصيد المتاح للسحب':'Available balance'}</span>
                 <div class="text-3xl font-black tracking-tight text-white mt-1">${formatCurrency(available)}</div>
                 <div class="text-xs text-gray-400 mt-1">${isAr?`+ ${formatCurrency(inEscrow)} قيد الضمان`:`+ ${formatCurrency(inEscrow)} in escrow`}</div>
-                <button onclick="WalletManager.openWithdrawForm()" class="w-full mt-4 py-2.5 bg-turquoise-500 hover:bg-turquoise-400 text-navy-950 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                <button data-on-click="WalletManager.openWithdrawForm()" class="w-full mt-4 py-2.5 bg-turquoise-500 hover:bg-turquoise-400 text-navy-950 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
                   <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> ${isAr?'طلب سحب أرباح':'Request withdrawal'}
                 </button>
               </div>
@@ -309,7 +309,7 @@
                   <option value="instapay" ${method==='instapay'?'selected':''}>InstaPay</option>
                 </select>
                 <input type="text" id="sdPayoutAccount" class="form-input text-sm" dir="ltr" value="${escapeHtml(account)}" placeholder="${isAr?'رقم الحساب أو المحفظة':'Account or wallet number'}">
-                <button onclick="SellerDash.savePayoutInfo()" class="w-full py-2 bg-navy-700 hover:bg-navy-800 text-white rounded-xl text-xs font-bold transition">
+                <button data-on-click="SellerDash.savePayoutInfo()" class="w-full py-2 bg-navy-700 hover:bg-navy-800 text-white rounded-xl text-xs font-bold transition">
                   ${isAr?'حفظ البيانات':'Save details'}
                 </button>
               </div>
@@ -371,8 +371,8 @@
                   const isToday = d.date.toDateString() === now.toDateString();
                   return `
                   <div class="flex-1 flex flex-col items-center gap-2">
-                    <div class="w-full ${isToday?'bg-navy-700':'bg-gray-100'} rounded-t-md relative group" style="height:80px;display:flex;align-items:flex-end;">
-                      <div class="w-full ${isToday?'bg-navy-700':'bg-gray-300'} rounded-t-md transition-all" style="height:${Math.max(pct,3)}%"></div>
+                    <div class="w-full ${isToday?'bg-navy-700':'bg-gray-100'} rounded-t-md relative group" data-style="height:80px;display:flex;align-items:flex-end;">
+                      <div class="w-full ${isToday?'bg-navy-700':'bg-gray-300'} rounded-t-md transition-all" data-style="height:${Math.max(pct,3)}%"></div>
                     </div>
                     <span class="text-[10px] ${isToday?'font-bold text-navy-700':'text-gray-400'}">${d.label}</span>
                   </div>`;
@@ -423,7 +423,7 @@
                 <span class="text-xs font-bold text-navy-600">${pct}%</span>
               </div>
               <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-2">
-                <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all" style="width:${pct}%"></div>
+                <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all" data-style="width:${pct}%"></div>
               </div>
               <span class="text-[11px] text-gray-500 block">
                 ${next
@@ -476,19 +476,19 @@
                 container.innerHTML = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <h3 class="font-black text-gray-900 text-lg">${heading}</h3>
-                  <button onclick="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+                  <button data-on-click="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
                     <i class="fa-solid fa-plus"></i>${addLabel}
                   </button>
                 </div>
                 ${isProduct ? `
                 <div class="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold w-fit mb-5">
-                  ${filters.map(([key,label]) => `<button onclick="SellerDash.renderProducts(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${productFilter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
+                  ${filters.map(([key,label]) => `<button data-on-click="SellerDash.renderProducts(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${productFilter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
                 </div>` : ''}
                 ${services.length === 0
                   ? `<div class="text-center py-16 bg-white rounded-2xl border border-gray-100">
                       <i class="fa-solid ${isProduct?'fa-box-open':'fa-layer-group'} text-gray-200 text-5xl mb-4"></i>
                       <h3 class="font-black text-gray-500 mb-2">${isProduct ? (isAr?'لا توجد منتجات بعد':'No products yet') : (isAr?'لا توجد خدمات بعد':'No services yet')}</h3>
-                      <button onclick="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary px-8"><i class="fa-solid fa-plus me-2"></i>${addLabel}</button>
+                      <button data-on-click="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary px-8"><i class="fa-solid fa-plus me-2"></i>${addLabel}</button>
                     </div>`
                   : `<div class="space-y-4" id="myServicesList">${services.map(s => this._serviceRow(s, isAr)).join('')}</div>`
                 }`;
@@ -503,7 +503,7 @@
                         container.innerHTML = `
                         <div class="flex items-center justify-between mb-6">
                           <h3 class="font-black text-gray-900 text-lg">${services.length}</h3>
-                          <button onclick="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5">${isAr?'إضافة':'Add'}</button>
+                          <button data-on-click="ServicesManager.openAddServiceForm('${kind}')" class="btn-primary text-sm px-4 py-2.5">${isAr?'إضافة':'Add'}</button>
                         </div>
                         ${services.length === 0
                           ? `<p class="text-center py-16 text-gray-400">${isAr?'لا توجد عناصر':'No items'}</p>`
@@ -540,7 +540,7 @@
               <div class="flex gap-4">
                 <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}"
                   class="w-20 h-20 rounded-xl object-cover flex-shrink-0"
-                  onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+                  data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <h4 class="font-black text-gray-900 leading-snug">${escapeHtml(s.title||'—')}</h4>
@@ -558,24 +558,24 @@
                     ${s.listingType !== 'product' ? `<span><i class="fa-solid ${s.orderMode==='instant'?'fa-lock':'fa-paper-plane'} text-teal-500 me-1"></i>${s.orderMode==='instant'?(isAr?'دفع مباشر':'Instant pay'):(isAr?'طلب ثم موافقة':'Request first')}</span>` : ''}
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <button onclick="navigateTo('add-service', ${editData})"
+                    <button data-on-click="navigateTo('add-service', ${editData})"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-navy-50 text-navy-700 rounded-xl font-bold hover:bg-navy-100 transition">
                       <i class="fa-solid fa-pen"></i>${isAr?'تعديل':'Edit'}
                     </button>
-                    <button onclick="SellerDash.toggleServiceStatus('${s.id}', ${isPaused})"
+                    <button data-on-click="SellerDash.toggleServiceStatus('${s.id}', ${isPaused})"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 ${isPaused ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} rounded-xl font-bold transition">
                       <i class="fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}"></i>
                       ${isPaused ? (isAr?'إعادة تفعيل':'Activate') : (isAr?'إيقاف مؤقت':'Pause')}
                     </button>
-                    <button onclick="ServicesManager.copyServiceLink('${s.id}')"
+                    <button data-on-click="ServicesManager.copyServiceLink('${s.id}')"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
                       <i class="fa-solid fa-link"></i>${isAr?'نسخ الرابط':'Copy link'}
                     </button>
-                    <button onclick="AdsSystem.openPromote('${s.id}')"
+                    <button data-on-click="AdsSystem.openPromote('${s.id}')"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-turquoise-50 text-turquoise-700 rounded-xl font-bold hover:bg-turquoise-100 transition">
                       <i class="fa-solid fa-bullhorn"></i>${isAr?'روّج':'Promote'}
                     </button>
-                    <button onclick="SellerDash.confirmDeleteService('${s.id}', '${escapeHtml((s.title||'').replace(/'/g,"\\'"))}', '${s.sellerId||''}')"
+                    <button data-on-click="SellerDash.confirmDeleteService('${s.id}', '${escapeHtml((s.title||'').replace(/'/g,"\\'"))}', '${s.sellerId||''}')"
                       class="flex items-center gap-1.5 text-xs px-3 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition">
                       <i class="fa-solid fa-trash"></i>${isAr?'حذف':'Delete'}
                     </button>
@@ -667,7 +667,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
                   <h3 class="font-black text-gray-900 text-lg">${isAr?`إدارة الطلبات (${orders.length})`:`Order Management (${orders.length})`}</h3>
                   <div class="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold overflow-x-auto">
-                    ${filters.map(([key,label]) => `<button onclick="SellerDash.renderOrdersTab(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${filter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
+                    ${filters.map(([key,label]) => `<button data-on-click="SellerDash.renderOrdersTab(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${filter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
                   </div>
                 </div>
                 ${shown.length === 0
@@ -683,15 +683,15 @@
             const price = o.price || 0;
             let actionsHtml = '';
             if (o.status === ORDER_STATUS.ACCEPTED) {
-                actionsHtml = `<button onclick="SellerDash.sendPaymentReminder('${o.id}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'إرسال تذكير بالدفع':'Send payment reminder'}</button>`;
+                actionsHtml = `<button data-on-click="SellerDash.sendPaymentReminder('${o.id}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'إرسال تذكير بالدفع':'Send payment reminder'}</button>`;
             } else if ([ORDER_STATUS.IN_PROGRESS, ORDER_STATUS.PAYMENT_HELD, ORDER_STATUS.REVISION].includes(o.status)) {
                 actionsHtml = `
-                  <a href="javascript:void(0)" onclick="openWorkspace('${o.id}')" class="px-3 py-1.5 bg-navy-50 text-navy-700 hover:bg-navy-100 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i class="fa-regular fa-message text-xs"></i>${isAr?'المحادثة':'Chat'}</a>
-                  <button onclick="openWorkspace('${o.id}')" class="px-3 py-1.5 bg-turquoise-600 hover:bg-turquoise-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition"><i class="fa-solid fa-cloud-arrow-up text-xs"></i>${isAr?'تسليم العمل':'Deliver work'}</button>`;
+                  <a href="#" data-on-click="event.preventDefault();openWorkspace('${o.id}')" class="px-3 py-1.5 bg-navy-50 text-navy-700 hover:bg-navy-100 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i class="fa-regular fa-message text-xs"></i>${isAr?'المحادثة':'Chat'}</a>
+                  <button data-on-click="openWorkspace('${o.id}')" class="px-3 py-1.5 bg-turquoise-600 hover:bg-turquoise-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition"><i class="fa-solid fa-cloud-arrow-up text-xs"></i>${isAr?'تسليم العمل':'Deliver work'}</button>`;
             } else if (o.status === ORDER_STATUS.DELIVERED) {
-                actionsHtml = `<a href="javascript:void(0)" onclick="openWorkspace('${o.id}')" class="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i class="fa-regular fa-message text-xs"></i>${isAr?'بانتظار رد العميل':'Awaiting buyer'}</a>`;
+                actionsHtml = `<a href="#" data-on-click="event.preventDefault();openWorkspace('${o.id}')" class="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"><i class="fa-regular fa-message text-xs"></i>${isAr?'بانتظار رد العميل':'Awaiting buyer'}</a>`;
             } else {
-                actionsHtml = `<button onclick="openWorkspace('${o.id}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'عرض تفاصيل الطلب':'View order details'}</button>`;
+                actionsHtml = `<button data-on-click="openWorkspace('${o.id}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'عرض تفاصيل الطلب':'View order details'}</button>`;
             }
             return `
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -792,7 +792,7 @@
                     <p class="text-xs text-gray-400 mt-0.5">${isAr ? 'راجع طلبات العملاء ووافق أو ارفض — الاسترداد الفعلي بيتم من خلال الإدارة بعد موافقتك.' : "Review buyer requests and approve or reject — the actual refund is completed by admin after you approve."}</p>
                   </div>
                   <div class="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-xl text-xs font-semibold overflow-x-auto">
-                    ${filters.map(([key,label]) => `<button onclick="SellerDash.renderReturns(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${filter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
+                    ${filters.map(([key,label]) => `<button data-on-click="SellerDash.renderReturns(document.getElementById('sdTabContent'),'${key}')" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition ${filter===key?'bg-white text-gray-900 font-bold shadow-xs':'text-gray-600 hover:text-gray-900'}">${label}</button>`).join('')}
                   </div>
                 </div>
                 ${shown.length === 0
@@ -811,7 +811,7 @@
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div class="flex items-start gap-3 min-w-0">
-                  <img src="${window.safeUrl(r.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
+                  <img src="${window.safeUrl(r.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'">
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap mb-1">
                       <span class="text-xs font-mono font-bold text-gray-400">#${(r.orderId||'').slice(-8).toUpperCase()}</span>
@@ -831,10 +831,10 @@
               ${r.status === 'rejected' && r.sellerNote ? `<p class="text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-3"><strong>${isAr?'ردك:':'Your note:'}</strong> ${escapeHtml(r.sellerNote)}</p>` : ''}
               ${r.status === 'approved' ? `<p class="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 mb-3">${r.needsManualRefund ? (isAr?'بانتظار استرداد يدوي من الإدارة (تم تحصيل المبلغ في محفظتك بالفعل).':'Awaiting a manual admin refund (funds were already released to your wallet).') : (isAr?'تم تحويل الطلب لمراجعة الإدارة لإتمام الاسترداد.':'Sent for admin review to complete the refund.')}</p>` : ''}
               <div class="flex items-center gap-2 flex-wrap">
-                <button onclick="openWorkspace('${r.orderId}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'عرض الطلب':'View order'}</button>
+                <button data-on-click="openWorkspace('${r.orderId}')" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition">${isAr?'عرض الطلب':'View order'}</button>
                 ${r.status === 'pending' ? `
-                <button onclick="ReturnsManager.approveReturn('${r.id}')" class="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-check"></i> ${isAr?'موافقة':'Approve'}</button>
-                <button onclick="ReturnsManager.rejectReturn('${r.id}')" class="px-3.5 py-1.5 border-2 border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-xmark"></i> ${isAr?'رفض':'Reject'}</button>
+                <button data-on-click="ReturnsManager.approveReturn('${r.id}')" class="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-check"></i> ${isAr?'موافقة':'Approve'}</button>
+                <button data-on-click="ReturnsManager.rejectReturn('${r.id}')" class="px-3.5 py-1.5 border-2 border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-bold transition"><i class="fa-solid fa-xmark"></i> ${isAr?'رفض':'Reject'}</button>
                 ` : ''}
               </div>
             </div>`;
@@ -880,7 +880,7 @@
                   : `<div class="space-y-3">${rows.map(r => {
                       const cfg = statusCfg[r.status] || statusCfg.held;
                       return `
-                      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between gap-3 cursor-pointer hover:shadow-md transition" onclick="openWorkspace('${r.orderId||r.id}')">
+                      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between gap-3 cursor-pointer hover:shadow-md transition" data-on-click="openWorkspace('${r.orderId||r.id}')">
                         <div class="flex items-center gap-3 min-w-0">
                           <div class="w-10 h-10 rounded-xl ${cfg.cls} border flex items-center justify-center shrink-0"><i class="fa-solid fa-shield-halved text-sm"></i></div>
                           <div class="min-w-0">
@@ -1008,10 +1008,10 @@
                 const pct = Math.round((d.total / max) * 100);
                 return `
                 <div class="flex-1 flex flex-col items-center gap-1">
-                  <span class="text-xs font-bold text-gray-500" style="font-size:10px">${d.total > 0 ? Math.round(d.total/1000)+'k' : ''}</span>
-                  <div class="w-full bg-navy-100 rounded-t-lg flex flex-col justify-end" style="height:120px">
+                  <span class="text-xs font-bold text-gray-500" data-style="font-size:10px">${d.total > 0 ? Math.round(d.total/1000)+'k' : ''}</span>
+                  <div class="w-full bg-navy-100 rounded-t-lg flex flex-col justify-end" data-style="height:120px">
                     <div class="bg-gradient-to-t from-navy-600 to-navy-400 rounded-t-lg transition-all duration-500"
-                      style="height:${Math.max(pct,2)}%"></div>
+                      data-style="height:${Math.max(pct,2)}%"></div>
                   </div>
                   <span class="text-xs text-gray-400">${d.label}</span>
                 </div>`;
@@ -1036,7 +1036,7 @@
                     <span class="text-gray-400">${count} (${pct}%)</span>
                   </div>
                   <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div class="${cfg.cls} h-full rounded-full transition-all duration-500" style="width:${pct}%"></div>
+                    <div class="${cfg.cls} h-full rounded-full transition-all duration-500" data-style="width:${pct}%"></div>
                   </div>
                 </div>`;
             }).join('')}</div>`;

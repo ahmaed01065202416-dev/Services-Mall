@@ -1,0 +1,42 @@
+name: IndexNow ping
+# After every push, wait for Cloudflare Pages to publish, then tell Bing / Yandex / other IndexNow engines which URLs exist.
+# (Google does not use IndexNow — for Google use Search Console: sitemap + "Request indexing".)
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  SITE: https://mall-services.pages.dev
+  INDEXNOW_KEY: ba79750a139a77256f06ac61d56b47f4     # must match the file /ba79750a139a77256f06ac61d56b47f4.txt at the site root
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the deployment to go live
+        run: sleep 240
+
+      - name: Collect URLs from the sitemaps
+        run: |
+          : > urls.txt
+          for sm in sitemap-main.xml sitemap-live.xml; do
+            curl -fsS --max-time 30 "$SITE/$sm" | grep -oE '<loc>[^<]+</loc>' | sed -E 's#</?loc>##g' >> urls.txt || true
+          done
+          sort -u urls.txt | head -10000 > urls.sorted
+          echo "URLs collected: $(wc -l < urls.sorted)"
+
+      - name: Verify the key file is reachable
+        run: curl -fsS "$SITE/$INDEXNOW_KEY.txt" | grep -q "$INDEXNOW_KEY"
+
+      - name: Submit to IndexNow
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          site = os.environ["SITE"]; key = os.environ["INDEXNOW_KEY"]
+          urls = [u.strip() for u in open("urls.sorted", encoding="utf-8") if u.strip().startswith(site)]
+          if not urls: raise SystemExit("no URLs to submit")
+          body = json.dumps({"host": site.split("//")[1], "key": key, "keyLocation": f"{site}/{key}.txt", "urlList": urls}).encode()
+          req = urllib.request.Request("https://www.bing.com/indexnow", data=body, headers={"Content-Type": "application/json; charset=utf-8"})
+          with urllib.request.urlopen(req, timeout=30) as r: print("IndexNow status:", r.status)   # 200 / 202 = accepted
+          PY

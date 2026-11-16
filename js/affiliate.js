@@ -41,7 +41,7 @@
         var old = document.getElementById('affModal'); if (old) old.remove();
         var w = document.createElement('div'); w.id = 'affModal';
         w.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-        w.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:22px">' + html + '</div>';
+        w.innerHTML = '<div data-style="background:#fff;border-radius:20px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:22px">' + html + '</div>';
         w.addEventListener('click', function (e) { if (e.target === w) w.remove(); });
         document.body.appendChild(w);
     }

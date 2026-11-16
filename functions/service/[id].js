@@ -40,7 +40,7 @@ export function buildServicePage(html, { id, svc, store, related, site }) {
         + (rel ? `<ul>${rel}</ul>` : '') + `<p><a tabindex="-1" href="/">${BRAND}</a></p>`;
     return buildShell(html, {
         title: `${title} | ${BRAND}`, desc, url, image, ogType: 'website', ld: [ld, bc], seoHtml,
-        boot: `window.addEventListener('load',function(){try{if(window.ServicesManager)ServicesManager.openServiceDetail('${id}')}catch(e){}})`,
+        boot: { k: 'svc', v: String(id) },
     });
 }
 

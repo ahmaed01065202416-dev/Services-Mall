@@ -118,7 +118,7 @@
             if (!order || order.buyerId !== AppState.currentUser?.uid || !isPhysical(order)) return '';
             const el = eligibility(order);
             if (!el.ok) return '';
-            return `<button onclick="NonReceipt.open('${order.id}')" class="${cls || 'w-full py-3 text-sm font-bold border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2'}">
+            return `<button data-on-click="NonReceipt.open('${order.id}')" class="${cls || 'w-full py-3 text-sm font-bold border-2 border-red-400 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition flex items-center justify-center gap-2'}">
               <i class="fa-solid fa-box-circle-xmark"></i>${isAr() ? 'عدم استلام' : 'Not received / reject'}</button>${policyHint(order)}`;
         },
 
@@ -283,7 +283,7 @@
                   ${d.sellerResponse
                     ? `<div class="mt-3 p-3 bg-white rounded-xl border border-gray-200"><p class="text-xs font-bold text-gray-500 mb-1">${isAr() ? 'رد البائع' : 'Seller reply'}${d.sellerResponse.late ? (isAr() ? ' (متأخر)' : ' (late)') : ''}</p><p class="text-sm text-gray-800">${esc(d.sellerResponse.text)}</p>${d.sellerResponse.evidence && d.sellerResponse.evidence.length ? `<div class="flex gap-2 flex-wrap mt-2">${imgs(d.sellerResponse.evidence)}</div>` : ''}</div>`
                     : `<p class="text-xs mt-3 ${late ? 'text-red-700 font-bold' : 'text-amber-800'}">${isSeller ? (late ? (isAr() ? '⏰ انتهت مهلة ردك — الإدارة هتحكم بالمتاح' : 'Your reply window ended') : (isAr() ? '⏳ لازم ترد قبل: ' : 'Reply before: ') + new Date(deadline).toLocaleString(isAr() ? 'ar-EG' : 'en-GB')) : (isAr() ? 'في انتظار رد البائع' : 'Waiting for the seller')}</p>`}
-                  ${isSeller && !d.sellerResponse ? `<button onclick="NonReceipt.respond('${order.id}')" class="mt-3 w-full py-2.5 text-sm font-bold bg-navy-800 text-white rounded-xl hover:bg-navy-900">${isAr() ? 'رد على النزاع وإرفاق إثبات' : 'Reply with proof'}</button>` : ''}
+                  ${isSeller && !d.sellerResponse ? `<button data-on-click="NonReceipt.respond('${order.id}')" class="mt-3 w-full py-2.5 text-sm font-bold bg-navy-800 text-white rounded-xl hover:bg-navy-900">${isAr() ? 'رد على النزاع وإرفاق إثبات' : 'Reply with proof'}</button>` : ''}
                 </div>`;
             } catch (e) { console.warn('[NonReceipt] dispute card failed:', e.message); }
         },

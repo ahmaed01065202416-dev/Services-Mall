@@ -1,0 +1,1 @@
+function nlSub(){const v=document.getElementById('nlEmail').value.trim();const m=document.getElementById('nlMsg');if(!v||!v.includes('@')){m.style.color='#ef4444';m.textContent='بريد غير صحيح';m.style.display='block';return;}m.style.color='#059669';m.textContent='✅ تم الاشتراك!';m.style.display='block';document.getElementById('nlEmail').value='';}

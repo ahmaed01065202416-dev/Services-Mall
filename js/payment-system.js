@@ -166,7 +166,7 @@
         if (st) {
             const auto = (p.applied || []).filter(a => a.auto);
             st.innerHTML = (auto.length ? `<span class="text-green-600 font-bold">🎁 ${auto.map(a => esc(a.title)).join('، ')}</span> ` : '')
-                + (PaymentState.couponCode ? `<span class="text-green-600 font-bold">✓ ${esc(PaymentState.couponCode)}</span> <button type="button" class="underline text-gray-500" onclick="PaymentSystem.removeCoupon()">${isAr ? 'إزالة' : 'Remove'}</button>` : '');
+                + (PaymentState.couponCode ? `<span class="text-green-600 font-bold">✓ ${esc(PaymentState.couponCode)}</span> <button type="button" class="underline text-gray-500" data-on-click="PaymentSystem.removeCoupon()">${isAr ? 'إزالة' : 'Remove'}</button>` : '');
         }
     }
     async function _refreshPreview(code, silent) {
@@ -195,7 +195,7 @@
 
             <!-- Header -->
             <div class="flex items-center gap-4 mb-8">
-              <button onclick="navigateTo('${context === 'service' ? 'services' : context === 'order' ? 'orders' : 'cart'}')"
+              <button data-on-click="navigateTo('${context === 'service' ? 'services' : context === 'order' ? 'orders' : 'cart'}')"
                 class="w-10 h-10 bg-white rounded-xl shadow flex items-center justify-center text-gray-600 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-arrow-${isAr ? 'right' : 'left'}"></i>
               </button>
@@ -242,7 +242,7 @@
                   <div class="flex gap-2">
                     <input type="text" id="couponInput" placeholder="${isAr ? 'أدخل كود الخصم' : 'Enter coupon code'}"
                       class="form-input flex-1" dir="ltr">
-                    <button onclick="PaymentSystem.applyCoupon()" class="btn-secondary px-5 py-2 text-sm font-bold whitespace-nowrap">
+                    <button data-on-click="PaymentSystem.applyCoupon()" class="btn-secondary px-5 py-2 text-sm font-bold whitespace-nowrap">
                       ${isAr ? 'تطبيق' : 'Apply'}
                     </button>
                   </div>
@@ -250,7 +250,7 @@
                 </div>
 
                 <!-- Pay Button -->
-                <button onclick="PaymentSystem.processPayment()" id="payNowBtn"
+                <button data-on-click="PaymentSystem.processPayment()" id="payNowBtn"
                   class="w-full py-5 bg-gradient-to-r from-navy-600 to-navy-800 text-white rounded-2xl font-black text-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
                   <i class="fa-solid fa-lock"></i>
                   <span id="pay-btn-label">${t('pay.pay_now')} — ${formatCurrency(total)}</span>
@@ -285,7 +285,7 @@
                   <div class="space-y-3 mb-5">
                     ${items.filter(Boolean).map(item => `
                       <div class="flex gap-3 items-start">
-                        <img src="${window.safeUrl(item.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" alt="" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'"
+                        <img src="${window.safeUrl(item.image) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'}" alt="" data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=120'"
                           class="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-100">
                         <div class="flex-1 min-w-0">
                           <p class="font-bold text-gray-900 text-sm line-clamp-2">${escapeHtml(item.title || '')}</p>

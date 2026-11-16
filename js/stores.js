@@ -42,7 +42,7 @@
     const catOf = (id) => CATEGORIES.find(c => c[0] === id);
     const catLabel = (id) => { const c = catOf(id); return c ? (isAr() ? c[1] : c[2]) : ''; };
     const catIds = (s) => (Array.isArray(s && s.categories) ? s.categories : []).filter(isCat).slice(0, MAX_CATS);
-    const catPicker = (selected, id) => `<div id="${id}" class="cat-picker">${CATEGORIES.map(c => `<button type="button" class="cat-chip${selected.includes(c[0]) ? ' on' : ''}" data-cat="${c[0]}" onclick="StoresManager.toggleCat(this)"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])}</button>`).join('')}</div>`;
+    const catPicker = (selected, id) => `<div id="${id}" class="cat-picker">${CATEGORIES.map(c => `<button type="button" class="cat-chip${selected.includes(c[0]) ? ' on' : ''}" data-cat="${c[0]}" data-on-click="StoresManager.toggleCat(this)"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])}</button>`).join('')}</div>`;
     const pickedCats = (id) => Array.from(document.querySelectorAll('#' + id + ' .cat-chip.on')).map(b => b.dataset.cat).filter(isCat).slice(0, MAX_CATS);
     const esc = (v) => (window.escapeHtml ? window.escapeHtml(v) : String(v == null ? '' : v));
     const countryName = (c) => { const x = COUNTRIES.find(k => k[0] === c); return x ? (isAr() ? x[1] : x[2]) : ''; };
@@ -62,10 +62,10 @@
     function storeCard(s) {
         const f = isFeatured(s);
         return `
-        <button onclick="StoresManager.openStore('${esc(s.id)}')" class="text-start bg-white rounded-2xl border ${f ? 'border-amber-300 shadow-md' : 'border-gray-100 shadow-sm'} p-4 hover:shadow-lg transition relative w-full">
+        <button data-on-click="StoresManager.openStore('${esc(s.id)}')" class="text-start bg-white rounded-2xl border ${f ? 'border-amber-300 shadow-md' : 'border-gray-100 shadow-sm'} p-4 hover:shadow-lg transition relative w-full">
           ${f ? `<span class="absolute top-3 end-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full"><i class="fa-solid fa-star"></i> ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : ''}
           <div class="flex items-center gap-3 mb-3">
-            <img src="${esc(s.logo || fallbackLogo(s.name))}" class="w-14 h-14 rounded-2xl object-cover border border-gray-100 flex-shrink-0" loading="lazy" onerror="this.src='${fallbackLogo(s.name)}'">
+            <img src="${esc(s.logo || fallbackLogo(s.name))}" class="w-14 h-14 rounded-2xl object-cover border border-gray-100 flex-shrink-0" loading="lazy" data-on-error="this.src='${fallbackLogo(s.name)}'">
             <div class="min-w-0"><p class="font-black text-gray-900 truncate">${esc(s.name || '—')}</p>
               <p class="text-xs text-gray-400 truncate"><i class="fa-solid fa-location-dot"></i> ${esc([countryName(s.country), s.city].filter(Boolean).join(' — ') || '—')}</p></div>
           </div>
@@ -131,8 +131,8 @@
             const present = CATEGORIES.filter(c => counts[c[0]]);
             const cur = this._cat || '';
             box.innerHTML = present.length
-                ? `<button type="button" class="cat-chip${cur ? '' : ' on'}" onclick="StoresManager.setCat('')">${isAr() ? 'الكل' : 'All'} <span class="cat-n">${this._all.length}</span></button>`
-                  + present.map(c => `<button type="button" class="cat-chip${cur === c[0] ? ' on' : ''}" onclick="StoresManager.setCat('${c[0]}')"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])} <span class="cat-n">${counts[c[0]]}</span></button>`).join('')
+                ? `<button type="button" class="cat-chip${cur ? '' : ' on'}" data-on-click="StoresManager.setCat('')">${isAr() ? 'الكل' : 'All'} <span class="cat-n">${this._all.length}</span></button>`
+                  + present.map(c => `<button type="button" class="cat-chip${cur === c[0] ? ' on' : ''}" data-on-click="StoresManager.setCat('${c[0]}')"><i class="fa-solid ${c[3]}"></i> ${esc(isAr() ? c[1] : c[2])} <span class="cat-n">${counts[c[0]]}</span></button>`).join('')
                 : '';
         },
         setCat(id) { this._cat = (this._cat === id) ? '' : id; this._renderCats(); this.filterStores(); },
@@ -151,14 +151,14 @@
             // text search matches the store's name, tagline, description AND its type names (Arabic + English)
             const hay = (s) => [s.name, s.tagline, s.description, ...catIds(s).flatMap(id => { const k = catOf(id); return [k[1], k[2]]; })].join(' ').toLowerCase();
             const list = this._all.filter(s => (!q || hay(s).includes(q)) && (!c || s.country === c) && (!cat || catIds(s).includes(cat))).sort(sortStores);
-            this._shown = list; this._n = 24; grid.innerHTML = list.length ? list.slice(0, 24).map(storeCard).join('') + (list.length > 24 ? `<button onclick="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : '') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
+            this._shown = list; this._n = 24; grid.innerHTML = list.length ? list.slice(0, 24).map(storeCard).join('') + (list.length > 24 ? `<button data-on-click="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : '') : `<p class="col-span-full text-center text-gray-400 py-12">${isAr() ? 'مفيش متاجر مطابقة' : 'No stores found'}</p>`;
         },
 
         moreStores() {
             const grid = document.getElementById('storesGrid'), btn = document.getElementById('storesMore'); if (!grid || !this._shown) return;
             const next = this._shown.slice(this._n, this._n + 24); this._n += 24;
             if (btn) btn.remove();
-            grid.insertAdjacentHTML('beforeend', next.map(storeCard).join('') + (this._n < this._shown.length ? `<button onclick="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : ''));
+            grid.insertAdjacentHTML('beforeend', next.map(storeCard).join('') + (this._n < this._shown.length ? `<button data-on-click="StoresManager.moreStores()" id="storesMore" class="col-span-full btn-primary py-3">${isAr() ? 'عرض المزيد' : 'Load more'}</button>` : ''));
         },
 
         // ── One store page (public) — themed by the owner ───────────────────
@@ -231,13 +231,13 @@
             if (!id) return '';
             (this._shareNames = this._shareNames || {})[id] = name || '';
             const link = this.storeLink(id);
-            const btn = (bg, ic, label, fn) => `<button type="button" onclick="StoresManager.${fn}('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl" style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
+            const btn = (bg, ic, label, fn) => `<button type="button" data-on-click="StoresManager.${fn}('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl" data-style="background:${bg};color:#fff"><i class="${ic} me-1"></i>${label}</button>`;
             return `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 ${compact ? 'mt-4' : 'mb-6'}" dir="${isAr() ? 'rtl' : 'ltr'}">
               <p class="font-black text-gray-900 text-sm mb-1"><i class="fa-solid fa-link me-1 text-navy-600"></i>${isAr() ? 'رابط متجرك — شاركه على فيسبوك وواتساب وأي مكان' : 'Your store link — share it anywhere'}</p>
               ${compact ? '' : `<p class="text-xs text-gray-500 mb-2">${isAr() ? 'أي حد يفتح الرابط هيشوف متجرك مباشرة، وهيظهر باسم المتجر وشعاره لما تنشره.' : 'Anyone opening it lands on your store; it previews with your store name and logo.'}</p>`}
               <div class="flex flex-wrap items-center gap-2">
-                <input readonly value="${esc(link)}" onclick="this.select()" dir="ltr" class="form-input flex-1 min-w-[12rem] text-xs">
-                <button type="button" onclick="StoresManager.copyLink('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-navy-800 text-white"><i class="fa-solid fa-copy me-1"></i>${isAr() ? 'نسخ' : 'Copy'}</button>
+                <input readonly value="${esc(link)}" data-on-click="this.select()" dir="ltr" class="form-input flex-1 min-w-[12rem] text-xs">
+                <button type="button" data-on-click="StoresManager.copyLink('${esc(id)}')" class="px-3 py-2 text-xs font-bold rounded-xl bg-navy-800 text-white"><i class="fa-solid fa-copy me-1"></i>${isAr() ? 'نسخ' : 'Copy'}</button>
                 ${btn('#1877F2', 'fa-brands fa-facebook-f', 'Facebook', 'shareFacebook')}
                 ${btn('#25D366', 'fa-brands fa-whatsapp', 'WhatsApp', 'shareWhatsApp')}
                 ${navigator.share ? btn('#475569', 'fa-solid fa-share-nodes', isAr() ? 'مشاركة' : 'Share', 'shareNative') : ''}
@@ -264,9 +264,9 @@
         async initMyStorePage() {
             const box = document.getElementById('myStoreContent'); if (!box) return;
             const user = AppState.currentUser;
-            if (!user) { box.innerHTML = `<div class="text-center py-16"><p class="text-gray-500 mb-4">${isAr() ? 'سجّل دخولك الأول' : 'Please log in'}</p><button onclick="navigateTo('login')" class="btn-primary px-8">${isAr() ? 'تسجيل الدخول' : 'Log in'}</button></div>`; return; }
+            if (!user) { box.innerHTML = `<div class="text-center py-16"><p class="text-gray-500 mb-4">${isAr() ? 'سجّل دخولك الأول' : 'Please log in'}</p><button data-on-click="navigateTo('login')" class="btn-primary px-8">${isAr() ? 'تسجيل الدخول' : 'Log in'}</button></div>`; return; }
             if (user.role !== 'seller' && user.role !== 'admin') {
-                box.innerHTML = `<div class="text-center py-16"><i class="fa-solid fa-lock text-gray-300 text-5xl mb-4"></i><h3 class="text-xl font-black text-gray-500 mb-3">${isAr() ? 'يجب أن تكون بائعًا' : 'Seller account required'}</h3><button onclick="AuthManager.upgradeToSeller()" class="btn-primary px-8">${isAr() ? 'الترقية لبائع' : 'Upgrade to Seller'}</button></div>`; return;
+                box.innerHTML = `<div class="text-center py-16"><i class="fa-solid fa-lock text-gray-300 text-5xl mb-4"></i><h3 class="text-xl font-black text-gray-500 mb-3">${isAr() ? 'يجب أن تكون بائعًا' : 'Seller account required'}</h3><button data-on-click="AuthManager.upgradeToSeller()" class="btn-primary px-8">${isAr() ? 'الترقية لبائع' : 'Upgrade to Seller'}</button></div>`; return;
             }
             const q = new URLSearchParams(location.search).get('store_payment');
             if (q === 'success') showToast(isAr() ? '✅ تم الدفع — الباقة هتتفعّل خلال لحظات' : '✅ Paid — package activates shortly', 'success');
@@ -317,7 +317,7 @@
             return new Promise(resolve => {
                 const ov = document.createElement('div');
                 ov.className = 'fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center p-4';
-                ov.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full p-6" style="max-width:34rem;max-height:90vh;overflow-y:auto"><h3 class="text-lg font-black text-gray-900 mb-3">${isAr() ? 'متجر جديد' : 'New store'}</h3>
+                ov.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full p-6" data-style="max-width:34rem;max-height:90vh;overflow-y:auto"><h3 class="text-lg font-black text-gray-900 mb-3">${isAr() ? 'متجر جديد' : 'New store'}</h3>
                   <label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'اسم المتجر' : 'Store name'}</label><input id="miv" maxlength="60" class="form-input w-full mb-4" placeholder="${isAr() ? 'مثال: متجر الأناقة' : ''}">
                   <label class="text-xs font-bold text-gray-600 block mb-2">${isAr() ? 'إيه اللي بيقدّمه متجرك؟ (اختار من 1 لـ 3 أنواع)' : 'What does your store sell? (pick 1–3 types)'}</label>
                   ${catPicker([], 'miCats')}
@@ -366,7 +366,7 @@
                   <i class="fa-solid fa-shop text-navy-300 text-6xl mb-4"></i>
                   <h2 class="text-xl font-black text-gray-900 mb-2">${isAr() ? 'ابدأ متجرك الأول' : 'Start your first store'}</h2>
                   <p class="text-sm text-gray-500 mb-5">${isAr() ? 'متجر باسمك وهويتك، يجمع كل منتجاتك، وتقدر تميّزه في أول الصفحة بباقة.' : 'A branded storefront for all your listings.'}</p>
-                  <button onclick="StoresManager.createStore()" class="btn-primary px-8 py-3">${isAr() ? '＋ إنشاء متجر' : '＋ Create store'}</button></div>`;
+                  <button data-on-click="StoresManager.createStore()" class="btn-primary px-8 py-3">${isAr() ? '＋ إنشاء متجر' : '＋ Create store'}</button></div>`;
                 return;
             }
             const tabs = [['overview', 'fa-chart-pie', isAr() ? 'نظرة عامة' : 'Overview'], ['products', 'fa-box', isAr() ? 'المنتجات' : 'Products'],
@@ -374,16 +374,16 @@
             box.innerHTML = `
             <div class="flex flex-wrap items-center gap-3 mb-5">
               <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-3 py-2 shadow-sm">
-                <img src="${esc(st.logo || fallbackLogo(st.name))}" class="w-10 h-10 rounded-xl object-cover" onerror="this.src='${fallbackLogo(st.name)}'">
-                <select onchange="StoresManager.setStore(this.value)" class="font-black text-gray-900 bg-transparent outline-none max-w-[14rem]">
+                <img src="${esc(st.logo || fallbackLogo(st.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(st.name)}'">
+                <select data-on-change="StoresManager.setStore(this.value)" class="font-black text-gray-900 bg-transparent outline-none max-w-[14rem]">
                   ${D.stores.map(x => `<option value="${esc(x.id)}" ${x.id === st.id ? 'selected' : ''}>${esc(x.name || x.id)}${x.status === 'paused' ? (isAr() ? ' (موقوف)' : ' (paused)') : ''}</option>`).join('')}
                 </select>
               </div>
-              <button onclick="StoresManager.createStore()" class="px-4 py-2.5 text-sm font-bold border-2 border-dashed border-navy-300 text-navy-700 rounded-2xl hover:bg-navy-50"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'إضافة متجر تاني' : 'Add another store'} <span class="text-xs text-gray-400">(${D.stores.length}/5)</span></button>
-              <button onclick="StoresManager.openStore('${esc(st.id)}')" class="ms-auto px-4 py-2.5 text-sm font-bold bg-navy-800 text-white rounded-2xl hover:bg-navy-900"><i class="fa-solid fa-eye me-1"></i>${isAr() ? 'عرض متجري' : 'View store'}</button>
+              <button data-on-click="StoresManager.createStore()" class="px-4 py-2.5 text-sm font-bold border-2 border-dashed border-navy-300 text-navy-700 rounded-2xl hover:bg-navy-50"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'إضافة متجر تاني' : 'Add another store'} <span class="text-xs text-gray-400">(${D.stores.length}/5)</span></button>
+              <button data-on-click="StoresManager.openStore('${esc(st.id)}')" class="ms-auto px-4 py-2.5 text-sm font-bold bg-navy-800 text-white rounded-2xl hover:bg-navy-900"><i class="fa-solid fa-eye me-1"></i>${isAr() ? 'عرض متجري' : 'View store'}</button>
             </div>
             <div class="flex gap-2 overflow-x-auto mb-5 pb-1">${tabs.map(t => `
-              <button onclick="StoresManager.setTab('${t[0]}')" class="whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ${D.tab === t[0] ? 'bg-navy-800 text-white' : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'}"><i class="fa-solid ${t[1]}"></i>${t[2]}</button>`).join('')}</div>
+              <button data-on-click="StoresManager.setTab('${t[0]}')" class="whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ${D.tab === t[0] ? 'bg-navy-800 text-white' : 'bg-white border border-gray-100 text-gray-600 hover:bg-gray-50'}"><i class="fa-solid ${t[1]}"></i>${t[2]}</button>`).join('')}</div>
             <div id="storeTabBody"></div>`;
             const body = document.getElementById('storeTabBody');
             ({ overview: this._tabOverview, products: this._tabProducts, settings: this._tabSettings, design: this._tabDesign, promo: this._tabPromo, affiliate: this._tabAffiliate }[D.tab] || this._tabOverview).call(this, body, st);
@@ -421,13 +421,13 @@
             <div class="grid lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h3 class="font-black text-gray-900 mb-3">${isAr() ? 'خطوات لتحسين متجرك' : 'Improve your store'}</h3>
-                <div class="space-y-2">${todo.map(t => `<button onclick="StoresManager.setTab('${t[2]}')" class="w-full flex items-center gap-3 text-start text-sm p-2.5 rounded-xl ${t[0] ? 'text-gray-400' : 'bg-amber-50 text-amber-900 font-bold hover:bg-amber-100'}"><i class="fa-solid ${t[0] ? 'fa-circle-check text-green-500' : 'fa-circle-exclamation text-amber-500'}"></i>${t[1]}</button>`).join('')}</div>
+                <div class="space-y-2">${todo.map(t => `<button data-on-click="StoresManager.setTab('${t[2]}')" class="w-full flex items-center gap-3 text-start text-sm p-2.5 rounded-xl ${t[0] ? 'text-gray-400' : 'bg-amber-50 text-amber-900 font-bold hover:bg-amber-100'}"><i class="fa-solid ${t[0] ? 'fa-circle-check text-green-500' : 'fa-circle-exclamation text-amber-500'}"></i>${t[1]}</button>`).join('')}</div>
               </div>
               <div class="bg-white rounded-2xl border ${f ? 'border-amber-300' : 'border-gray-100'} shadow-sm p-5">
                 <h3 class="font-black text-gray-900 mb-2 flex items-center gap-2"><i class="fa-solid fa-star text-amber-500"></i>${isAr() ? 'الظهور في أول الصفحة' : 'Top placement'}</h3>
                 ${f ? `<p class="text-sm text-amber-900">${isAr() ? 'متجرك مميز حاليًا — باقة' : 'Featured — package'} <b>${esc(st.planName || '')}</b> ${isAr() ? 'لحد' : 'until'} <b>${new Date(toMs(st.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}</b></p>`
                     : `<p class="text-sm text-gray-500 mb-3">${isAr() ? 'متجرك مش ظاهر في الأول. اختار باقة علشان يظهر في أول الصفحة الرئيسية.' : 'Not featured yet.'}</p>`}
-                <button onclick="StoresManager.setTab('promo')" class="mt-3 btn-primary px-5 py-2.5 text-sm">${isAr() ? 'عرض الباقات' : 'See packages'}</button>
+                <button data-on-click="StoresManager.setTab('promo')" class="mt-3 btn-primary px-5 py-2.5 text-sm">${isAr() ? 'عرض الباقات' : 'See packages'}</button>
               </div>
             </div>`;
         },
@@ -436,17 +436,17 @@
             const D = this._D, list = this._storeListings().sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
             body.innerHTML = `
             <div class="flex items-center justify-between mb-4"><h3 class="font-black text-gray-900">${isAr() ? `منتجات المتجر (${list.length})` : `Store listings (${list.length})`}</h3>
-              <div class="flex gap-2"><button onclick="StoresManager.addProduct('product')" class="btn-primary px-4 py-2 text-sm"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'منتج' : 'Product'}</button>
-              <button onclick="StoresManager.addProduct('service')" class="px-4 py-2 text-sm font-bold border-2 border-navy-200 text-navy-700 rounded-xl hover:bg-navy-50">${isAr() ? 'خدمة' : 'Service'}</button></div></div>
+              <div class="flex gap-2"><button data-on-click="StoresManager.addProduct('product')" class="btn-primary px-4 py-2 text-sm"><i class="fa-solid fa-plus me-1"></i>${isAr() ? 'منتج' : 'Product'}</button>
+              <button data-on-click="StoresManager.addProduct('service')" class="px-4 py-2 text-sm font-bold border-2 border-navy-200 text-navy-700 rounded-xl hover:bg-navy-50">${isAr() ? 'خدمة' : 'Service'}</button></div></div>
             ${list.length ? `<div class="space-y-3">${list.map(x => {
                 const on = x.active !== false && x.status !== 'paused';
                 return `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex items-center gap-3 flex-wrap">
-                  <img src="${esc((window.getServiceImage && getServiceImage(x)) || '')}" class="w-16 h-16 rounded-xl object-cover bg-gray-100" onerror="this.style.visibility='hidden'">
+                  <img src="${esc((window.getServiceImage && getServiceImage(x)) || '')}" class="w-16 h-16 rounded-xl object-cover bg-gray-100" data-on-error="this.style.visibility='hidden'">
                   <div class="flex-1 min-w-[10rem]"><p class="font-bold text-gray-900 truncate">${esc(x.title || '—')}</p>
                     <p class="text-xs text-gray-500">${formatCurrency(x.price || 0)} ${x.listingType === 'product' ? `· ${Number(x.shippingFee) > 0 ? (isAr() ? 'شحن ' + x.shippingFee + (x.shippingMode === 'cod' ? ' عند الاستلام' : ' أونلاين') : '') : (isAr() ? 'شحن مجاني' : 'free ship')}` : ''} · <span class="${on ? 'text-green-600' : 'text-gray-400'} font-bold">${on ? (isAr() ? 'نشط' : 'active') : (isAr() ? 'موقوف' : 'paused')}</span></p></div>
-                  ${D.stores.length > 1 ? `<select onchange="StoresManager.moveListing('${x.id}',this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" title="${isAr() ? 'نقل لمتجر' : 'Move to store'}">${D.stores.map(m => `<option value="${esc(m.id)}" ${m.id === st.id ? 'selected' : ''}>${esc(m.name || m.id)}</option>`).join('')}</select>` : ''}
-                  <button onclick="StoresManager.toggleListing('${x.id}',${on})" class="text-xs px-3 py-1.5 rounded-lg font-bold ${on ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'}">${on ? (isAr() ? 'إيقاف' : 'Pause') : (isAr() ? 'تفعيل' : 'Activate')}</button>
-                  <button onclick="navigateTo('add-service',{id:'${x.id}'})" class="w-9 h-9 bg-navy-50 text-navy-700 rounded-lg hover:bg-navy-100"><i class="fa-solid fa-pen text-xs"></i></button>
+                  ${D.stores.length > 1 ? `<select data-on-change="StoresManager.moveListing('${x.id}',this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" title="${isAr() ? 'نقل لمتجر' : 'Move to store'}">${D.stores.map(m => `<option value="${esc(m.id)}" ${m.id === st.id ? 'selected' : ''}>${esc(m.name || m.id)}</option>`).join('')}</select>` : ''}
+                  <button data-on-click="StoresManager.toggleListing('${x.id}',${on})" class="text-xs px-3 py-1.5 rounded-lg font-bold ${on ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'}">${on ? (isAr() ? 'إيقاف' : 'Pause') : (isAr() ? 'تفعيل' : 'Activate')}</button>
+                  <button data-on-click="navigateTo('add-service',{id:'${x.id}'})" class="w-9 h-9 bg-navy-50 text-navy-700 rounded-lg hover:bg-navy-100"><i class="fa-solid fa-pen text-xs"></i></button>
                 </div>`; }).join('')}</div>`
               : `<div class="text-center bg-white rounded-2xl border border-dashed border-gray-200 py-14 text-gray-400">${isAr() ? 'المتجر فاضي — أضف أول منتج' : 'Empty store — add your first listing'}</div>`}`;
         },
@@ -476,8 +476,8 @@
               <div><label class="text-xs font-bold text-gray-600 block mb-1">${isAr() ? 'سياسة الاسترجاع' : 'Return policy'}</label><textarea id="stRetPol" rows="2" maxlength="400" class="form-input w-full" placeholder="${isAr() ? 'مثال: استرجاع خلال 14 يوم لو المنتج غير مطابق' : ''}">${esc(st.returnPolicy || '')}</textarea></div>
               <p class="text-xs text-gray-400"><i class="fa-solid fa-shield-halved me-1"></i>${isAr() ? 'ممنوع كتابة أرقام هاتف أو روابط تواصل — كل التواصل داخل المنصة.' : 'Contact details are not allowed — keep communication on the platform.'}</p>
               <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="stPaused" ${st.status === 'paused' ? 'checked' : ''}> ${isAr() ? 'إيقاف المتجر مؤقتًا (يختفي من الموقع)' : 'Pause store (hidden)'}</label>
-              <div class="flex gap-3 pt-2"><button onclick="StoresManager.saveStore('settings')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ الإعدادات' : 'Save'}</button>
-                <button onclick="StoresManager.deleteStore()" class="px-5 py-3 text-sm font-bold text-rose-600 border-2 border-rose-200 rounded-xl hover:bg-rose-50">${isAr() ? 'حذف المتجر' : 'Delete store'}</button></div>
+              <div class="flex gap-3 pt-2"><button data-on-click="StoresManager.saveStore('settings')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ الإعدادات' : 'Save'}</button>
+                <button data-on-click="StoresManager.deleteStore()" class="px-5 py-3 text-sm font-bold text-rose-600 border-2 border-rose-200 rounded-xl hover:bg-rose-50">${isAr() ? 'حذف المتجر' : 'Delete store'}</button></div>
             </div>`;
         },
 
@@ -489,15 +489,15 @@
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'ثيم المتجر (6 تصميمات)' : 'Store theme (6 designs)'}</p>
                   <div id="stThemePicker" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div></div>
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'لون المتجر' : 'Brand color'}</p>
-                  <div class="flex flex-wrap items-center gap-2">${this.PALETTE.map(c => `<button type="button" onclick="StoresManager.draft('themeColor','${c}')" class="w-9 h-9 rounded-full border-4 ${this._draft.themeColor === c ? 'border-gray-400' : 'border-white'} shadow" style="background:${c}"></button>`).join('')}
-                    <input type="color" id="stColor" value="${this._draft.themeColor}" onchange="StoresManager.draft('themeColor',this.value)" class="w-9 h-9 rounded-full cursor-pointer border-0 p-0" title="${isAr() ? 'لون مخصص' : 'Custom'}"></div></div>
+                  <div class="flex flex-wrap items-center gap-2">${this.PALETTE.map(c => `<button type="button" data-on-click="StoresManager.draft('themeColor','${c}')" class="w-9 h-9 rounded-full border-4 ${this._draft.themeColor === c ? 'border-gray-400' : 'border-white'} shadow" data-style="background:${c}"></button>`).join('')}
+                    <input type="color" id="stColor" value="${this._draft.themeColor}" data-on-change="StoresManager.draft('themeColor',this.value)" class="w-9 h-9 rounded-full cursor-pointer border-0 p-0" title="${isAr() ? 'لون مخصص' : 'Custom'}"></div></div>
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'الشعار' : 'Logo'}</p><input type="file" id="stLogo" accept="image/*" class="text-xs"></div>
-                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'صورة الغلاف' : 'Cover image'}</p><input type="file" id="stBanner" accept="image/*" class="text-xs mb-1"><button type="button" onclick="StoresManager.draft('banner','')" class="text-xs text-rose-600 font-bold">${isAr() ? 'إزالة الغلاف' : 'Remove cover'}</button></div>
+                <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'صورة الغلاف' : 'Cover image'}</p><input type="file" id="stBanner" accept="image/*" class="text-xs mb-1"><button type="button" data-on-click="StoresManager.draft('banner','')" class="text-xs text-rose-600 font-bold">${isAr() ? 'إزالة الغلاف' : 'Remove cover'}</button></div>
                 <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'شكل عرض المنتجات' : 'Product layout'}</p>
-                  <div class="flex gap-2">${[['grid3', isAr() ? '3 أعمدة' : '3 columns'], ['grid4', isAr() ? '4 أعمدة' : '4 columns'], ['list', isAr() ? 'قائمة' : 'List']].map(l => `<label class="flex-1 text-center text-sm font-bold p-2.5 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50"><input type="radio" name="stLayout" value="${l[0]}" class="hidden" ${this._draft.layout === l[0] ? 'checked' : ''} onchange="StoresManager.draft('layout','${l[0]}')">${l[1]}</label>`).join('')}</div></div>
-                <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" oninput="StoresManager._paintPreview()" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
+                  <div class="flex gap-2">${[['grid3', isAr() ? '3 أعمدة' : '3 columns'], ['grid4', isAr() ? '4 أعمدة' : '4 columns'], ['list', isAr() ? 'قائمة' : 'List']].map(l => `<label class="flex-1 text-center text-sm font-bold p-2.5 border-2 border-gray-100 rounded-xl cursor-pointer has-[:checked]:border-navy-600 has-[:checked]:bg-navy-50"><input type="radio" name="stLayout" value="${l[0]}" class="hidden" ${this._draft.layout === l[0] ? 'checked' : ''} data-on-change="StoresManager.draft('layout','${l[0]}')">${l[1]}</label>`).join('')}</div></div>
+                <div><label class="text-sm font-black text-gray-800 mb-2 block">${isAr() ? 'شريط إعلان أعلى المتجر' : 'Announcement bar'}</label><input id="stAnn" data-on-input="StoresManager._paintPreview()" maxlength="120" class="form-input w-full" value="${esc(st.announcement || '')}" placeholder="${isAr() ? 'مثال: خصم 20% على كل المنتجات هذا الأسبوع' : ''}"></div>
                 <div id="stExtras"></div>
-                <button onclick="StoresManager.saveStore('design')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ التصميم' : 'Save design'}</button>
+                <button data-on-click="StoresManager.saveStore('design')" class="btn-primary px-8 py-3">${isAr() ? 'حفظ التصميم' : 'Save design'}</button>
               </div>
               <div><p class="text-sm font-black text-gray-800 mb-2">${isAr() ? 'معاينة مباشرة' : 'Live preview'}</p><div id="stPreview" class="rounded-3xl overflow-hidden border border-gray-100 shadow-sm bg-white"></div></div>
             </div>`;
@@ -523,7 +523,7 @@
             const box = document.getElementById('stThemePicker'); if (!box || !window.StoreThemes) return;
             const c = this._draft.themeColor;
             const card = (t) => `
-              <button type="button" onclick="StoresManager.draft('theme','${t.id}')" class="text-start p-2 rounded-2xl border-2 transition ${this._draft.theme === t.id ? 'border-navy-600 bg-navy-50' : 'border-gray-100 hover:border-gray-300'}">
+              <button type="button" data-on-click="StoresManager.draft('theme','${t.id}')" class="text-start p-2 rounded-2xl border-2 transition ${this._draft.theme === t.id ? 'border-navy-600 bg-navy-50' : 'border-gray-100 hover:border-gray-300'}">
                 ${StoreThemes.thumb(t.id, c)}
                 <p class="font-black text-sm text-gray-900 mt-2">${isAr() ? t.ar : t.en}${this._draft.theme === t.id ? ' ✓' : ''}</p>
                 <p class="text-[11px] text-gray-500 leading-snug">${isAr() ? t.desc.ar : t.desc.en}</p>
@@ -538,7 +538,7 @@
         _paintPreview() {
             const el = document.getElementById('stPreview'); if (!el || !window.StoreThemes) return;
             const st = this._store(), d = this._draft;
-            const cardsMock = [1, 2, 3, 4].map(() => `<div class="service-card card" style="height:92px"></div>`).join('');
+            const cardsMock = [1, 2, 3, 4].map(() => `<div class="service-card card" data-style="height:92px"></div>`).join('');
             StoreThemes.apply(el, d.theme, d.themeColor);
             el.style.overflow = 'hidden';
             el.innerHTML = StoreThemes.header(d.theme, {
@@ -547,7 +547,7 @@
                 desc: st && st.description, announcement: document.getElementById('stAnn')?.value || (st && st.announcement) || '',
                 shippingPolicy: st && st.shippingPolicy, returnPolicy: st && st.returnPolicy,
                 hero: (() => { const x = this._storeListings()[0]; return x ? { id: x.id, title: x.title || '', price: x.price || 0, image: (window.getServiceImage && getServiceImage(x)) || '' } : null; })(),
-            }) + `<div style="display:grid;grid-template-columns:repeat(${d.layout === 'list' ? 1 : d.layout === 'grid4' ? 4 : 3},1fr);gap:10px;margin-top:18px">${cardsMock}</div>`;
+            }) + `<div data-style="display:grid;grid-template-columns:repeat(${d.layout === 'list' ? 1 : d.layout === 'grid4' ? 4 : 3},1fr);gap:10px;margin-top:18px">${cardsMock}</div>`;
         },
 
         async saveStore(section) {
@@ -605,7 +605,7 @@
               ${st.status === 'paused' ? `<p class="text-sm text-rose-600 font-bold mb-3">${isAr() ? 'المتجر موقوف — فعّله الأول من الإعدادات' : 'Store is paused'}</p>` : ''}
               ${plans.length ? `<div class="space-y-3">${plans.map(p => `<div class="border-2 border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3">
                   <div class="min-w-0"><p class="font-black text-gray-900">${esc(p.nameAr || p.name || '')}</p><p class="text-xs text-gray-500">${Number(p.days) || 0} ${isAr() ? 'يوم' : 'days'}${p.description ? ' — ' + esc(p.description) : ''}</p></div>
-                  <button onclick="StoresManager.buyPlan('${esc(p.id)}')" class="btn-primary px-4 py-2 text-sm whitespace-nowrap">${Number(p.price) > 0 ? formatCurrency(p.price) : (isAr() ? 'مجانًا' : 'Free')}</button></div>`).join('')}</div>`
+                  <button data-on-click="StoresManager.buyPlan('${esc(p.id)}')" class="btn-primary px-4 py-2 text-sm whitespace-nowrap">${Number(p.price) > 0 ? formatCurrency(p.price) : (isAr() ? 'مجانًا' : 'Free')}</button></div>`).join('')}</div>`
                 : `<p class="text-sm text-gray-400 text-center py-6">${isAr() ? 'مفيش باقات متاحة حاليًا' : 'No packages available yet'}</p>`}</div>`;
         },
 
@@ -639,24 +639,24 @@
               <input id="spDays" type="number" min="1" class="form-input" placeholder="${isAr() ? 'المدة بالأيام' : 'Days'}">
               <input id="spRank" type="number" class="form-input" placeholder="Rank">
               <input id="spDesc" class="form-input sm:col-span-4" placeholder="${isAr() ? 'وصف قصير (اختياري)' : 'Short description'}">
-              <button onclick="StoresAdmin.addPlan()" class="btn-primary py-2 text-sm">${isAr() ? 'إضافة باقة' : 'Add'}</button>
+              <button data-on-click="StoresAdmin.addPlan()" class="btn-primary py-2 text-sm">${isAr() ? 'إضافة باقة' : 'Add'}</button>
             </div>
             <div class="space-y-2 mb-8">${plans.length ? plans.map(p => `
               <div class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl">
                 <div class="flex-1 min-w-0"><p class="font-bold text-gray-900">${esc(p.nameAr || '')} <span class="text-xs text-gray-400">· rank ${p.rank || 0}</span></p>
                   <p class="text-xs text-gray-500">${formatCurrency(p.price || 0)} · ${p.days || 0} ${isAr() ? 'يوم' : 'days'} ${p.description ? '· ' + esc(p.description) : ''}</p></div>
-                <label class="text-xs flex items-center gap-1"><input type="checkbox" ${p.enabled !== false ? 'checked' : ''} onchange="StoresAdmin.togglePlan('${p.id}',this.checked)"> ${isAr() ? 'مفعّلة' : 'enabled'}</label>
-                <button onclick="StoresAdmin.delPlan('${p.id}')" class="w-8 h-8 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                <label class="text-xs flex items-center gap-1"><input type="checkbox" ${p.enabled !== false ? 'checked' : ''} data-on-change="StoresAdmin.togglePlan('${p.id}',this.checked)"> ${isAr() ? 'مفعّلة' : 'enabled'}</label>
+                <button data-on-click="StoresAdmin.delPlan('${p.id}')" class="w-8 h-8 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white"><i class="fa-solid fa-trash-can text-xs"></i></button>
               </div>`).join('') : `<p class="text-sm text-gray-400 text-center py-4">${isAr() ? 'لسه مفيش باقات' : 'No packages yet'}</p>`}</div>
             <h3 class="font-black text-gray-900 mb-3">${isAr() ? `المتاجر (${stores.length})` : `Stores (${stores.length})`}</h3>
             <div class="space-y-2">${stores.map(s => `
               <div class="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <img src="${esc(s.logo || fallbackLogo(s.name))}" class="w-10 h-10 rounded-xl object-cover" onerror="this.src='${fallbackLogo(s.name)}'">
+                <img src="${esc(s.logo || fallbackLogo(s.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(s.name)}'">
                 <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${esc(s.name || '—')} ${s.status === 'paused' ? '<span class="text-xs text-gray-400">(موقوف)</span>' : ''}</p>
                   <p class="text-xs ${isFeatured(s) ? 'text-amber-700 font-bold' : 'text-gray-400'}">${isFeatured(s) ? `⭐ ${esc(s.planName || '')} → ${new Date(toMs(s.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}` : (isAr() ? 'غير مميز' : 'not featured')} · ${esc(countryName(s.country))}</p></div>
                 <select id="sg_${s.id}" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"><option value="">${isAr() ? 'اختر باقة' : 'Package'}</option>${plans.map(p => `<option value="${p.id}">${esc(p.nameAr || '')} (${p.days}d)</option>`).join('')}</select>
-                <button onclick="StoresAdmin.grant('${s.id}')" class="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg font-bold">${isAr() ? 'منح' : 'Grant'}</button>
-                ${isFeatured(s) ? `<button onclick="StoresAdmin.stop('${s.id}')" class="text-xs px-3 py-1.5 bg-rose-100 text-rose-700 rounded-lg font-bold">${isAr() ? 'إيقاف التمييز' : 'Stop'}</button>` : ''}
+                <button data-on-click="StoresAdmin.grant('${s.id}')" class="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg font-bold">${isAr() ? 'منح' : 'Grant'}</button>
+                ${isFeatured(s) ? `<button data-on-click="StoresAdmin.stop('${s.id}')" class="text-xs px-3 py-1.5 bg-rose-100 text-rose-700 rounded-lg font-bold">${isAr() ? 'إيقاف التمييز' : 'Stop'}</button>` : ''}
               </div>`).join('') || `<p class="text-sm text-gray-400 text-center py-4">${isAr() ? 'مفيش متاجر' : 'No stores'}</p>`}</div>`;
             this._container = container;
         },

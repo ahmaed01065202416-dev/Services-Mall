@@ -22,7 +22,7 @@ export function buildStorePage(html, { id, store, items, site }) {
     return buildShell(html, {
         title: `${name} | ${BRAND}`, desc, url, image, ld: [ld], seoHtml,
         // open the store in the app (the SPA routes on #store-<id>)
-        boot: `try{if(!location.hash||location.hash==='#')history.replaceState(null,'',location.pathname+'#store-${id}')}catch(e){}`,
+        boot: { k: 'store', v: String(id) },
     });
 }
 

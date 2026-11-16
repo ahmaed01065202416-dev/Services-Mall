@@ -53,7 +53,7 @@
         cur.setAttribute('x1', x(k)); cur.setAttribute('x2', x(k)); cur.setAttribute('opacity', '.35');
         dots.forEach(function (d, si) { d.setAttribute('cx', x(k)); d.setAttribute('cy', y(series[si].vals[k])); d.setAttribute('opacity', '1'); });
         tip.hidden = false;
-        tip.innerHTML = '<b>' + esc(labels[k]) + '</b>' + series.map(function (s) { return '<span><i style="background:' + s.color + '"></i>' + esc(s.name) + ': <b>' + fmt(s.vals[k]) + (s.unit ? ' ' + s.unit : '') + '</b></span>'; }).join('');
+        tip.innerHTML = '<b>' + esc(labels[k]) + '</b>' + series.map(function (s) { return '<span><i data-style="background:' + s.color + '"></i>' + esc(s.name) + ': <b>' + fmt(s.vals[k]) + (s.unit ? ' ' + s.unit : '') + '</b></span>'; }).join('');
         var left = x(k) / W * r.width; tip.style.left = Math.max(70, Math.min(r.width - 70, left)) + 'px';
       }
       function leave() { tip.hidden = true; cur.setAttribute('opacity', '0'); dots.forEach(function (d) { d.setAttribute('opacity', '0'); }); }
@@ -72,13 +72,13 @@
       var len = Cc * i.value / tot, s = '<circle cx="70" cy="70" r="' + R + '" fill="none" stroke="' + i.color + '" stroke-width="18" stroke-dasharray="' + len + ' ' + (Cc - len) + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 70 70)"/>'; off += len; return s;
     }).join('') : '<circle cx="70" cy="70" r="' + R + '" fill="none" stroke="currentColor" opacity=".1" stroke-width="18"/>';
     return '<div class="mc-donut"><svg viewBox="0 0 140 140" role="img" aria-label="' + esc(centerLabel) + '">' + segs + '<text x="70" y="68" text-anchor="middle" font-size="22" font-weight="800" fill="currentColor">' + fmt(tot) + '</text><text x="70" y="86" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">' + esc(centerLabel) + '</text></svg>' +
-      '<ul>' + items.map(function (i) { return '<li><i style="background:' + i.color + '"></i><span>' + esc(i.label) + '</span><b>' + fmt(i.value) + '</b></li>'; }).join('') + '</ul></div>';
+      '<ul>' + items.map(function (i) { return '<li><i data-style="background:' + i.color + '"></i><span>' + esc(i.label) + '</span><b>' + fmt(i.value) + '</b></li>'; }).join('') + '</ul></div>';
   }
 
   /** Horizontal bars. items: [{label,value,color}] */
   function bars(items) {
     var max = Math.max.apply(null, items.map(function (i) { return i.value; }).concat([1]));
-    return '<div class="mc-bars">' + items.map(function (i) { return '<div><span>' + esc(i.label) + '</span><em><i style="width:' + (i.value / max * 100) + '%;background:' + i.color + '"></i></em><b>' + fmt(i.value) + '</b></div>'; }).join('') + '</div>';
+    return '<div class="mc-bars">' + items.map(function (i) { return '<div><span>' + esc(i.label) + '</span><em><i data-style="width:' + (i.value / max * 100) + '%;background:' + i.color + '"></i></em><b>' + fmt(i.value) + '</b></div>'; }).join('') + '</div>';
   }
 
   function panel(id, title, tabsHtml, inner) {

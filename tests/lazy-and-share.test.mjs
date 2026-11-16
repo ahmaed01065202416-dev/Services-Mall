@@ -4,9 +4,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read = (p) => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');
+// Strict CSP: inline <script> blocks live in /js/p/<hash>.js — expand them back in place so ordering assertions still see one document.
+const readPage = (p) => read(p).replace(/<script src="\/js\/p\/([0-9a-f]+)\.js"><\/script>/g, (_m, h) => '<script>' + read('js/p/' + h + '.js') + '</script>');
 
 test('ads/coupons/insights are NOT loaded eagerly, and both dashboards await the loader before any tab', () => {
-    const html = read('index.html');
+    const html = readPage('index.html');
     for (const f of ['ads-system', 'coupons', 'insights']) {
         assert.ok(!new RegExp(`<script[^>]*src="js/${f}\\.js`).test(html), f + ' still loaded eagerly');
         assert.ok(html.includes(`'js/${f}.js?v=`), f + ' missing from the lazy list');
@@ -32,6 +34,6 @@ test('share row + empty hint wiring', () => {
 });
 
 test('signed-in users get the dashboard modules prefetched while idle (first tab opens instantly)', () => {
-    const html = read('index.html');
+    const html = readPage('index.html');
     assert.ok(/AppState\.currentUser[\s\S]{0,200}requestIdleCallback\(function \(\) \{ window\.__ensureDashModules\(\)/.test(html));
 });
