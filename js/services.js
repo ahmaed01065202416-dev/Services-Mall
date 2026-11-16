@@ -567,9 +567,9 @@
             const many = list.length > 1;
             return `
             <div class="relative bg-gray-900 select-none" id="svcGallery">
-              <div class="absolute inset-0 overflow-hidden"><img id="svcGalBg" src="${list[0]}" class="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt=""></div>
+              <div class="absolute inset-0 overflow-hidden"><img loading="lazy" decoding="async" id="svcGalBg" src="${list[0]}" class="w-full h-full object-cover blur-2xl opacity-40 scale-110" alt=""></div>
               <div class="relative h-80 sm:h-96 flex items-center justify-center cursor-zoom-in" data-on-click="ServicesManager.openLightbox()">
-                <img id="serviceDetailMainImg" src="${list[0]}" class="max-h-full max-w-full object-contain" alt=""
+                <img loading="lazy" decoding="async" id="serviceDetailMainImg" src="${list[0]}" class="max-h-full max-w-full object-contain" alt=""
                   data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800'">
               </div>
               <button data-on-click="closeModal('serviceModal')" class="absolute top-4 end-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-black/70 transition z-10"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -580,7 +580,7 @@
               <span id="svcGalCount" class="absolute bottom-3 end-3 bg-black/60 text-white text-xs font-bold px-2.5 py-1 rounded-full z-10">1 / ${list.length}</span>` : ''}
             </div>
             ${many ? `<div class="flex gap-2 p-3 bg-gray-50 overflow-x-auto" id="svcGalThumbs">
-              ${list.map((u, i) => `<img src="${u}" data-on-click="ServicesManager.galleryGo(${i})" data-gi="${i}" class="w-16 h-16 object-cover rounded-lg border-2 ${i === 0 ? 'border-navy-500' : 'border-transparent'} cursor-pointer flex-shrink-0 hover:border-navy-400">`).join('')}
+              ${list.map((u, i) => `<img loading="lazy" decoding="async" src="${u}" data-on-click="ServicesManager.galleryGo(${i})" data-gi="${i}" class="w-16 h-16 object-cover rounded-lg border-2 ${i === 0 ? 'border-navy-500' : 'border-transparent'} cursor-pointer flex-shrink-0 hover:border-navy-400">`).join('')}
             </div>` : ''}`;
         },
         galleryGo(i) {
@@ -604,7 +604,7 @@
             ov.id = 'svcLightbox';
             ov.className = 'fixed inset-0 bg-black/95 z-[100000] flex items-center justify-center';
             ov.innerHTML = `
-              <img id="svcLightboxImg" src="${g.list[g.i]}" class="max-w-[96vw] max-h-[92vh] object-contain">
+              <img loading="lazy" decoding="async" id="svcLightboxImg" src="${g.list[g.i]}" class="max-w-[96vw] max-h-[92vh] object-contain">
               <button class="absolute top-4 end-4 w-11 h-11 bg-white/15 text-white rounded-full text-xl hover:bg-white/30" id="svcLbClose"><i class="fa-solid fa-xmark"></i></button>
               ${g.list.length > 1 ? `<button class="absolute start-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/15 text-white rounded-full hover:bg-white/30" id="svcLbPrev"><i class="fa-solid fa-chevron-left"></i></button>
               <button class="absolute end-3 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/15 text-white rounded-full hover:bg-white/30" id="svcLbNext"><i class="fa-solid fa-chevron-right"></i></button>` : ''}`;
@@ -652,7 +652,7 @@
 
                         <!-- Seller -->
                         <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-4">
-                          <img src="${window.safeUrl(s.sellerAvatar) || `https://ui-avatars.com/api/?name=${window.encName(s.sellerName||'U')}&background=0284c7&color=fff`}"
+                          <img loading="lazy" decoding="async" src="${window.safeUrl(s.sellerAvatar) || `https://ui-avatars.com/api/?name=${window.encName(s.sellerName||'U')}&background=0284c7&color=fff`}"
                             class="w-12 h-12 rounded-xl object-cover">
                           <div>
                             <p class="font-black text-gray-900">${escapeHtml(s.sellerName || '—')}</p>
@@ -755,7 +755,7 @@ ${s.listingType === 'product' ? `<p class="text-navy-100 text-xs mt-1"><i class=
                             return `
                             <div class="bg-gray-50 rounded-xl p-4">
                               <div class="flex items-center gap-3 mb-2">
-                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.reviewerName||'U')}&background=0284c7&color=fff"
+                                <img loading="lazy" decoding="async" src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.reviewerName||'U')}&background=0284c7&color=fff"
                                   class="w-8 h-8 rounded-full">
                                 <div>
                                   <p class="font-bold text-gray-900 text-sm">${escapeHtml(r.reviewerName || '—')}</p>
@@ -1244,7 +1244,7 @@ document.getElementById('svcDigitalNotice')?.classList.toggle('hidden', isProduc
                 const unused = i >= max;                         // a service only uses its first photo
                 return `
                 <div class="relative ${unused ? 'opacity-40' : ''}">
-                  <img src="${escapeHtml(src)}" class="w-full h-20 object-cover rounded-lg border-2 ${i === 0 ? 'border-turquoise-500' : 'border-gray-200'}">
+                  <img loading="lazy" decoding="async" src="${escapeHtml(src)}" class="w-full h-20 object-cover rounded-lg border-2 ${i === 0 ? 'border-turquoise-500' : 'border-gray-200'}">
                   ${i === 0 ? `<span class="absolute bottom-1 start-1 text-[10px] font-black bg-turquoise-600 text-white px-1.5 py-0.5 rounded">${isAr ? 'الغلاف' : 'Cover'}</span>`
                             : `<button type="button" data-on-click="ServicesManager.makeCoverPhoto(${i})" title="${isAr ? 'اجعلها الغلاف' : 'Make cover'}" class="absolute bottom-1 start-1 text-[10px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">★</button>`}
                   <button type="button" data-on-click="ServicesManager.removePhoto(${i})" class="absolute -top-1.5 -end-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">×</button>

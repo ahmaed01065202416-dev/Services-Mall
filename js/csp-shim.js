@@ -325,6 +325,7 @@
     var code = el.getAttribute('data-on-' + type);
     if (!code) return;
     if (el.__cspOff && el.__cspOff[type]) return;
+    if (type === 'load') { if (el.__cspLoaded) return; el.__cspLoaded = true; }
     if (type === 'error' && errCount) { var c = (errCount.get(el) || 0) + 1; errCount.set(el, c); if (c > 3) return; } // same-element retry loop guard
     try {
       if (runCode(code, el, event) === false) event.preventDefault();
@@ -349,10 +350,22 @@
     }, true);
   });
   TARGET_ONLY.forEach(function (type) {
-    window.addEventListener(type, function (event) {
+    // NOTE: per the DOM spec a "load" event does NOT propagate to Window (Document's parent is null for it), so a capture
+    // listener on window never sees <link>/<img> load events. Listen on document for "load"; window is fine for the others.
+    (type === 'load' ? document : window).addEventListener(type, function (event) {
       var el = event.target;
       if (el && el.nodeType === 1 && el.hasAttribute('data-on-' + type)) fire(el, type, event);
     }, true);
+  });
+  // Safety net: a stylesheet/preload link whose load already happened (or never fires) must still be activated.
+  window.addEventListener('load', function () {
+    var links = document.querySelectorAll('link[data-on-load]');
+    for (var i = 0; i < links.length; i++) {
+      var l = links[i];
+      if (l.__cspLoaded) continue;
+      var ready = l.sheet || (l.rel === 'stylesheet' && l.media === 'print');   // sheet fetched, or async-media swap still pending
+      if (ready || l.rel === 'preload') fire(l, 'load', new Event('load'));
+    }
   });
 
   // ───────────────────────── styles ─────────────────────────
@@ -372,17 +385,27 @@
   }
 
 
+  var mo = null;
   // Apply data-style synchronously after HTML is assigned (otherwise code that measures layout right after innerHTML sees unstyled boxes).
   try {
     var ih = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
     if (ih && ih.set) Object.defineProperty(Element.prototype, 'innerHTML', {
       configurable: true, enumerable: ih.enumerable, get: ih.get,
-      set: function (v) { ih.set.call(this, v); applyTree(this); }
+      set: function (v) {
+        if (mo && typeof v === 'string' && v.indexOf('style') > -1) {   // only HTML that can carry styles is scanned
+          processRecords(mo.takeRecords());                          // flush earlier mutations first,
+          ih.set.call(this, v); applyTree(this);
+          mo.takeRecords();                                          // …and drop this one's records: already handled (no 2nd scan)
+        } else ih.set.call(this, v);
+      }
     });
     var iah = Element.prototype.insertAdjacentHTML;
     Element.prototype.insertAdjacentHTML = function (pos, html) {
+      if (!(mo && typeof html === 'string' && html.indexOf('style') > -1)) return iah.call(this, pos, html);
+      processRecords(mo.takeRecords());
       iah.call(this, pos, html);
       applyTree(pos === 'beforebegin' || pos === 'afterend' ? (this.parentElement || this) : this);
+      mo.takeRecords();
     };
   } catch (_) { /* ignore */ }
 
@@ -433,15 +456,15 @@
   } catch (_) { /* ignore */ }
 
   // ───────────────────────── observers ─────────────────────────
+  function processRecords(recs) {
+    for (var i = 0; i < recs.length; i++) {
+      var add = recs[i].addedNodes;
+      for (var j = 0; j < add.length; j++) { applyTree(add[j]); }
+    }
+  }
   function start() {
     if (typeof MutationObserver !== 'function') return;
-    var mo = new MutationObserver(function (recs) {
-      for (var i = 0; i < recs.length; i++) {
-        var add = recs[i].addedNodes;
-        for (var j = 0; j < add.length; j++) { applyTree(add[j]); }
-      }
-      boot();
-    });
+    mo = new MutationObserver(function (recs) { processRecords(recs); boot(); });
     mo.observe(document.documentElement, { childList: true, subtree: true });
     applyTree(document.documentElement);
     boot();

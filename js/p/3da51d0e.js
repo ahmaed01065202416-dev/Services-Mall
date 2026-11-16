@@ -1,7 +1,7 @@
-// Dashboard-only modules (ads / coupons / insights ≈ 38 KB): loaded the first time a dashboard tab opens, not for every
+// Dashboard-only modules (Chart.js 200 KB / ads / coupons / insights ≈ 38 KB): loaded the first time a dashboard tab opens, not for every
 // visitor. Both dashboards await __ensureDashModules() before rendering any tab. A failed load is retried next time.
 window.__ensureDashModules = (function () {
-  var files = ['js/ads-system.js?v=2026-10-31-sec1', 'js/coupons.js?v=2026-11-02-cp1', 'js/insights.js?v=2026-11-03-an1'];
+  var files = ['vendor/js/chart.umd.js', 'js/ads-system.js?v=2026-10-31-sec1', 'js/coupons.js?v=2026-11-02-cp1', 'js/insights.js?v=2026-11-03-an1'];
   var pending = null;
   function one(src) {
     return new Promise(function (resolve) {

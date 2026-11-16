@@ -168,7 +168,7 @@
                     const editData = JSON.stringify({id:s.id,title:s.title||'',description:s.description||'',category:s.category||'',price:s.price||0,deliveryDays:s.deliveryDays||3,revisions:s.revisions||2,image:s.image||''}).replace(/"/g,'&quot;');
                     return `
                     <div class="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0" data-service-id="${s.id}">
-                      <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
+                      <img loading="lazy" decoding="async" src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                       <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(s.title||'—')}</p><p class="text-sm text-gray-500">${formatCurrency(s.price||0)} · ${s.orderCount||0} ${isAr?'طلب':'orders'}</p></div>
                       <div class="flex gap-2">
                         <button data-on-click="navigateTo('add-service', ${editData})" class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-navy-100 hover:text-navy-600 transition"><i class="fa-solid fa-pen text-xs"></i></button>
@@ -578,15 +578,15 @@
                           <div class="bg-white border border-gray-200 rounded-2xl p-4 mb-4 text-sm space-y-2">
                             <p><b>${isAr?'السبب:':'Reason:'}</b> ${escapeHtml(window.NonReceipt ? NonReceipt.reasonLabel(dp.reasonCode) : dp.reasonCode)} — <span class="font-bold ${dp.faultHint==='buyer'?'text-amber-700':'text-blue-700'}">${isAr?'الخطأ المحتمل: ':'likely fault: '}${dp.faultHint==='buyer'?(isAr?'المشتري':'buyer'):dp.faultHint==='seller'?(isAr?'البائع':'seller'):(isAr?'غير واضح':'unclear')}</span></p>
                             <p class="text-xs text-gray-500">${isAr?'مصاريف الشحن لو الخطأ على المشتري:':'Shipping if buyer at fault:'} ${formatCurrency(dp.shippingDeduction||0)}${dp.shipmentLate?` · ${isAr?'شحنة متأخرة':'late shipment'}`:''}${o?.trackingNumber?` · ${escapeHtml(o.carrier||'')} ${escapeHtml(o.trackingNumber)}`:` · <span class="text-red-600 font-bold">${isAr?'بدون رقم تتبع':'no tracking'}</span>`}</p>
-                            ${(dp.evidence||[]).length?`<div><p class="text-xs font-bold text-gray-500 mb-1">${isAr?'إثبات المشتري':'Buyer proof'}</p><div class="flex gap-2 flex-wrap">${dp.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div></div>`:''}
-                            ${dp.sellerResponse?`<div class="bg-green-50 border border-green-200 rounded-xl p-3"><p class="text-xs font-bold text-green-700 mb-1">${isAr?'رد البائع':'Seller reply'}${dp.sellerResponse.late?(isAr?' (متأخر)':' (late)'):''}</p><p>${escapeHtml(dp.sellerResponse.text||'')}</p>${(dp.sellerResponse.evidence||[]).length?`<div class="flex gap-2 flex-wrap mt-2">${dp.sellerResponse.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div>`:''}</div>`:`<p class="text-xs text-red-600 font-bold">${isAr?'البائع لم يرد حتى الآن':'The seller has not replied yet'}</p>`}
+                            ${(dp.evidence||[]).length?`<div><p class="text-xs font-bold text-gray-500 mb-1">${isAr?'إثبات المشتري':'Buyer proof'}</p><div class="flex gap-2 flex-wrap">${dp.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div></div>`:''}
+                            ${dp.sellerResponse?`<div class="bg-green-50 border border-green-200 rounded-xl p-3"><p class="text-xs font-bold text-green-700 mb-1">${isAr?'رد البائع':'Seller reply'}${dp.sellerResponse.late?(isAr?' (متأخر)':' (late)'):''}</p><p>${escapeHtml(dp.sellerResponse.text||'')}</p>${(dp.sellerResponse.evidence||[]).length?`<div class="flex gap-2 flex-wrap mt-2">${dp.sellerResponse.evidence.map(u=>`<a href="${window.safeUrl(u) || '#'}" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="${window.safeUrl(u)}" class="w-24 h-24 object-cover rounded-xl border"></a>`).join('')}</div>`:''}</div>`:`<p class="text-xs text-red-600 font-bold">${isAr?'البائع لم يرد حتى الآن':'The seller has not replied yet'}</p>`}
                           </div>` : ''}
 
                           ${rr ? `
                           <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
                             <p class="text-xs font-bold text-amber-600 mb-1">${isAr?'طلب استرجاع منتج مرتبط':'Linked product return request'}</p>
                             <p class="text-sm text-gray-800">${escapeHtml(window.ReturnsManager ? window.ReturnsManager.reasonLabel(rr.reasonCode, isAr) : rr.reasonCode)}: ${escapeHtml(rr.description||'')}</p>
-                            ${rr.photo ? `<img src="${window.safeUrl(rr.photo)}" class="mt-2 rounded-xl max-h-40 border border-amber-200">` : ''}
+                            ${rr.photo ? `<img loading="lazy" decoding="async" src="${window.safeUrl(rr.photo)}" class="mt-2 rounded-xl max-h-40 border border-amber-200">` : ''}
                           </div>` : ''}
 
                           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -631,7 +631,7 @@
                 </div>
                 <div class="space-y-2">${users.map(u=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" id="urow_${u.id}">
-                    <img src="${window.safeUrl(u.avatar)||`https://ui-avatars.com/api/?name=${window.encName(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
+                    <img loading="lazy" decoding="async" src="${window.safeUrl(u.avatar)||`https://ui-avatars.com/api/?name=${window.encName(u.name||'U')}&background=0284c7&color=fff`}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${escapeHtml(u.name||'—')}</p><p class="text-xs text-gray-400">${escapeHtml(u.email||'')}</p>
                     </div>
                     <select data-on-change="window._adminChangeRole('${u.id}',this.value,this)" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white font-bold ${u.role==='admin'?'text-purple-700':u.role==='seller'?'text-green-700':'text-blue-700'}">
@@ -698,7 +698,7 @@
                 </div>
                 <div class="space-y-2">${services.map(s=>`
                   <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl" data-service-id="${s.id}">
-                    <img src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
+                    <img loading="lazy" decoding="async" src="${getServiceImage(s) || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80'}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
                     <div class="flex-1 min-w-0">
                       <p class="font-bold text-gray-900 text-sm truncate">${escapeHtml(s.title||'—')}</p>
                       <p class="text-xs text-gray-400">${escapeHtml(s.sellerName||'')} · ${formatCurrency(s.price||0)}</p>

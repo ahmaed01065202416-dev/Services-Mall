@@ -24,12 +24,12 @@
     // ── shared bits ──────────────────────────────────────────────────────────
     const stars = (d) => d.rev ? `<span data-style="color:#fbbf24">${'★'.repeat(Math.round(d.avg))}</span><span data-style="opacity:.3">${'★'.repeat(5 - Math.round(d.avg))}</span> ${d.avg.toFixed(1)} (${d.rev})` : `<span data-style="opacity:.7">${isAr() ? 'جديد — بدون تقييمات' : 'New — no reviews'}</span>`;
     const featBadge = (d, s) => d.featured ? `<span data-style="${s || 'background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff'};font-size:11px;font-weight:900;padding:3px 11px;border-radius:999px;white-space:nowrap">★ ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : '';
-    const logoImg = (d, size, st) => `<img src="${esc(d.logo || fb(d.name))}" data-on-error="this.src='${fb(d.name)}'" alt="" data-style="width:${size}px;height:${size}px;object-fit:cover;background:#fff;flex-shrink:0;${st || ''}">`;
+    const logoImg = (d, size, st) => `<img loading="lazy" decoding="async" src="${esc(d.logo || fb(d.name))}" data-on-error="this.src='${fb(d.name)}'" alt="" data-style="width:${size}px;height:${size}px;object-fit:cover;background:#fff;flex-shrink:0;${st || ''}">`;
     const metaRow = (d) => `<span>📍 ${esc(d.loc || '—')}</span><span>📦 ${d.count} ${isAr() ? 'منتج/خدمة' : 'listings'}</span><span>${stars(d)}</span>`;
     // Cover / hero picture: the store cover, else the top product image, else a decorative block.
     const heroSrc = (d) => d.banner || (d.hero && d.hero.image) || '';
     const heroPic = (d, st, fallbackBg) => heroSrc(d)
-        ? `<img src="${esc(heroSrc(d))}" alt="" data-style="width:100%;height:100%;object-fit:cover;display:block;${st || ''}">`
+        ? `<img loading="lazy" decoding="async" src="${esc(heroSrc(d))}" alt="" data-style="width:100%;height:100%;object-fit:cover;display:block;${st || ''}">`
         : `<div data-style="width:100%;height:100%;min-height:150px;display:flex;align-items:center;justify-content:center;background:${fallbackBg || d.color + '33'}">${logoImg(d, 96, 'border-radius:24px')}</div>`;
     const cta = (label, st) => `<button type="button" data-on-click="${toGrid}" data-style="cursor:pointer;${st}">${label}</button>`;
     const shopLbl = () => isAr() ? 'تسوّق المنتجات' : 'Shop now';

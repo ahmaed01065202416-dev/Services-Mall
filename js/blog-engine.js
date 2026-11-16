@@ -256,7 +256,7 @@
       <div>
         <!-- Hero image -->
         <div data-style="position:relative;height:420px;overflow:hidden">
-          <img src="${escapeHtml(post.image || '')}" alt="${escapeHtml(post.title||'')}"
+          <img loading="lazy" decoding="async" src="${escapeHtml(post.image || '')}" alt="${escapeHtml(post.title||'')}"
             data-style="width:100%;height:100%;object-fit:cover"
             data-on-error="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80'" />
           <div data-style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 60%,transparent 100%)"></div>

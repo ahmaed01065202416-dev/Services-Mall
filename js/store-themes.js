@@ -25,7 +25,7 @@
         ? `<span data-style="color:#fbbf24">${'★'.repeat(Math.round(d.avg))}</span><span data-style="opacity:.3">${'★'.repeat(5 - Math.round(d.avg))}</span> ${d.avg.toFixed(1)} (${d.rev})`
         : `<span data-style="opacity:.7">${isAr() ? 'جديد — بدون تقييمات' : 'New — no reviews yet'}</span>`;
     const feat = (d) => d.featured ? `<span data-style="background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;font-size:11px;font-weight:900;padding:4px 12px;border-radius:999px;white-space:nowrap">★ ${isAr() ? 'متجر مميز' : 'Featured'}</span>` : '';
-    const logo = (d, size, extra) => `<img src="${esc(d.logo || fallback(d.name))}" data-on-error="this.src='${fallback(d.name)}'" data-style="width:${size}px;height:${size}px;object-fit:cover;background:#fff;${extra || ''}">`;
+    const logo = (d, size, extra) => `<img loading="lazy" decoding="async" src="${esc(d.logo || fallback(d.name))}" data-on-error="this.src='${fallback(d.name)}'" data-style="width:${size}px;height:${size}px;object-fit:cover;background:#fff;${extra || ''}">`;
     const ann = (d, style) => d.announcement ? `<div data-style="${style}">📣 ${esc(d.announcement)}</div>` : '';
     const policies = (d, box, ink, sub) => (d.shippingPolicy || d.returnPolicy) ? `<div data-style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px">
         ${d.shippingPolicy ? `<div data-style="${box}"><p data-style="font-size:12px;font-weight:900;color:${sub};margin-bottom:4px">🚚 ${isAr() ? 'سياسة الشحن' : 'Shipping policy'}</p><p data-style="font-size:14px;color:${ink}">${esc(d.shippingPolicy)}</p></div>` : ''}

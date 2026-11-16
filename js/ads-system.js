@@ -529,7 +529,7 @@
         if (a.mediaType === 'video') {
             return '<div class="mt-3 text-xs bg-white border border-gray-200 rounded-xl p-3"><i class="fa-solid fa-film text-purple-500 me-1"></i>' + (ar() ? 'فيديو: ' : 'Video: ') + '<a href="' + esc(a.videoUrl) + '" target="_blank" rel="noopener" class="text-blue-600 underline break-all" dir="ltr">' + esc(a.videoUrl) + '</a>' + (a.linkUrl ? '<br>' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span>' : '') + '</div>';
         }
-        return src ? '<div class="mt-3"><img src="' + esc(src) + '" data-style="max-height:160px;border-radius:12px;border:1px solid #e5e7eb">' + (a.linkUrl ? '<p class="text-xs text-gray-500 mt-1">' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span></p>' : '') + '</div>' : '';
+        return src ? '<div class="mt-3"><img loading="lazy" decoding="async" src="' + esc(src) + '" data-style="max-height:160px;border-radius:12px;border:1px solid #e5e7eb">' + (a.linkUrl ? '<p class="text-xs text-gray-500 mt-1">' + (ar() ? 'رابط الضغط: ' : 'Link: ') + '<span dir="ltr">' + esc(a.linkUrl) + '</span></p>' : '') + '</div>' : '';
     }
 
     window.AdsSystem = { openPromote: openPromote, openComposer: openComposerModal, renderSellerTab: renderSellerTab, renderAdminTab: renderAdminTab };

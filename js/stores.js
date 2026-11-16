@@ -374,7 +374,7 @@
             box.innerHTML = `
             <div class="flex flex-wrap items-center gap-3 mb-5">
               <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-3 py-2 shadow-sm">
-                <img src="${esc(st.logo || fallbackLogo(st.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(st.name)}'">
+                <img loading="lazy" decoding="async" src="${esc(st.logo || fallbackLogo(st.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(st.name)}'">
                 <select data-on-change="StoresManager.setStore(this.value)" class="font-black text-gray-900 bg-transparent outline-none max-w-[14rem]">
                   ${D.stores.map(x => `<option value="${esc(x.id)}" ${x.id === st.id ? 'selected' : ''}>${esc(x.name || x.id)}${x.status === 'paused' ? (isAr() ? ' (موقوف)' : ' (paused)') : ''}</option>`).join('')}
                 </select>
@@ -441,7 +441,7 @@
             ${list.length ? `<div class="space-y-3">${list.map(x => {
                 const on = x.active !== false && x.status !== 'paused';
                 return `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex items-center gap-3 flex-wrap">
-                  <img src="${esc((window.getServiceImage && getServiceImage(x)) || '')}" class="w-16 h-16 rounded-xl object-cover bg-gray-100" data-on-error="this.style.visibility='hidden'">
+                  <img loading="lazy" decoding="async" src="${esc((window.getServiceImage && getServiceImage(x)) || '')}" class="w-16 h-16 rounded-xl object-cover bg-gray-100" data-on-error="this.style.visibility='hidden'">
                   <div class="flex-1 min-w-[10rem]"><p class="font-bold text-gray-900 truncate">${esc(x.title || '—')}</p>
                     <p class="text-xs text-gray-500">${formatCurrency(x.price || 0)} ${x.listingType === 'product' ? `· ${Number(x.shippingFee) > 0 ? (isAr() ? 'شحن ' + x.shippingFee + (x.shippingMode === 'cod' ? ' عند الاستلام' : ' أونلاين') : '') : (isAr() ? 'شحن مجاني' : 'free ship')}` : ''} · <span class="${on ? 'text-green-600' : 'text-gray-400'} font-bold">${on ? (isAr() ? 'نشط' : 'active') : (isAr() ? 'موقوف' : 'paused')}</span></p></div>
                   ${D.stores.length > 1 ? `<select data-on-change="StoresManager.moveListing('${x.id}',this.value)" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white" title="${isAr() ? 'نقل لمتجر' : 'Move to store'}">${D.stores.map(m => `<option value="${esc(m.id)}" ${m.id === st.id ? 'selected' : ''}>${esc(m.name || m.id)}</option>`).join('')}</select>` : ''}
@@ -651,7 +651,7 @@
             <h3 class="font-black text-gray-900 mb-3">${isAr() ? `المتاجر (${stores.length})` : `Stores (${stores.length})`}</h3>
             <div class="space-y-2">${stores.map(s => `
               <div class="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <img src="${esc(s.logo || fallbackLogo(s.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(s.name)}'">
+                <img loading="lazy" decoding="async" src="${esc(s.logo || fallbackLogo(s.name))}" class="w-10 h-10 rounded-xl object-cover" data-on-error="this.src='${fallbackLogo(s.name)}'">
                 <div class="flex-1 min-w-0"><p class="font-bold text-gray-900 truncate">${esc(s.name || '—')} ${s.status === 'paused' ? '<span class="text-xs text-gray-400">(موقوف)</span>' : ''}</p>
                   <p class="text-xs ${isFeatured(s) ? 'text-amber-700 font-bold' : 'text-gray-400'}">${isFeatured(s) ? `⭐ ${esc(s.planName || '')} → ${new Date(toMs(s.featuredUntil)).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB')}` : (isAr() ? 'غير مميز' : 'not featured')} · ${esc(countryName(s.country))}</p></div>
                 <select id="sg_${s.id}" class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"><option value="">${isAr() ? 'اختر باقة' : 'Package'}</option>${plans.map(p => `<option value="${p.id}">${esc(p.nameAr || '')} (${p.days}d)</option>`).join('')}</select>

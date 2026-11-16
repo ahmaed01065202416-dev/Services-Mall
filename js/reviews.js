@@ -102,7 +102,7 @@
                   <div class="space-y-3">${list.slice(0, 10).map(r => `
                     <div class="bg-gray-50 rounded-xl p-4">
                       <div class="flex items-center gap-3 mb-1.5">
-                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.reviewerName || 'U')}&background=0284c7&color=fff" class="w-8 h-8 rounded-full">
+                        <img loading="lazy" decoding="async" src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.reviewerName || 'U')}&background=0284c7&color=fff" class="w-8 h-8 rounded-full">
                         <div><p class="font-bold text-gray-900 text-sm">${esc(r.reviewerName || '—')}</p><div class="flex gap-0.5">${starsHtml(r.rating, 'text-xs')}</div></div>
                         <span class="ms-auto text-xs text-gray-400">${window.formatTimeAgo ? formatTimeAgo(r.createdAt) : ''}</span>
                       </div>
