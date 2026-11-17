@@ -16,6 +16,12 @@
     m.content = t === 'dark' ? '#0E1A33' : '#FBF8F2';
   }
   apply(pref());
+  // First-paint helpers (home is rendered by HTML+CSS alone; the splash is kept only for returning signed-in users / maintenance)
+  try {
+    var _h = location.hash;
+    if (_h && _h !== '#' && _h !== '#home') d.classList.add('deep-link');
+    if (localStorage.getItem('mall_authed') !== '1' && localStorage.getItem('mall_maint') !== '1') d.classList.add('no-splash');
+  } catch (e) { d.classList.add('no-splash'); }
   // keep <meta theme-color> in sync when the app's own toggleTheme() flips the class
   new MutationObserver(function () { apply(d.classList.contains('dark') ? 'dark' : 'light'); })
     .observe(d, { attributes: true, attributeFilter: ['class'] });

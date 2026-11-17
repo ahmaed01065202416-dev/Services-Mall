@@ -9,3 +9,12 @@
 ## ما لم يُفعل عمدًا (يحتاج قياسًا في متصفح قبل المخاطرة)
 * تأجيل `dashboard.js` (175 KB) و`seller-dashboard.js` (78 KB) و`order-workspace.js` (123 KB) و`firebase-database/storage` (200 KB): كلها تُستدعى من أكثر من 20 موضعًا؛ تأجيلها بلا اختبار حقيقي قد يكسر الواجهة.
 * قياس حقيقي: PageSpeed Insights على `https://mall-services.pages.dev/` (موبايل) ثم DevTools ← Performance. أرسل لي النتيجة وأعالج بالأرقام.
+
+## V23 — PageSpeed round (17 نوفمبر 2026)
+* **LCP**: `#page-home` يظهر من أول رسم (`class="page active"`) بدل انتظار الـ 45 سكريبت؛ شاشة التحميل تُتخطّى للزائر الجديد (تبقى للمسجّل سابقًا/وضع الصيانة) عبر `html.no-splash` من `theme.js`. روابط `#hash` تستخدم `html.deep-link` حتى لا تومض الرئيسية.
+* **CLS**: خطوط Google بـ `display=optional` (لا تبديل خط = لا انزياح). لرجوع التبديل: غيّر `optional` إلى `swap` في سطري الخطوط بـ `index.html`.
+* حذف Amiri/Fraunces/IBM Plex Mono من رابط الرئيسية (قالب «أنيق» صار يحمّل Fraunces بنفسه).
+* `firebase-database/storage-compat` لا يُحمَّلان قبل أول رسم: `js/lazy-firebase.js` يحمّلهما وقت الخمول أو عند أول تفاعل؛ `window.rtdb` و`window.storage` صارا getters كسولة.
+* لوجو 128px مع `srcset`، وإزالة preload اللوجو.
+* SW cache → `mall-local-v3.32-perf4`.
+* **Minify**: في Cloudflare Pages اضبط Build command = `npm run build:dist` وOutput directory = `dist`.

@@ -34,12 +34,15 @@ window._authReadyPromise = new Promise(res => { _resolveAuthReady = res; });
 
 const auth    = firebase.auth();
 const db      = firebase.firestore();
-const storage = firebase.storage();
+// storage + database compat SDKs are loaded after first paint by /js/lazy-firebase.js (perf); both are created on first use below.
 // Realtime Database — used ONLY for chat messages (js/chat.js). Firestore's
 // per-document read/write pricing gets expensive fast for a live chat feed;
 // RTDB bills by bandwidth/storage instead, which fits this pattern much better.
-const rtdb    = firebase.database();
-window.rtdb   = rtdb;
+var _rtdb = null, _storage = null;
+Object.defineProperty(window, 'rtdb', { configurable: true, get: function () {
+    if (!_rtdb) { if (typeof firebase.database !== 'function') throw new Error('Realtime Database SDK is still loading'); _rtdb = firebase.database(); }
+    return _rtdb;
+} });
 
 // Google provider — no hardcoded domain, works on any authorized domain
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -51,7 +54,10 @@ googleProvider.setCustomParameters({
 
 window.auth           = auth;
 window.db             = db;
-window.storage        = storage;
+Object.defineProperty(window, 'storage', { configurable: true, get: function () {
+    if (!_storage) { if (typeof firebase.storage !== 'function') throw new Error('Storage SDK is still loading'); _storage = firebase.storage(); }
+    return _storage;
+} });
 window.firebase       = firebase;
 window.googleProvider = googleProvider;
 

@@ -56,7 +56,6 @@
   <meta name="apple-mobile-web-app-title" content="مول الخدمات">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
-  <link rel="preload" as="image" href="/icons/logo-mark-184.webp" type="image/webp" fetchpriority="high">
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,8 +66,8 @@
   <noscript><link rel="stylesheet" href="/css/p/7827c347.css"></noscript>
 
   <!-- Fonts -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" media="print" data-on-load="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap"></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=optional" media="print" data-on-load="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=optional"></noscript>
 
   <!-- Font Awesome -->
   <link rel="preload" as="style" href="/vendor/fa/css/all.min.css"
@@ -90,8 +89,6 @@
   <link rel="preload" as="script" href="/vendor/js/firebase/firebase-app-compat.js">
   <link rel="preload" as="script" href="/vendor/js/firebase/firebase-auth-compat.js">
   <link rel="preload" as="script" href="/vendor/js/firebase/firebase-firestore-compat.js">
-  <link rel="preload" as="script" href="/vendor/js/firebase/firebase-storage-compat.js">
-  <link rel="preload" as="script" href="/vendor/js/firebase/firebase-database-compat.js">
 
   <!-- ⚠️ PERFORMANCE FIX: this used to load cdn.tailwindcss.com and compile
        Tailwind live in the browser on every single page view — flagged
@@ -288,7 +285,7 @@
 ══════════════════════════════════════════════════════════════ -->
 
 <!-- ─── HOME ──────────────────────────────────────────────── -->
-<div id="page-home" class="page" role="main">
+<div id="page-home" class="page active" role="main">
   <!-- ══ Featured (paid) stores — always first ══ -->
   <section id="homeStoresSection" class="hidden max-w-7xl mx-auto mt-6 px-1">
     <div class="flex items-center justify-between mb-3">
@@ -347,7 +344,7 @@
     <div class="win" id="md-hWin"></div>
     <div class="phone" id="md-hPhone"></div>
     <div class="toast" id="md-hToast"></div>
-    <div class="hlogo" id="md-hLogo"><div class="hlogo-in" id="md-hLogoIn"><div class="hpulse" id="md-hPulse"></div><svg class="rng" id="md-hRing" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="hbadge"><img data-logo width="184" height="184" src="/icons/logo-mark-184.webp" alt="شعار مول الخدمات"></div></div></div>
+    <div class="hlogo" id="md-hLogo"><div class="hlogo-in" id="md-hLogoIn"><div class="hpulse" id="md-hPulse"></div><svg class="rng" id="md-hRing" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="none" stroke="#E0B872" stroke-width="1.4" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="50" cy="50" r="47" fill="none" stroke="#14B8A6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="40 256"/></svg><div class="hbadge"><img data-logo width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" alt="شعار مول الخدمات"></div></div></div>
   </div>
   </section>
 
@@ -603,7 +600,7 @@
   <!-- ══ END CTA (design A) — last block of the home page ══ -->
 <div id="mallDesignEnd" data-home-sec="cta">
 <section class="end pad" id="md-end">
-  <img data-logo width="184" height="184" src="/icons/logo-mark-184.webp" alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
+  <img data-logo width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
   <div class="acts" data-style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل الآن</a><a class="btn2" href="#" data-go="products">تصفّح المنتجات</a></div>
 </section>
 </div>
@@ -1369,8 +1366,6 @@
   <script src="/vendor/js/firebase/firebase-app-compat.js"></script>
   <script src="/vendor/js/firebase/firebase-auth-compat.js"></script>
   <script src="/vendor/js/firebase/firebase-firestore-compat.js"></script>
-  <script src="/vendor/js/firebase/firebase-storage-compat.js"></script>
-  <script src="/vendor/js/firebase/firebase-database-compat.js"></script>
 
 
 <script src="/js/p/b38a3861.js"></script>
@@ -1442,6 +1437,7 @@
 <script src="/js/p/a69fd080.js"></script>
 <script defer src="/vendor/js/gsap.min.js"></script>
 <script defer src="/vendor/js/ScrollTrigger.min.js"></script>
+<script defer src="/js/lazy-firebase.js"></script>
 <script defer src="/js/mall-ui.js?v=1"></script>
 <script defer src="/js/mall-home.js?v=7"></script>
 <script defer src="/js/mall-home-b.js?v=2"></script>

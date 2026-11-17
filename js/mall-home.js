@@ -5,7 +5,7 @@
 
 MallHome._boot=function(){
   var LOGO='/icons/logo-mark-184.webp';
-  document.querySelectorAll('#mallDesign [data-logo],#mallDesignEnd [data-logo]').forEach(function(i){i.src=LOGO;});
+  /* data-logo images already carry src+srcset in the HTML */
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   gsap.registerPlugin(ScrollTrigger);
 

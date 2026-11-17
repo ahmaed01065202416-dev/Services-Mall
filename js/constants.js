@@ -778,6 +778,7 @@ function navigateTo(page, data = null) {
     AppState.currentPage = page;
     if (data) AppState.pageData = data;
 
+    document.documentElement.classList.remove('deep-link');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const target = document.getElementById(`page-${page}`);
     if (target) {

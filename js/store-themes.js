@@ -99,7 +99,7 @@
             </div>` },
 
         // ── 5. Elegant ───────────────────────────────────────────────────────
-        { id: 'elegant', ar: 'أنيق', en: 'Elegant', desc: { ar: 'ورق كريمي وخط كلاسيكي وحدود رفيعة', en: 'Cream paper, serif type, fine borders' },
+        { id: 'elegant', ar: 'أنيق', en: 'Elegant', fonts: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Amiri:wght@400;700&display=swap', desc: { ar: 'ورق كريمي وخط كلاسيكي وحدود رفيعة', en: 'Cream paper, serif type, fine borders' },
           css: (c) => `.st-t-elegant{background:#faf6ef;border-radius:6px;padding:22px;font-family:'Fraunces','Amiri',Georgia,serif}
             .st-t-elegant .service-card{background:#fffdf8;border:1px solid #d9cdb4;border-radius:2px;box-shadow:none}
             .st-t-elegant .service-card:hover{border-color:${c};box-shadow:0 6px 18px rgba(120,90,40,.12)}
