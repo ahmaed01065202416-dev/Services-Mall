@@ -57,6 +57,7 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
   <!-- Preconnect for performance -->
+  <link rel="preload" href="/vendor/fonts/readex-pro-arabic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://firestore.googleapis.com">
@@ -66,8 +67,8 @@
   <noscript><link rel="stylesheet" href="/css/p/7827c347.css"></noscript>
 
   <!-- Fonts -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=optional" media="print" data-on-load="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=optional"></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=optional" media="print" data-on-load="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=optional"></noscript>
 
   <!-- Font Awesome -->
   <link rel="preload" as="style" href="/vendor/fa/css/all.min.css"
@@ -142,7 +143,7 @@
 
 <div id="appLoadingScreen">
   <div data-style="width:110px;height:110px;border-radius:24px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.4);margin-bottom:4px;padding:16px">
-    <img width="184" height="184" src="/icons/logo-mark-184.webp" alt="مول الخدمات" data-style="width:100%;height:100%;object-fit:contain">
+    <img width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" loading="lazy" alt="مول الخدمات" data-style="width:100%;height:100%;object-fit:contain">
   </div>
   <div class="spinner"></div>
   <p data-style="color:#fff;font-size:18px;font-weight:900;letter-spacing:.5px">Services Mall</p>
@@ -167,7 +168,7 @@
          story throughout the app, now doubling as the logo (navy/turquoise) -->
     <button data-on-click="navigateTo('home')" class="flex items-center gap-2 flex-shrink-0" aria-label="مول الخدمات — الرئيسية">
       <div class="m-logo">
-        <img width="184" height="184" src="/icons/logo-mark-184.webp" alt="" class="w-full h-full object-contain">
+        <img width="184" height="184" src="/icons/logo-mark-128.webp" alt="" class="w-full h-full object-contain">
       </div>
       <span class="font-bold text-textprimary text-lg hidden sm:block" id="siteTitle">مول الخدمات</span>
     </button>
@@ -600,7 +601,7 @@
   <!-- ══ END CTA (design A) — last block of the home page ══ -->
 <div id="mallDesignEnd" data-home-sec="cta">
 <section class="end pad" id="md-end">
-  <img data-logo width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
+  <img data-logo loading="lazy" width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" alt="شعار مول الخدمات"><h2 id="md-eh">جاهز تفتح متجرك؟</h2>
   <div class="acts" data-style="justify-content:center"><a class="btn" href="#" data-go="register">سجّل الآن</a><a class="btn2" href="#" data-go="products">تصفّح المنتجات</a></div>
 </section>
 </div>
@@ -614,7 +615,7 @@
     <div class="max-w-6xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/10">
         <div class="lg:col-span-2">
-          <div class="m-flogo"><div class="m-logo"><img width="184" height="184" src="/icons/logo-mark-184.webp" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
+          <div class="m-flogo"><div class="m-logo"><img width="184" height="184" src="/icons/logo-mark-128.webp" srcset="/icons/logo-mark-128.webp 1x, /icons/logo-mark-184.webp 2x" loading="lazy" alt=""></div><p class="text-white font-black text-lg">مول الخدمات</p></div>
           <p class="text-navy-200/70 text-sm leading-relaxed max-w-sm mb-4">منصة عربية للخدمات والمنتجات، بنظام ضمان مالي (Escrow) تُحجز فيه قيمة الطلب إلى أن يؤكد المشتري الاستلام.</p>
           <div class="inline-flex items-center gap-2 bg-turquoise-500/10 text-turquoise-400 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-shield-halved"></i> معاملات محمية بالكامل

@@ -18,3 +18,7 @@
 * لوجو 128px مع `srcset`، وإزالة preload اللوجو.
 * SW cache → `mall-local-v3.32-perf4`.
 * **Minify**: في Cloudflare Pages اضبط Build command = `npm run build:dist` وOutput directory = `dist`.
+
+### V23b — CLS الديسكتوب (17 نوفمبر)
+* السبب: `.hero{display:grid;align-items:center}` + خط Readex Pro كان يُطبَّق (من Google، CSS غير متزامن) بعد أول رسم → ارتفاع النص يتغيّر → العمود كله يعيد التوسّط (0.110).
+* الحل: Readex Pro (variable، arabic+latin) وReem Kufi مستضافان في `vendor/fonts/` ومعرَّفان بـ `@font-face` في `css/csp.css` بـ `font-display:optional`، مع `<link rel=preload>` للـ arabic subset. رابط Google الآن للـ IBM Plex فقط.
