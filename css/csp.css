@@ -1,1 +1,6 @@
 .seo-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+
+/* perf: hero is visible in the first paint; splash only for returning signed-in users */
+html.no-splash #appLoadingScreen{display:none!important}
+#page-home.active{animation:none}
+html.deep-link #page-home{display:none;opacity:0}
