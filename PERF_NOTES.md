@@ -22,3 +22,12 @@
 ### V23b — CLS الديسكتوب (17 نوفمبر)
 * السبب: `.hero{display:grid;align-items:center}` + خط Readex Pro كان يُطبَّق (من Google، CSS غير متزامن) بعد أول رسم → ارتفاع النص يتغيّر → العمود كله يعيد التوسّط (0.110).
 * الحل: Readex Pro (variable، arabic+latin) وReem Kufi مستضافان في `vendor/fonts/` ومعرَّفان بـ `@font-face` في `css/csp.css` بـ `font-display:optional`، مع `<link rel=preload>` للـ arabic subset. رابط Google الآن للـ IBM Plex فقط.
+
+## V24 — نظام مقالات SEO تلقائي (17 نوفمبر 2026)
+* الكتابة: Cloudflare Workers AI أولًا (ربط `AI`، بدون مفتاح) ثم Gemini احتياطي — `functions/_shared/ai-write.js` (قائمة الموديلات قابلة للتغيير بمتغير `CF_AI_MODELS`).
+* خط الإنتاج `functions/_shared/seo-writer.js`: اقتراحات بحث جوجل → خطة (JSON) → كتابة الأقسام بالتوازي → صور Unsplash → أسئلة شائعة → فحص تشابه → رابط بالكلمات المفتاحية → حفظ مسودة.
+* `/api/ai-generate` actions جديدة: `status`, `angles`, `tick`, `image`, `ping` (+ `generate` صار يستخدم الخط الجديد).
+* لوحة الأدمن: `js/seo-admin.js` (تبويب «تشغيل تلقائي»، محرر مقال، اعتماد ونشر، قائمة فحص حية).
+* الجدولة: `.github/workflows/auto-articles.yml` (كل 3 ساعات) + سر GitHub `ADMIN_SECRET`.
+* `blog/[slug].js`: FAQPage JSON-LD؛ `blog-engine.js`: فيديو يوتيوب اختياري، وإخفاء شارة AI بعد المراجعة.
+* اختبارات: `tests/seo-writer.test.mjs` (محاكاة كاملة).

@@ -231,7 +231,14 @@
       doc.ref.update({ views: (window.firebase?.firestore?.FieldValue?.increment(1) || (post.views||0)+1) }).catch(()=>{});
 
       const shareURL = `${window.location.origin}/blog/${post.slug}`;
-      const cleanContent = _sanitize(post.content || '');
+      let cleanContent = _sanitize(post.content || '');
+      // Optional video (YouTube only, privacy-enhanced embed). The id is regex-validated, so nothing else can reach the iframe src.
+      const _ytm = String(post.video || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+      if (_ytm) {
+        const _vid = `<div class="mall-video"><iframe src="https://www.youtube-nocookie.com/embed/${_ytm[1]}" title="${escapeHtml(post.title || '')}" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+        const _h2 = cleanContent.indexOf('<h2');
+        cleanContent = _h2 > 0 ? cleanContent.slice(0, _h2) + _vid + cleanContent.slice(_h2) : _vid + cleanContent;
+      }
 
       // ── Render reading progress bar ──────────────────────────
       let progressBar = document.getElementById('reading-progress');
@@ -264,7 +271,7 @@
             <div data-style="max-width:860px;margin:0 auto">
               <div data-style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
                 ${_catBadge(post.category)}
-                ${post.aiGenerated ? '<span data-style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px">🤖 مُنشأ بالذكاء الاصطناعي</span>' : ''}
+                ${post.aiGenerated && !post.humanReviewed ? '<span data-style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px">🤖 مُنشأ بالذكاء الاصطناعي</span>' : ''}
               </div>
               <h1 data-style="font-size:clamp(20px,4vw,36px);font-weight:900;color:#fff;line-height:1.3;margin:0">
                 ${escapeHtml(post.title||'')}

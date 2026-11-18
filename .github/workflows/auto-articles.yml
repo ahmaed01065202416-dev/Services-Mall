@@ -1,0 +1,31 @@
+# Scheduler for the automatic SEO article system.
+# Every 3 hours it asks the site "is a new article due?". The site reads the settings you save in the dashboard
+# (تبويب «تشغيل تلقائي»: on/off, interval, draft-or-auto-publish) and writes an article only when it is due.
+# One-time setup: GitHub repo → Settings → Secrets and variables → Actions → New secret → ADMIN_SECRET
+#   (the SAME value as the ADMIN_SECRET variable on the Cloudflare Pages project).
+name: Auto SEO articles
+
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask the site to write the next article if it is due
+        env:
+          SITE: https://mall-services.pages.dev
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+        run: |
+          [ -n "$ADMIN_SECRET" ] || { echo "Missing GitHub secret ADMIN_SECRET"; exit 1; }
+          code=$(curl -sS -m 170 -o out.json -w '%{http_code}' -X POST "$SITE/api/ai-generate" \
+            -H 'Content-Type: application/json' -H "X-Admin-Token: $ADMIN_SECRET" \
+            -d '{"action":"tick"}') || code=000
+          cat out.json 2>/dev/null || true; echo; echo "HTTP $code"
+          [ "$code" = "200" ]

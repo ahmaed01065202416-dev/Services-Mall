@@ -83,6 +83,10 @@ export async function findPost(env, slug, fetchImpl = fetch) {
     slug: str('slug'), title: str('title'), excerpt: str('excerpt'), metaDescription: str('metaDescription'),
     content: str('content'), image: str('image'), category: str('category'),
     createdAt: str('createdAt'), updatedAt: str('updatedAt'),
+    faq: ((f.faq && f.faq.arrayValue && f.faq.arrayValue.values) || []).map(v => {
+      const m = (v && v.mapValue && v.mapValue.fields) || {};
+      return { q: (m.q && m.q.stringValue) || '', a: (m.a && m.a.stringValue) || '' };
+    }).filter(x => x.q && x.a),
   } };
 }
 
@@ -104,7 +108,16 @@ export function injectSeo(html, post, site) {
     ...(post.category ? { articleSection: post.category } : {}),
   };
   // "</" inside JSON-LD would close the script tag early.
-  const ldJson = JSON.stringify(ld).replace(/<\//g, '<\\/');
+  // FAQ rich result: AI/editor-written Q&A stored in post.faq is exposed as FAQPage next to the Article.
+  let ldOut = ld;
+  if (Array.isArray(post.faq) && post.faq.length) {
+    const { '@context': ctx, ...article } = ld;
+    ldOut = { '@context': ctx, '@graph': [article, {
+      '@type': 'FAQPage',
+      mainEntity: post.faq.slice(0, 8).map(f => ({ '@type': 'Question', name: String(f.q).slice(0, 250), acceptedAnswer: { '@type': 'Answer', text: plain(String(f.a)).slice(0, 1000) } })),
+    }] };
+  }
+  const ldJson = JSON.stringify(ldOut).replace(/<\//g, '<\\/');
 
   let out = html;
   out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(title)}</title>`);

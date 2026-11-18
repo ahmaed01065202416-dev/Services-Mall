@@ -12,6 +12,8 @@
 // and then thrown away. Now reuses the same service-account auth as every
 // other function (`_shared/gcp.js`), same pattern as payment.js/quality-score.js.
 import { getAccessToken, verifyIdToken, fsGet } from '../_shared/gcp.js';
+import { providerStatus } from '../_shared/ai-write.js';
+import { generateArticle, suggestAngles, searchImages, runTick, getSettings, pingIndexNow } from '../_shared/seo-writer.js';
 
 function _tsEqual(a, b) {
   a = String(a || ''); b = String(b || '');
@@ -203,57 +205,16 @@ async function saveToFirestore(env, postData) {
 
 // ── Core generate-one-article logic (reused by 'generate' and 'bulk') ───────
 async function generateOne(bodyIn, env) {
-  const topicObj = bodyIn.topic
-    ? { topic: bodyIn.topic, cat: bodyIn.category || 'عام', kw: bodyIn.keywords || [bodyIn.topic] }
+  // The old single-prompt generator was replaced by the multi-step pipeline in _shared/seo-writer.js
+  // (Cloudflare Workers AI first, Gemini as fallback; keyword research, parallel sections, images, FAQ, keyword slug).
+  const t = bodyIn.topic
+    ? { topic: bodyIn.topic, cat: bodyIn.category || '', kw: Array.isArray(bodyIn.keywords) ? bodyIn.keywords : [] }
     : TOPICS[Math.floor(Math.random() * TOPICS.length)];
-
-  console.log('[AI] Generating:', topicObj.topic);
-
-  let content = '';
-  try { content = await callGemini(topicObj.topic, topicObj.kw, env.GEMINI_API_KEY); }
-  catch (e1) {
-    console.warn('[AI] Gemini failed:', e1.message, '— trying OpenAI');
-    try { content = await callOpenAI(topicObj.topic, topicObj.kw, env.OPENAI_API_KEY); }
-    catch (e2) { throw new Error(`Both AI APIs failed: ${e1.message} / ${e2.message}`); }
-  }
-
-  if (!content || content.length < 100) throw new Error('AI returned empty content');
-  content = content.replace(/^```html?\n?/, '').replace(/\n?```$/, '').trim();
-
-  const image = await fetchImage(topicObj.kw[0] || topicObj.topic, env.UNSPLASH_ACCESS_KEY);
-  const postSlug = slug(topicObj.topic);
-
-  const post = {
-    title: topicObj.topic, slug: postSlug, excerpt: excerpt(content), content, image,
-    category: topicObj.cat, keywords: topicObj.kw,
-    metaTitle: `${topicObj.topic} | مول الخدمات`,
-    metaDescription: excerpt(content).slice(0, 155),
-    // Draft by default — an admin must review and press "نشر" in the
-    // dashboard (already wired via AdminAI.togglePublish) before this goes
-    // live and gets indexed by Google. Prevents unreviewed AI content from
-    // being auto-published (Google spam policy risk + EEAT).
-    published: false, needsReview: true, views: 0, aiGenerated: true,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  };
-
-  if (!env.FIREBASE_PROJECT_ID || !env.FIREBASE_SERVICE_ACCOUNT) {
-    throw new Error('FIREBASE_PROJECT_ID / FIREBASE_SERVICE_ACCOUNT not configured — cannot save article');
-  }
-
-  let docId = null;
-  try {
-    const result = await saveToFirestore(env, post);
-    docId = result.name?.split('/').pop() || null;
-    if (!docId) throw new Error(result.error?.message || 'Firestore did not return a document name');
-    console.log('[AI] ✅ Saved to Firestore:', docId);
-  } catch (saveErr) {
-    // Don't report success:true for an article that was generated but never
-    // saved — that used to happen silently and looked like a working feature.
-    console.error('[AI] Firestore save failed:', saveErr.message);
-    throw new Error(`Article generated but save failed: ${saveErr.message}`);
-  }
-
-  return { success: true, id: docId, slug: postSlug, title: topicObj.topic, preview: excerpt(content) };
+  return await generateArticle(env, {
+    topic: t.topic, category: t.cat, keywords: t.kw,
+    angle: bodyIn.angle || '', slug: bodyIn.slug || '',
+    publish: bodyIn.publish === true, force: bodyIn.force === true,
+  });
 }
 
 function json(statusCode, headers, obj) {
@@ -333,6 +294,30 @@ export async function onRequest(context) {
         }
       }
       return json(200, CORS, { success: true, results, count: results.filter(r => r.success).length });
+    }
+
+    // ── SEO automation actions (admin dashboard + GitHub Action scheduler) ──
+    if (action === 'status') {
+      const st = providerStatus(env);
+      const settings = await getSettings(env);
+      return json(200, CORS, { ...st, firestore: !!(env.FIREBASE_PROJECT_ID && env.FIREBASE_SERVICE_ACCOUNT), adminSecret: !!env.ADMIN_SECRET, settings });
+    }
+    if (action === 'angles') {
+      const settings = await getSettings(env);
+      const topic = String(body.topic || '').trim();
+      if (!topic) return json(400, CORS, { error: 'topic is required' });
+      return json(200, CORS, await suggestAngles(env, { topic, count: Math.min(5, Math.max(2, Number(body.count) || 3)), order: settings.providerOrder }));
+    }
+    if (action === 'tick' || action === 'auto-tick') {
+      return json(200, CORS, await runTick(env, { force: body.force === true }));
+    }
+    if (action === 'image') {
+      return json(200, CORS, { images: await searchImages(env, String(body.query || '').slice(0, 80), 8) });
+    }
+    if (action === 'ping') {
+      const site = String(env.SITE_URL || 'https://mall-services.pages.dev').replace(/\/+$/, '');
+      const urls = (Array.isArray(body.slugs) ? body.slugs : []).slice(0, 20).map(sl => `${site}/blog/${encodeURIComponent(String(sl))}`);
+      return json(200, CORS, { status: urls.length ? await pingIndexNow(env, urls) : 0 });
     }
 
     if (action === 'topics') {
