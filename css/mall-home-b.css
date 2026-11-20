@@ -18,8 +18,8 @@ html.dark :is(#mallDesignB,#mallDesignBEnd) .mb-arch .mb-lg{background:radial-gr
 :is(#mallDesignB,#mallDesignBEnd) .mb-eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--gold2);font-weight:600;font-size:.85rem;letter-spacing:.04em}
 :is(#mallDesignB,#mallDesignBEnd) .mb-eyebrow::before{content:"";width:28px;height:2px;background:var(--gold)}
 :is(#mallDesignB,#mallDesignBEnd) .mb-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding-block:56px 80px}
-:is(#mallDesignB,#mallDesignBEnd) .mb-hero h1{font-size:clamp(2.4rem,6vw,4.9rem);line-height:1.25;margin:14px 0 16px}
-:is(#mallDesignB,#mallDesignBEnd) .mb-hero h1 em{font-style:normal;color:var(--gold2)}
+:is(#mallDesignB,#mallDesignBEnd) .mb-hero :is(h1,.mb-h1){font-size:clamp(2.4rem,6vw,4.9rem);line-height:1.25;margin:14px 0 16px}
+:is(#mallDesignB,#mallDesignBEnd) .mb-hero :is(h1,.mb-h1) em{font-style:normal;color:var(--gold2)}
 :is(#mallDesignB,#mallDesignBEnd) .mb-hero p{color:var(--mute);max-width:480px;font-size:1.05rem;margin-bottom:26px}
 :is(#mallDesignB,#mallDesignBEnd) .mb-acts{display:flex;gap:12px;flex-wrap:wrap}
 :is(#mallDesignB,#mallDesignBEnd) .mb-arch{position:relative;width:min(100%,430px);aspect-ratio:400/470;margin-inline:auto}
