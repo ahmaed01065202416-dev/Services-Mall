@@ -253,7 +253,10 @@ export async function onRequest(context) {
   const adminUids = (env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
   const sentToken = request.headers.get('x-admin-token') || '';
 
-  const okBySecret = !!adminSecret && _tsEqual(sentToken, adminSecret);
+  // CRON_TOKEN: a separate token used only by the GitHub Action / cron, so ADMIN_SECRET (also used by payment/KYC)
+  // never has to be rotated or shared with GitHub.
+  const cronToken = env.CRON_TOKEN;
+  const okBySecret = (!!adminSecret && _tsEqual(sentToken, adminSecret)) || (!!cronToken && _tsEqual(sentToken, cronToken));
   let okByUid = false;
   if (!okBySecret) {
     const bearer = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
@@ -300,7 +303,7 @@ export async function onRequest(context) {
     if (action === 'status') {
       const st = providerStatus(env);
       const settings = await getSettings(env);
-      return json(200, CORS, { ...st, firestore: !!(env.FIREBASE_PROJECT_ID && env.FIREBASE_SERVICE_ACCOUNT), adminSecret: !!env.ADMIN_SECRET, settings });
+      return json(200, CORS, { ...st, firestore: !!(env.FIREBASE_PROJECT_ID && env.FIREBASE_SERVICE_ACCOUNT), adminSecret: !!(env.ADMIN_SECRET || env.CRON_TOKEN), settings });
     }
     if (action === 'angles') {
       const settings = await getSettings(env);

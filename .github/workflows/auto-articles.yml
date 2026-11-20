@@ -1,8 +1,8 @@
 # Scheduler for the automatic SEO article system.
 # Every 3 hours it asks the site "is a new article due?". The site reads the settings you save in the dashboard
 # (تبويب «تشغيل تلقائي»: on/off, interval, draft-or-auto-publish) and writes an article only when it is due.
-# One-time setup: GitHub repo → Settings → Secrets and variables → Actions → New secret → ADMIN_SECRET
-#   (the SAME value as the ADMIN_SECRET variable on the Cloudflare Pages project).
+# One-time setup: GitHub repo → Settings → Secrets and variables → Actions → New secret → CRON_TOKEN
+#   (the SAME value as the CRON_TOKEN variable on the Cloudflare Pages project, then Redeploy).
 name: Auto SEO articles
 
 on:
@@ -21,17 +21,17 @@ jobs:
       - name: Ask the site to write the next article if it is due
         env:
           SITE: https://mall-services.pages.dev
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN || secrets.ADMIN_SECRET }}
         run: |
-          ADMIN_SECRET=$(printf %s "$ADMIN_SECRET" | tr -d '[:space:]')
-          if [ -z "$ADMIN_SECRET" ]; then
-            echo "::error title=Missing secret::Add the GitHub secret ADMIN_SECRET (same value as ADMIN_SECRET on the Cloudflare Pages project)"
+          CRON_TOKEN=$(printf %s "$CRON_TOKEN" | tr -d '[:space:]')
+          if [ -z "$CRON_TOKEN" ]; then
+            echo "::error title=Missing secret::Add the GitHub secret CRON_TOKEN (same value as the CRON_TOKEN variable on the Cloudflare Pages project)"
             exit 1
           fi
           code=000
           for attempt in 1 2 3; do
             code=$(curl -sS -m 170 -A 'mall-services-seo-tick' -o out.json -w '%{http_code}' -X POST "$SITE/api/ai-generate" \
-              -H 'Content-Type: application/json' -H "X-Admin-Token: $ADMIN_SECRET" \
+              -H 'Content-Type: application/json' -H "X-Admin-Token: $CRON_TOKEN" \
               -d '{"action":"tick"}') || code=000
             body=$(head -c 800 out.json 2>/dev/null || true)
             echo "attempt $attempt -> HTTP $code"; echo "$body"
@@ -43,6 +43,6 @@ jobs:
           body=$(head -c 400 out.json 2>/dev/null || true)
           case "$code" in
             200) echo "OK (an article was written, or none was due yet)"; exit 0 ;;
-            403) echo "::error title=403 Forbidden::GitHub ADMIN_SECRET does not match the ADMIN_SECRET variable on Cloudflare Pages (or it is not set there, or the site was not redeployed after setting it)"; exit 1 ;;
+            403) echo "::error title=403 Forbidden::GitHub CRON_TOKEN does not match the CRON_TOKEN variable on Cloudflare Pages (or it is not set there, or the site was not redeployed after setting it)"; exit 1 ;;
             *)   echo "::error title=HTTP $code::$body"; exit 1 ;;
           esac
