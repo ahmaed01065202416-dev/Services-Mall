@@ -4,7 +4,7 @@
   var MallHome=window.MallHome={_done:false,_boot:null};
 
 MallHome._boot=function(){
-  var LOGO='/icons/logo-mark-184.webp';
+  var LOGO='/icons/logo-mark-64.webp';
   /* data-logo images already carry src+srcset in the HTML */
   var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   gsap.registerPlugin(ScrollTrigger);

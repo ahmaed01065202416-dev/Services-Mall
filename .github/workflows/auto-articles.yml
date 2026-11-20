@@ -23,9 +23,26 @@ jobs:
           SITE: https://mall-services.pages.dev
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         run: |
-          [ -n "$ADMIN_SECRET" ] || { echo "Missing GitHub secret ADMIN_SECRET"; exit 1; }
-          code=$(curl -sS -m 170 -o out.json -w '%{http_code}' -X POST "$SITE/api/ai-generate" \
-            -H 'Content-Type: application/json' -H "X-Admin-Token: $ADMIN_SECRET" \
-            -d '{"action":"tick"}') || code=000
-          cat out.json 2>/dev/null || true; echo; echo "HTTP $code"
-          [ "$code" = "200" ]
+          ADMIN_SECRET=$(printf %s "$ADMIN_SECRET" | tr -d '[:space:]')
+          if [ -z "$ADMIN_SECRET" ]; then
+            echo "::error title=Missing secret::Add the GitHub secret ADMIN_SECRET (same value as ADMIN_SECRET on the Cloudflare Pages project)"
+            exit 1
+          fi
+          code=000
+          for attempt in 1 2 3; do
+            code=$(curl -sS -m 170 -A 'mall-services-seo-tick' -o out.json -w '%{http_code}' -X POST "$SITE/api/ai-generate" \
+              -H 'Content-Type: application/json' -H "X-Admin-Token: $ADMIN_SECRET" \
+              -d '{"action":"tick"}') || code=000
+            body=$(head -c 800 out.json 2>/dev/null || true)
+            echo "attempt $attempt -> HTTP $code"; echo "$body"
+            case "$code" in
+              5*|000) [ "$attempt" -lt 3 ] && sleep 20 ;;
+              *) break ;;
+            esac
+          done
+          body=$(head -c 400 out.json 2>/dev/null || true)
+          case "$code" in
+            200) echo "OK (an article was written, or none was due yet)"; exit 0 ;;
+            403) echo "::error title=403 Forbidden::GitHub ADMIN_SECRET does not match the ADMIN_SECRET variable on Cloudflare Pages (or it is not set there, or the site was not redeployed after setting it)"; exit 1 ;;
+            *)   echo "::error title=HTTP $code::$body"; exit 1 ;;
+          esac

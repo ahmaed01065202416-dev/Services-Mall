@@ -1,0 +1,32 @@
+# مول الخدمات (Mall Services)
+
+> منصة عربية للخدمات والمنتجات الرقمية في مصر: تصميم، برمجة، تسويق، كتابة محتوى ومتاجر بائعين، مع حماية الدفع بنظام الضمان Escrow (يُحجز المبلغ حتى يستلم العميل طلبه).
+
+الموقع بالعربية (RTL). يعرض خدمات مخصصة حسب الطلب ومنتجات رقمية جاهزة بتسليم فوري، ويتيح للبائعين فتح متاجرهم وإدارة الطلبات والمرتجعات من لوحة تحكم واحدة.
+
+## الصفحات الرئيسية
+
+- [الرئيسية](https://mall-services.pages.dev/): تصفح الخدمات والمنتجات والمتاجر
+- [من نحن](https://mall-services.pages.dev/about/): رسالة المنصة وقيمها
+- [اتصل بنا](https://mall-services.pages.dev/contact/): التواصل مع الدعم
+- [سياسة الاسترجاع](https://mall-services.pages.dev/refund-policy/): شروط الإرجاع واسترداد الأموال
+- [سياسة الخصوصية](https://mall-services.pages.dev/privacy/)
+- [الشروط والأحكام](https://mall-services.pages.dev/terms/)
+
+## المدونة
+
+- [نظام الضمان Escrow: كيف يحمي أموالك عند الشراء أونلاين](https://mall-services.pages.dev/blog/escrow-payment-protection/)
+- [Paymob وInstaPay: ما الفرق وأيهما يناسبك في مصر؟](https://mall-services.pages.dev/blog/paymob-instapay-guide/)
+- [بوابات الدفع الإلكتروني في مصر 2025: Paymob، فوري، InstaPay](https://mall-services.pages.dev/blog/بوابات-الدفع-الالكتروني-مصر/)
+- [العمل الحر في مصر: دليل البداية من أول مهارة إلى أول عميل](https://mall-services.pages.dev/blog/freelancing-egypt-2025/)
+- [كيف تربح من الإنترنت في مصر: 7 طرق واقعية وكيف تتجنب النصب](https://mall-services.pages.dev/blog/كيفية-الربح-من-الانترنت-مصر/)
+- [كيف تبدأ متجرك الإلكتروني في مصر: من الفكرة إلى أول طلب](https://mall-services.pages.dev/blog/التجارة-الالكترونية-في-مصر/)
+- [أفضل 10 خدمات رقمية مطلوبة في مصر 2025](https://mall-services.pages.dev/blog/افضل-خدمات-رقمية-في-مصر-2025/)
+- [التسويق الرقمي بالعربية: دليل عملي للسوشيال ميديا](https://mall-services.pages.dev/blog/digital-marketing-arabic/)
+- [السيو للمواقع العربية: دليل عملي لتحسين ظهورك في جوجل](https://mall-services.pages.dev/blog/تحسين-محركات-البحث-للمواقع-العربية/)
+- [اتجاهات تصميم المواقع في 2026: ما يهم المصمم العربي فعلًا](https://mall-services.pages.dev/blog/web-design-trends-2025/)
+
+## ملاحظات
+
+- صفحات الحساب والطلبات والمحفظة ولوحة التحكم خاصة بالمستخدمين ومحجوبة عن الزحف (انظر robots.txt).
+- خريطة الموقع: https://mall-services.pages.dev/sitemap.xml

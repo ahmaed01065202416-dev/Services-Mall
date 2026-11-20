@@ -25,7 +25,7 @@
  *    assets (JS/CSS/images) stay cache-first for speed, since a stale JS
  *    file for a few minutes matters much less than a stale whole page.
  */
-const LOCAL_CACHE = 'mall-local-v3.32-perf4'; // bumped: JS now emits data-on-*/data-style (strict CSP) — old cached JS would emit blocked inline handlers
+const LOCAL_CACHE = 'mall-local-v3.32-perf7'; // bumped: JS now emits data-on-*/data-style (strict CSP) — old cached JS would emit blocked inline handlers
 
 const LOCAL_ASSETS = [
   '/index.html',
@@ -34,7 +34,7 @@ const LOCAL_ASSETS = [
   '/icons/icon-512.png',
   '/icons/icon.svg',
   '/css/bundle-base.css?v=07065f75',
-  '/css/bundle-mall.css?v=7109f6f7',
+  '/css/bundle-mall.css?v=a3386840',
   '/css/tailwind.css',
   '/css/mall-theme.css',
   '/css/mall-home.css',
