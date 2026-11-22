@@ -109,11 +109,40 @@ export async function askWriter(env, opts, order = 'cloudflare,gemini') {
   throw new Error('No AI writer available — ' + (errors.join(' | ') || 'no provider configured'));
 }
 
-/** Pull a JSON object out of a model answer (tolerates text before/after and trailing commas). */
+/**
+ * If the model's answer was cut off (token limit), close the open brackets after the last complete element
+ * so a truncated-but-mostly-complete JSON can still be used. Returns a parsed value or throws.
+ */
+function repairTruncatedJson(raw) {
+  const stack = [];
+  const cuts = [];          // [endIndex, closersString] after each complete object/array
+  let inStr = false, esc = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === '{') stack.push('}');
+    else if (c === '[') stack.push(']');
+    else if (c === '}' || c === ']') {
+      stack.pop();
+      cuts.push([i + 1, stack.slice().reverse().join('')]);
+    }
+  }
+  for (let k = cuts.length - 1; k >= 0; k--) {
+    const [end, closers] = cuts[k];
+    const cand = (raw.slice(0, end) + closers).replace(/,\s*([}\]])/g, '$1');
+    try { return JSON.parse(cand); } catch (_) { /* try an earlier cut */ }
+  }
+  throw new Error('model JSON is cut off and could not be repaired');
+}
+
+/** Pull a JSON object out of a model answer (tolerates text before/after, trailing commas and truncated output). */
 export function parseJsonLoose(text) {
   const s = String(text || '');
-  const a = s.indexOf('{'), b = s.lastIndexOf('}');
-  if (a < 0 || b <= a) throw new Error('model did not return JSON');
-  const raw = s.slice(a, b + 1).replace(/,\s*([}\]])/g, '$1');
-  return JSON.parse(raw);
+  const a = s.indexOf('{');
+  if (a < 0) throw new Error('model did not return JSON');
+  const b = s.lastIndexOf('}');
+  const tail = b > a ? s.slice(a, b + 1) : s.slice(a);
+  try { return JSON.parse(tail.replace(/,\s*([}\]])/g, '$1')); }
+  catch (_) { return repairTruncatedJson(s.slice(a)); }
 }
