@@ -207,11 +207,14 @@ ${avoid.length ? `\nعناوين مقالات موجودة بالفعل في ا�
  "faq": ["سؤال شائع يبحث عنه الناس", "سؤال", "سؤال", "سؤال"]
 }
 عدد الأقسام 5 أو 6. عناوين الأقسام لا تتكرر ولا تبدأ بنفس الكلمة. الأسئلة الشائعة 4.`;
-  let r = await writer(env, order, { system: SYSTEM_PLAN, user: prompt, maxTokens: 2200, temperature: 0.7 });
+  // 4000 tokens: Arabic text is token-hungry, 2200 used to cut the JSON off in the middle of "sections".
+  let r = await writer(env, order, { system: SYSTEM_PLAN, user: prompt, maxTokens: 4000, temperature: 0.7 });
   let plan;
   try { plan = parseJsonLoose(r.text); }
   catch (_) {
-    r = await writer(env, order, { system: SYSTEM_PLAN, user: prompt + '\n\nمهم: أرجع JSON صالحًا فقط.', maxTokens: 2200, temperature: 0.3 });
+    // retry with the OTHER provider first (a truncated/invalid answer is not a provider error, so askWriter would not fall back by itself)
+    const swapped = String(order || 'cloudflare,gemini').split(',').map(x => x.trim()).filter(Boolean).reverse().join(',');
+    r = await writer(env, swapped, { system: SYSTEM_PLAN, user: prompt + '\n\nمهم: أرجع JSON صالحًا ومكتملًا فقط، بدون أي نص خارجه.', maxTokens: 4000, temperature: 0.3 });
     plan = parseJsonLoose(r.text);
   }
   const sections = (Array.isArray(plan.sections) ? plan.sections : []).slice(0, 6).map(s => ({
