@@ -41,7 +41,8 @@ export function cacheKey(request, params) {
  *  limit: uncached requests/min/IP }
  *
  *  stale-while-revalidate: after the TTL the next visitor does NOT wait for Firestore — they get the previous copy at once and
- *  one background refresh (per isolate) renews it. Only a visitor arriving after TTL+swr of silence waits for a fresh render. */
+ *  one background refresh (per isolate) renews it.
+ *  stale-if-error (sie, default 24h): if the fresh render throws or returns 5xx (Firestore down / quota exhausted), the last good copy is served instead. Only a visitor arriving after TTL+swr of silence waits for a fresh render. */
 const _refreshing = new Set();
 
 // ── layer 1: per-isolate memory (text only; bounded) ────────────────────────────────────────────────────────────────
@@ -55,20 +56,29 @@ function computeTtl(res, cap, forced) {
     return ttl;
 }
 
-async function memStore(url, res, ttl, swr) {
+async function memStore(url, res, ttl, swr, sie = 0) {
     if (ttl <= 0 || !/json|html|xml|text/i.test(res.headers.get('Content-Type') || '')) return;
     if (parseInt(res.headers.get('Content-Length') || '0', 10) > MEM_BODY_MAX) return;
     const body = await res.clone().text();
     if (body.length > MEM_BODY_MAX) return;
     if (_mem.size >= MEM_MAX) _mem.delete(_mem.keys().next().value);
     const now = Date.now();
-    _mem.set(url, { status: res.status, headers: [...res.headers], body, fresh: now + ttl * 1000, stale: now + (ttl + (res.status === 200 ? swr : 0)) * 1000 });
+    _mem.set(url, { status: res.status, headers: [...res.headers], body, fresh: now + ttl * 1000, stale: now + (ttl + (res.status === 200 ? swr : 0)) * 1000, dead: now + (ttl + (res.status === 200 ? swr + sie : 0)) * 1000 });
 }
 
 function memGet(url) {
     const e = _mem.get(url);
     if (!e) return null;
-    if (Date.now() > e.stale) { _mem.delete(url); return null; }
+    if (Date.now() > e.dead) { _mem.delete(url); return null; }
+    if (Date.now() > e.stale) return null;          // too old to serve normally — kept only as a stale-if-error fallback
+    return e;
+}
+
+/** Last-resort copy (up to the stale-if-error window) used only when the fresh render fails. */
+function memGetAny(url) {
+    const e = _mem.get(url);
+    if (!e) return null;
+    if (Date.now() > e.dead) { _mem.delete(url); return null; }
     return e;
 }
 
@@ -81,7 +91,7 @@ function store(cache, key, res, o, context) {
     const headers = new Headers(res.headers);
     headers.set('X-Edge-Origin-CC', res.headers.get('Cache-Control') || '');
     headers.set('X-Edge-Fresh-Until', String(Date.now() + ttl * 1000));
-    headers.set('Cache-Control', `public, max-age=${ttl + (res.status === 200 ? o.swr : 0)}`);   // lifetime of the ENTRY (fresh + stale window)
+    headers.set('Cache-Control', `public, max-age=${ttl + (res.status === 200 ? o.swr + o.sie : 0)}`);   // lifetime of the ENTRY (fresh + stale window + stale-if-error window)
     const put = cache.put(key, new Response(res.clone().body, { status: res.status, headers }));
     if (context.waitUntil) context.waitUntil(put);
     return put;
@@ -100,10 +110,10 @@ function serve(hit, tag) {
 export async function edgeCached(context, opts, render) {
     const { request } = context;
     if (request.method !== 'GET') return render();
-    const { params = [], cap = 600, limit = 120, ttl: forced = 0, swr = 600 } = opts || {};
+    const { params = [], cap = 600, limit = 120, ttl: forced = 0, swr = 600, sie = 86400 } = opts || {};
     const cache = typeof caches !== 'undefined' ? caches.default : null;
     const key = cacheKey(request, params);
-    const o = { cap, forced, swr };
+    const o = { cap, forced, swr, sie };
 
     // one place that refreshes BOTH layers, at most once at a time per URL
     const refresh = (url) => {
@@ -112,8 +122,8 @@ export async function edgeCached(context, opts, render) {
         context.waitUntil((async () => {
             try {
                 const fresh = await render();
-                await memStore(url, fresh, computeTtl(fresh, cap, forced), swr);
-                if (cache) { const put = store(cache, key, fresh, o, {}); if (put) await put; }
+                if (fresh.status < 500) await memStore(url, fresh, computeTtl(fresh, cap, forced), swr, sie);
+                if (cache && fresh.status < 500) { const put = store(cache, key, fresh, o, {}); if (put) await put; }
             } catch (_) { /* keep serving the stale copy until it expires */ }
             finally { _refreshing.delete(url); }
         })());
@@ -126,22 +136,35 @@ export async function edgeCached(context, opts, render) {
         return tagged(new Response(m.body, { status: m.status, headers: m.headers }), stale ? 'MEM-STALE' : 'MEM-HIT');
     }
 
+    // A very old entry (past fresh + swr) is NOT served normally, but is remembered as a fallback for when the origin is failing.
+    let fallback = null;
     if (cache) {
         try {
             const hit = await cache.match(key);
             if (hit) {
                 const freshUntil = parseInt(hit.headers.get('X-Edge-Fresh-Until') || '0', 10);
                 const stale = hit.status === 200 && freshUntil && Date.now() > freshUntil;
-                if (stale) refresh(key.url);
-                return serve(hit, stale ? 'STALE' : 'HIT');
+                const tooOld = stale && Date.now() > freshUntil + swr * 1000;
+                if (tooOld) { if (Date.now() <= freshUntil + (swr + sie) * 1000) fallback = () => serve(hit, 'STALE-ERROR'); }
+                else {
+                    if (stale) refresh(key.url);
+                    return serve(hit, stale ? 'STALE' : 'HIT');
+                }
             }
         } catch (_) { /* fall through to render */ }
     }
+    if (!fallback) { const any = memGetAny(key.url); if (any && any.status === 200) fallback = () => tagged(new Response(any.body, { status: any.status, headers: any.headers }), 'MEM-STALE-ERROR'); }
 
-    if (throttled(request, limit)) return new Response('Too many requests', { status: 429, headers: { 'Retry-After': '60', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' } });
-    const res = await render();
+    if (throttled(request, limit)) {
+        if (fallback) return fallback();   // heavy client + we have a copy: answer from it instead of a 429
+        return new Response('Too many requests', { status: 429, headers: { 'Retry-After': '60', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' } });
+    }
+    let res;
+    try { res = await render(); }
+    catch (e) { if (fallback) return fallback(); throw e; }
+    if (res.status >= 500 && fallback) return fallback();   // stale-if-error: Firestore down / quota exhausted → last good copy
     const ttl = computeTtl(res, cap, forced);
-    try { await memStore(key.url, res, ttl, swr); } catch (_) { /* memory layer is optional */ }
+    try { await memStore(key.url, res, ttl, swr, sie); } catch (_) { /* memory layer is optional */ }
     if (cache) { try { const put = store(cache, key, res.clone(), o, context); if (put && !context.waitUntil) await put; } catch (_) { /* cache is optional */ } }
     return tagged(res, 'MISS');
 }
