@@ -4,14 +4,15 @@
  * Run: node seed-blog.js
  *
  * Uses Firebase REST API — no firebase-admin SDK needed.
- * Requires: FIREBASE_API_KEY env var OR hardcoded below.
+ * Requires: FIREBASE_API_KEY env var.
  */
 
 const https = require('https');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'services-mall';
-const API_KEY    = process.env.FIREBASE_API_KEY    || 'AIzaSyDfWKWN5CTlBA-krEMXsmYmaI8j7fyuw20';
+const API_KEY    = process.env.FIREBASE_API_KEY;   // never hardcode keys in the repo (GitHub secret scanning flags them)
+if (!API_KEY) { console.error('Set FIREBASE_API_KEY first, e.g.  FIREBASE_API_KEY=xxxx node seed-blog.js'); process.exit(1); }
 
 const POSTS = [
   {
