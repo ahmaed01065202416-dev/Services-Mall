@@ -577,7 +577,9 @@ service cloud.firestore {
     // secrets — so making it world-readable is safe; only admins can still
     // write it.
     match /settings/{docId} {
-      allow read:  if true;
+      // seoAuto = auto-article scheduler (upcoming topics, provider order, last-run errors) → admin only.
+      // The server (service account) and the admin dashboard are unaffected; the public site only reads settings/platform.
+      allow read:  if docId != 'seoAuto' || isAdmin();
       allow write: if isAdmin();
     }
 
