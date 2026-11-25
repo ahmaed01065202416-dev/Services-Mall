@@ -46,7 +46,25 @@
     return (html || '').replace(/<[^>]*>/g,'').trim().slice(0, n || 155) + '…';
   }
 
+  // Domains the site used before. Links to them (and to the current host) inside stored articles are turned into
+  // relative links, so a domain change never leaves dead/old-domain links in articles. Add old domains to
+  // window.MALL_LEGACY_HOSTS (e.g. ['old-name.pages.dev']) if the domain changes again.
+  function _fixArticleLinks(html) {
+    const hosts = ['mall-services.pages.dev'].concat(window.MALL_LEGACY_HOSTS || []).concat(location.host).map(h => String(h).toLowerCase());
+    return String(html || '').replace(/href="https?:\/\/([^\/"?#]+)([^"]*)"/gi, (m, host, rest) =>
+      hosts.indexOf(host.toLowerCase()) >= 0 ? 'href="' + (rest || '/') + '"' : m);
+  }
+  // Links in article text must LOOK clickable. A real stylesheet (the CSP only allows 'self' styles, never an injected <style>).
+  (function _linkStyle() {
+    if (document.getElementById('mall-article-link-css')) return;
+    const l = document.createElement('link'); l.id = 'mall-article-link-css'; l.rel = 'stylesheet'; l.href = '/css/article-links.css?v=1';
+    (document.head || document.documentElement).appendChild(l);
+  })();
+
   function _sanitize(html) {
+    return _fixArticleLinks(_sanitizeRaw(html));
+  }
+  function _sanitizeRaw(html) {
     if (typeof DOMPurify !== 'undefined') {
       return DOMPurify.sanitize(html, {
         ALLOWED_TAGS: ['p','h2','h3','h4','ul','ol','li','strong','em','a','table',

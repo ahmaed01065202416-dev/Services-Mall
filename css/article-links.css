@@ -1,0 +1,4 @@
+/* Links inside blog articles must LOOK clickable (loaded by js/blog-engine.js as a normal stylesheet — the CSP forbids injected <style>). */
+.article-body p>a[href],.article-body li>a[href],.article-body a.mall-link{color:#2563eb;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.article-body p>a[href]:hover,.article-body li>a[href]:hover,.article-body a.mall-link:hover{color:#1d4ed8}
+html.dark .article-body p>a[href],html.dark .article-body li>a[href],html.dark .article-body a.mall-link{color:#60a5fa}
