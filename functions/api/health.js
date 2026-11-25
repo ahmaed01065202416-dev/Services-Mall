@@ -11,7 +11,7 @@ const H = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 
 export async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: H });
-    const out = { ok: true, time: new Date().toISOString(), ai: !!(env.AI && env.AI.run), firebase: !!env.FIREBASE_SERVICE_ACCOUNT };
+    const out = { ok: true, v: 'subreq-guard-1', time: new Date().toISOString(), ai: !!(env.AI && env.AI.run), firebase: !!env.FIREBASE_SERVICE_ACCOUNT };
     if (new URL(request.url).searchParams.get('deep') === '1') {
         const t0 = Date.now();
         try { await fsGet(env, 'settings/platform'); out.db = 'ok'; out.dbMs = Date.now() - t0; }
