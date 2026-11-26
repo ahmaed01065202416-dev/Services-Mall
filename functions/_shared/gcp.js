@@ -98,7 +98,9 @@ async function verifyIdToken(idToken, env) {
     const apiKey = env.FIREBASE_WEB_API_KEY || 'AIzaSyDfWKWN5CTlBA-krEMXsmYmaI8j7fyuw20';
     const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Referer: lets this call pass when the Firebase web key is restricted to "HTTP referrers" in Google Cloud Console
+        // (a Worker sends no Referer by itself → the restricted key would answer 403 and every login/payment check would fail).
+        headers: { 'Content-Type': 'application/json', 'Referer': String(env.SITE_URL || 'https://mall-services.pages.dev').replace(/\/+$/, '') + '/' },
         body: JSON.stringify({ idToken }),
     });
     const data = await resp.json();

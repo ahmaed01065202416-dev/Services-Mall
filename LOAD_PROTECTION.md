@@ -31,3 +31,12 @@
 
 ## تنظيف مجلدات المدونة المشوّهة
 `node scripts/remove-garbled-blog.mjs` يعرض مجلدات `blog/#U...` (أسماء عربية اتخربت عند الرفع وبتكرر مقالات سليمة). أضف `--apply` للحذف.
+
+## تقييد مفتاح Firebase Web API (بعد نشر gcp.js الجديد)
+1. Google Cloud Console ← مشروع `services-mall` ← APIs & Services ← Credentials ← افتح مفتاح الويب.
+2. Application restrictions = **Websites (HTTP referrers)** وأضف:
+   `https://mall-services.pages.dev/*` و `https://*.mall-services.pages.dev/*` و `https://services-mall.firebaseapp.com/*` و `https://services-mall.web.app/*`
+   (لو غيّرت الدومين أضف الدومين الجديد هنا أيضًا، وغيّر `SITE_URL` في Cloudflare).
+3. اترك API restrictions كما هي (Don't restrict) أولًا. قيّدها لاحقًا بعد التجربة، وبأسماء: Identity Toolkit API, Token Service API, Cloud Firestore API (+ Firebase Installations / Cloud Storage لو مستخدمة).
+4. بعد 5 دقايق جرّب: تسجيل دخول عادي، تسجيل دخول Google، وعملية تحتاج تحقق من السيرفر (دفع/لوحة تحكم). لو حاجة وقفت: ارجع Application restrictions إلى None فورًا.
+5. السيرفر (`functions/_shared/gcp.js`) بيبعت `Referer` = `SITE_URL` عشان المفتاح المقيّد يشتغل منه كمان.
