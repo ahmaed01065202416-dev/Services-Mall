@@ -130,13 +130,14 @@
         const AUTH_PAGES = ['orders','dashboard','profile','wallet','admin','seller','add-service','my-store'];
         if (AUTH_PAGES.includes(page) && !AppState.currentUser) {
             const startedOn = window.location.hash;
+            // Keep the branded splash screen (#appLoadingScreen) up until the page is really open — no second loader on top of it.
+            window.__holdAppLoading = true;
             const open = () => {
                 // the user clicked somewhere else while we were waiting → do not override their navigation
-                if (window.location.hash !== startedOn) return;
-                try { if (typeof hideLoading === 'function') hideLoading(); } catch (_) {}
-                navigateTo(page);
+                if (window.location.hash === startedOn) { try { navigateTo(page); } catch (e) { console.error(e); } }
+                window.__holdAppLoading = false;
+                if (window.__hideAppLoading) window.__hideAppLoading();
             };
-            try { if (typeof showLoading === 'function') showLoading(); } catch (_) {}
             (window._authReadyPromise || Promise.resolve()).then(() => {
                 // _authReadyPromise resolves as soon as Firebase knows whether someone is signed in; the profile
                 // (AppState.currentUser, incl. role) loads a moment later — wait for it (max 8s).
