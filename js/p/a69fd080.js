@@ -120,7 +120,37 @@
         if (stMatch) { navigateTo('store'); if (window.StoresManager) StoresManager.openStore(window.safeId(stMatch[1])); return; }   // hash comes from the URL — plain id tokens only
         if (raw === 'workspace') { navigateTo('home'); return; }
         const validPages = ['home','services','orders','workspace','dashboard','login','register','profile','wallet','admin','seller','add-service','stores','my-store'];
-        navigateTo(validPages.includes(raw) ? raw : 'home');
+        const page = validPages.includes(raw) ? raw : 'home';
+
+        // ⚠️ FIXED: refreshing (F5) on a signed-in page such as #dashboard showed "تسجيل الدخول" even though the user
+        // was signed in. Cause: this ran before Firebase had restored the session, so AppState.currentUser was still
+        // empty when the page's init function ran — and nothing re-ran it afterwards. Now, for pages that depend on the
+        // signed-in user, we wait until the session AND the user profile are known, then open the SAME page the user
+        // was on. A visitor who is genuinely signed out still gets the page's own login prompt, as before.
+        const AUTH_PAGES = ['orders','dashboard','profile','wallet','admin','seller','add-service','my-store'];
+        if (AUTH_PAGES.includes(page) && !AppState.currentUser) {
+            const startedOn = window.location.hash;
+            const open = () => {
+                // the user clicked somewhere else while we were waiting → do not override their navigation
+                if (window.location.hash !== startedOn) return;
+                try { if (typeof hideLoading === 'function') hideLoading(); } catch (_) {}
+                navigateTo(page);
+            };
+            try { if (typeof showLoading === 'function') showLoading(); } catch (_) {}
+            (window._authReadyPromise || Promise.resolve()).then(() => {
+                // _authReadyPromise resolves as soon as Firebase knows whether someone is signed in; the profile
+                // (AppState.currentUser, incl. role) loads a moment later — wait for it (max 8s).
+                const fbUser = window.auth && window.auth.currentUser;
+                if (!fbUser) { open(); return; }                      // signed out → show the page's login prompt
+                const t0 = Date.now();
+                (function waitProfile() {
+                    if (AppState.currentUser || Date.now() - t0 > 8000) { open(); return; }
+                    setTimeout(waitProfile, 50);
+                })();
+            });
+            return;
+        }
+        navigateTo(page);
     }
     window.addEventListener('popstate', handleHash);
 
