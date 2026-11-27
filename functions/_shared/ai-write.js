@@ -8,6 +8,8 @@
 // Model ids change often on both platforms, so every provider has a LIST of models that are tried in turn, and the
 // Cloudflare list can be overridden without a redeploy via the CF_AI_MODELS env var (comma separated).
 
+import { spend, asBudgetError, isDead, markDead, lastGood, setGood } from './budget.js';
+
 export const CF_MODELS_DEFAULT = [
   '@cf/google/gemma-4-26b-a4b-it',     // multilingual (140+ languages in pre-training), cheap MoE model
   '@cf/qwen/qwen3-30b-a3b-fp8',        // strong Arabic
@@ -38,11 +40,25 @@ export function cleanModelText(s) {
     .trim();
 }
 
+// A model that answers "not found / retired / invalid" will never work in this request — do not retry it.
+// Timeouts, 429s and empty answers are transient: they still count against the budget but the model stays usable.
+const FATAL_RE = /not found|no such model|unknown model|invalid model|deprecated|retired|does not exist|not enabled|\b404\b|\b400\b/i;
+
+function preferGood(list) {
+  const ms = list.filter(m => !isDead(m));
+  const i = ms.indexOf(lastGood());
+  if (i > 0) ms.unshift(ms.splice(i, 1)[0]);
+  return ms;
+}
+
 async function viaCloudflare(env, { system, user, maxTokens, temperature }) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Workers AI binding "AI" is not configured');
-  const models = (env.CF_AI_MODELS ? String(env.CF_AI_MODELS).split(',').map(s => s.trim()).filter(Boolean) : CF_MODELS_DEFAULT);
+  const all = (env.CF_AI_MODELS ? String(env.CF_AI_MODELS).split(',').map(s => s.trim()).filter(Boolean) : CF_MODELS_DEFAULT);
+  const models = preferGood(all);
+  if (!models.length) throw new Error('Workers AI: every model already failed in this request');
   let last = 'no model tried';
   for (const model of models) {
+    spend(1, 'Workers AI ' + model);                       // throws BudgetError → stops everything cleanly
     try {
       const out = await withTimeout(env.AI.run(model, {
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
@@ -50,9 +66,13 @@ async function viaCloudflare(env, { system, user, maxTokens, temperature }) {
         temperature,
       }), 70000, model);
       const text = cleanModelText(extractText(out));
-      if (text.length > 20) return { text, provider: 'cloudflare', model };
+      if (text.length > 20) { setGood(model); return { text, provider: 'cloudflare', model }; }
       last = `${model}: empty answer`;
-    } catch (e) { last = `${model}: ${e && e.message ? e.message : e}`; }
+    } catch (e) {
+      const be = asBudgetError(e); if (be) throw be;
+      last = `${model}: ${e && e.message ? e.message : e}`;
+      if (FATAL_RE.test(last)) markDead(model);
+    }
   }
   throw new Error('Workers AI failed — ' + last);
 }
@@ -60,8 +80,11 @@ async function viaCloudflare(env, { system, user, maxTokens, temperature }) {
 async function viaGemini(env, { system, user, maxTokens, temperature }) {
   const key = env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY missing');
+  const models = preferGood(GEMINI_MODELS_DEFAULT);
+  if (!models.length) throw new Error('Gemini: every model already failed in this request');
   let last = 'no model tried';
-  for (const model of GEMINI_MODELS_DEFAULT) {
+  for (const model of models) {
+    spend(1, 'Gemini ' + model);
     try {
       const res = await withTimeout(fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
@@ -76,9 +99,14 @@ async function viaGemini(env, { system, user, maxTokens, temperature }) {
         }), 60000, model);
       const j = await res.json().catch(() => ({}));
       const text = cleanModelText((j?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join(''));
-      if (text.length > 20) return { text, provider: 'gemini', model };
+      if (text.length > 20) { setGood(model); return { text, provider: 'gemini', model }; }
       last = `${model}: ${j?.error?.message || 'empty answer'}`;
-    } catch (e) { last = `${model}: ${e && e.message ? e.message : e}`; }
+      if (res.status === 404 || res.status === 400) markDead(model);
+    } catch (e) {
+      const be = asBudgetError(e); if (be) throw be;
+      last = `${model}: ${e && e.message ? e.message : e}`;
+      if (FATAL_RE.test(last)) markDead(model);
+    }
   }
   throw new Error('Gemini failed — ' + last);
 }
@@ -104,7 +132,7 @@ export async function askWriter(env, opts, order = 'cloudflare,gemini') {
     try {
       if (p === 'cloudflare') return await viaCloudflare(env, o);
       if (p === 'gemini') return await viaGemini(env, o);
-    } catch (e) { errors.push(`${p}: ${e && e.message ? e.message : e}`); }
+    } catch (e) { if (e && e.budget) throw e; errors.push(`${p}: ${e && e.message ? e.message : e}`); }
   }
   throw new Error('No AI writer available — ' + (errors.join(' | ') || 'no provider configured'));
 }

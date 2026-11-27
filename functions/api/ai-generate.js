@@ -14,6 +14,7 @@
 import { getAccessToken, verifyIdToken, fsGet } from '../_shared/gcp.js';
 import { providerStatus } from '../_shared/ai-write.js';
 import { generateArticle, suggestAngles, searchImages, runTick, getSettings, pingIndexNow } from '../_shared/seo-writer.js';
+import { resetBudget } from '../_shared/budget.js';
 
 function _tsEqual(a, b) {
   a = String(a || ''); b = String(b || '');
@@ -276,6 +277,7 @@ export async function onRequest(context) {
     return json(403, CORS, { error: 'Forbidden: Admin access only' });
   }
 
+  resetBudget();   // fresh per-request subrequest budget (see _shared/budget.js)
   try {
     const body = await request.json().catch(() => ({}));
     const action = body.action || 'generate';

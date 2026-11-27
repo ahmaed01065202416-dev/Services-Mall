@@ -14,6 +14,7 @@
 // searches + 4 download pings + 1-3 Firestore ≈ 25.
 import { fsQuery, fsGet, fsSet, fsCreate } from './gcp.js';
 import { askWriter, parseJsonLoose } from './ai-write.js';
+import { spend, remaining } from './budget.js';
 
 export const CATEGORIES = ['ربح-من-الانترنت', 'تسويق-رقمي', 'ذكاء-اصطناعي', 'تجارة-الكترونية', 'عمل-حر', 'دفع-الكتروني', 'تصميم-مواقع', 'تحسين-بحث', 'استثمار'];
 
@@ -111,7 +112,7 @@ const wordsIn = (html) => String(html || '').replace(/<[^>]*>/g, ' ').split(/\s+
 // ───────────────────────────── keyword discovery ─────────────────────────────
 async function googleSuggest(q) {
   try {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 4000);
+    spend(1, 'google suggest'); const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 4000);
     const r = await fetch('https://suggestqueries.google.com/complete/search?client=firefox&hl=ar&gl=eg&q=' + encodeURIComponent(q), { signal: ctrl.signal });
     clearTimeout(t);
     const j = await r.json();
@@ -121,7 +122,7 @@ async function googleSuggest(q) {
 
 /** Phrases people really type into Google (Arabic, Egypt). Not search VOLUME — Google does not publish that for free. */
 export async function discoverKeywords(seed) {
-  const lists = await Promise.all([googleSuggest(seed), googleSuggest('كيف ' + seed), googleSuggest(seed + ' في مصر')]);
+  const lists = await Promise.all([googleSuggest(seed), googleSuggest(seed + ' في مصر')]);
   const seen = new Set(); const out = [];
   for (const p of lists.flat()) {
     const k = p.trim(); const key = k.replace(/\s+/g, ' ');
@@ -159,6 +160,7 @@ const SYSTEM_WRITE = 'أنت كاتب مقالات عربي محترف وصاح�
 async function writer(env, order, opts) {
   try { return await askWriter(env, opts, order); }
   catch (e1) {
+    if (e1 && e1.budget) throw e1;          // budget exhausted: retrying would only make it worse
     // one more attempt (transient 429 / timeout), slightly cooler
     return await askWriter(env, { ...opts, temperature: Math.max(0.4, (opts.temperature || 0.8) - 0.2) }, order);
   }
@@ -206,7 +208,7 @@ ${avoid.length ? `\nعناوين مقالات موجودة بالفعل في ا�
  ],
  "faq": ["سؤال شائع يبحث عنه الناس", "سؤال", "سؤال", "سؤال"]
 }
-عدد الأقسام 5 أو 6. عناوين الأقسام لا تتكرر ولا تبدأ بنفس الكلمة. الأسئلة الشائعة 4.`;
+عدد الأقسام 5. عناوين الأقسام لا تتكرر ولا تبدأ بنفس الكلمة. الأسئلة الشائعة 4.`;
   // 4000 tokens: Arabic text is token-hungry, 2200 used to cut the JSON off in the middle of "sections".
   let r = await writer(env, order, { system: SYSTEM_PLAN, user: prompt, maxTokens: 4000, temperature: 0.7 });
   let plan;
@@ -217,7 +219,7 @@ ${avoid.length ? `\nعناوين مقالات موجودة بالفعل في ا�
     r = await writer(env, swapped, { system: SYSTEM_PLAN, user: prompt + '\n\nمهم: أرجع JSON صالحًا ومكتملًا فقط، بدون أي نص خارجه.', maxTokens: 4000, temperature: 0.3 });
     plan = parseJsonLoose(r.text);
   }
-  const sections = (Array.isArray(plan.sections) ? plan.sections : []).slice(0, 6).map(s => ({
+  const sections = (Array.isArray(plan.sections) ? plan.sections : []).slice(0, 5).map(s => ({
     h2: cleanText(s.h2 || '').replace(/[:：]+$/, ''),
     points: (Array.isArray(s.points) ? s.points : []).map(String).slice(0, 5),
     keywords: (Array.isArray(s.keywords) ? s.keywords : []).map(String).slice(0, 3),
@@ -313,7 +315,7 @@ function shapePhoto(p) {
 export async function searchImages(env, query, n = 6) {
   if (!env.UNSPLASH_ACCESS_KEY || !query) return [];
   try {
-    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${Math.min(12, n + 4)}&orientation=landscape&content_filter=high`, { headers: unsplashHeaders(env) });
+    spend(1, 'unsplash search'); const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${Math.min(12, n + 4)}&orientation=landscape&content_filter=high`, { headers: unsplashHeaders(env) });
     if (!r.ok) return [];
     const j = await r.json();
     return (j.results || []).map(shapePhoto).filter(Boolean).slice(0, n);
@@ -326,7 +328,7 @@ async function pickPhoto(env, query, used) {
   if (!p) return null;
   used.add(p.id);
   // Unsplash API terms: report a "download" when a photo is actually used
-  if (p.download) fetch(p.download, { headers: unsplashHeaders(env) }).catch(() => {});
+  if (p.download) { try { spend(1, 'unsplash download report'); fetch(p.download, { headers: unsplashHeaders(env) }).catch(() => {}); } catch (_) { /* out of budget: skip the report */ } }
   return p;
 }
 
@@ -348,6 +350,7 @@ export async function generateArticle(env, input) {
   const order = settings.providerOrder;
   const topic = String(input.topic || '').trim();
   if (!topic) throw new Error('topic is required');
+  if (remaining() < 16) throw new Error('Not enough Cloudflare subrequest budget left in this request to write a full article (limit is per request) — run it as its own request.');
   if (!env.FIREBASE_PROJECT_ID || !env.FIREBASE_SERVICE_ACCOUNT) throw new Error('FIREBASE_PROJECT_ID / FIREBASE_SERVICE_ACCOUNT not configured — cannot save article');
 
   const [kwFound, posts] = await Promise.all([discoverKeywords(input.angle ? `${topic} ${input.angle}`.slice(0, 60) : topic), existingPosts(env)]);
